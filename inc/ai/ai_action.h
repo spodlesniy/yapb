@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <crlib/crlib.h>
+
 #include <cstdint>
 
 namespace ai {
