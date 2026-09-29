@@ -276,6 +276,7 @@ add_global_link_arguments(ldflags, language: 'cpp')
 
 # add the sources
 sources = files(
+   'src/ai/ai_controller.cpp',
    'src/analyze.cpp',
    'src/botlib.cpp',
    'src/chatlib.cpp',
