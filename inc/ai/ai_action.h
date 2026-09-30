@@ -7,13 +7,11 @@
 
 #pragma once
 
-#include <crlib/crlib.h>
-
 #include <cstdint>
 
 namespace ai {
 
-CR_DECLARE_SCOPED_ENUM_TYPE (ActionType, uint8_t,
+enum class ActionType : uint8_t {
    None,
    SelectTargetNode,
    Attack,
@@ -25,7 +23,7 @@ CR_DECLARE_SCOPED_ENUM_TYPE (ActionType, uint8_t,
    PlantBomb,
    DefuseBomb,
    Hunt
-)
+};
 
 // High-level intent returned by an AI policy.
 //
