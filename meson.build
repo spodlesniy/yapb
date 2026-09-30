@@ -338,13 +338,15 @@ run_target('package',
    command: ['python3', meson.project_source_root() + '/package.py', '@0@.@1@'.format(bot_version, count)])
 
 
-# Unit tests are kept independent from the game DLL. They exercise the
-# AI abstraction without requiring a GoldSrc runtime.
-ai_tests = executable(
-   'yapb_ai_tests',
-   'tests/unit/ai_tests.cpp',
-   'src/ai/ai_controller.cpp',
-   include_directories: include_directories('inc'),
-)
+if get_option('tests')
+   # Unit tests are kept independent from the game DLL. They exercise the
+   # AI abstraction without requiring a GoldSrc runtime.
+   ai_tests = executable(
+      'yapb_ai_tests',
+      'tests/unit/ai_tests.cpp',
+      'src/ai/ai_controller.cpp',
+      include_directories: include_directories('inc'),
+   )
 
-test('yapb_ai_tests', ai_tests)
+   test('yapb_ai_tests', ai_tests)
+endif
