@@ -9,6 +9,7 @@
 #include <ai/ai_controller.h>
 #include <ai/ai_observation_builder.h>
 #include <ai/ai_observation_state.h>
+#include <ai/ai_action_spec.h>
 
 #include <cmath>
 #include <cstdio>
@@ -100,6 +101,59 @@ void testActionTargets() {
     "target node and player have distinct values");
   expect(static_cast<uint8_t> (ai::TargetType::Player) != static_cast<uint8_t> (ai::TargetType::Position),
     "target player and position have distinct values");
+}
+
+void testActionSpecifications() {
+  const auto moveToNode = ai::getActionSpec(ai::ActionType::MoveToNode);
+  expect(moveToNode.targetType == ai::TargetType::Node, "move-to-node requires node target");
+  expect(moveToNode.requiredParameters == static_cast<uint32_t> (ai::ActionParameter::TargetNode),
+    "move-to-node requires target node parameter");
+  expect(moveToNode.optionalParameters == 0, "move-to-node has no optional parameters");
+
+  const auto moveToPosition = ai::getActionSpec(ai::ActionType::MoveToPosition);
+  expect(moveToPosition.targetType == ai::TargetType::Position, "move-to-position requires position target");
+  expect(moveToPosition.requiredParameters == static_cast<uint32_t> (ai::ActionParameter::TargetPosition),
+    "move-to-position requires target position parameter");
+
+  const auto follow = ai::getActionSpec(ai::ActionType::FollowPlayer);
+  expect(follow.targetType == ai::TargetType::Player, "follow-player requires player target");
+  expect(follow.requiredParameters == static_cast<uint32_t> (ai::ActionParameter::TargetPlayer),
+    "follow-player requires target player parameter");
+
+  const auto attack = ai::getActionSpec(ai::ActionType::AttackTarget);
+  expect(attack.targetType == ai::TargetType::Player, "attack-target requires player target");
+  expect(attack.requiredParameters == static_cast<uint32_t> (ai::ActionParameter::TargetPlayer),
+    "attack-target requires target player parameter");
+
+  const auto hold = ai::getActionSpec(ai::ActionType::HoldPosition);
+  expect(hold.targetType == ai::TargetType::None, "hold-position has no explicit target");
+  expect(hold.requiredParameters == 0, "hold-position has no required parameters");
+  expect(hold.optionalParameters == static_cast<uint32_t> (ai::ActionParameter::Duration),
+    "hold-position accepts optional duration");
+
+  const auto reload = ai::getActionSpec(ai::ActionType::Reload);
+  expect(reload.requiredParameters == 0, "reload has no required parameters");
+  expect(reload.optionalParameters == static_cast<uint32_t> (ai::ActionParameter::WeaponType),
+    "reload accepts optional weapon type");
+
+  const auto changeWeapon = ai::getActionSpec(ai::ActionType::ChangeWeapon);
+  expect(changeWeapon.requiredParameters == static_cast<uint32_t> (ai::ActionParameter::WeaponType),
+    "change-weapon requires weapon type");
+  expect(changeWeapon.optionalParameters == 0, "change-weapon has no optional parameters");
+
+  const auto throwGrenade = ai::getActionSpec(ai::ActionType::ThrowGrenade);
+  expect(throwGrenade.targetType == ai::TargetType::Position, "throw-grenade requires position target");
+  expect(throwGrenade.requiredParameters == (static_cast<uint32_t> (ai::ActionParameter::TargetPosition) |
+    static_cast<uint32_t> (ai::ActionParameter::GrenadeType)), "throw-grenade requires position and grenade type");
+
+  const auto throwFlashbang = ai::getActionSpec(ai::ActionType::ThrowFlashbang);
+  expect(throwFlashbang.targetType == ai::TargetType::Position, "throw-flashbang requires position target");
+  expect(throwFlashbang.requiredParameters == static_cast<uint32_t> (ai::ActionParameter::TargetPosition),
+    "throw-flashbang requires target position");
+
+  const auto objective = ai::getActionSpec(ai::ActionType::PlantBomb);
+  expect(objective.targetType == ai::TargetType::None, "plant-bomb has no explicit target");
+  expect(objective.requiredParameters == 0, "plant-bomb has no required parameters");
 }
 
 void testActionContract() {
@@ -328,6 +382,7 @@ int main() {
   testObservationDefaults();
   testActionTaxonomy();
   testActionContract();
+  testActionSpecifications();
   testActionTargets();
   testActionDefaults();
   testLegacyController();
