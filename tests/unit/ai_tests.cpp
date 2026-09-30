@@ -6,8 +6,9 @@
 //
 
 #include <ai/ai_controller.h>
+#include <ai/ai_observation_builder.h>
 
-#include <cstdio>
+#include <cstdio>\n#include <limits>
 
 namespace {
 
@@ -102,7 +103,7 @@ int main () {
    testActionDefaults ();
    testLegacyController ();
    testPolicyInjection ();
-   testPolicyReset ();
+   testObservationBuilder ();\n   testPolicyReset ();
 
    if (g_failures != 0) {
       std::fprintf (stderr, "%d AI unit test(s) failed.\n", g_failures);
