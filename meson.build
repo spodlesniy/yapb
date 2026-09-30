@@ -277,6 +277,7 @@ endif
 
 # add the sources
 sources = files(
+   'src/ai/ai_bot_adapter.cpp',
    'src/ai/ai_controller.cpp',
    'src/ai/ai_observation_builder.cpp',
    'src/analyze.cpp',

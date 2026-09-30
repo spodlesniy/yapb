@@ -21,6 +21,13 @@ using namespace cr;
 #include <constant.h>
 #include <chatlib.h>
 
+namespace ai {
+
+struct ObservationInput;
+ObservationInput buildObservationInput (const Bot &bot);
+
+} // namespace ai
+
 // tasks definition
 struct BotTask {
    using Function = void (Bot:: *) ();
@@ -214,6 +221,7 @@ public:
 class Bot final {
 public:
    friend class BotManager;
+   friend ai::ObservationInput ai::buildObservationInput (const Bot &bot);
 
 private:
    mutable Mutex m_pathFindLock {};

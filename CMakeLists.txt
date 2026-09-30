@@ -16,6 +16,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(YAPB_SRC
+    "src/ai/ai_bot_adapter.cpp"
     "src/ai/ai_controller.cpp"
     "src/ai/ai_observation_builder.cpp"
     "src/analyze.cpp"
