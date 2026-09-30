@@ -2,6 +2,7 @@
 // AiPB - AI policy abstraction.
 // AiPB, based on YaPB by YaPB Project Developers <yapb@jeefo.net>, based on PODBot by Markus Klinge ("CountFloyd").
 // Copyright © Aleksandr Podlesnyi <spodlesniy@gmail.com>.
+//
 // SPDX-License-Identifier: MIT
 //
 
