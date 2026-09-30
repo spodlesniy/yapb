@@ -183,6 +183,34 @@ void testObservationBuilder() {
 }
 
 
+void testCombatResourceObservation() {
+  ai::ObservationInput input {};
+
+  expect(input.combat.weaponType == ai::WeaponType::Unknown, "combat weapon type defaults to unknown");
+  expect(input.combat.ammoInClip == 0, "combat ammo defaults to zero");
+  expect(input.combat.reloadState == ai::ReloadState::None, "combat reload state defaults to none");
+  expect(!input.combat.blind, "combat blind state defaults to false");
+  expect(input.combat.blindTimeRemaining == 0.0f, "combat blind time defaults to zero");
+  expect(input.combat.firePauseRemaining == 0.0f, "combat fire pause defaults to zero");
+
+  input.combat.weaponType = ai::WeaponType::Sniper;
+  input.combat.ammoInClip = 0;
+  input.combat.reloadState = ai::ReloadState::Secondary;
+  input.combat.blind = true;
+  input.combat.blindTimeRemaining = std::numeric_limits<float>::infinity();
+  input.combat.firePauseRemaining = std::numeric_limits<float>::quiet_NaN();
+
+  const ai::Observation observation = ai::buildObservation(input);
+
+  expect(observation.combat.weaponType == ai::WeaponType::Sniper, "builder preserves sniper weapon type");
+  expect(observation.combat.ammoInClip == 0, "builder preserves empty magazine");
+  expect(observation.combat.reloadState == ai::ReloadState::Secondary, "builder preserves secondary reload state");
+  expect(observation.combat.blind, "builder preserves active blind state");
+  expect(observation.combat.blindTimeRemaining == 0.0f, "builder sanitizes non-finite blind time");
+  expect(observation.combat.firePauseRemaining == 0.0f, "builder sanitizes non-finite fire pause");
+}
+
+
 void testObservationState() {
   ai::ObservationState state {};
 
@@ -225,6 +253,7 @@ int main() {
   testLegacyController();
   testPolicyInjection();
   testObservationBuilder();
+  testCombatResourceObservation();
   testPolicyReset();
   testObservationState();
 
