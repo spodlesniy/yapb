@@ -65,6 +65,32 @@ void testActionTaxonomy() {
 }
 
 
+void testActionContract() {
+  const ai::Action action {};
+
+  expect(action.targetPosition.x == 0.0f, "action target position defaults to zero");
+  expect(action.targetPosition.y == 0.0f, "action target position y defaults to zero");
+  expect(action.targetPosition.z == 0.0f, "action target position z defaults to zero");
+  expect(action.weaponType == ai::WeaponType::Unknown, "action weapon type defaults to unknown");
+  expect(action.grenadeType == ai::GrenadeType::None, "action grenade type defaults to none");
+  expect(action.duration == 0.0f, "action duration defaults to zero");
+
+  ai::Action parameterized {};
+  parameterized.targetPosition = { 10.0f, -20.0f, 30.0f };
+  parameterized.weaponType = ai::WeaponType::Pistol;
+  parameterized.grenadeType = ai::GrenadeType::Smoke;
+  parameterized.duration = 2.5f;
+  parameterized.confidence = 0.9f;
+
+  expect(parameterized.targetPosition.x == 10.0f, "action preserves target position x");
+  expect(parameterized.targetPosition.y == -20.0f, "action preserves target position y");
+  expect(parameterized.targetPosition.z == 30.0f, "action preserves target position z");
+  expect(parameterized.weaponType == ai::WeaponType::Pistol, "action preserves weapon type");
+  expect(parameterized.grenadeType == ai::GrenadeType::Smoke, "action preserves grenade type");
+  expect(parameterized.duration == 2.5f, "action preserves duration");
+  expect(parameterized.confidence == 0.9f, "action preserves confidence");
+}
+
 void testActionDefaults() {
   const ai::Action action {};
 
@@ -264,6 +290,7 @@ void testPolicyReset() {
 int main() {
   testObservationDefaults();
   testActionTaxonomy();
+  testActionContract();
   testActionDefaults();
   testLegacyController();
   testPolicyInjection();

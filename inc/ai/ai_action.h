@@ -8,9 +8,18 @@
 
 #pragma once
 
+#include <ai/ai_observation.h>
+
 #include <cstdint>
 
 namespace ai {
+
+enum class GrenadeType : uint8_t {
+  None,
+  HE,
+  Flashbang,
+  Smoke,
+};
 
 enum class ActionType : uint8_t {
   None,
@@ -57,8 +66,17 @@ enum class ActionType : uint8_t {
 // intent into the existing YaPB navigation and movement systems.
 struct Action {
   ActionType type { ActionType::None };
+
+  // Candidate target data. Target semantics are defined separately from the
+  // action payload and will be validated by the execution layer.
   int32_t targetNode { -1 };
   int32_t targetPlayer { -1 };
+  Vec3 targetPosition {};
+
+  // Optional action-specific parameters.
+  WeaponType weaponType { WeaponType::Unknown };
+  GrenadeType grenadeType { GrenadeType::None };
+  float duration {};
   float confidence {};
 };
 
