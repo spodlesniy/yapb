@@ -748,6 +748,7 @@ public:
 
    FrameDelay m_thinkTimer {};
    ai::Observation m_aiObservation {};
+   bool m_aiObservationValid {};
 
 public:
    Bot (edict_t *bot, int difficulty, int personality, int team, int skin);
@@ -830,6 +831,10 @@ public:
 
    const ai::Observation &getAIObservation () const {
       return m_aiObservation;
+   }
+
+   bool hasAIObservation () const {
+      return m_aiObservationValid;
    }
 
    // bots array index

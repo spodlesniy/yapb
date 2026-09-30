@@ -3098,6 +3098,7 @@ void Bot::frame () {
 
 void Bot::update () {
    const auto tid = getCurrentTaskId ();
+   m_aiObservationValid = false;
 
    m_canSetAimDirection = true;
    m_isAlive = game.isAliveEntity (ent ());
@@ -3382,6 +3383,7 @@ void Bot::logic () {
    }
 
    m_aiObservation = ai::buildObservation (ai::buildObservationInput (*this));
+   m_aiObservationValid = true;
 
    executeChatterFrameEvents ();
 
