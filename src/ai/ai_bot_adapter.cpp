@@ -6,9 +6,9 @@
 // SPDX-License-Identifier: MIT
 //
 
-#include <ai/ai_bot_adapter.h>
-
 #include <yapb.h>
+
+#include <ai/ai_bot_adapter.h>
 
 namespace ai {
 namespace {
