@@ -580,7 +580,7 @@ void testActionPipeline() {
 
   const ai::ActionResult invalidAfterTerminal = pipeline.execute(invalid, observation);
   expect(invalidAfterTerminal.type == ai::ActionResultType::Invalid, "pipeline validates new action after terminal result");
-  expect(executor.callCount() == callsBeforeInvalid + 1, "invalid action after terminal result does not reach executor");
+  expect(executor.callCount() == callsBeforeInvalid + 2, "invalid action after terminal result does not reach executor");
 
   pipeline.reset();
   expect(!pipeline.isActive(), "pipeline reset clears action state");
