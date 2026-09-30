@@ -21,6 +21,8 @@ using namespace cr;
 #include <constant.h>
 #include <chatlib.h>
 
+#include <ai/ai_observation.h>
+
 namespace ai {
 
 struct ObservationInput;
@@ -745,6 +747,7 @@ public:
    Array <int32_t> m_goalHist {};
 
    FrameDelay m_thinkTimer {};
+   ai::Observation m_aiObservation {};
 
 public:
    Bot (edict_t *bot, int difficulty, int personality, int team, int skin);
@@ -824,6 +827,10 @@ public:
    edict_t *ent () const {
       return pev->pContainingEntity;
    };
+
+   const ai::Observation &getAIObservation () const {
+      return m_aiObservation;
+   }
 
    // bots array index
    int index () const {
