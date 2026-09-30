@@ -103,7 +103,8 @@ int main () {
    testActionDefaults ();
    testLegacyController ();
    testPolicyInjection ();
-   testObservationBuilder ();\n   testPolicyReset ();
+   testObservationBuilder ();
+   testPolicyReset ();
 
    if (g_failures != 0) {
       std::fprintf (stderr, "%d AI unit test(s) failed.\n", g_failures);
