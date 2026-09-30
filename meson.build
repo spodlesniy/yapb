@@ -212,7 +212,12 @@ if cxx == 'clang' or cxx == 'gcc'
          ldflags += '-Wl,/MACHINE:X86'
          cxxflags += '-Wl,/MACHINE:X86'
       endif
-   else
+   endif
+
+   # All non-Windows shared-library builds require position-independent code.
+   # Keep this explicit for 32-bit Linux as GCC LTO otherwise emits dynamic
+   # relocations that the linker cannot place in a PIC shared object.
+   if os != 'windows'
       cxxflags += '-fPIC'
       ldflags += '-fPIC'
    endif
