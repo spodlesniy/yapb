@@ -58,6 +58,7 @@ public:
   ai::Action decide(const ai::Observation &observation) const override {
     ai::Action action {};
     action.type = ai::ActionType::MoveToNode;
+    action.targetType = ai::TargetType::Node;
     action.targetNode = observation.bot.currentNode + 1;
     action.confidence = 0.75f;
 
