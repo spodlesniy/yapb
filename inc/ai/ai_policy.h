@@ -19,7 +19,9 @@ namespace ai {
 // GoldSrc so policies can also be exercised by an external trainer.
 class Policy {
 public:
-   virtual ~Policy () = default;
+   Policy () = default;
+   Policy (const Policy &) = default;
+   Policy &operator= (const Policy &) = default;
 
    virtual Action decide (const Observation &observation) const = 0;
 };
