@@ -95,8 +95,8 @@ struct Observation {
   BotState bot {};
   Personality personality {};
 
-  std::array <PlayerState, kMaxObservedPlayers> players {};
-  std::array <WaypointState, kMaxObservedWaypoints> waypoints {};
+  std::array<PlayerState, kMaxObservedPlayers> players {};
+  std::array<WaypointState, kMaxObservedWaypoints> waypoints {};
 
   uint8_t playerCount {};
   uint8_t waypointCount {};

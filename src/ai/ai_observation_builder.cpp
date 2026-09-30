@@ -20,7 +20,7 @@ Vec3 relativePosition(const Vec3 &origin, const Vec3 &reference) {
   return {
     origin.x - reference.x,
     origin.y - reference.y,
-    origin.z - reference.z
+    origin.z - reference.z,
   };
 }
 
@@ -36,7 +36,7 @@ Vec3 finiteOrZero(const Vec3 &value) {
   return {
     finiteOrZero(value.x),
     finiteOrZero(value.y),
-    finiteOrZero(value.z)
+    finiteOrZero(value.z),
   };
 }
 
@@ -67,8 +67,8 @@ Observation buildObservation(const ObservationInput &input) {
   observation.bot.inBuyZone = input.bot.inBuyZone;
   observation.bot.inRescueZone = input.bot.inRescueZone;
 
-  const auto playerCount = std::min <size_t> (input.playerCount, kMaxObservedPlayers);
-  observation.playerCount = static_cast <uint8_t> (playerCount);
+  const auto playerCount = std::min<size_t>(input.playerCount, kMaxObservedPlayers);
+  observation.playerCount = static_cast<uint8_t>(playerCount);
 
   for (size_t i = 0; i < playerCount; ++i) {
     const auto &source = input.players[i];
@@ -88,8 +88,8 @@ Observation buildObservation(const ObservationInput &input) {
     target.heard = source.heard;
   }
 
-  const auto waypointCount = std::min <size_t> (input.waypointCount, kMaxObservedWaypoints);
-  observation.waypointCount = static_cast <uint8_t> (waypointCount);
+  const auto waypointCount = std::min<size_t>(input.waypointCount, kMaxObservedWaypoints);
+  observation.waypointCount = static_cast<uint8_t>(waypointCount);
 
   for (size_t i = 0; i < waypointCount; ++i) {
     const auto &source = input.waypoints[i];

@@ -14,11 +14,7 @@
 
 namespace ai {
 
-enum class ControlMode : uint8_t {
-  Legacy,
-  Neural,
-  Training
-};
+enum class ControlMode : uint8_t { Legacy, Neural, Training };
 
 // Selects the active policy without exposing GoldSrc or Bot internals to it.
 //

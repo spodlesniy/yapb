@@ -75,8 +75,8 @@ struct ObservationInput {
   BotInput bot {};
   Personality personality {};
 
-  std::array <PlayerInput, kMaxObservedPlayers> players {};
-  std::array <WaypointInput, kMaxObservedWaypoints> waypoints {};
+  std::array<PlayerInput, kMaxObservedPlayers> players {};
+  std::array<WaypointInput, kMaxObservedWaypoints> waypoints {};
 
   uint8_t playerCount {};
   uint8_t waypointCount {};

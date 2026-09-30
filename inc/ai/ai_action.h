@@ -23,7 +23,7 @@ enum class ActionType : uint8_t {
   SeekCover,
   PlantBomb,
   DefuseBomb,
-  Hunt
+  Hunt,
 };
 
 // High-level intent returned by an AI policy.

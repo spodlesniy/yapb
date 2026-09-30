@@ -1,13 +1,27 @@
-#
-# AiPB - AI source formatting configuration.
-# AiPB, based on YaPB by YaPB Project Developers <yapb@jeefo.net>, based on PODBot by Markus Klinge ("CountFloyd").
-# Copyright © Aleksandr Podlesnyi <spodlesniy@gmail.com>.
-#
-# SPDX-License-Identifier: MIT
-#
+Language: Cpp
 BasedOnStyle: LLVM
 IndentWidth: 2
 TabWidth: 2
 UseTab: Never
+ColumnLimit: 140
 SpaceBeforeParens: ControlStatements
-SpacesInParentheses: false
+SpaceBeforeCpp11BracedList: true
+Cpp11BracedListStyle: false
+BracedListStyle: Block
+SpacesInRepetitiveBracedInitList: true
+SpacesInBraces: true
+SpaceInEmptyBlock: true
+AllowShortBlocksOnASingleLine: false
+AllowShortFunctionsOnASingleLine: false
+SpaceBeforeInitializerOptions:
+  InConstructorInitializer: false
+SpacesInParens: Custom
+SpacesInParensOptions:
+  InFunctionCall: false
+  InFunctionDeclaration: false
+  InControlStatements: false
+  InCStyleCasts: true
+  InEmptyParentheses: false
+PackConstructorInitializers: CurrentLine
+ReflowComments: false
+CommentPragmas: '^'
