@@ -18,7 +18,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
           submodules: true
@@ -44,7 +44,7 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
           submodules: true
@@ -72,7 +72,7 @@ jobs:
           meson compile -C ${{matrix.arch}} -v
           echo "artifcat=${{matrix.arch}}/`ls ${{matrix.arch}}/ | egrep '^yapb*.*(so|dylib|dll)$' | head -1`" >> $GITHUB_ENV
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: ${{matrix.arch}}
           path: ${{env.artifcat}}
@@ -91,12 +91,12 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
           submodules: true
       - name: Setup msbuild
-        uses: ilammy/msvc-dev-cmd@v1
+        uses: TheMrMilchmann/setup-msvc-dev@v4.1.0
         with:
           arch: amd64_x86
       - name: Install meson
@@ -115,7 +115,7 @@ jobs:
         run: |
           meson compile -C ${{matrix.arch}} -v
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: ${{matrix.arch}}
           path: |
@@ -135,7 +135,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
           submodules: true
@@ -149,7 +149,7 @@ jobs:
         run: |
           meson compile -C ${{matrix.arch}} -v
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: ${{matrix.arch}}
           path: |
@@ -164,7 +164,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
           submodules: true
@@ -173,11 +173,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends osslsigncode
       - name: Get artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8.0.1
         with:
           path: artifacts
       - name: Setup python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7.0.0
         with:
           python-version: '3.x'
       - name: Configure meson
@@ -215,7 +215,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
           submodules: true
@@ -224,11 +224,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends osslsigncode
       - name: Get artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8.0.1
         with:
           path: artifacts
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7.0.0
         with:
           python-version: '3.x'
       - name: Configure meson
@@ -242,7 +242,7 @@ jobs:
           CS_CERTIFICATE: ${{secrets.CS_CERTIFICATE}}
           CS_CERTIFICATE_PASSWORD: ${{secrets.CS_CERTIFICATE_PASSWORD}}
       - name: Publish release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3.0.3
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: pkg/*
