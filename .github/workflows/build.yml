@@ -23,17 +23,15 @@ jobs:
         with:
           fetch-depth: 0
           submodules: true
-      - name: Install multilib libraries
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc-multilib g++-multilib
       - name: Install build tools
         run: |
           python -m pip install --upgrade meson ninja
       - name: Configure test build
-        run: meson setup unit-tests
+        run: meson setup unit-tests -D64bit=true
       - name: Run unit tests
-        run: meson test -C unit-tests --print-errorlogs
+        run: |
+          meson test -C unit-tests --print-errorlogs
+          file unit-tests/yapb_ai_tests
 
   bot-build:
     needs: [unit-tests]
