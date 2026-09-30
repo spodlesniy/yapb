@@ -31,7 +31,7 @@ class TestPolicy final : public ai::Policy {
 public:
   ai::Action decide(const ai::Observation &observation) const override {
     ai::Action action {};
-    action.type = ai::ActionType::SelectTargetNode;
+    action.type = ai::ActionType::MoveToNode;
     action.targetNode = observation.bot.currentNode + 1;
     action.confidence = 0.75f;
 
@@ -50,6 +50,20 @@ void testObservationDefaults() {
   expect(observation.personality.aggression == 0.5f, "default aggression is neutral");
   expect(observation.personality.objectiveFocus == 0.5f, "default objective focus is neutral");
 }
+
+void testActionTaxonomy() {
+  expect(static_cast<uint8_t> (ai::ActionType::MoveToNode) != static_cast<uint8_t> (ai::ActionType::MoveToPosition),
+    "navigation actions have distinct values");
+  expect(static_cast<uint8_t> (ai::ActionType::AttackTarget) != static_cast<uint8_t> (ai::ActionType::HuntTarget),
+    "combat targeting actions have distinct values");
+  expect(static_cast<uint8_t> (ai::ActionType::PlantBomb) != static_cast<uint8_t> (ai::ActionType::DefuseBomb),
+    "objective actions have distinct values");
+  expect(static_cast<uint8_t> (ai::ActionType::Wait) != static_cast<uint8_t> (ai::ActionType::ThrowSmoke),
+    "utility actions have distinct values");
+  expect(static_cast<uint8_t> (ai::ActionType::Count) == static_cast<uint8_t> (ai::ActionType::ThrowSmoke) + 1u,
+    "action taxonomy count follows the final action");
+}
+
 
 void testActionDefaults() {
   const ai::Action action {};
@@ -84,7 +98,7 @@ void testPolicyInjection() {
 
   const ai::Action action = controller.decide(observation);
 
-  expect(action.type == ai::ActionType::SelectTargetNode, "custom policy action type is returned");
+  expect(action.type == ai::ActionType::MoveToNode, "custom policy action type is returned");
   expect(action.targetNode == 42, "custom policy receives observation");
   expect(action.confidence == 0.75f, "custom policy confidence is preserved");
 }
@@ -249,6 +263,7 @@ void testPolicyReset() {
 
 int main() {
   testObservationDefaults();
+  testActionTaxonomy();
   testActionDefaults();
   testLegacyController();
   testPolicyInjection();

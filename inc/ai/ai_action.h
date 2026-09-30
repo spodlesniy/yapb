@@ -14,16 +14,40 @@ namespace ai {
 
 enum class ActionType : uint8_t {
   None,
-  SelectTargetNode,
-  Attack,
+
+  // Navigation.
+  MoveToNode,
+  MoveToPosition,
+  FollowPlayer,
+  SeekCover,
   Retreat,
   HoldPosition,
-  Push,
-  Follow,
-  SeekCover,
+  Explore,
+
+  // Combat.
+  AttackTarget,
+  HuntTarget,
+  AimAtTarget,
+  Fire,
+  Reload,
+  ChangeWeapon,
+
+  // Objectives.
   PlantBomb,
   DefuseBomb,
-  Hunt,
+  PickupItem,
+  EscapeFromBomb,
+  RescueHostage,
+  ProtectObjective,
+
+  // Tactical / utility.
+  Wait,
+  Camp,
+  ThrowGrenade,
+  ThrowFlashbang,
+  ThrowSmoke,
+
+  Count,
 };
 
 // High-level intent returned by an AI policy.
