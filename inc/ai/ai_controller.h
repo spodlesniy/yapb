@@ -7,15 +7,17 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include <ai/ai_policy.h>
 
 namespace ai {
 
-CR_DECLARE_SCOPED_ENUM (ControlMode,
+enum class ControlMode : uint8_t {
    Legacy,
    Neural,
    Training
-)
+};
 
 // Selects the active policy without exposing GoldSrc or Bot internals to it.
 //
