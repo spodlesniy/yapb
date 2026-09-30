@@ -14,6 +14,7 @@
 #include <ai/ai_action_result.h>
 #include <ai/ai_action_executor.h>
 #include <ai/ai_action_pipeline.h>
+#include <ai/ai_action_loop.h>
 #include <ai/ai_action_state.h>
 
 #include <cmath>
@@ -566,6 +567,55 @@ void testActionState() {
   expect(state.result().type == ai::ActionResultType::None, "reset clears result");
 }
 
+void testActionLoop() {
+  ai::Controller controller {};
+  TestExecutor executor {};
+  ai::ActionPipeline pipeline { executor };
+  ai::ActionLoop loop { controller, pipeline };
+
+  ai::Observation observation {};
+  observation.bot.alive = true;
+  observation.bot.currentNode = 40;
+
+  const ai::ActionResult noPolicy = loop.step(observation);
+  expect(noPolicy.action == ai::ActionType::None, "action loop is inactive without a policy");
+  expect(noPolicy.type == ai::ActionResultType::None, "action loop does not execute a no-op action");
+  expect(executor.callCount() == 0, "action loop does not invoke executor without a policy");
+
+  TestPolicy policy {};
+  controller.setPolicy(&policy);
+
+  const ai::ActionResult accepted = loop.step(observation);
+  expect(accepted.action == ai::ActionType::MoveToNode, "action loop forwards policy action type");
+  expect(accepted.type == ai::ActionResultType::Accepted, "action loop executes policy action");
+  expect(loop.isActive(), "action loop exposes active action state");
+  expect(loop.activeAction().targetNode == 41, "action loop preserves policy target");
+  expect(executor.callCount() == 1, "action loop invokes executor for new action");
+
+  observation.bot.currentNode = 80;
+
+  const ai::ActionResult continued = loop.step(observation);
+  expect(continued.action == ai::ActionType::MoveToNode, "action loop continues active action");
+  expect(continued.type == ai::ActionResultType::Accepted, "active action remains executable");
+  expect(loop.activeAction().targetNode == 41, "active action is not replaced by later policy output");
+  expect(executor.callCount() == 2, "action loop executes active action again");
+
+  observation.bot.alive = false;
+
+  const ai::ActionResult rejected = loop.step(observation);
+  expect(rejected.type == ai::ActionResultType::Rejected, "action loop preserves executor rejection");
+  expect(!loop.isActive(), "action loop clears terminal action");
+
+  controller.setPolicy(nullptr);
+
+  observation.bot.alive = true;
+
+  const ai::ActionResult afterCompletion = loop.step(observation);
+  expect(afterCompletion.action == ai::ActionType::None, "action loop stops when policy is removed");
+  expect(afterCompletion.type == ai::ActionResultType::None, "removed policy produces no execution");
+  expect(executor.callCount() == 3, "action loop does not execute after policy removal");
+}
+
 void testActionPipeline() {
   TestExecutor executor {};
   ai::ActionPipeline pipeline { executor };
@@ -729,6 +779,7 @@ int main() {
   testActionResult();
   testActionExecutor();
   testActionPipeline();
+  testActionLoop();
   testActionState();
   testActionCancellation();
   testObservationState();
