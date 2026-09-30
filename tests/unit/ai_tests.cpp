@@ -12,6 +12,7 @@
 #include <ai/ai_action_spec.h>
 #include <ai/ai_action_validator.h>
 #include <ai/ai_action_result.h>
+#include <ai/ai_action_executor.h>
 
 #include <cmath>
 #include <cstdio>
@@ -29,6 +30,16 @@ void expect(bool condition, const char *message) {
   std::fprintf(stderr, "FAIL: %s\n", message);
   ++g_failures;
 }
+
+class TestExecutor final : public ai::ActionExecutor {
+public:
+  ai::ActionResult execute(const ai::Action &action, const ai::Observation &observation) const override {
+    ai::ActionResult result {};
+    result.action = action.type;
+    result.type = observation.bot.alive ? ai::ActionResultType::Accepted : ai::ActionResultType::Rejected;
+    return result;
+  }
+};
 
 class TestPolicy final : public ai::Policy {
 public:
@@ -451,6 +462,26 @@ void testActionValidation() {
 }
 
 
+void testActionExecutor() {
+  TestExecutor executor {};
+
+  ai::Action action {};
+  action.type = ai::ActionType::MoveToNode;
+
+  ai::Observation observation {};
+  observation.bot.alive = true;
+
+  const ai::ActionResult accepted = executor.execute(action, observation);
+  expect(accepted.action == ai::ActionType::MoveToNode, "executor result preserves submitted action");
+  expect(accepted.type == ai::ActionResultType::Accepted, "executor can accept an action");
+
+  observation.bot.alive = false;
+
+  const ai::ActionResult rejected = executor.execute(action, observation);
+  expect(rejected.action == ai::ActionType::MoveToNode, "executor preserves action on rejection");
+  expect(rejected.type == ai::ActionResultType::Rejected, "executor can reject an action");
+}
+ 
 void testActionResult() {
   const ai::ActionResult result {};
 
@@ -537,6 +568,7 @@ int main() {
   testPolicyReset();
   testActionValidation();
   testActionResult();
+  testActionExecutor();
   testObservationState();
 
   if (g_failures != 0) {
