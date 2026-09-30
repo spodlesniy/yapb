@@ -823,8 +823,8 @@ public:
       return pev->origin + pev->view_ofs;
    };
 
-   Task getCurrentTaskId () {
-      return getTask ()->id;
+   Task getCurrentTaskId () const {
+      return m_tasks.empty () ? Task::Normal : m_tasks.last ().id;
    }
 
    edict_t *ent () const {
