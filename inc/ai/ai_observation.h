@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include <array>
 #include <cstddef>
 #include <cstdint>
 
@@ -95,8 +94,8 @@ struct Observation {
   BotState bot {};
   Personality personality {};
 
-  std::array<PlayerState, kMaxObservedPlayers> players {};
-  std::array<WaypointState, kMaxObservedWaypoints> waypoints {};
+  PlayerState players[kMaxObservedPlayers] {};
+  WaypointState waypoints[kMaxObservedWaypoints] {};
 
   uint8_t playerCount {};
   uint8_t waypointCount {};

@@ -6,8 +6,6 @@
 // SPDX-License-Identifier: MIT
 //
 
-#define CR_COMPAT_STL
-
 #include <yapb.h>
 
 #include <ai/ai_bot_adapter.h>

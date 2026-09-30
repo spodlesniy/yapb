@@ -10,7 +10,6 @@
 
 #include <ai/ai_observation.h>
 
-#include <array>
 #include <cstdint>
 
 namespace ai {
