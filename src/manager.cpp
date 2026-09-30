@@ -1490,6 +1490,8 @@ void BotManager::handleDeath (edict_t *killer, edict_t *victim) {
 void Bot::newRound () {
    // this function initializes a bot after creation & at the start of each round
 
+   m_aiObservationState.invalidate ();
+
    // delete all allocated path nodes
    clearSearchNodes ();
 
@@ -1798,6 +1800,7 @@ void Bot::kill () {
    // base code courtesy of Lazy (from bots-united forums!)
 
    bots.touchKillerEntity (this);
+   m_aiObservationState.invalidate ();
 }
 
 void Bot::kick (bool silent) {
@@ -1817,6 +1820,8 @@ void Bot::kick (bool silent) {
 }
 
 void Bot::markStale () {
+   m_aiObservationState.invalidate ();
+
    // switch chatter icon off
    showChatterIcon (false, true);
 
