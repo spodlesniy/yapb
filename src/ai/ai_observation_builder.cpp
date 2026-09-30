@@ -59,6 +59,7 @@ Observation buildObservation(const ObservationInput &input) {
   observation.bot.currentWeapon = input.bot.currentWeapon;
   observation.bot.currentNode = input.bot.currentNode;
   observation.bot.currentGoalNode = input.bot.currentGoalNode;
+  observation.bot.currentTask = input.bot.currentTask;
   observation.bot.objectiveFlags = input.bot.objectiveFlags;
   observation.bot.alive = input.bot.alive;
   observation.bot.hasC4 = input.bot.hasC4;

@@ -29,6 +29,7 @@ struct BotInput {
   int32_t currentWeapon { -1 };
   int32_t currentNode { -1 };
   int32_t currentGoalNode { -1 };
+  TaskType currentTask { TaskType::Unknown };
 
   uint32_t objectiveFlags {};
 
