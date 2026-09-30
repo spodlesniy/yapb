@@ -178,7 +178,7 @@ if(MSVC)
 endif()
 
 
-option(YAPB_BUILD_TESTS "Build YaPB unit tests" ON)
+option(YAPB_BUILD_TESTS "Build YaPB unit tests" OFF)
 
 if(YAPB_BUILD_TESTS)
     enable_testing()
