@@ -95,6 +95,8 @@ void testObservationBuilder() {
   input.roundTimeRemaining = 42.0f;
   input.bot.origin = { 100.0f, 200.0f, 300.0f };
   input.bot.velocity = { 10.0f, -20.0f, 0.0f };
+  input.bot.destination = { 150.0f, 250.0f, 300.0f };
+  input.bot.desiredVelocity = { 20.0f, 0.0f, 0.0f };
   input.bot.health = 87.0f;
   input.bot.team = 1;
   input.bot.currentNode = 7;
@@ -102,6 +104,9 @@ void testObservationBuilder() {
   input.bot.currentTask = ai::TaskType::Attack;
   input.bot.alive = true;
   input.bot.objectiveFlags = ai::ObjectiveFlag::BombPlanted | ai::ObjectiveFlag::InBombZone;
+  input.bot.navigationFlags = static_cast<uint32_t> (ai::NavigationFlag::Jump) | static_cast<uint32_t> (ai::NavigationFlag::Ladder);
+  input.bot.movingToGoal = true;
+  input.bot.stuck = true;
   input.personality.aggression = 0.8f;
 
   input.playerCount = 1;
@@ -124,6 +129,11 @@ void testObservationBuilder() {
   expect(observation.bot.currentTask == ai::TaskType::Attack, "builder preserves current task");
   expect(observation.bot.objectiveFlags == (ai::ObjectiveFlag::BombPlanted | ai::ObjectiveFlag::InBombZone), "builder preserves objective flags");
   expect(observation.bot.origin.x == 100.0f, "builder preserves bot origin");
+  expect(observation.bot.destination.x == 150.0f, "builder preserves navigation destination");
+  expect(observation.bot.desiredVelocity.x == 20.0f, "builder preserves desired velocity");
+  expect(observation.bot.navigationFlags == (static_cast<uint32_t> (ai::NavigationFlag::Jump) | static_cast<uint32_t> (ai::NavigationFlag::Ladder)), "builder preserves navigation flags");
+  expect(observation.bot.movingToGoal, "builder preserves moving-to-goal state");
+  expect(observation.bot.stuck, "builder preserves stuck state");
   expect(observation.playerCount == 1, "builder preserves player count");
   expect(observation.players[0].entityIndex == 9, "builder preserves player entity index");
   expect(observation.players[0].relativeOrigin.x == 3.0f, "player x position is relative to bot");

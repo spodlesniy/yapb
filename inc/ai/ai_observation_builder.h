@@ -19,6 +19,8 @@ namespace ai {
 struct BotInput {
   Vec3 origin {};
   Vec3 velocity {};
+  Vec3 destination {};
+  Vec3 desiredVelocity {};
 
   float health {};
   float armor {};
@@ -32,8 +34,11 @@ struct BotInput {
   TaskType currentTask { TaskType::Unknown };
 
   uint32_t objectiveFlags {};
+  uint32_t navigationFlags {};
 
   bool alive {};
+  bool movingToGoal {};
+  bool stuck {};
   bool hasC4 {};
   bool hasHostage {};
   bool inBombZone {};

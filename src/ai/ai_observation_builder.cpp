@@ -51,6 +51,8 @@ Observation buildObservation(const ObservationInput &input) {
 
   observation.bot.origin = finiteOrZero(input.bot.origin);
   observation.bot.velocity = finiteOrZero(input.bot.velocity);
+  observation.bot.destination = finiteOrZero(input.bot.destination);
+  observation.bot.desiredVelocity = finiteOrZero(input.bot.desiredVelocity);
   observation.bot.health = finiteOrZero(input.bot.health);
   observation.bot.armor = finiteOrZero(input.bot.armor);
   observation.bot.maxSpeed = finiteOrZero(input.bot.maxSpeed);
@@ -61,7 +63,10 @@ Observation buildObservation(const ObservationInput &input) {
   observation.bot.currentGoalNode = input.bot.currentGoalNode;
   observation.bot.currentTask = input.bot.currentTask;
   observation.bot.objectiveFlags = input.bot.objectiveFlags;
+  observation.bot.navigationFlags = input.bot.navigationFlags;
   observation.bot.alive = input.bot.alive;
+  observation.bot.movingToGoal = input.bot.movingToGoal;
+  observation.bot.stuck = input.bot.stuck;
   observation.bot.hasC4 = input.bot.hasC4;
   observation.bot.hasHostage = input.bot.hasHostage;
   observation.bot.inBombZone = input.bot.inBombZone;

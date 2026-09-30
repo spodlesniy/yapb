@@ -110,6 +110,8 @@ ObservationInput buildObservationInput (const Bot &bot) {
 
   input.bot.origin = { bot.pev->origin.x, bot.pev->origin.y, bot.pev->origin.z };
   input.bot.velocity = { bot.pev->velocity.x, bot.pev->velocity.y, bot.pev->velocity.z };
+  input.bot.destination = { bot.m_destOrigin.x, bot.m_destOrigin.y, bot.m_destOrigin.z };
+  input.bot.desiredVelocity = { bot.m_desiredVelocity.x, bot.m_desiredVelocity.y, bot.m_desiredVelocity.z };
   input.bot.health = bot.m_healthValue;
   input.bot.armor = bot.pev->armorvalue;
   input.bot.maxSpeed = bot.pev->maxspeed;
@@ -125,6 +127,21 @@ ObservationInput buildObservationInput (const Bot &bot) {
   input.bot.inBombZone = bot.m_inBombZone;
   input.bot.inBuyZone = bot.m_inBuyZone;
   input.bot.inRescueZone = bot.m_inRescueZone;
+
+  if (bot.m_currentTravelFlags & PathFlag::Jump) {
+    input.bot.navigationFlags |= static_cast<uint32_t> (NavigationFlag::Jump);
+  }
+  if (bot.m_pathFlags & NodeFlag::Ladder) {
+    input.bot.navigationFlags |= static_cast<uint32_t> (NavigationFlag::Ladder);
+  }
+  if (bot.m_pathFlags & NodeFlag::Crouch) {
+    input.bot.navigationFlags |= static_cast<uint32_t> (NavigationFlag::Crouch);
+  }
+  if (bot.m_isFallDown) {
+    input.bot.navigationFlags |= static_cast<uint32_t> (NavigationFlag::Falling);
+  }
+  input.bot.movingToGoal = bot.m_moveToGoal;
+  input.bot.stuck = bot.m_isStuck;
 
   if (gameState.isBombPlanted ()) {
     input.bot.objectiveFlags |= ObjectiveFlag::BombPlanted;

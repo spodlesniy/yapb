@@ -16,6 +16,13 @@ namespace ai {
 constexpr size_t kMaxObservedPlayers = 16;
 constexpr size_t kMaxObservedWaypoints = 8;
 
+enum class NavigationFlag : uint32_t {
+  Jump = 1u << 0,
+  Ladder = 1u << 1,
+  Crouch = 1u << 2,
+  Falling = 1u << 3,
+};
+
 enum class TaskType : uint8_t {
   Unknown,
   Normal,
@@ -98,6 +105,8 @@ struct Personality {
 struct BotState {
   Vec3 origin {};
   Vec3 velocity {};
+  Vec3 destination {};
+  Vec3 desiredVelocity {};
 
   float health {};
   float armor {};
@@ -111,8 +120,11 @@ struct BotState {
   TaskType currentTask { TaskType::Unknown };
 
   uint32_t objectiveFlags {};
+  uint32_t navigationFlags {};
 
   bool alive {};
+  bool movingToGoal {};
+  bool stuck {};
   bool hasC4 {};
   bool hasHostage {};
   bool inBombZone {};
