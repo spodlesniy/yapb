@@ -9,8 +9,14 @@ on:
     paths-ignore:
       - '**.md'
 
+  workflow_dispatch:
+
   release:
     types: [published]
+
+concurrency:
+  group: build-${{ github.ref }}-${{ github.event_name == 'workflow_dispatch' && 'manual' || 'push' }}
+  cancel-in-progress: true
 
 jobs:
   unit-tests:
@@ -34,6 +40,7 @@ jobs:
           file unit-tests/yapb_ai_tests
 
   bot-build:
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master' || github.event_name == 'release'
     needs: [unit-tests]
     runs-on: ubuntu-latest
     container:
@@ -83,6 +90,7 @@ jobs:
           path: ${{env.artifcat}}
 
   bot-msvc:
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master' || github.event_name == 'release'
     needs: [unit-tests]
     env:
       name: windows-x86-msvc
@@ -127,6 +135,7 @@ jobs:
             ${{matrix.arch}}/yapb.dll
 
   bot-apple:
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master' || github.event_name == 'release'
     needs: [unit-tests]
     env:
       name: apple-arm64
