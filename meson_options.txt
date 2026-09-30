@@ -20,3 +20,6 @@ option('nosimd', type : 'boolean', value : false,
 option('static_linkent', type : 'boolean', value : false,
        description: 'Use predefined entity link list, instead of hooking dlsym.')
 
+
+option('tests', type : 'boolean', value : false,
+       description: 'Build and register YaPB unit tests.')
