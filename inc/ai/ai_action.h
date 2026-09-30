@@ -21,6 +21,13 @@ enum class GrenadeType : uint8_t {
   Smoke,
 };
 
+enum class TargetType : uint8_t {
+  None,
+  Node,
+  Player,
+  Position,
+};
+
 enum class ActionType : uint8_t {
   None,
 
@@ -66,6 +73,7 @@ enum class ActionType : uint8_t {
 // intent into the existing YaPB navigation and movement systems.
 struct Action {
   ActionType type { ActionType::None };
+  TargetType targetType { TargetType::None };
 
   // Candidate target data. Target semantics are defined separately from the
   // action payload and will be validated by the execution layer.

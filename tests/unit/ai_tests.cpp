@@ -65,6 +65,43 @@ void testActionTaxonomy() {
 }
 
 
+void testActionTargets() {
+  const ai::Action action {};
+
+  expect(action.targetType == ai::TargetType::None, "action target type defaults to none");
+
+  ai::Action nodeAction {};
+  nodeAction.type = ai::ActionType::MoveToNode;
+  nodeAction.targetType = ai::TargetType::Node;
+  nodeAction.targetNode = 17;
+
+  expect(nodeAction.targetType == ai::TargetType::Node, "node action declares node target");
+  expect(nodeAction.targetNode == 17, "node action preserves target node");
+
+  ai::Action playerAction {};
+  playerAction.type = ai::ActionType::AttackTarget;
+  playerAction.targetType = ai::TargetType::Player;
+  playerAction.targetPlayer = 5;
+
+  expect(playerAction.targetType == ai::TargetType::Player, "combat action declares player target");
+  expect(playerAction.targetPlayer == 5, "player action preserves target player");
+
+  ai::Action positionAction {};
+  positionAction.type = ai::ActionType::MoveToPosition;
+  positionAction.targetType = ai::TargetType::Position;
+  positionAction.targetPosition = { 12.0f, 34.0f, 56.0f };
+
+  expect(positionAction.targetType == ai::TargetType::Position, "position action declares position target");
+  expect(positionAction.targetPosition.x == 12.0f, "position action preserves target position");
+
+  expect(static_cast<uint8_t> (ai::TargetType::None) != static_cast<uint8_t> (ai::TargetType::Node),
+    "target none and node have distinct values");
+  expect(static_cast<uint8_t> (ai::TargetType::Node) != static_cast<uint8_t> (ai::TargetType::Player),
+    "target node and player have distinct values");
+  expect(static_cast<uint8_t> (ai::TargetType::Player) != static_cast<uint8_t> (ai::TargetType::Position),
+    "target player and position have distinct values");
+}
+
 void testActionContract() {
   const ai::Action action {};
 
@@ -291,6 +328,7 @@ int main() {
   testObservationDefaults();
   testActionTaxonomy();
   testActionContract();
+  testActionTargets();
   testActionDefaults();
   testLegacyController();
   testPolicyInjection();
