@@ -49,14 +49,6 @@ Observation buildObservation(const ObservationInput &input) {
   observation.roundTimeRemaining = finiteOrZero(input.roundTimeRemaining);
   observation.personality = input.personality;
 
-  observation.combat.enemyEntity = input.combat.enemyEntity;
-  observation.combat.lastEnemyEntity = input.combat.lastEnemyEntity;
-  observation.combat.enemyRelativeOrigin = relativePosition(finiteOrZero(input.combat.enemyOrigin), observation.bot.origin);
-  observation.combat.lastEnemyRelativeOrigin = relativePosition(finiteOrZero(input.combat.lastEnemyOrigin), observation.bot.origin);
-  observation.combat.enemyDistance = finiteOrZero(length(observation.combat.enemyRelativeOrigin));
-  observation.combat.lastEnemyDistance = finiteOrZero(length(observation.combat.lastEnemyRelativeOrigin));
-  observation.combat.perceptionFlags = input.combat.perceptionFlags;
-
   observation.bot.origin = finiteOrZero(input.bot.origin);
   observation.bot.velocity = finiteOrZero(input.bot.velocity);
   observation.bot.destination = finiteOrZero(input.bot.destination);
@@ -80,6 +72,14 @@ Observation buildObservation(const ObservationInput &input) {
   observation.bot.inBombZone = input.bot.inBombZone;
   observation.bot.inBuyZone = input.bot.inBuyZone;
   observation.bot.inRescueZone = input.bot.inRescueZone;
+
+  observation.combat.enemyEntity = input.combat.enemyEntity;
+  observation.combat.lastEnemyEntity = input.combat.lastEnemyEntity;
+  observation.combat.enemyRelativeOrigin = relativePosition(finiteOrZero(input.combat.enemyOrigin), observation.bot.origin);
+  observation.combat.lastEnemyRelativeOrigin = relativePosition(finiteOrZero(input.combat.lastEnemyOrigin), observation.bot.origin);
+  observation.combat.enemyDistance = finiteOrZero(length(observation.combat.enemyRelativeOrigin));
+  observation.combat.lastEnemyDistance = finiteOrZero(length(observation.combat.lastEnemyRelativeOrigin));
+  observation.combat.perceptionFlags = input.combat.perceptionFlags;
 
   const auto playerCount = std::min<size_t>(input.playerCount, kMaxObservedPlayers);
   observation.playerCount = static_cast<uint8_t>(playerCount);
