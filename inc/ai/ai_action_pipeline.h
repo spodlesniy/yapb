@@ -9,27 +9,53 @@
 #pragma once
 
 #include <ai/ai_action_executor.h>
+#include <ai/ai_action_state.h>
 #include <ai/ai_action_validator.h>
 
 namespace ai {
 
-// Validates an action before forwarding it to the runtime executor.
-// Invalid actions never reach the executor.
+// Validates new actions and serializes execution of one active action.
+// While an action is active, new policy outputs are ignored and the current
+// action is executed again until the executor reports a terminal result.
 class ActionPipeline final {
 private:
   const ActionExecutor *m_executor {};
+  ActionState m_state {};
 
 public:
   explicit ActionPipeline(const ActionExecutor &executor)
     : m_executor(&executor) {
   }
 
-  ActionResult execute(const Action &action, const Observation &observation) const {
-    if (!ActionValidator::validate(action, observation).isValid()) {
-      return { action.type, ActionResultType::Invalid, 0.0f };
+  ActionResult execute(const Action &action, const Observation &observation) {
+    if (!m_state.isActive()) {
+      if (!ActionValidator::validate(action, observation).isValid()) {
+        return { action.type, ActionResultType::Invalid, 0.0f };
+      }
+
+      m_state.start(action);
     }
 
-    return m_executor->execute(action, observation);
+    const auto &activeAction = m_state.action();
+    const auto result = m_executor->execute(activeAction, observation);
+    m_state.updateResult(result);
+    return m_state.result();
+  }
+
+  void reset() {
+    m_state.reset();
+  }
+
+  bool isActive() const {
+    return m_state.isActive();
+  }
+
+  const Action &activeAction() const {
+    return m_state.action();
+  }
+
+  const ActionResult &result() const {
+    return m_state.result();
   }
 };
 

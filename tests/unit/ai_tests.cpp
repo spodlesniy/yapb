@@ -547,24 +547,43 @@ void testActionPipeline() {
   const ai::ActionResult accepted = pipeline.execute(valid, observation);
   expect(accepted.action == ai::ActionType::MoveToNode, "pipeline preserves valid action type");
   expect(accepted.type == ai::ActionResultType::Accepted, "pipeline forwards valid action to executor");
+  expect(pipeline.isActive(), "pipeline keeps accepted action active");
+  expect(pipeline.activeAction().targetNode == 12, "pipeline stores active action payload");
   expect(executor.callCount() == 1, "pipeline invokes executor for valid action");
+
+  ai::Action replacement {};
+  replacement.type = ai::ActionType::Reload;
+  replacement.weaponType = ai::WeaponType::Rifle;
+
+  const ai::ActionResult continued = pipeline.execute(replacement, observation);
+  expect(continued.action == ai::ActionType::MoveToNode, "pipeline keeps active action when new action is submitted");
+  expect(continued.type == ai::ActionResultType::Accepted, "pipeline continues executing active action");
+  expect(pipeline.activeAction().type == ai::ActionType::MoveToNode, "pipeline ignores replacement action while active");
+  expect(executor.callCount() == 2, "pipeline executes active action again");
 
   ai::Action invalid {};
   invalid.type = ai::ActionType::MoveToNode;
   invalid.targetType = ai::TargetType::Node;
   invalid.targetNode = -1;
 
-  const ai::ActionResult rejected = pipeline.execute(invalid, observation);
-  expect(rejected.action == ai::ActionType::MoveToNode, "pipeline preserves invalid action type");
-  expect(rejected.type == ai::ActionResultType::Invalid, "pipeline rejects invalid action before execution");
-  expect(rejected.isTerminal(), "invalid pipeline result is terminal");
-  expect(executor.callCount() == 1, "pipeline does not invoke executor for invalid action");
+  const int callsBeforeInvalid = executor.callCount();
+  const ai::ActionResult stillActive = pipeline.execute(invalid, observation);
+  expect(stillActive.action == ai::ActionType::MoveToNode, "invalid new action does not replace active action");
+  expect(executor.callCount() == callsBeforeInvalid + 1, "pipeline keeps executing active action");
 
   observation.bot.alive = false;
 
   const ai::ActionResult runtimeRejected = pipeline.execute(valid, observation);
+  expect(runtimeRejected.action == ai::ActionType::MoveToNode, "pipeline preserves active action on terminal rejection");
   expect(runtimeRejected.type == ai::ActionResultType::Rejected, "pipeline preserves executor rejection");
-  expect(executor.callCount() == 2, "pipeline invokes executor for runtime rejection");
+  expect(!pipeline.isActive(), "terminal executor result clears active action");
+
+  const ai::ActionResult invalidAfterTerminal = pipeline.execute(invalid, observation);
+  expect(invalidAfterTerminal.type == ai::ActionResultType::Invalid, "pipeline validates new action after terminal result");
+  expect(executor.callCount() == callsBeforeInvalid + 1, "invalid action after terminal result does not reach executor");
+
+  pipeline.reset();
+  expect(!pipeline.isActive(), "pipeline reset clears action state");
 }
 
 void testActionExecutor() {
