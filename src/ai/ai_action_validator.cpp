@@ -58,24 +58,6 @@ bool hasObservedPlayer(const Observation &observation, int32_t entityIndex) {
   return false;
 }
 
-bool hasRequiredParameter(const Action &action, ActionParameter parameter) {
-  switch (parameter) {
-  case ActionParameter::TargetNode:
-    return action.targetNode >= 0;
-  case ActionParameter::TargetPlayer:
-    return action.targetPlayer >= 0;
-  case ActionParameter::TargetPosition:
-    return isFinite(action.targetPosition);
-  case ActionParameter::WeaponType:
-    return isConcreteWeaponType(action.weaponType);
-  case ActionParameter::GrenadeType:
-    return isConcreteGrenadeType(action.grenadeType);
-  case ActionParameter::Duration:
-    return std::isfinite(action.duration) && action.duration > 0.0f;
-  }
-  return false;
-}
-
 ActionValidationResult invalid(ActionValidationError error) {
   return { error };
 }
@@ -177,7 +159,7 @@ ActionValidationResult ActionValidator::validate(const Action &action, const Obs
     break;
   case TargetType::Player:
     if (action.targetPlayer < 0) {
-      return invalid(ActionValidationError::InvalidTargetPlayer);
+      return invalid(ActionValidationError::MissingTargetPlayer);
     }
     if (action.targetNode != -1 || !isZero(action.targetPosition)) {
       return invalid(ActionValidationError::UnexpectedParameter);
