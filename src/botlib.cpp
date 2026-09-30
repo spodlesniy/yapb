@@ -7,6 +7,8 @@
 
 #include <yapb.h>
 
+#include <ai/ai_bot_adapter.h>
+
 ConVar cv_debug ("debug", "0", "Enables or disables useful messages about bot states. Not required for end users.", true, 0.0f, 4.0f);
 ConVar cv_debug_goal ("debug_goal", "-1", "Forces all alive bots to build a path and go to the graph node specified here.", true, -1.0f, kMaxNodes);
 ConVar cv_user_follow_percent ("user_follow_percent", "20", "Specifies the percent of bots that can follow a leader at each round start.", true, 0.0f, 100.0f);
@@ -3378,6 +3380,9 @@ void Bot::logic () {
    else if (!game.isNullEntity (m_enemy)) {
       trackEnemies ();
    }
+
+   m_aiObservation = ai::buildObservation (ai::buildObservationInput (*this));
+
    executeChatterFrameEvents ();
 
    m_checkTerrain = true;
