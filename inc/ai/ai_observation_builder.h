@@ -46,6 +46,14 @@ struct BotInput {
   bool inRescueZone {};
 };
 
+struct CombatInput {
+  int32_t enemyEntity { -1 };
+  int32_t lastEnemyEntity { -1 };
+  Vec3 enemyOrigin {};
+  Vec3 lastEnemyOrigin {};
+  uint32_t perceptionFlags {};
+};
+
 struct PlayerInput {
   int32_t entityIndex { -1 };
   Vec3 origin {};
@@ -78,6 +86,7 @@ struct ObservationInput {
   float roundTimeRemaining {};
 
   BotInput bot {};
+  CombatInput combat {};
   Personality personality {};
 
   PlayerInput players[kMaxObservedPlayers] {};

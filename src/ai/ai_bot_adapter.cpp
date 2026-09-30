@@ -143,6 +143,28 @@ ObservationInput buildObservationInput (const Bot &bot) {
   input.bot.movingToGoal = bot.m_moveToGoal;
   input.bot.stuck = bot.m_isStuck;
 
+  if (!game.isNullEntity (bot.m_enemy)) {
+    input.combat.enemyEntity = game.indexOfEntity (bot.m_enemy);
+    input.combat.enemyOrigin = { bot.m_enemy->v.origin.x, bot.m_enemy->v.origin.y, bot.m_enemy->v.origin.z };
+  }
+  if (!game.isNullEntity (bot.m_lastEnemy)) {
+    input.combat.lastEnemyEntity = game.indexOfEntity (bot.m_lastEnemy);
+  }
+  input.combat.lastEnemyOrigin = { bot.m_lastEnemyOrigin.x, bot.m_lastEnemyOrigin.y, bot.m_lastEnemyOrigin.z };
+
+  if (bot.m_states & Sense::SeeingEnemy) {
+    input.combat.perceptionFlags |= static_cast<uint32_t> (PerceptionFlag::SeeingEnemy);
+  }
+  if (bot.m_states & Sense::HearingEnemy) {
+    input.combat.perceptionFlags |= static_cast<uint32_t> (PerceptionFlag::HearingEnemy);
+  }
+  if (bot.m_states & Sense::SuspectEnemy) {
+    input.combat.perceptionFlags |= static_cast<uint32_t> (PerceptionFlag::SuspectedEnemy);
+  }
+  if (bot.m_isEnemyReachable) {
+    input.combat.perceptionFlags |= static_cast<uint32_t> (PerceptionFlag::EnemyReachable);
+  }
+
   if (gameState.isBombPlanted ()) {
     input.bot.objectiveFlags |= ObjectiveFlag::BombPlanted;
   }

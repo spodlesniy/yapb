@@ -104,6 +104,11 @@ void testObservationBuilder() {
   input.bot.currentTask = ai::TaskType::Attack;
   input.bot.alive = true;
   input.bot.objectiveFlags = ai::ObjectiveFlag::BombPlanted | ai::ObjectiveFlag::InBombZone;
+  input.combat.enemyEntity = 22;
+  input.combat.enemyOrigin = { 130.0f, 240.0f, 300.0f };
+  input.combat.lastEnemyEntity = 21;
+  input.combat.lastEnemyOrigin = { 80.0f, 180.0f, 300.0f };
+  input.combat.perceptionFlags = static_cast<uint32_t> (ai::PerceptionFlag::SeeingEnemy) | static_cast<uint32_t> (ai::PerceptionFlag::EnemyReachable);
   input.bot.navigationFlags = static_cast<uint32_t> (ai::NavigationFlag::Jump) | static_cast<uint32_t> (ai::NavigationFlag::Ladder);
   input.bot.movingToGoal = true;
   input.bot.stuck = true;
@@ -128,6 +133,12 @@ void testObservationBuilder() {
   expect(observation.bot.currentNode == 7, "builder preserves current node");
   expect(observation.bot.currentTask == ai::TaskType::Attack, "builder preserves current task");
   expect(observation.bot.objectiveFlags == (ai::ObjectiveFlag::BombPlanted | ai::ObjectiveFlag::InBombZone), "builder preserves objective flags");
+  expect(observation.combat.enemyEntity == 22, "builder preserves current enemy entity");
+  expect(observation.combat.lastEnemyEntity == 21, "builder preserves last enemy entity");
+  expect(observation.combat.enemyRelativeOrigin.x == 30.0f, "combat enemy x position is relative to bot");
+  expect(std::fabs(observation.combat.enemyDistance - 50.0f) < 0.00001f, "combat enemy distance is calculated");
+  expect(observation.combat.lastEnemyRelativeOrigin.x == -20.0f, "last enemy x position is relative to bot");
+  expect(observation.combat.perceptionFlags == (static_cast<uint32_t> (ai::PerceptionFlag::SeeingEnemy) | static_cast<uint32_t> (ai::PerceptionFlag::EnemyReachable)), "builder preserves perception flags");
   expect(observation.bot.origin.x == 100.0f, "builder preserves bot origin");
   expect(observation.bot.destination.x == 150.0f, "builder preserves navigation destination");
   expect(observation.bot.desiredVelocity.x == 20.0f, "builder preserves desired velocity");

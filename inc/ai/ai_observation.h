@@ -16,6 +16,13 @@ namespace ai {
 constexpr size_t kMaxObservedPlayers = 16;
 constexpr size_t kMaxObservedWaypoints = 8;
 
+enum class PerceptionFlag : uint32_t {
+  SeeingEnemy = 1u << 0,
+  HearingEnemy = 1u << 1,
+  SuspectedEnemy = 1u << 2,
+  EnemyReachable = 1u << 3,
+};
+
 enum class NavigationFlag : uint32_t {
   Jump = 1u << 0,
   Ladder = 1u << 1,
@@ -61,6 +68,16 @@ struct Vec3 {
   float x {};
   float y {};
   float z {};
+};
+
+struct CombatState {
+  int32_t enemyEntity { -1 };
+  int32_t lastEnemyEntity { -1 };
+  Vec3 enemyRelativeOrigin {};
+  Vec3 lastEnemyRelativeOrigin {};
+  float enemyDistance {};
+  float lastEnemyDistance {};
+  uint32_t perceptionFlags {};
 };
 
 struct PlayerState {
@@ -139,6 +156,7 @@ struct Observation {
   float roundTimeRemaining {};
 
   BotState bot {};
+  CombatState combat {};
   Personality personality {};
 
   PlayerState players[kMaxObservedPlayers] {};
