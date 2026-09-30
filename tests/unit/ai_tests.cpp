@@ -1,6 +1,7 @@
 //
-// YaPB - AI abstraction unit tests.
-// Copyright © YaPB Project Developers <yapb@jeefo.net>.
+// AiPB - AI abstraction unit tests.
+// AiPB, based on YaPB by YaPB Project Developers <yapb@jeefo.net>, based on PODBot by Markus Klinge ("CountFloyd").
+// Copyright © Aleksandr Podlesnyi <spodlesniy@gmail.com>.
 //
 // SPDX-License-Identifier: MIT
 //
@@ -8,7 +9,8 @@
 #include <ai/ai_controller.h>
 #include <ai/ai_observation_builder.h>
 
-#include <cstdio>\n#include <limits>
+#include <cstdio>
+#include <limits>
 
 namespace {
 
