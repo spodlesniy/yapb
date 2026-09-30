@@ -278,6 +278,7 @@ endif
 # add the sources
 sources = files(
    'src/ai/ai_controller.cpp',
+   'src/ai/ai_observation_builder.cpp',
    'src/analyze.cpp',
    'src/botlib.cpp',
    'src/chatlib.cpp',
