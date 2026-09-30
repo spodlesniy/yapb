@@ -3334,6 +3334,15 @@ void Bot::checkSpawnConditions () {
    }
 }
 
+void Bot::updateAIObservation () {
+   if (pev == nullptr) {
+      m_aiObservationValid = false;
+      return;
+   }
+
+   updateAIObservation ();
+}
+
 void Bot::logic () {
    // this function gets called each frame and is the core of all bot ai. from here all other subroutines are called
 

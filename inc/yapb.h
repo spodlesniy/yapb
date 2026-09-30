@@ -491,6 +491,7 @@ private:
    bool isIgnoredItem (edict_t *ent);
 
    void doPlayerAvoidance (const Vector &normal);
+   void updateAIObservation ();
    void selectCampButtons (int index);
    void instantChatter (int type) const;
    void update ();
