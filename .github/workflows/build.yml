@@ -12,7 +12,26 @@ on:
     types: [published]
 
 jobs:
+  unit-tests:
+    name: AI unit tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: true
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade meson ninja
+      - name: Configure test build
+        run: meson setup unit-tests
+      - name: Run unit tests
+        run: meson test -C unit-tests --print-errorlogs
+
   bot-build:
+    needs: [unit-tests]
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/yapb/builder:latest
@@ -59,6 +78,7 @@ jobs:
           path: ${{env.artifcat}}
           
   bot-msvc:
+    needs: [unit-tests]
     env:
       name: windows-x86-msvc
 
@@ -102,6 +122,7 @@ jobs:
             ${{matrix.arch}}/yapb.dll
             
   bot-apple:
+    needs: [unit-tests]
     env:
       name: apple-arm64
 
