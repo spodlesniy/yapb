@@ -270,10 +270,6 @@ elif os == 'windows' and (cxx =='msvc' or cxx == 'clang-cl')
    ]
 endif
 
-# pass our hell to meson
-add_global_arguments(cxxflags, language: 'cpp')
-add_global_link_arguments(ldflags, language: 'cpp')
-
 # add the sources
 sources = files(
    'src/ai/ai_controller.cpp',
@@ -329,9 +325,11 @@ endif
 
 # instruct meson we're want our little shared lib bot
 shared_library(
-   target_name, 
+   target_name,
    sources,
    include_directories: includes,
+   cpp_args: cxxflags,
+   link_args: ldflags,
    gnu_symbol_visibility: 'hidden',
    name_prefix: ''
 )
