@@ -23,6 +23,7 @@ using namespace cr;
 
 #include <ai/ai_observation.h>
 #include <ai/ai_observation_state.h>
+#include <ai/ai_action_state.h>
 
 namespace ai {
 
@@ -493,6 +494,7 @@ private:
 
    void doPlayerAvoidance (const Vector &normal);
    void updateAIObservation ();
+   void cancelAIAction ();
    void selectCampButtons (int index);
    void instantChatter (int type) const;
    void update ();
@@ -751,6 +753,7 @@ public:
    FrameDelay m_thinkTimer {};
    ai::Observation m_aiObservation {};
    ai::ObservationState m_aiObservationState {};
+   ai::ActionState m_aiActionState {};
 
 public:
    Bot (edict_t *bot, int difficulty, int personality, int team, int skin);
@@ -841,6 +844,14 @@ public:
 
    uint64_t getAIObservationSequence () const {
       return m_aiObservationState.sequence ();
+   }
+
+   ai::ActionState &getAIActionState () {
+      return m_aiActionState;
+   }
+
+   const ai::ActionState &getAIActionState () const {
+      return m_aiActionState;
    }
 
    // bots array index
