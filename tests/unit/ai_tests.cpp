@@ -8,6 +8,7 @@
 
 #include <ai/ai_controller.h>
 #include <ai/ai_observation_builder.h>
+#include <ai/ai_observation_state.h>
 
 #include <cmath>
 #include <cstdio>
@@ -144,6 +145,30 @@ void testObservationBuilder() {
   expect(sanitized.players[0].relativeOrigin.x == -100.0f, "builder sanitizes non-finite positions before relative transform");
 }
 
+
+void testObservationState() {
+  ai::ObservationState state {};
+
+  expect(!state.isValid(), "observation state starts invalid");
+  expect(state.sequence() == 0, "observation sequence starts at zero");
+
+  state.markUpdated();
+  expect(state.isValid(), "observation state becomes valid after update");
+  expect(state.sequence() == 1, "observation sequence advances on update");
+
+  state.markUpdated();
+  expect(state.isValid(), "observation state stays valid after consecutive update");
+  expect(state.sequence() == 2, "observation sequence advances monotonically");
+
+  state.invalidate();
+  expect(!state.isValid(), "observation state becomes invalid when invalidated");
+  expect(state.sequence() == 2, "invalidating observation does not advance sequence");
+
+  state.markUpdated();
+  expect(state.isValid(), "observation state can become valid again");
+  expect(state.sequence() == 3, "observation sequence resumes after invalidation");
+}
+
 void testPolicyReset() {
   ai::Controller controller {};
   TestPolicy policy {};
@@ -164,6 +189,7 @@ int main() {
   testPolicyInjection();
   testObservationBuilder();
   testPolicyReset();
+  testObservationState();
 
   if (g_failures != 0) {
     std::fprintf(stderr, "%d AI unit test(s) failed.\n", g_failures);

@@ -22,6 +22,7 @@ using namespace cr;
 #include <chatlib.h>
 
 #include <ai/ai_observation.h>
+#include <ai/ai_observation_state.h>
 
 namespace ai {
 
@@ -749,8 +750,7 @@ public:
 
    FrameDelay m_thinkTimer {};
    ai::Observation m_aiObservation {};
-   uint32_t m_aiObservationSequence {};
-   bool m_aiObservationValid {};
+   ai::ObservationState m_aiObservationState {};
 
 public:
    Bot (edict_t *bot, int difficulty, int personality, int team, int skin);
@@ -836,11 +836,11 @@ public:
    }
 
    bool hasAIObservation () const {
-      return m_aiObservationValid;
+      return m_aiObservationState.isValid ();
    }
 
-   uint32_t getAIObservationSequence () const {
-      return m_aiObservationSequence;
+   uint64_t getAIObservationSequence () const {
+      return m_aiObservationState.sequence ();
    }
 
    // bots array index
