@@ -11,6 +11,7 @@
 
 #include <cstdio>
 #include <limits>
+#include <cmath>
 
 namespace {
 
