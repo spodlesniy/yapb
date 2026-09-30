@@ -16,6 +16,16 @@ namespace ai {
 constexpr size_t kMaxObservedPlayers = 16;
 constexpr size_t kMaxObservedWaypoints = 8;
 
+namespace ObjectiveFlag {
+constexpr uint32_t BombPlanted = 1u << 0;
+constexpr uint32_t BombCarrier = 1u << 1;
+constexpr uint32_t HasHostage = 1u << 2;
+constexpr uint32_t InBombZone = 1u << 3;
+constexpr uint32_t InRescueZone = 1u << 4;
+constexpr uint32_t InEscapeZone = 1u << 5;
+constexpr uint32_t InVIPZone = 1u << 6;
+}
+
 struct Vec3 {
   float x {};
   float y {};

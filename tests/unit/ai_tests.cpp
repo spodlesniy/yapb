@@ -100,6 +100,7 @@ void testObservationBuilder() {
   input.bot.currentNode = 7;
   input.bot.currentGoalNode = 12;
   input.bot.alive = true;
+  input.bot.objectiveFlags = ai::ObjectiveFlag::BombPlanted | ai::ObjectiveFlag::InBombZone;
   input.personality.aggression = 0.8f;
 
   input.playerCount = 1;
@@ -119,6 +120,7 @@ void testObservationBuilder() {
 
   expect(observation.gameTime == 12.5f, "builder preserves game time");
   expect(observation.bot.currentNode == 7, "builder preserves current node");
+  expect(observation.bot.objectiveFlags == (ai::ObjectiveFlag::BombPlanted | ai::ObjectiveFlag::InBombZone), "builder preserves objective flags");
   expect(observation.bot.origin.x == 100.0f, "builder preserves bot origin");
   expect(observation.playerCount == 1, "builder preserves player count");
   expect(observation.players[0].entityIndex == 9, "builder preserves player entity index");

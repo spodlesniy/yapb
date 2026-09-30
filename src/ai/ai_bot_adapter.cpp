@@ -77,6 +77,28 @@ ObservationInput buildObservationInput (const Bot &bot) {
   input.bot.inBuyZone = bot.m_inBuyZone;
   input.bot.inRescueZone = bot.m_inRescueZone;
 
+  if (gameState.isBombPlanted ()) {
+    input.bot.objectiveFlags |= ObjectiveFlag::BombPlanted;
+  }
+  if (bot.m_hasC4) {
+    input.bot.objectiveFlags |= ObjectiveFlag::BombCarrier;
+  }
+  if (bot.m_hasHostage) {
+    input.bot.objectiveFlags |= ObjectiveFlag::HasHostage;
+  }
+  if (bot.m_inBombZone) {
+    input.bot.objectiveFlags |= ObjectiveFlag::InBombZone;
+  }
+  if (bot.m_inRescueZone) {
+    input.bot.objectiveFlags |= ObjectiveFlag::InRescueZone;
+  }
+  if (bot.m_inEscapeZone) {
+    input.bot.objectiveFlags |= ObjectiveFlag::InEscapeZone;
+  }
+  if (bot.m_inVIPZone) {
+    input.bot.objectiveFlags |= ObjectiveFlag::InVIPZone;
+  }
+
   input.personality.skill = normalizeDifficulty (bot.m_difficulty);
   input.personality.aggression = unitValue (bot.m_agressionLevel);
   input.personality.risk = 1.0f - unitValue (bot.m_fearLevel);
