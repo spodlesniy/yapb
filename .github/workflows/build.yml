@@ -2,12 +2,12 @@ name: build
 
 on:
   push:
-    branches: [master]
+    branches:
+      - master
+      - 'ai/**'
     paths-ignore:
       - '**.md'
 
-  pull_request:
-    types: [opened, reopened, synchronize]
   release:
     types: [published]
 
@@ -156,7 +156,7 @@ jobs:
             ${{matrix.arch}}/yapb*.dylib
             
   bot-continuous-release:
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
 
     name: bot-continuous-release
     runs-on: ubuntu-latest
