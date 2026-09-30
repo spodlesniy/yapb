@@ -42,6 +42,10 @@ public:
     return m_state.result();
   }
 
+  bool cancel() {
+    return m_state.cancel();
+  }
+
   void reset() {
     m_state.reset();
   }

@@ -42,6 +42,17 @@ public:
     return true;
   }
 
+  bool cancel() {
+    if (!m_active) {
+      return false;
+    }
+
+    m_result.action = m_action.type;
+    m_result.type = ActionResultType::Interrupted;
+    m_active = false;
+    return true;
+  }
+
   void reset() {
     m_action = {};
     m_result = {};

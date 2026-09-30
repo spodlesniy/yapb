@@ -473,6 +473,41 @@ void testActionValidation() {
 }
 
 
+void testActionCancellation() {
+  TestExecutor executor {};
+  ai::ActionPipeline pipeline { executor };
+
+  ai::Observation observation {};
+  observation.bot.alive = true;
+
+  ai::Action action {};
+  action.type = ai::ActionType::MoveToNode;
+  action.targetType = ai::TargetType::Node;
+  action.targetNode = 33;
+
+  const ai::ActionResult accepted = pipeline.execute(action, observation);
+  expect(accepted.type == ai::ActionResultType::Accepted, "cancellation test starts with accepted action");
+  expect(pipeline.isActive(), "pipeline is active before cancellation");
+
+  expect(pipeline.cancel(), "pipeline cancels active action");
+  expect(!pipeline.isActive(), "cancellation clears active state");
+  expect(pipeline.result().action == ai::ActionType::MoveToNode, "cancellation preserves action type");
+  expect(pipeline.result().type == ai::ActionResultType::Interrupted, "cancellation produces interrupted result");
+  expect(pipeline.result().isTerminal(), "interrupted cancellation result is terminal");
+
+  const int callsAfterCancel = executor.callCount();
+  expect(!pipeline.cancel(), "pipeline reports false when cancelling inactive state");
+  expect(executor.callCount() == callsAfterCancel, "cancelling inactive pipeline does not execute anything");
+
+  ai::Action next {};
+  next.type = ai::ActionType::Reload;
+  next.weaponType = ai::WeaponType::Rifle;
+
+  const ai::ActionResult restarted = pipeline.execute(next, observation);
+  expect(restarted.action == ai::ActionType::Reload, "pipeline accepts new action after cancellation");
+  expect(pipeline.isActive(), "new action becomes active after cancellation");
+}
+ 
 void testActionState() {
   ai::ActionState state {};
 
@@ -695,6 +730,7 @@ int main() {
   testActionExecutor();
   testActionPipeline();
   testActionState();
+  testActionCancellation();
   testObservationState();
 
   if (g_failures != 0) {
