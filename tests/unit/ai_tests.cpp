@@ -9,9 +9,9 @@
 #include <ai/ai_controller.h>
 #include <ai/ai_observation_builder.h>
 
+#include <cmath>
 #include <cstdio>
 #include <limits>
-#include <cmath>
 
 namespace {
 
@@ -141,7 +141,7 @@ void testObservationBuilder () {
    expect (sanitized.playerCount == ai::kMaxObservedPlayers, "builder clamps player count");
    expect (sanitized.waypointCount == ai::kMaxObservedWaypoints, "builder clamps waypoint count");
    expect (sanitized.gameTime == 0.0f, "builder sanitizes non-finite game time");
-   expect (sanitized.players[0].relativeOrigin.x == 0.0f, "builder sanitizes non-finite positions");
+   expect (sanitized.players[0].relativeOrigin.x == -100.0f, "builder sanitizes non-finite positions before relative transform");
 }
 
 void testPolicyReset () {
