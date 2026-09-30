@@ -22,8 +22,8 @@ enum class ControlMode : uint8_t {
 // Selects the active policy without exposing GoldSrc or Bot internals to it.
 //
 // Phase 1 intentionally keeps the controller detached from Bot::logic().
-// This establishes the seam for later integration while guaranteeing that
-// adding the AI subsystem cannot change current bot behavior.
+// Legacy mode therefore has no policy object yet: the existing YaPB decision
+// system remains authoritative until the controller is integrated.
 class Controller final {
 private:
    ControlMode m_mode { ControlMode::Legacy };
