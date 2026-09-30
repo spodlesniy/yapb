@@ -119,7 +119,9 @@ ActionValidationResult ActionValidator::validate(const Action &action, const Obs
     }
   }
 
-  if (spec.optionalParameters & actionParameter(ActionParameter::WeaponType)) {
+  if (spec.requiredParameters & actionParameter(ActionParameter::WeaponType)) {
+    // Required weapon parameters were validated above.
+  } else if (spec.optionalParameters & actionParameter(ActionParameter::WeaponType)) {
     if (action.weaponType != WeaponType::Unknown && !isConcreteWeaponType(action.weaponType)) {
       return invalid(ActionValidationError::InvalidWeaponType);
     }
