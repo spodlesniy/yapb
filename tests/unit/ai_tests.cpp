@@ -13,6 +13,7 @@
 #include <ai/ai_action_validator.h>
 #include <ai/ai_action_result.h>
 #include <ai/ai_action_executor.h>
+#include <ai/ai_action_pipeline.h>
 
 #include <cmath>
 #include <cstdio>
@@ -32,12 +33,21 @@ void expect(bool condition, const char *message) {
 }
 
 class TestExecutor final : public ai::ActionExecutor {
+private:
+  mutable int m_callCount {};
+
 public:
   ai::ActionResult execute(const ai::Action &action, const ai::Observation &observation) const override {
+    ++m_callCount;
+
     ai::ActionResult result {};
     result.action = action.type;
     result.type = observation.bot.alive ? ai::ActionResultType::Accepted : ai::ActionResultType::Rejected;
     return result;
+  }
+
+  int callCount() const {
+    return m_callCount;
   }
 };
 
@@ -462,6 +472,42 @@ void testActionValidation() {
 }
 
 
+void testActionPipeline() {
+  TestExecutor executor {};
+  ai::ActionPipeline pipeline { executor };
+
+  ai::Observation observation {};
+  observation.bot.alive = true;
+
+  ai::Action valid {};
+  valid.type = ai::ActionType::MoveToNode;
+  valid.targetType = ai::TargetType::Node;
+  valid.targetNode = 12;
+  valid.confidence = 0.75f;
+
+  const ai::ActionResult accepted = pipeline.execute(valid, observation);
+  expect(accepted.action == ai::ActionType::MoveToNode, "pipeline preserves valid action type");
+  expect(accepted.type == ai::ActionResultType::Accepted, "pipeline forwards valid action to executor");
+  expect(executor.callCount() == 1, "pipeline invokes executor for valid action");
+
+  ai::Action invalid {};
+  invalid.type = ai::ActionType::MoveToNode;
+  invalid.targetType = ai::TargetType::Node;
+  invalid.targetNode = -1;
+
+  const ai::ActionResult rejected = pipeline.execute(invalid, observation);
+  expect(rejected.action == ai::ActionType::MoveToNode, "pipeline preserves invalid action type");
+  expect(rejected.type == ai::ActionResultType::Invalid, "pipeline rejects invalid action before execution");
+  expect(rejected.isTerminal(), "invalid pipeline result is terminal");
+  expect(executor.callCount() == 1, "pipeline does not invoke executor for invalid action");
+
+  observation.bot.alive = false;
+
+  const ai::ActionResult runtimeRejected = pipeline.execute(valid, observation);
+  expect(runtimeRejected.type == ai::ActionResultType::Rejected, "pipeline preserves executor rejection");
+  expect(executor.callCount() == 2, "pipeline invokes executor for runtime rejection");
+}
+
 void testActionExecutor() {
   TestExecutor executor {};
 
@@ -569,6 +615,7 @@ int main() {
   testActionValidation();
   testActionResult();
   testActionExecutor();
+  testActionPipeline();
   testObservationState();
 
   if (g_failures != 0) {
