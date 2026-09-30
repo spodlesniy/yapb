@@ -346,7 +346,7 @@ ai_tests = executable(
    'yapb_ai_tests',
    'tests/unit/ai_tests.cpp',
    'src/ai/ai_controller.cpp',
-   include_directories: include_directories('inc', 'ext', 'ext/crlib'),
+   include_directories: include_directories('inc'),
 )
 
 test('yapb_ai_tests', ai_tests)
