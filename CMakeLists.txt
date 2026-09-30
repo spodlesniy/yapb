@@ -19,6 +19,7 @@ set(YAPB_SRC
     "src/ai/ai_bot_adapter.cpp"
     "src/ai/ai_controller.cpp"
     "src/ai/ai_observation_builder.cpp"
+    "src/ai/ai_action_validator.cpp"
     "src/analyze.cpp"
     "src/botlib.cpp"
     "src/chatlib.cpp"
@@ -184,7 +185,7 @@ option(YAPB_BUILD_TESTS "Build YaPB unit tests" OFF)
 
 if(YAPB_BUILD_TESTS)
     enable_testing()
-    add_executable(yapb_ai_tests "tests/unit/ai_tests.cpp" "src/ai/ai_controller.cpp" "src/ai/ai_observation_builder.cpp")
+    add_executable(yapb_ai_tests "tests/unit/ai_tests.cpp" "src/ai/ai_controller.cpp" "src/ai/ai_observation_builder.cpp" "src/ai/ai_action_validator.cpp")
     target_compile_features(yapb_ai_tests PRIVATE cxx_std_17)
     target_include_directories(yapb_ai_tests PRIVATE "inc")
     add_test(NAME yapb_ai_tests COMMAND yapb_ai_tests)

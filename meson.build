@@ -280,6 +280,7 @@ sources = files(
    'src/ai/ai_bot_adapter.cpp',
    'src/ai/ai_controller.cpp',
    'src/ai/ai_observation_builder.cpp',
+   'src/ai/ai_action_validator.cpp',
    'src/analyze.cpp',
    'src/botlib.cpp',
    'src/chatlib.cpp',
@@ -353,6 +354,7 @@ if get_option('tests')
       'tests/unit/ai_tests.cpp',
       'src/ai/ai_controller.cpp',
       'src/ai/ai_observation_builder.cpp',
+      'src/ai/ai_action_validator.cpp',
       include_directories: include_directories('inc'),
    )
 
