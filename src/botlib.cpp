@@ -3181,6 +3181,7 @@ void Bot::update () {
    else if (!m_botMovement) {
       resetMovement ();
    }
+   updateAIObservation ();
    runMovement ();
 }
 
@@ -3340,7 +3341,8 @@ void Bot::updateAIObservation () {
       return;
    }
 
-   updateAIObservation ();
+   m_aiObservation = ai::buildObservation (ai::buildObservationInput (*this));
+   m_aiObservationValid = true;
 }
 
 void Bot::logic () {
@@ -3390,9 +3392,6 @@ void Bot::logic () {
    else if (!game.isNullEntity (m_enemy)) {
       trackEnemies ();
    }
-
-   m_aiObservation = ai::buildObservation (ai::buildObservationInput (*this));
-   m_aiObservationValid = true;
 
    executeChatterFrameEvents ();
 
