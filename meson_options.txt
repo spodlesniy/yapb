@@ -7,19 +7,18 @@
 
 option('64bit', type : 'boolean', value : false,
        description: 'Enables bot build with as 64-bit binary.')
-	   
+
 option('native', type : 'boolean', value : false,
        description: 'Configure compiler for a native machine build.')
-	   
+
 option('winxp', type : 'boolean', value : false,
        description: 'Configure MSVC build to output Windows XP compatible binary.')
-	   
+
 option('nosimd', type : 'boolean', value : false,
        description: 'Disables all SIMD or NEON optimizations.')
-	   
+
 option('static_linkent', type : 'boolean', value : false,
        description: 'Use predefined entity link list, instead of hooking dlsym.')
-
 
 option('tests', type : 'boolean', value : false,
        description: 'Build and register YaPB unit tests.')
