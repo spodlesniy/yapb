@@ -14,6 +14,7 @@
 #include <ai/ai_action_result.h>
 #include <ai/ai_action_executor.h>
 #include <ai/ai_action_pipeline.h>
+#include <ai/ai_action_state.h>
 
 #include <cmath>
 #include <cstdio>
@@ -472,6 +473,64 @@ void testActionValidation() {
 }
 
 
+void testActionState() {
+  ai::ActionState state {};
+
+  expect(!state.isActive(), "action state starts inactive");
+  expect(state.action().type == ai::ActionType::None, "inactive action state has no action");
+  expect(state.result().type == ai::ActionResultType::None, "inactive action state has no result");
+
+  ai::Action action {};
+  action.type = ai::ActionType::MoveToNode;
+  action.targetType = ai::TargetType::Node;
+  action.targetNode = 24;
+
+  expect(state.start(action), "action state accepts first action");
+  expect(state.isActive(), "action state becomes active after start");
+  expect(state.action().type == ai::ActionType::MoveToNode, "action state preserves active action");
+  expect(state.action().targetNode == 24, "action state preserves action payload");
+  expect(state.result().action == ai::ActionType::MoveToNode, "action state initializes result with action type");
+  expect(state.result().type == ai::ActionResultType::None, "action state starts with no result status");
+
+  expect(!state.start(action), "action state rejects replacement while active");
+
+  ai::ActionResult accepted {};
+  accepted.action = ai::ActionType::MoveToNode;
+  accepted.type = ai::ActionResultType::Accepted;
+  accepted.elapsedTime = 0.5f;
+
+  expect(state.updateResult(accepted), "action state accepts non-terminal result");
+  expect(state.isActive(), "non-terminal result keeps action active");
+  expect(state.result().type == ai::ActionResultType::Accepted, "action state stores latest result");
+  expect(state.result().elapsedTime == 0.5f, "action state stores result elapsed time");
+
+  ai::ActionResult wrongAction {};
+  wrongAction.action = ai::ActionType::AttackTarget;
+  wrongAction.type = ai::ActionResultType::Completed;
+  expect(!state.updateResult(wrongAction), "action state rejects result for another action");
+  expect(state.result().type == ai::ActionResultType::Accepted, "mismatched result does not overwrite state");
+
+  ai::ActionResult completed {};
+  completed.action = ai::ActionType::MoveToNode;
+  completed.type = ai::ActionResultType::Completed;
+  completed.elapsedTime = 1.25f;
+
+  expect(state.updateResult(completed), "action state accepts terminal result");
+  expect(!state.isActive(), "terminal result deactivates action");
+  expect(state.result().type == ai::ActionResultType::Completed, "action state stores terminal result");
+
+  ai::Action next {};
+  next.type = ai::ActionType::Reload;
+  expect(state.start(next), "action state accepts new action after terminal result");
+  expect(state.isActive(), "new action becomes active");
+  expect(state.action().type == ai::ActionType::Reload, "new action replaces completed action");
+
+  state.reset();
+  expect(!state.isActive(), "reset deactivates action state");
+  expect(state.action().type == ai::ActionType::None, "reset clears action");
+  expect(state.result().type == ai::ActionResultType::None, "reset clears result");
+}
+
 void testActionPipeline() {
   TestExecutor executor {};
   ai::ActionPipeline pipeline { executor };
@@ -616,6 +675,7 @@ int main() {
   testActionResult();
   testActionExecutor();
   testActionPipeline();
+  testActionState();
   testObservationState();
 
   if (g_failures != 0) {
