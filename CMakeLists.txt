@@ -176,3 +176,13 @@ if(MSVC)
 	install(FILES $<TARGET_PDB_FILE:${PROJECT_NAME}>
 		DESTINATION "${GAME_DIR}/${SERVER_INSTALL_DIR}/" OPTIONAL)
 endif()
+
+
+option(YAPB_BUILD_TESTS "Build YaPB unit tests" ON)
+
+if(YAPB_BUILD_TESTS)
+    enable_testing()
+    add_executable(yapb_ai_tests "tests/unit/ai_tests.cpp" "src/ai/ai_controller.cpp")
+    target_include_directories(yapb_ai_tests PRIVATE "inc" "ext/crlib")
+    add_test(NAME yapb_ai_tests COMMAND yapb_ai_tests)
+endif()
