@@ -62,6 +62,8 @@ jobs:
               CXX=gcc CXX_LD=gold meson setup ${{matrix.arch}} -Dnosimd=true
             elif [[ ${{matrix.arch}} == linux-amd64 ]]; then
               CXX=clang CXX_LD=lld meson setup ${{matrix.arch}} -D64bit=true
+            elif [[ ${{matrix.arch}} == linux-arm64 ]]; then
+              meson setup ${{matrix.arch}} --cross-file ${{matrix.arch}} -Db_lto=false
             elif [[ ${{matrix.arch}} == windows-amd64 ]]; then
               meson setup ${{matrix.arch}} --cross-file ${{matrix.arch}} -D64bit=true
             elif [[ ${{matrix.arch}} == apple-x86 ]]; then
