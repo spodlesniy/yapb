@@ -59,7 +59,7 @@ void testLegacyController () {
    const ai::Controller controller {};
 
    expect (controller.getMode () == ai::ControlMode::Legacy, "controller defaults to legacy mode");
-   expect (controller.getPolicy () != nullptr, "controller installs a default policy");
+   expect (controller.getPolicy () == nullptr, "legacy controller starts without a policy");
 
    const ai::Action action = controller.decide ({});
    expect (action.type == ai::ActionType::None, "legacy policy is non-invasive");
@@ -91,7 +91,7 @@ void testPolicyReset () {
    controller.setPolicy (&policy);
    controller.setPolicy (nullptr);
 
-   expect (controller.getPolicy () != nullptr, "null policy restores safe default");
+   expect (controller.getPolicy () == nullptr, "null policy clears the active policy");
    expect (controller.decide ({}).type == ai::ActionType::None, "restored policy is non-invasive");
 }
 
