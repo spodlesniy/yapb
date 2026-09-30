@@ -3342,6 +3342,7 @@ void Bot::updateAIObservation () {
    }
 
    m_aiObservation = ai::buildObservation (ai::buildObservationInput (*this));
+   ++m_aiObservationSequence;
    m_aiObservationValid = true;
 }
 
