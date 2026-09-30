@@ -1,6 +1,6 @@
 //
 // AiPB - AI action abstraction.
-// AiPB, based on YaPB by YaPB Project Developers <yapb@jeefo.net>, based on PODBot by Markus Klinge ("CountFloyd").
+// AiPB, based on YaPB by YaPB Project Developers <yapb@jeefo.net>, based on PODBot by Markus Klinge("CountFloyd").
 // Copyright © Aleksandr Podlesnyi <spodlesniy@gmail.com>.
 //
 // SPDX-License-Identifier: MIT
@@ -13,17 +13,17 @@
 namespace ai {
 
 enum class ActionType : uint8_t {
-   None,
-   SelectTargetNode,
-   Attack,
-   Retreat,
-   HoldPosition,
-   Push,
-   Follow,
-   SeekCover,
-   PlantBomb,
-   DefuseBomb,
-   Hunt
+  None,
+  SelectTargetNode,
+  Attack,
+  Retreat,
+  HoldPosition,
+  Push,
+  Follow,
+  SeekCover,
+  PlantBomb,
+  DefuseBomb,
+  Hunt
 };
 
 // High-level intent returned by an AI policy.
@@ -32,10 +32,10 @@ enum class ActionType : uint8_t {
 // IN_ATTACK or player angles. A later execution layer will translate this
 // intent into the existing YaPB navigation and movement systems.
 struct Action {
-   ActionType type { ActionType::None };
-   int32_t targetNode { -1 };
-   int32_t targetPlayer { -1 };
-   float confidence {};
+  ActionType type { ActionType::None };
+  int32_t targetNode { -1 };
+  int32_t targetPlayer { -1 };
+  float confidence {};
 };
 
 } // namespace ai

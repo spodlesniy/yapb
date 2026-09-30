@@ -1,0 +1,13 @@
+#
+# AiPB - AI source formatting configuration.
+# AiPB, based on YaPB by YaPB Project Developers <yapb@jeefo.net>, based on PODBot by Markus Klinge ("CountFloyd").
+# Copyright © Aleksandr Podlesnyi <spodlesniy@gmail.com>.
+#
+# SPDX-License-Identifier: MIT
+#
+BasedOnStyle: LLVM
+IndentWidth: 2
+TabWidth: 2
+UseTab: Never
+SpaceBeforeParens: ControlStatements
+SpacesInParentheses: false
