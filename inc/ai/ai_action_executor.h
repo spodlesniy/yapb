@@ -17,7 +17,7 @@ namespace ai {
 // itself has no dependency on engine types.
 class ActionExecutor {
 public:
-  virtual ActionResult execute(const Action &action, const Observation &observation) const = 0;
+  virtual ActionResult execute(const Action &action, const Observation &observation) = 0;
 };
 
 } // namespace ai

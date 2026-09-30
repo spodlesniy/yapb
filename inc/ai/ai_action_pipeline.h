@@ -19,11 +19,11 @@ namespace ai {
 // action is executed again until the executor reports a terminal result.
 class ActionPipeline final {
 private:
-  const ActionExecutor *m_executor {};
+  ActionExecutor *m_executor {};
   ActionState m_state {};
 
 public:
-  explicit ActionPipeline(const ActionExecutor &executor)
+  explicit ActionPipeline(ActionExecutor &executor)
     : m_executor(&executor) {
   }
 

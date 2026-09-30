@@ -36,10 +36,10 @@ void expect(bool condition, const char *message) {
 
 class TestExecutor final : public ai::ActionExecutor {
 private:
-  mutable int m_callCount {};
+  int m_callCount {};
 
 public:
-  ai::ActionResult execute(const ai::Action &action, const ai::Observation &observation) const override {
+  ai::ActionResult execute(const ai::Action &action, const ai::Observation &observation) override {
     ++m_callCount;
 
     ai::ActionResult result {};
