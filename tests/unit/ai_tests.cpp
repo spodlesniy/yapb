@@ -11,6 +11,7 @@
 #include <ai/ai_observation_state.h>
 #include <ai/ai_action_spec.h>
 #include <ai/ai_action_validator.h>
+#include <ai/ai_action_result.h>
 
 #include <cmath>
 #include <cstdio>
@@ -450,6 +451,42 @@ void testActionValidation() {
 }
 
 
+void testActionResult() {
+  const ai::ActionResult result {};
+
+  expect(result.action == ai::ActionType::None, "action result defaults to no action");
+  expect(result.type == ai::ActionResultType::None, "action result defaults to none");
+  expect(result.elapsedTime == 0.0f, "action result elapsed time defaults to zero");
+  expect(!result.isTerminal(), "default action result is not terminal");
+
+  ai::ActionResult accepted {};
+  accepted.action = ai::ActionType::MoveToNode;
+  accepted.type = ai::ActionResultType::Accepted;
+  accepted.elapsedTime = 0.125f;
+
+  expect(accepted.action == ai::ActionType::MoveToNode, "action result preserves action type");
+  expect(accepted.type == ai::ActionResultType::Accepted, "action result preserves accepted state");
+  expect(accepted.elapsedTime == 0.125f, "action result preserves elapsed time");
+  expect(!accepted.isTerminal(), "accepted action result is not terminal");
+
+  const ai::ActionResultType terminalStates[] = {
+    ai::ActionResultType::Completed,
+    ai::ActionResultType::Rejected,
+    ai::ActionResultType::Invalid,
+    ai::ActionResultType::Failed,
+    ai::ActionResultType::Interrupted,
+  };
+
+  for (const auto state : terminalStates) {
+    ai::ActionResult terminal {};
+    terminal.action = ai::ActionType::AttackTarget;
+    terminal.type = state;
+    expect(terminal.isTerminal(), "terminal action result state is recognized");
+  }
+}
+
+
+
 void testObservationState() {
   ai::ObservationState state {};
 
@@ -499,6 +536,7 @@ int main() {
   testCombatResourceObservation();
   testPolicyReset();
   testActionValidation();
+  testActionResult();
   testObservationState();
 
   if (g_failures != 0) {
