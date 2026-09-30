@@ -749,6 +749,7 @@ public:
 
    FrameDelay m_thinkTimer {};
    ai::Observation m_aiObservation {};
+   uint32_t m_aiObservationSequence {};
    bool m_aiObservationValid {};
 
 public:
@@ -836,6 +837,10 @@ public:
 
    bool hasAIObservation () const {
       return m_aiObservationValid;
+   }
+
+   uint32_t getAIObservationSequence () const {
+      return m_aiObservationSequence;
    }
 
    // bots array index
