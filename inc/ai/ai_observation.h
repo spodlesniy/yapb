@@ -16,6 +16,30 @@ namespace ai {
 constexpr size_t kMaxObservedPlayers = 16;
 constexpr size_t kMaxObservedWaypoints = 8;
 
+enum class TaskType : uint8_t {
+  Unknown,
+  Normal,
+  Pause,
+  MoveToPosition,
+  FollowUser,
+  PickupItem,
+  Camp,
+  PlantBomb,
+  DefuseBomb,
+  Attack,
+  Hunt,
+  SeekCover,
+  ThrowExplosive,
+  ThrowFlashbang,
+  ThrowSmoke,
+  DoubleJump,
+  EscapeFromBomb,
+  ShootBreakable,
+  Hide,
+  Blind,
+  Spraypaint,
+};
+
 namespace ObjectiveFlag {
 constexpr uint32_t BombPlanted = 1u << 0;
 constexpr uint32_t BombCarrier = 1u << 1;
@@ -84,6 +108,7 @@ struct BotState {
   int32_t currentWeapon { -1 };
   int32_t currentNode { -1 };
   int32_t currentGoalNode { -1 };
+  TaskType currentTask { TaskType::Unknown };
 
   uint32_t objectiveFlags {};
 

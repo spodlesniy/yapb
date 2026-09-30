@@ -29,6 +29,54 @@ float unitValue (float value) {
   return cr::clamp (value, 0.0f, 1.0f);
 }
 
+TaskType mapTask (Task task) {
+  switch (task) {
+  case Task::Normal:
+    return TaskType::Normal;
+  case Task::Pause:
+    return TaskType::Pause;
+  case Task::MoveToPosition:
+    return TaskType::MoveToPosition;
+  case Task::FollowUser:
+    return TaskType::FollowUser;
+  case Task::PickupItem:
+    return TaskType::PickupItem;
+  case Task::Camp:
+    return TaskType::Camp;
+  case Task::PlantBomb:
+    return TaskType::PlantBomb;
+  case Task::DefuseBomb:
+    return TaskType::DefuseBomb;
+  case Task::Attack:
+    return TaskType::Attack;
+  case Task::Hunt:
+    return TaskType::Hunt;
+  case Task::SeekCover:
+    return TaskType::SeekCover;
+  case Task::ThrowExplosive:
+    return TaskType::ThrowExplosive;
+  case Task::ThrowFlashbang:
+    return TaskType::ThrowFlashbang;
+  case Task::ThrowSmoke:
+    return TaskType::ThrowSmoke;
+  case Task::DoubleJump:
+    return TaskType::DoubleJump;
+  case Task::EscapeFromBomb:
+    return TaskType::EscapeFromBomb;
+  case Task::ShootBreakable:
+    return TaskType::ShootBreakable;
+  case Task::Hide:
+    return TaskType::Hide;
+  case Task::Blind:
+    return TaskType::Blind;
+  case Task::Spraypaint:
+    return TaskType::Spraypaint;
+  case Task::Max:
+    break;
+  }
+  return TaskType::Unknown;
+}
+
 void appendWaypoint (ObservationInput &input, int index, uint16_t connectionFlags) {
   if (!graph.exists (index) || input.waypointCount >= kMaxObservedWaypoints) {
     return;
@@ -70,6 +118,7 @@ ObservationInput buildObservationInput (const Bot &bot) {
   input.bot.currentWeapon = bot.m_currentWeapon;
   input.bot.currentNode = bot.m_currentNodeIndex;
   input.bot.currentGoalNode = bot.m_chosenGoalIndex;
+  input.bot.currentTask = mapTask (bot.getCurrentTaskId ());
   input.bot.alive = bot.m_isAlive;
   input.bot.hasC4 = bot.m_hasC4;
   input.bot.hasHostage = bot.m_hasHostage;
