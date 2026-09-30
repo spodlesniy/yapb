@@ -351,6 +351,7 @@ if get_option('tests')
       'yapb_ai_tests',
       'tests/unit/ai_tests.cpp',
       'src/ai/ai_controller.cpp',
+      'src/ai/ai_observation_builder.cpp',
       include_directories: include_directories('inc'),
    )
 
