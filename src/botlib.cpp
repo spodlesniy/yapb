@@ -3098,7 +3098,7 @@ void Bot::frame () {
 
 void Bot::update () {
    const auto tid = getCurrentTaskId ();
-   m_aiObservationValid = false;
+   m_aiObservationState.invalidate ();
 
    m_canSetAimDirection = true;
    m_isAlive = game.isAliveEntity (ent ());
@@ -3337,13 +3337,12 @@ void Bot::checkSpawnConditions () {
 
 void Bot::updateAIObservation () {
    if (pev == nullptr) {
-      m_aiObservationValid = false;
+      m_aiObservationState.invalidate ();
       return;
    }
 
    m_aiObservation = ai::buildObservation (ai::buildObservationInput (*this));
-   ++m_aiObservationSequence;
-   m_aiObservationValid = true;
+   m_aiObservationState.markUpdated ();
 }
 
 void Bot::logic () {
