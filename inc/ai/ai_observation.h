@@ -16,6 +16,25 @@ namespace ai {
 constexpr size_t kMaxObservedPlayers = 16;
 constexpr size_t kMaxObservedWaypoints = 8;
 
+enum class WeaponType : uint8_t {
+  Unknown,
+  None,
+  Melee,
+  Pistol,
+  Shotgun,
+  ZoomRifle,
+  Rifle,
+  SMG,
+  Sniper,
+  Heavy,
+};
+
+enum class ReloadState : uint8_t {
+  None,
+  Primary,
+  Secondary,
+};
+
 enum class PerceptionFlag : uint32_t {
   SeeingEnemy = 1u << 0,
   HearingEnemy = 1u << 1,
@@ -71,6 +90,13 @@ struct Vec3 {
 };
 
 struct CombatState {
+  WeaponType weaponType { WeaponType::Unknown };
+  int32_t ammoInClip {};
+  ReloadState reloadState { ReloadState::None };
+  bool blind {};
+  float blindTimeRemaining {};
+  float firePauseRemaining {};
+
   int32_t enemyEntity { -1 };
   int32_t lastEnemyEntity { -1 };
   Vec3 enemyRelativeOrigin {};

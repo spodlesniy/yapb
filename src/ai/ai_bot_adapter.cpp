@@ -29,6 +29,42 @@ float unitValue (float value) {
   return cr::clamp (value, 0.0f, 1.0f);
 }
 
+WeaponType mapWeaponType (int weaponType) {
+  switch (weaponType) {
+  case ::WeaponType::None:
+    return WeaponType::None;
+  case ::WeaponType::Melee:
+    return WeaponType::Melee;
+  case ::WeaponType::Pistol:
+    return WeaponType::Pistol;
+  case ::WeaponType::Shotgun:
+    return WeaponType::Shotgun;
+  case ::WeaponType::ZoomRifle:
+    return WeaponType::ZoomRifle;
+  case ::WeaponType::Rifle:
+    return WeaponType::Rifle;
+  case ::WeaponType::SMG:
+    return WeaponType::SMG;
+  case ::WeaponType::Sniper:
+    return WeaponType::Sniper;
+  case ::WeaponType::Heavy:
+    return WeaponType::Heavy;
+  }
+  return WeaponType::Unknown;
+}
+
+ReloadState mapReloadState (int reloadState) {
+  switch (reloadState) {
+  case ::Reload::None:
+    return ReloadState::None;
+  case ::Reload::Primary:
+    return ReloadState::Primary;
+  case ::Reload::Secondary:
+    return ReloadState::Secondary;
+  }
+  return ReloadState::None;
+}
+
 TaskType mapTask (Task task) {
   switch (task) {
   case Task::Normal:
@@ -142,6 +178,15 @@ ObservationInput buildObservationInput (const Bot &bot) {
   }
   input.bot.movingToGoal = bot.m_moveToGoal;
   input.bot.stuck = bot.m_isStuck;
+
+  input.combat.weaponType = mapWeaponType (bot.m_weaponType);
+  if (bot.m_currentWeapon >= 0 && bot.m_currentWeapon < kMaxWeapons) {
+    input.combat.ammoInClip = bot.m_ammoInClip[bot.m_currentWeapon];
+  }
+  input.combat.reloadState = mapReloadState (bot.m_reloadState);
+  input.combat.blind = bot.m_blindTime > game.time ();
+  input.combat.blindTimeRemaining = input.combat.blind ? cr::max (0.0f, bot.m_blindTime - game.time ()) : 0.0f;
+  input.combat.firePauseRemaining = cr::max (0.0f, bot.m_firePause - game.time ());
 
   if (!game.isNullEntity (bot.m_enemy)) {
     input.combat.enemyEntity = game.indexOfEntity (bot.m_enemy);

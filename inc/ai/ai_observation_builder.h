@@ -47,6 +47,13 @@ struct BotInput {
 };
 
 struct CombatInput {
+  WeaponType weaponType { WeaponType::Unknown };
+  int32_t ammoInClip {};
+  ReloadState reloadState { ReloadState::None };
+  bool blind {};
+  float blindTimeRemaining {};
+  float firePauseRemaining {};
+
   int32_t enemyEntity { -1 };
   int32_t lastEnemyEntity { -1 };
   Vec3 enemyOrigin {};

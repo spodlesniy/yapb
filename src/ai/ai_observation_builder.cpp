@@ -73,6 +73,13 @@ Observation buildObservation(const ObservationInput &input) {
   observation.bot.inBuyZone = input.bot.inBuyZone;
   observation.bot.inRescueZone = input.bot.inRescueZone;
 
+  observation.combat.weaponType = input.combat.weaponType;
+  observation.combat.ammoInClip = input.combat.ammoInClip;
+  observation.combat.reloadState = input.combat.reloadState;
+  observation.combat.blind = input.combat.blind;
+  observation.combat.blindTimeRemaining = finiteOrZero(input.combat.blindTimeRemaining);
+  observation.combat.firePauseRemaining = finiteOrZero(input.combat.firePauseRemaining);
+
   observation.combat.enemyEntity = input.combat.enemyEntity;
   observation.combat.lastEnemyEntity = input.combat.lastEnemyEntity;
   observation.combat.enemyRelativeOrigin = relativePosition(finiteOrZero(input.combat.enemyOrigin), observation.bot.origin);

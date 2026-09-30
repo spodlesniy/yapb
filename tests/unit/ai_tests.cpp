@@ -104,6 +104,12 @@ void testObservationBuilder() {
   input.bot.currentTask = ai::TaskType::Attack;
   input.bot.alive = true;
   input.bot.objectiveFlags = ai::ObjectiveFlag::BombPlanted | ai::ObjectiveFlag::InBombZone;
+  input.combat.weaponType = ai::WeaponType::Rifle;
+  input.combat.ammoInClip = 24;
+  input.combat.reloadState = ai::ReloadState::Primary;
+  input.combat.blind = true;
+  input.combat.blindTimeRemaining = 1.5f;
+  input.combat.firePauseRemaining = 0.25f;
   input.combat.enemyEntity = 22;
   input.combat.enemyOrigin = { 130.0f, 240.0f, 300.0f };
   input.combat.lastEnemyEntity = 21;
@@ -133,6 +139,12 @@ void testObservationBuilder() {
   expect(observation.bot.currentNode == 7, "builder preserves current node");
   expect(observation.bot.currentTask == ai::TaskType::Attack, "builder preserves current task");
   expect(observation.bot.objectiveFlags == (ai::ObjectiveFlag::BombPlanted | ai::ObjectiveFlag::InBombZone), "builder preserves objective flags");
+  expect(observation.combat.weaponType == ai::WeaponType::Rifle, "builder preserves weapon type");
+  expect(observation.combat.ammoInClip == 24, "builder preserves ammo in clip");
+  expect(observation.combat.reloadState == ai::ReloadState::Primary, "builder preserves reload state");
+  expect(observation.combat.blind, "builder preserves blind state");
+  expect(std::fabs(observation.combat.blindTimeRemaining - 1.5f) < 0.00001f, "builder preserves blind time remaining");
+  expect(std::fabs(observation.combat.firePauseRemaining - 0.25f) < 0.00001f, "builder preserves fire pause remaining");
   expect(observation.combat.enemyEntity == 22, "builder preserves current enemy entity");
   expect(observation.combat.lastEnemyEntity == 21, "builder preserves last enemy entity");
   expect(observation.combat.enemyRelativeOrigin.x == 30.0f, "combat enemy x position is relative to bot");
