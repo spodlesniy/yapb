@@ -174,6 +174,14 @@ public:
     return m_episodeId;
   }
 
+  const Observation &pendingObservation() const {
+    return m_pendingObservation;
+  }
+
+  const Action &pendingAction() const {
+    return m_pendingActionData;
+  }
+
   TrainingBuffer &buffer() {
     return *m_buffer;
   }

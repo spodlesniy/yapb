@@ -12,6 +12,8 @@
 #include <ai/ai_bot_action_executor.h>
 #include <ai/ai_goal_navigation_policy.h>
 #include <ai/ai_inference_policy.h>
+#include <ai/ai_reward_provider.h>
+#include <ai/ai_training_collector.h>
 #include <ai/ai_training_recorder.h>
 
 namespace ai {
@@ -24,6 +26,8 @@ private:
   GoalNavigationPolicy m_goalNavigationPolicy {};
   InferencePolicy m_inferencePolicy {};
   TrainingRecorder m_trainingRecorder {};
+  ZeroRewardProvider m_zeroRewardProvider {};
+  TrainingCollector m_trainingCollector;
   BotActionExecutor m_executor;
   ActionRuntime m_runtime;
 
@@ -119,7 +123,7 @@ public:
   }
 
   ActionResult step(const Observation &observation, bool allowDecision = true) {
-    return m_runtime.step(observation, allowDecision);
+    return m_trainingCollector.step(m_runtime, observation, allowDecision);
   }
 
   bool cancel() {
