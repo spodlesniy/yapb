@@ -15,8 +15,6 @@
 #include <ai/ai_action_state.h>
 #include <ai/ai_navigation_task_guard.h>
 
-#include <constant.h>
-
 using ai::test::TestExecutor;
 using ai::test::TestPolicy;
 using ai::test::expect;
@@ -99,23 +97,35 @@ AI_TEST (testActionPipeline) {
 }
 
 AI_TEST (testNavigationTaskOwnership) {
-   expect (ai::allowsNavigationOverride (Task::Normal, Task::Normal, Task::MoveToPosition),
+   enum class TestTask {
+      Normal,
+      MoveToPosition,
+      Pause,
+      Attack,
+      DefuseBomb,
+      PlantBomb,
+      Camp,
+      SeekCover,
+      EscapeFromBomb
+   };
+
+   expect (ai::allowsNavigationOverride (TestTask::Normal, TestTask::Normal, TestTask::MoveToPosition),
       "Normal task allows AI navigation");
-   expect (ai::allowsNavigationOverride (Task::MoveToPosition, Task::Normal, Task::MoveToPosition),
+   expect (ai::allowsNavigationOverride (TestTask::MoveToPosition, TestTask::Normal, TestTask::MoveToPosition),
       "MoveToPosition task allows AI navigation");
 
-   const Task blockingTasks[] = {
-      Task::Pause,
-      Task::Attack,
-      Task::DefuseBomb,
-      Task::PlantBomb,
-      Task::Camp,
-      Task::SeekCover,
-      Task::EscapeFromBomb
+   const TestTask blockingTasks[] = {
+      TestTask::Pause,
+      TestTask::Attack,
+      TestTask::DefuseBomb,
+      TestTask::PlantBomb,
+      TestTask::Camp,
+      TestTask::SeekCover,
+      TestTask::EscapeFromBomb
    };
 
    for (const auto task : blockingTasks) {
-      expect (!ai::allowsNavigationOverride (task, Task::Normal, Task::MoveToPosition),
+      expect (!ai::allowsNavigationOverride (task, TestTask::Normal, TestTask::MoveToPosition),
          "higher-priority legacy task blocks AI navigation");
    }
 }
@@ -223,6 +233,57 @@ AI_TEST (testActionLoop) {
    expect (afterCompletion.action == ai::ActionType::None, "action loop stops when policy is removed");
    expect (afterCompletion.type == ai::ActionResultType::None, "removed policy produces no execution");
    expect (executor.callCount () == 3, "action loop does not execute after policy removal");
+}
+
+class InterruptingExecutor final : public ai::ActionExecutor {
+private:
+   int m_callCount {};
+
+public:
+   ai::ActionResult execute (const ai::Action &action, const ai::Observation &) override {
+      ++m_callCount;
+
+      return {
+         action.type,
+         m_callCount == 1 ? ai::ActionResultType::Accepted : ai::ActionResultType::Interrupted,
+         0.0f
+      };
+   }
+
+   int callCount () const {
+      return m_callCount;
+   }
+};
+
+AI_TEST (testActionLoopLegacyTaskTransition) {
+   InterruptingExecutor executor {};
+   ai::Controller controller { ai::ControlMode::Neural };
+   ai::ActionState state {};
+   ai::ActionPipeline pipeline { executor, state };
+   ai::ActionLoop loop { controller, pipeline };
+   TestPolicy policy {};
+
+   ai::Observation observation {};
+   observation.bot.alive = true;
+   observation.bot.currentNode = 40;
+
+   controller.setPolicy (&policy);
+
+   const ai::ActionResult accepted = loop.step (observation);
+   expect (accepted.type == ai::ActionResultType::Accepted,
+      "AI action is accepted before a legacy task transition");
+   expect (loop.isActive (),
+      "AI action remains active while the navigation task owns execution");
+
+   const ai::ActionResult interrupted = loop.step (observation);
+   expect (interrupted.action == ai::ActionType::MoveToNode,
+      "legacy task transition preserves the interrupted AI action type");
+   expect (interrupted.type == ai::ActionResultType::Interrupted,
+      "legacy task transition interrupts the active AI action");
+   expect (!loop.isActive (),
+      "legacy task transition clears the active AI action");
+   expect (executor.callCount () == 2,
+      "active AI action is executed again to observe the task transition");
 }
 
 AI_TEST (testActionState) {
