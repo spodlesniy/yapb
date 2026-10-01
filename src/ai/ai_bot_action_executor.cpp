@@ -7,6 +7,7 @@
 //
 
 #include <ai/ai_bot_action_executor.h>
+#include <ai/ai_navigation_task_guard.h>
 
 #include <yapb.h>
 
@@ -37,8 +38,7 @@ ActionResult BotActionExecutor::execute(const Action &action, const Observation 
   // authoritative for non-navigation behavior. AI navigation must not
   // silently replace combat, objective, or other higher-priority tasks.
   if ((action.type == ActionType::MoveToNode || action.type == ActionType::MoveToPosition)
-      && m_bot->getCurrentTaskId () != Task::Normal
-      && m_bot->getCurrentTaskId () != Task::MoveToPosition) {
+      && !allowsNavigationOverride (m_bot->getCurrentTaskId (), Task::Normal, Task::MoveToPosition)) {
     return { action.type, ActionResultType::Interrupted, 0.0f };
   }
 
