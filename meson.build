@@ -392,7 +392,7 @@ if get_option('tests')
       'src/ai/ai_inference_model_service.cpp',
       include_directories: include_directories('inc', 'tests/unit'),
       dependencies: onnxruntime_dep,
-      cpp_args: onnx_cpp_args,
+      cpp_args: onnx_cpp_args + ['-DAIPB_TEST_SOURCE_ROOT="' + meson.project_source_root () + '"'],
    )
 
    test('yapb_ai_tests', ai_tests)
