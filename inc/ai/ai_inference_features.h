@@ -8,11 +8,10 @@
 
 #pragma once
 
-#include <ai/ai_observation.h>
-
-#include <array>
 #include <cstddef>
 #include <cstdint>
+
+#include <ai/ai_observation.h>
 
 namespace ai {
 
@@ -100,7 +99,7 @@ constexpr size_t kInferenceFeatureCount =
 
 struct InferenceFeatures {
   uint32_t schemaVersion { kInferenceFeatureSchemaVersion };
-  std::array<float, kInferenceFeatureCount> values {};
+  float values[kInferenceFeatureCount] {};
 
   bool hasSupportedSchema() const {
     return schemaVersion == kInferenceFeatureSchemaVersion;
