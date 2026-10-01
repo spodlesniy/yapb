@@ -18,7 +18,7 @@ enum class ControlMode : uint8_t { Legacy, Neural, Training };
 
 // Selects the active policy without exposing GoldSrc or Bot internals to it.
 // Runtime integration is handled by BotRuntime; Legacy mode remains
-// authoritative until an explicit non-Legacy mode is selected.
+// authoritative until an explicit Neural mode is selected.
 class Controller final {
 private:
   ControlMode m_mode { ControlMode::Legacy };

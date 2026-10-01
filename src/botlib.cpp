@@ -10,6 +10,7 @@
 #include <ai/ai_bot_adapter.h>
 
 ConVar cv_debug ("debug", "0", "Enables or disables useful messages about bot states. Not required for end users.", true, 0.0f, 4.0f);
+ConVar cv_ai_mode ("ai_mode", "0", "Selects AiPB control mode. 0 = Legacy, 1 = Neural, 2 = Training.", true, 0.0f, 2.0f);
 ConVar cv_debug_goal ("debug_goal", "-1", "Forces all alive bots to build a path and go to the graph node specified here.", true, -1.0f, kMaxNodes);
 ConVar cv_user_follow_percent ("user_follow_percent", "20", "Specifies the percent of bots that can follow a leader at each round start.", true, 0.0f, 100.0f);
 ConVar cv_user_max_followers ("user_max_followers", "1", "Specifies how many bots can follow a single user.", true, 0.0f, static_cast <float> (kGameMaxPlayers / 4));
@@ -3100,6 +3101,20 @@ void Bot::update () {
    const auto tid = getCurrentTaskId ();
    m_aiObservationState.invalidate ();
 
+   switch (cv_ai_mode.as <int> ()) {
+   case 1:
+      m_aiRuntime.setMode (ai::ControlMode::Neural);
+      break;
+
+   case 2:
+      m_aiRuntime.setMode (ai::ControlMode::Training);
+      break;
+
+   default:
+      m_aiRuntime.setMode (ai::ControlMode::Legacy);
+      break;
+   }
+
    m_canSetAimDirection = true;
    m_isAlive = game.isAliveEntity (ent ());
    m_team = game.getPlayerTeam (ent ());
@@ -3409,8 +3424,7 @@ void Bot::logic () {
    }
    m_isUsingGrenade = false;
 
-   const bool aiControlActive = m_aiRuntime.controller ().getMode () != ai::ControlMode::Legacy
-      && m_aiRuntime.controller ().getPolicy () != nullptr;
+   const bool aiControlActive = m_aiRuntime.isControlEnabled ();
 
    if (aiControlActive) {
       updateAIObservation ();

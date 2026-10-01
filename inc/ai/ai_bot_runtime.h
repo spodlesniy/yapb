@@ -10,6 +10,7 @@
 
 #include <ai/ai_action_loop.h>
 #include <ai/ai_bot_action_executor.h>
+#include <ai/ai_goal_navigation_policy.h>
 
 namespace ai {
 
@@ -18,6 +19,7 @@ namespace ai {
 // The runtime is intentionally dormant while the controller stays in Legacy mode.
 class BotRuntime final {
 private:
+   GoalNavigationPolicy m_goalNavigationPolicy {};
    Controller m_controller {};
    ActionState m_actionState {};
    BotActionExecutor m_executor;
@@ -27,8 +29,30 @@ private:
 public:
    explicit BotRuntime (Bot &bot);
 
+   void setMode (ControlMode mode) {
+      if (mode == m_controller.getMode ()) {
+         return;
+      }
+
+      if (mode != ControlMode::Neural) {
+         m_loop.cancel ();
+      }
+
+      m_controller.setMode (mode);
+   }
+
    void setPolicy (const Policy *policy) {
+      if (policy == m_controller.getPolicy ()) {
+         return;
+      }
+
+      m_loop.cancel ();
       m_controller.setPolicy (policy);
+   }
+
+   bool isControlEnabled () const {
+      return m_controller.getMode () == ControlMode::Neural
+         && m_controller.getPolicy () != nullptr;
    }
 
    Controller &controller () {

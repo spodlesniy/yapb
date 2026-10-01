@@ -43,6 +43,19 @@ AI_TEST (testPolicyInjection) {
    expect (action.confidence == 0.75f, "custom policy confidence is preserved");
 }
 
+AI_TEST (testControllerModes) {
+   ai::Controller controller {};
+
+   controller.setMode (ai::ControlMode::Legacy);
+   expect (controller.getMode () == ai::ControlMode::Legacy, "controller accepts legacy mode");
+
+   controller.setMode (ai::ControlMode::Neural);
+   expect (controller.getMode () == ai::ControlMode::Neural, "controller accepts neural mode");
+
+   controller.setMode (ai::ControlMode::Training);
+   expect (controller.getMode () == ai::ControlMode::Training, "controller accepts training mode");
+}
+
 AI_TEST (testPolicyReset) {
    ai::Controller controller {};
    TestPolicy policy {};
