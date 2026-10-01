@@ -45,11 +45,15 @@ public:
 
    InferenceResult infer (const InferenceInput &input) const override {
       if (!input.hasSupportedSchema ()) {
-         return { InferenceStatus::InvalidInput, {} };
+         InferenceResult result {};
+         result.status = InferenceStatus::InvalidInput;
+         return result;
       }
 
       if (m_runner == nullptr) {
-         return { InferenceStatus::Error, {} };
+         InferenceResult result {};
+         result.status = InferenceStatus::Error;
+         return result;
       }
 
       const auto features = encodeInferenceFeatures (input.observation);
