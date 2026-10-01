@@ -106,7 +106,9 @@ AI_TEST (testActionStateClearsOnCompletion) {
 
    ai::Action action {};
    action.type = ai::ActionType::MoveToNode;
+   action.targetType = ai::TargetType::Node;
    action.targetNode = 41;
+   action.confidence = 0.75f;
 
    const ai::ActionResult result = pipeline.execute (action, observation);
    expect (result.type == ai::ActionResultType::Accepted,
