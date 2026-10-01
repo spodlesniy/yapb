@@ -17,7 +17,7 @@ namespace {
 class TestInferenceProvider final : public ai::InferenceProvider {
 public:
    mutable int callCount {};
-   ai::InferenceInput lastInput {};
+   mutable ai::InferenceInput lastInput {};
    ai::InferenceStatus status { ai::InferenceStatus::Success };
    uint32_t resultSchemaVersion { ai::kInferenceSchemaVersion };
 
