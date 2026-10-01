@@ -9,6 +9,7 @@ class TestExecutor final : public ai::ActionExecutor {
 private:
    int m_callCount {};
    ai::Action m_lastAction {};
+   ai::ActionResultType m_resultType { ai::ActionResultType::Accepted };
 
 public:
    ai::ActionResult execute (const ai::Action &action, const ai::Observation &observation) override {
@@ -17,7 +18,7 @@ public:
 
       ai::ActionResult result {};
       result.action = action.type;
-      result.type = observation.bot.alive ? ai::ActionResultType::Accepted : ai::ActionResultType::Rejected;
+      result.type = observation.bot.alive ? m_resultType : ai::ActionResultType::Rejected;
       return result;
    }
 
@@ -27,6 +28,10 @@ public:
 
    const ai::Action &lastAction () const {
       return m_lastAction;
+   }
+
+   void setResult (ai::ActionResultType resultType) {
+      m_resultType = resultType;
    }
 };
 
