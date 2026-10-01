@@ -38,8 +38,6 @@ AI_TEST (testActionExecutor) {
 }
 
 AI_TEST (testActionPipeline) {
-   ai::ActionState state {};
-
    TestExecutor executor {};
    ai::ActionState state {};
    ai::ActionPipeline pipeline { executor, state };
