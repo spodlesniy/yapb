@@ -14,30 +14,24 @@
 
 using ai::test::expect;
 
-AI_TEST (testOnnxModelRunnerUnavailableWithoutRuntime) {
-   ai::OnnxModelRunner runner {};
+AI_TEST(testOnnxModelRunnerUnavailableWithoutRuntime) {
+  ai::OnnxModelRunner runner {};
 
-   expect (!runner.isReady (),
-      "ONNX runner is unavailable until a model is loaded");
-   expect (runner.getLastError () != nullptr,
-      "ONNX runner exposes an error string");
+  expect(!runner.isReady(), "ONNX runner is unavailable until a model is loaded");
+  expect(runner.getLastError() != nullptr, "ONNX runner exposes an error string");
 }
 
-AI_TEST (testOnnxModelRunnerRejectsMissingModel) {
-   ai::OnnxModelRunner runner {};
+AI_TEST(testOnnxModelRunnerRejectsMissingModel) {
+  ai::OnnxModelRunner runner {};
 
-   expect (!runner.load ("__aipb_missing_model__.onnx"),
-      "missing ONNX model is rejected");
-   expect (!runner.isReady (),
-      "failed ONNX model load leaves runner inactive");
-   expect (runner.getLastError () != nullptr && std::strlen (runner.getLastError ()) > 0,
-      "failed model load records an error");
+  expect(!runner.load("__aipb_missing_model__.onnx"), "missing ONNX model is rejected");
+  expect(!runner.isReady(), "failed ONNX model load leaves runner inactive");
+  expect(runner.getLastError() != nullptr && std::strlen(runner.getLastError()) > 0, "failed model load records an error");
 }
 
-AI_TEST (testOnnxModelRunnerCanBeUnloaded) {
-   ai::OnnxModelRunner runner {};
-   runner.unload ();
+AI_TEST(testOnnxModelRunnerCanBeUnloaded) {
+  ai::OnnxModelRunner runner {};
+  runner.unload();
 
-   expect (!runner.isReady (),
-      "unloaded ONNX runner is inactive");
+  expect(!runner.isReady(), "unloaded ONNX runner is inactive");
 }

@@ -18,28 +18,28 @@ namespace ai {
 constexpr uint32_t kInferenceInputSchemaVersion = 1;
 
 struct InferenceInput {
-   uint32_t schemaVersion { kInferenceInputSchemaVersion };
-   Observation observation {};
+  uint32_t schemaVersion { kInferenceInputSchemaVersion };
+  Observation observation {};
 
-   bool hasSupportedSchema () const {
-      return schemaVersion == kInferenceInputSchemaVersion;
-   }
+  bool hasSupportedSchema() const {
+    return schemaVersion == kInferenceInputSchemaVersion;
+  }
 };
 
 enum class InferenceStatus : uint8_t {
-   Success,
-   NoDecision,
-   InvalidInput,
-   Error,
+  Success,
+  NoDecision,
+  InvalidInput,
+  Error,
 };
 
 struct InferenceResult {
-   InferenceStatus status { InferenceStatus::NoDecision };
-   InferenceActionOutput output {};
+  InferenceStatus status { InferenceStatus::NoDecision };
+  InferenceActionOutput output {};
 
-   bool isSuccess () const {
-      return status == InferenceStatus::Success;
-   }
+  bool isSuccess() const {
+    return status == InferenceStatus::Success;
+  }
 };
 
 // Backend-neutral inference contract.
@@ -49,9 +49,9 @@ struct InferenceResult {
 // know about GoldSrc, Bot, tasks, navigation, or engine input.
 class InferenceProvider {
 public:
-   virtual ~InferenceProvider () = default;
+  virtual ~InferenceProvider() = default;
 
-   virtual InferenceResult infer (const InferenceInput &input) const = 0;
+  virtual InferenceResult infer(const InferenceInput &input) const = 0;
 };
 
 } // namespace ai

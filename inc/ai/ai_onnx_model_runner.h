@@ -19,25 +19,25 @@ namespace ai {
 // YaPB/AiPB behavior.
 class OnnxModelRunner final : public InferenceModelRunner {
 private:
-   struct Impl;
-   Impl *m_impl {};
+  struct Impl;
+  Impl *m_impl {};
 
 public:
-   OnnxModelRunner ();
-   ~OnnxModelRunner () override;
+  OnnxModelRunner();
+  ~OnnxModelRunner() override;
 
-   OnnxModelRunner (const OnnxModelRunner &) = delete;
-   OnnxModelRunner &operator= (const OnnxModelRunner &) = delete;
-   OnnxModelRunner (OnnxModelRunner &&) = delete;
-   OnnxModelRunner &operator= (OnnxModelRunner &&) = delete;
+  OnnxModelRunner(const OnnxModelRunner &) = delete;
+  OnnxModelRunner &operator=(const OnnxModelRunner &) = delete;
+  OnnxModelRunner(OnnxModelRunner &&) = delete;
+  OnnxModelRunner &operator=(OnnxModelRunner &&) = delete;
 
-   bool load (const char *modelPath, const char *inputName = "input", const char *outputName = "output");
-   void unload ();
+  bool load(const char *modelPath, const char *inputName = "input", const char *outputName = "output");
+  void unload();
 
-   bool isReady () const;
-   const char *getLastError () const;
+  bool isReady() const;
+  const char *getLastError() const;
 
-   InferenceResult run (const InferenceFeatures &features) const override;
+  InferenceResult run(const InferenceFeatures &features) const override;
 };
 
 } // namespace ai

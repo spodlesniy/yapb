@@ -13,7 +13,7 @@
 namespace ai {
 namespace {
 
-float normalizeDifficulty (int difficulty) {
+float normalizeDifficulty(int difficulty) {
   if (difficulty <= Difficulty::Noob) {
     return 0.0f;
   }
@@ -22,14 +22,14 @@ float normalizeDifficulty (int difficulty) {
     return 1.0f;
   }
 
-  return static_cast<float> (difficulty) / static_cast<float> (Difficulty::Expert);
+  return static_cast<float>(difficulty) / static_cast<float>(Difficulty::Expert);
 }
 
-float unitValue (float value) {
-  return cr::clamp (value, 0.0f, 1.0f);
+float unitValue(float value) {
+  return cr::clamp(value, 0.0f, 1.0f);
 }
 
-WeaponType mapWeaponType (int weaponType) {
+WeaponType mapWeaponType(int weaponType) {
   switch (weaponType) {
   case ::WeaponType::None:
     return WeaponType::None;
@@ -53,7 +53,7 @@ WeaponType mapWeaponType (int weaponType) {
   return WeaponType::Unknown;
 }
 
-ReloadState mapReloadState (int reloadState) {
+ReloadState mapReloadState(int reloadState) {
   switch (reloadState) {
   case ::Reload::None:
     return ReloadState::None;
@@ -65,7 +65,7 @@ ReloadState mapReloadState (int reloadState) {
   return ReloadState::None;
 }
 
-TaskType mapTask (Task task) {
+TaskType mapTask(Task task) {
   switch (task) {
   case Task::Normal:
     return TaskType::Normal;
@@ -113,8 +113,8 @@ TaskType mapTask (Task task) {
   return TaskType::Unknown;
 }
 
-void appendWaypoint (ObservationInput &input, int index, uint16_t connectionFlags) {
-  if (!graph.exists (index) || input.waypointCount >= kMaxObservedWaypoints) {
+void appendWaypoint(ObservationInput &input, int index, uint16_t connectionFlags) {
+  if (!graph.exists(index) || input.waypointCount >= kMaxObservedWaypoints) {
     return;
   }
 
@@ -123,26 +123,26 @@ void appendWaypoint (ObservationInput &input, int index, uint16_t connectionFlag
 
   waypoint.index = path.number;
   waypoint.origin = { path.origin.x, path.origin.y, path.origin.z };
-  waypoint.nodeFlags = static_cast<uint32_t> (path.flags);
+  waypoint.nodeFlags = static_cast<uint32_t>(path.flags);
   waypoint.connectionFlags = connectionFlags;
 }
 
 } // namespace
 
-ObservationInput buildObservationInput (const Bot &bot) {
+ObservationInput buildObservationInput(const Bot &bot) {
   ObservationInput input {};
 
   if (bot.pev == nullptr) {
     return input;
   }
 
-  const auto *entity = bot.ent ();
+  const auto *entity = bot.ent();
   if (entity == nullptr) {
     return input;
   }
 
-  input.gameTime = game.time ();
-  input.roundTimeRemaining = cr::max (0.0f, gameState.getRoundEndTime () - input.gameTime);
+  input.gameTime = game.time();
+  input.roundTimeRemaining = cr::max(0.0f, gameState.getRoundEndTime() - input.gameTime);
 
   input.bot.origin = { bot.pev->origin.x, bot.pev->origin.y, bot.pev->origin.z };
   input.bot.velocity = { bot.pev->velocity.x, bot.pev->velocity.y, bot.pev->velocity.z };
@@ -156,7 +156,7 @@ ObservationInput buildObservationInput (const Bot &bot) {
   input.bot.currentWeapon = bot.m_currentWeapon;
   input.bot.currentNode = bot.m_currentNodeIndex;
   input.bot.currentGoalNode = bot.m_chosenGoalIndex;
-  input.bot.currentTask = mapTask (bot.getCurrentTaskId ());
+  input.bot.currentTask = mapTask(bot.getCurrentTaskId());
   input.bot.alive = bot.m_isAlive;
   input.bot.hasC4 = bot.m_hasC4;
   input.bot.hasHostage = bot.m_hasHostage;
@@ -165,52 +165,52 @@ ObservationInput buildObservationInput (const Bot &bot) {
   input.bot.inRescueZone = bot.m_inRescueZone;
 
   if (bot.m_currentTravelFlags & PathFlag::Jump) {
-    input.bot.navigationFlags |= static_cast<uint32_t> (NavigationFlag::Jump);
+    input.bot.navigationFlags |= static_cast<uint32_t>(NavigationFlag::Jump);
   }
   if (bot.m_pathFlags & NodeFlag::Ladder) {
-    input.bot.navigationFlags |= static_cast<uint32_t> (NavigationFlag::Ladder);
+    input.bot.navigationFlags |= static_cast<uint32_t>(NavigationFlag::Ladder);
   }
   if (bot.m_pathFlags & NodeFlag::Crouch) {
-    input.bot.navigationFlags |= static_cast<uint32_t> (NavigationFlag::Crouch);
+    input.bot.navigationFlags |= static_cast<uint32_t>(NavigationFlag::Crouch);
   }
   if (bot.m_isFallDown) {
-    input.bot.navigationFlags |= static_cast<uint32_t> (NavigationFlag::Falling);
+    input.bot.navigationFlags |= static_cast<uint32_t>(NavigationFlag::Falling);
   }
   input.bot.movingToGoal = bot.m_moveToGoal;
   input.bot.stuck = bot.m_isStuck;
 
-  input.combat.weaponType = mapWeaponType (bot.m_weaponType);
+  input.combat.weaponType = mapWeaponType(bot.m_weaponType);
   if (bot.m_currentWeapon >= 0 && bot.m_currentWeapon < kMaxWeapons) {
     input.combat.ammoInClip = bot.m_ammoInClip[bot.m_currentWeapon];
   }
-  input.combat.reloadState = mapReloadState (bot.m_reloadState);
-  input.combat.blind = bot.m_blindTime > game.time ();
-  input.combat.blindTimeRemaining = input.combat.blind ? cr::max (0.0f, bot.m_blindTime - game.time ()) : 0.0f;
-  input.combat.firePauseRemaining = cr::max (0.0f, bot.m_firePause - game.time ());
+  input.combat.reloadState = mapReloadState(bot.m_reloadState);
+  input.combat.blind = bot.m_blindTime > game.time();
+  input.combat.blindTimeRemaining = input.combat.blind ? cr::max(0.0f, bot.m_blindTime - game.time()) : 0.0f;
+  input.combat.firePauseRemaining = cr::max(0.0f, bot.m_firePause - game.time());
 
-  if (!game.isNullEntity (bot.m_enemy)) {
-    input.combat.enemyEntity = game.indexOfEntity (bot.m_enemy);
+  if (!game.isNullEntity(bot.m_enemy)) {
+    input.combat.enemyEntity = game.indexOfEntity(bot.m_enemy);
     input.combat.enemyOrigin = { bot.m_enemy->v.origin.x, bot.m_enemy->v.origin.y, bot.m_enemy->v.origin.z };
   }
-  if (!game.isNullEntity (bot.m_lastEnemy)) {
-    input.combat.lastEnemyEntity = game.indexOfEntity (bot.m_lastEnemy);
+  if (!game.isNullEntity(bot.m_lastEnemy)) {
+    input.combat.lastEnemyEntity = game.indexOfEntity(bot.m_lastEnemy);
   }
   input.combat.lastEnemyOrigin = { bot.m_lastEnemyOrigin.x, bot.m_lastEnemyOrigin.y, bot.m_lastEnemyOrigin.z };
 
   if (bot.m_states & Sense::SeeingEnemy) {
-    input.combat.perceptionFlags |= static_cast<uint32_t> (PerceptionFlag::SeeingEnemy);
+    input.combat.perceptionFlags |= static_cast<uint32_t>(PerceptionFlag::SeeingEnemy);
   }
   if (bot.m_states & Sense::HearingEnemy) {
-    input.combat.perceptionFlags |= static_cast<uint32_t> (PerceptionFlag::HearingEnemy);
+    input.combat.perceptionFlags |= static_cast<uint32_t>(PerceptionFlag::HearingEnemy);
   }
   if (bot.m_states & Sense::SuspectEnemy) {
-    input.combat.perceptionFlags |= static_cast<uint32_t> (PerceptionFlag::SuspectedEnemy);
+    input.combat.perceptionFlags |= static_cast<uint32_t>(PerceptionFlag::SuspectedEnemy);
   }
   if (bot.m_isEnemyReachable) {
-    input.combat.perceptionFlags |= static_cast<uint32_t> (PerceptionFlag::EnemyReachable);
+    input.combat.perceptionFlags |= static_cast<uint32_t>(PerceptionFlag::EnemyReachable);
   }
 
-  if (gameState.isBombPlanted ()) {
+  if (gameState.isBombPlanted()) {
     input.bot.objectiveFlags |= ObjectiveFlag::BombPlanted;
   }
   if (bot.m_hasC4) {
@@ -232,14 +232,14 @@ ObservationInput buildObservationInput (const Bot &bot) {
     input.bot.objectiveFlags |= ObjectiveFlag::InVIPZone;
   }
 
-  input.personality.skill = normalizeDifficulty (bot.m_difficulty);
-  input.personality.aggression = unitValue (bot.m_agressionLevel);
-  input.personality.risk = 1.0f - unitValue (bot.m_fearLevel);
+  input.personality.skill = normalizeDifficulty(bot.m_difficulty);
+  input.personality.aggression = unitValue(bot.m_agressionLevel);
+  input.personality.risk = 1.0f - unitValue(bot.m_fearLevel);
 
   const auto currentNode = bot.m_currentNodeIndex;
-  appendWaypoint (input, currentNode, 0);
+  appendWaypoint(input, currentNode, 0);
 
-  if (graph.exists (currentNode)) {
+  if (graph.exists(currentNode)) {
     const auto &path = graph[currentNode];
 
     for (const auto &link : path.links) {
@@ -247,11 +247,11 @@ ObservationInput buildObservationInput (const Bot &bot) {
         continue;
       }
 
-      appendWaypoint (input, link.index, link.flags);
+      appendWaypoint(input, link.index, link.flags);
     }
   }
 
-  for (const auto &client : util.getClients ()) {
+  for (const auto &client : util.getClients()) {
     if (input.playerCount >= kMaxObservedPlayers) {
       break;
     }
@@ -261,9 +261,9 @@ ObservationInput buildObservationInput (const Bot &bot) {
     }
 
     auto &player = input.players[input.playerCount++];
-    const int playerTeam = game.is (GameFlags::FreeForAll) ? game.getRealPlayerTeam (client.ent) : game.getPlayerTeam (client.ent);
+    const int playerTeam = game.is(GameFlags::FreeForAll) ? game.getRealPlayerTeam(client.ent) : game.getPlayerTeam(client.ent);
 
-    player.entityIndex = game.indexOfEntity (client.ent);
+    player.entityIndex = game.indexOfEntity(client.ent);
     player.origin = { client.ent->v.origin.x, client.ent->v.origin.y, client.ent->v.origin.z };
     player.health = client.ent->v.health;
     player.armor = client.ent->v.armorvalue;
@@ -271,9 +271,7 @@ ObservationInput buildObservationInput (const Bot &bot) {
     player.valid = true;
     player.alive = !!(client.flags & ClientFlags::Alive);
     player.enemy = (playerTeam == Team::Terrorist || playerTeam == Team::CT) && playerTeam != bot.m_team;
-    player.visible = client.ent == bot.m_enemy
-      && (bot.m_states & Sense::SeeingEnemy)
-      && !(bot.m_states & Sense::SuspectEnemy);
+    player.visible = client.ent == bot.m_enemy && (bot.m_states & Sense::SeeingEnemy) && !(bot.m_states & Sense::SuspectEnemy);
     player.heard = client.ent == bot.m_hearedEnemy;
   }
 

@@ -22,7 +22,7 @@ class Policy {
 public:
   Policy() = default;
   Policy(const Policy &) = default;
-  Policy &operator= (const Policy &) = default;
+  Policy &operator=(const Policy &) = default;
 
   virtual Action decide(const Observation &observation) const = 0;
 };

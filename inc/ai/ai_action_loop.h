@@ -22,9 +22,7 @@ private:
   ActionPipeline *m_pipeline {};
 
 public:
-  ActionLoop(const Controller &controller, ActionPipeline &pipeline)
-    : m_controller(&controller),
-      m_pipeline(&pipeline) {
+  ActionLoop(const Controller &controller, ActionPipeline &pipeline) : m_controller(&controller), m_pipeline(&pipeline) {
   }
 
   ActionResult step(const Observation &observation) {

@@ -10,10 +10,8 @@
 
 namespace ai {
 
-BotRuntime::BotRuntime (Bot &bot)
-   : m_executor (bot),
-     m_runtime (m_executor) {
-   m_runtime.setPolicy (&m_goalNavigationPolicy);
+BotRuntime::BotRuntime(Bot &bot) : m_executor(bot), m_runtime(m_executor) {
+  m_runtime.setPolicy(&m_goalNavigationPolicy);
 }
 
 } // namespace ai
