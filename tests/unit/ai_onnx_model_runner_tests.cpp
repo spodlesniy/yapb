@@ -35,3 +35,29 @@ AI_TEST(testOnnxModelRunnerCanBeUnloaded) {
 
   expect(!runner.isReady(), "unloaded ONNX runner is inactive");
 }
+
+#if defined(AIPB_WITH_ONNXRUNTIME)
+
+AI_TEST(testOnnxModelRunnerLoadsReferenceModel) {
+  ai::OnnxModelRunner runner {};
+
+  const bool loaded = runner.load (AIPB_TEST_SOURCE_ROOT "/tests/data/aipb_reference_model.onnx");
+
+  expect (loaded, "ONNX Runtime loads the AiPB reference model");
+  expect (runner.isReady (), "reference model leaves the ONNX runner ready");
+
+  if (!loaded) {
+    return;
+  }
+
+  ai::InferenceFeatures features {};
+  const auto result = runner.run (features);
+
+  expect (result.status == ai::InferenceStatus::Success, "reference model inference succeeds");
+  expect (result.output.actionId == static_cast<uint8_t> (ai::InferenceActionId::MoveToNode),
+     "reference model returns the expected action id");
+  expect (result.output.targetNode == 42, "reference model returns the expected target node");
+  expectNear (result.output.confidence, 0.95f, 0.0001f, "reference model returns the expected confidence");
+}
+
+#endif
