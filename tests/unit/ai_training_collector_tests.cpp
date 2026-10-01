@@ -51,9 +51,9 @@ AI_TEST(testTrainingCollectorRecordsCompletedAction) {
   FixedRewardProvider rewards {};
   ai::TrainingCollector collector { recorder, rewards };
 
-  TestExecutor executor {};
+  ai::test::TestExecutor executor {};
   ai::ActionRuntime runtime { executor };
-  TestPolicy policy {};
+  ai::test::TestPolicy policy {};
   runtime.setMode(ai::ControlMode::Neural);
   runtime.setPolicy(&policy);
 
@@ -82,11 +82,11 @@ AI_TEST(testTrainingCollectorRecordsImmediateCompletion) {
   FixedRewardProvider rewards {};
   ai::TrainingCollector collector { recorder, rewards };
 
-  TestExecutor executor {};
+  ai::test::TestExecutor executor {};
   executor.setResult(ai::ActionResultType::Completed);
 
   ai::ActionRuntime runtime { executor };
-  TestPolicy policy {};
+  ai::test::TestPolicy policy {};
   runtime.setMode(ai::ControlMode::Neural);
   runtime.setPolicy(&policy);
 
@@ -104,9 +104,9 @@ AI_TEST(testTrainingCollectorIgnoresNonNeuralRuntime) {
   FixedRewardProvider rewards {};
   ai::TrainingCollector collector { recorder, rewards };
 
-  TestExecutor executor {};
+  ai::test::TestExecutor executor {};
   ai::ActionRuntime runtime { executor };
-  TestPolicy policy {};
+  ai::test::TestPolicy policy {};
   runtime.setMode(ai::ControlMode::Legacy);
   runtime.setPolicy(&policy);
 
@@ -123,9 +123,9 @@ AI_TEST(testTrainingCollectorRecordsCancellation) {
   FixedRewardProvider rewards {};
   ai::TrainingCollector collector { recorder, rewards };
 
-  TestExecutor executor {};
+  ai::test::TestExecutor executor {};
   ai::ActionRuntime runtime { executor };
-  TestPolicy policy {};
+  ai::test::TestPolicy policy {};
   runtime.setMode(ai::ControlMode::Neural);
   runtime.setPolicy(&policy);
 
@@ -138,5 +138,3 @@ AI_TEST(testTrainingCollectorRecordsCancellation) {
   expect(buffer.at(0).result.type == ai::ActionResultType::Interrupted, "transition stores the interruption result");
   expect(rewards.callCount == 1, "cancellation computes one reward");
 }
-
-} // namespace
