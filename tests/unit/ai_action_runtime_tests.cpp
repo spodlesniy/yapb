@@ -13,6 +13,9 @@
 #include <ai/ai_action_pipeline.h>
 #include <ai/ai_action_runtime.h>
 #include <ai/ai_action_state.h>
+#include <ai/ai_navigation_task_guard.h>
+
+#include <constant.h>
 
 using ai::test::TestExecutor;
 using ai::test::TestPolicy;
@@ -93,6 +96,28 @@ AI_TEST (testActionPipeline) {
 
    pipeline.reset ();
    expect (!pipeline.isActive (), "pipeline reset clears action state");
+}
+
+AI_TEST (testNavigationTaskOwnership) {
+   expect (ai::allowsNavigationOverride (Task::Normal, Task::Normal, Task::MoveToPosition),
+      "Normal task allows AI navigation");
+   expect (ai::allowsNavigationOverride (Task::MoveToPosition, Task::Normal, Task::MoveToPosition),
+      "MoveToPosition task allows AI navigation");
+
+   const Task blockingTasks[] = {
+      Task::Pause,
+      Task::Attack,
+      Task::DefuseBomb,
+      Task::PlantBomb,
+      Task::Camp,
+      Task::SeekCover,
+      Task::EscapeFromBomb
+   };
+
+   for (const auto task : blockingTasks) {
+      expect (!ai::allowsNavigationOverride (task, Task::Normal, Task::MoveToPosition),
+         "higher-priority legacy task blocks AI navigation");
+   }
 }
 
 AI_TEST (testActionLoopControlModes) {
