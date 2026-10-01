@@ -1,0 +1,23 @@
+name: format-check
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  clang-format:
+    name: clang-format 23.1.0
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pre-commit
+        run: python3 -m pip install --user --disable-pip-version-check pre-commit
+
+      - name: Check formatting
+        run: python3 -m pre_commit run --all-files --show-diff-on-failure
