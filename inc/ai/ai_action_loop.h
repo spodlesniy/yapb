@@ -25,9 +25,13 @@ public:
   ActionLoop(const Controller &controller, ActionPipeline &pipeline) : m_controller(&controller), m_pipeline(&pipeline) {
   }
 
-  ActionResult step(const Observation &observation) {
+  ActionResult step(const Observation &observation, bool allowDecision = true) {
     if (m_pipeline->isActive()) {
       return m_pipeline->execute(Action {}, observation);
+    }
+
+    if (!allowDecision) {
+      return { ActionType::None, ActionResultType::None, 0.0f };
     }
 
     const auto action = m_controller->decide(observation);

@@ -62,8 +62,8 @@ const ActionState &ActionRuntime::actionState() const {
   return m_actionState;
 }
 
-ActionResult ActionRuntime::step(const Observation &observation) {
-  return m_loop.step(observation);
+ActionResult ActionRuntime::step(const Observation &observation, bool allowDecision) {
+  return m_loop.step(observation, allowDecision);
 }
 
 bool ActionRuntime::cancel() {

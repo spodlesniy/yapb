@@ -92,8 +92,8 @@ public:
     return m_runtime.actionState();
   }
 
-  ActionResult step(const Observation &observation) {
-    return m_runtime.step(observation);
+  ActionResult step(const Observation &observation, bool allowDecision = true) {
+    return m_runtime.step(observation, allowDecision);
   }
 
   bool cancel() {

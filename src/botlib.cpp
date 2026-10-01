@@ -14,6 +14,7 @@
 ConVar cv_debug ("debug", "0", "Enables or disables useful messages about bot states. Not required for end users.", true, 0.0f, 4.0f);
 ConVar cv_ai_mode ("ai_mode", "0", "Selects AiPB control mode. 0 = Legacy, 1 = Neural, 2 = Training.", true, 0.0f, 2.0f);
 ConVar cv_ai_model ("ai_model", "", "Path to the ONNX model used by AiPB Neural mode.", false);
+ConVar cv_ai_inference_interval ("ai_inference_interval", "0.1", "Minimum interval in seconds between new AiPB Neural inference decisions. 0 means every AI step.", true, 0.0f, 2.0f);
 ConVar cv_debug_goal ("debug_goal", "-1", "Forces all alive bots to build a path and go to the graph node specified here.", true, -1.0f, kMaxNodes);
 ConVar cv_user_follow_percent ("user_follow_percent", "20", "Specifies the percent of bots that can follow a leader at each round start.", true, 0.0f, 100.0f);
 ConVar cv_user_max_followers ("user_max_followers", "1", "Specifies how many bots can follow a single user.", true, 0.0f, static_cast <float> (kGameMaxPlayers / 4));
@@ -3118,6 +3119,10 @@ void Bot::update () {
       break;
    }
 
+   if (m_aiRuntime.controller ().getMode () != ai::ControlMode::Neural) {
+      m_aiNextInferenceTime = 0.0f;
+   }
+
    auto &modelService = ai::getInferenceModelService ();
 
    if (m_aiRuntime.controller ().getMode () == ai::ControlMode::Neural) {
@@ -3441,8 +3446,18 @@ void Bot::logic () {
    const bool aiControlActive = m_aiRuntime.isControlEnabled ();
 
    if (aiControlActive) {
+      const float currentTime = game.time ();
+      const bool allowInference = currentTime >= m_aiNextInferenceTime;
+
+      if (allowInference) {
+         m_aiNextInferenceTime = currentTime + cv_ai_inference_interval.as <float> ();
+      }
+
       updateAIObservation ();
-      m_aiRuntime.step (m_aiObservation);
+      m_aiRuntime.step (m_aiObservation, allowInference);
+   }
+   else {
+      m_aiNextInferenceTime = 0.0f;
    }
 
    executeTasks (); // execute current task

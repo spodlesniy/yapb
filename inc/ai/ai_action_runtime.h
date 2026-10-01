@@ -44,7 +44,7 @@ public:
   ActionState &actionState();
   const ActionState &actionState() const;
 
-  ActionResult step(const Observation &observation);
+  ActionResult step(const Observation &observation, bool allowDecision = true);
 
   bool cancel();
   void reset();
