@@ -236,18 +236,30 @@ AI_TEST (testActionLoop) {
 }
 
 class InterruptingExecutor final : public ai::ActionExecutor {
+public:
+   enum class Task {
+      Normal,
+      MoveToPosition,
+      Attack
+   };
+
 private:
+   Task m_currentTask { Task::Normal };
    int m_callCount {};
 
 public:
    ai::ActionResult execute (const ai::Action &action, const ai::Observation &) override {
       ++m_callCount;
 
-      return {
-         action.type,
-         m_callCount == 1 ? ai::ActionResultType::Accepted : ai::ActionResultType::Interrupted,
-         0.0f
-      };
+      if (!ai::allowsNavigationOverride (m_currentTask, Task::Normal, Task::MoveToPosition)) {
+         return { action.type, ai::ActionResultType::Interrupted, 0.0f };
+      }
+
+      return { action.type, ai::ActionResultType::Accepted, 0.0f };
+   }
+
+   void setTask (Task task) {
+      m_currentTask = task;
    }
 
    int callCount () const {
@@ -274,6 +286,8 @@ AI_TEST (testActionLoopLegacyTaskTransition) {
       "AI action is accepted before a legacy task transition");
    expect (loop.isActive (),
       "AI action remains active while the navigation task owns execution");
+
+   executor.setTask (InterruptingExecutor::Task::Attack);
 
    const ai::ActionResult interrupted = loop.step (observation);
    expect (interrupted.action == ai::ActionType::MoveToNode,
