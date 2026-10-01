@@ -8,9 +8,9 @@
 
 #include <ai/ai_bot_action_executor.h>
 
-#include <cmath>
-
 #include <yapb.h>
+
+#include <cmath>
 
 namespace ai {
 
@@ -97,7 +97,7 @@ ActionResult BotActionExecutor::executeMoveToPosition(const Action &action) {
 
   const bool targetChanged = m_bot->getCurrentTaskId() != Task::MoveToPosition
     || m_bot->getTask()->data != node
-    || !m_bot->m_position.empty ();
+    || m_bot->m_position.distanceSq(target) > cr::sqrf(0.1f);
 
   if (m_bot->getCurrentTaskId() != Task::MoveToPosition) {
     m_bot->startTask(Task::MoveToPosition, TaskPri::MoveToPosition, node, 0.0f, true);
