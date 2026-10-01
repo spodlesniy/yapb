@@ -24,7 +24,9 @@ jobs:
         run: python3 -m pip install --user --disable-pip-version-check pre-commit
 
       - name: Format AiPB sources
-        run: python3 -m pre_commit run --all-files --show-diff-on-failure
+        run: |
+          python3 -m pre_commit run --all-files --show-diff-on-failure || true
+          python3 -m pre_commit run --all-files --show-diff-on-failure
 
       - name: Commit formatting changes
         shell: bash
