@@ -38,8 +38,11 @@ AI_TEST (testActionExecutor) {
 }
 
 AI_TEST (testActionPipeline) {
+   ai::ActionState state {};
+
    TestExecutor executor {};
-   ai::ActionPipeline pipeline { executor };
+   ai::ActionState state {};
+   ai::ActionPipeline pipeline { executor, state };
 
    ai::Observation observation {};
    observation.bot.alive = true;
@@ -55,6 +58,7 @@ AI_TEST (testActionPipeline) {
    expect (accepted.type == ai::ActionResultType::Accepted, "pipeline forwards valid action to executor");
    expect (pipeline.isActive (), "pipeline keeps accepted action active");
    expect (pipeline.activeAction ().targetNode == 12, "pipeline stores active action payload");
+   expect (state.isActive (), "pipeline shares the externally owned action state");
    expect (executor.callCount () == 1, "pipeline invokes executor for valid action");
 
    ai::Action replacement {};
@@ -95,7 +99,8 @@ AI_TEST (testActionPipeline) {
 AI_TEST (testActionLoop) {
    ai::Controller controller {};
    TestExecutor executor {};
-   ai::ActionPipeline pipeline { executor };
+   ai::ActionState state {};
+   ai::ActionPipeline pipeline { executor, state };
    ai::ActionLoop loop { controller, pipeline };
 
    ai::Observation observation {};
@@ -201,7 +206,8 @@ AI_TEST (testActionState) {
 
 AI_TEST (testActionCancellation) {
    TestExecutor executor {};
-   ai::ActionPipeline pipeline { executor };
+   ai::ActionState state {};
+   ai::ActionPipeline pipeline { executor, state };
 
    ai::Observation observation {};
    observation.bot.alive = true;

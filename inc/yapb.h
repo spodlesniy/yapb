@@ -23,7 +23,7 @@ using namespace cr;
 
 #include <ai/ai_observation.h>
 #include <ai/ai_observation_state.h>
-#include <ai/ai_action_state.h>
+#include <ai/ai_bot_runtime.h>
 
 namespace ai {
 
@@ -755,7 +755,7 @@ public:
    FrameDelay m_thinkTimer {};
    ai::Observation m_aiObservation {};
    ai::ObservationState m_aiObservationState {};
-   ai::ActionState m_aiActionState {};
+   ai::BotRuntime m_aiRuntime;
 
 public:
    Bot (edict_t *bot, int difficulty, int personality, int team, int skin);
@@ -848,12 +848,20 @@ public:
       return m_aiObservationState.sequence ();
    }
 
+   ai::Controller &getAIController () {
+      return m_aiRuntime.controller ();
+   }
+
+   const ai::Controller &getAIController () const {
+      return m_aiRuntime.controller ();
+   }
+
    ai::ActionState &getAIActionState () {
-      return m_aiActionState;
+      return m_aiRuntime.actionState ();
    }
 
    const ai::ActionState &getAIActionState () const {
-      return m_aiActionState;
+      return m_aiRuntime.actionState ();
    }
 
    // bots array index

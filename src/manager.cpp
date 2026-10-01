@@ -1143,7 +1143,8 @@ void BotManager::destroy () {
    m_bots.clear ();
 }
 
-Bot::Bot (edict_t *bot, int difficulty, int personality, int team, int skin) {
+Bot::Bot (edict_t *bot, int difficulty, int personality, int team, int skin)
+   : m_aiRuntime (*this) {
    // this function does core operation of creating bot, it's called by addbot (),
    // when bot setup completed, (this is a bot class constructor)
 
@@ -1822,7 +1823,7 @@ void Bot::kick (bool silent) {
 }
 
 void Bot::cancelAIAction () {
-   m_aiActionState.cancel ();
+   m_aiRuntime.cancel ();
 }
 
 void Bot::markStale () {

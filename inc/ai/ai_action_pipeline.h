@@ -20,12 +20,18 @@ namespace ai {
 class ActionPipeline final {
 private:
   ActionExecutor *m_executor {};
-  ActionState m_state {};
+  ActionState &m_state;
 
 public:
-  explicit ActionPipeline(ActionExecutor &executor)
-    : m_executor(&executor) {
+  ActionPipeline(ActionExecutor &executor, ActionState &state)
+    : m_executor(&executor),
+      m_state(state) {
   }
+
+  ActionPipeline(const ActionPipeline &) = delete;
+  ActionPipeline &operator=(const ActionPipeline &) = delete;
+  ActionPipeline(ActionPipeline &&) = delete;
+  ActionPipeline &operator=(ActionPipeline &&) = delete;
 
   ActionResult execute(const Action &action, const Observation &observation) {
     if (!m_state.isActive()) {
