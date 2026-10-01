@@ -27,6 +27,10 @@ private:
 public:
    explicit BotRuntime (Bot &bot);
 
+   void setPolicy (const Policy *policy) {
+      m_controller.setPolicy (policy);
+   }
+
    Controller &controller () {
       return m_controller;
    }

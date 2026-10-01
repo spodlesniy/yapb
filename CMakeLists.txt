@@ -22,6 +22,7 @@ set(YAPB_SRC
     "src/ai/ai_action_validator.cpp"
     "src/ai/ai_bot_action_executor.cpp"
     "src/ai/ai_bot_runtime.cpp"
+    "src/ai/ai_goal_navigation_policy.cpp"
     "src/analyze.cpp"
     "src/botlib.cpp"
     "src/chatlib.cpp"
@@ -197,6 +198,7 @@ if(YAPB_BUILD_TESTS)
       "src/ai/ai_controller.cpp"
       "src/ai/ai_observation_builder.cpp"
       "src/ai/ai_action_validator.cpp"
+      "src/ai/ai_goal_navigation_policy.cpp"
    )
     target_compile_features(yapb_ai_tests PRIVATE cxx_std_17)
     target_include_directories(yapb_ai_tests PRIVATE "inc")
