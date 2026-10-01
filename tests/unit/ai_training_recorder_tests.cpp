@@ -41,7 +41,8 @@ ai::ActionResult makeCompletedResult(ai::ActionType action) {
 } // namespace
 
 AI_TEST(testTrainingRecorderStartsEmpty) {
-  ai::TrainingRecorder recorder {};
+  ai::TrainingBuffer buffer {};
+  ai::TrainingRecorder recorder { buffer };
 
   expect(recorder.buffer().empty(), "training recorder starts empty");
   expect(recorder.buffer().size() == 0, "training recorder starts with zero transitions");
@@ -50,7 +51,8 @@ AI_TEST(testTrainingRecorderStartsEmpty) {
 }
 
 AI_TEST(testTrainingRecorderEpisodeLifecycle) {
-  ai::TrainingRecorder recorder {};
+  ai::TrainingBuffer buffer {};
+  ai::TrainingRecorder recorder { buffer };
 
   recorder.beginEpisode();
   expect(recorder.episodeId() == 1, "beginEpisode starts episode one");
@@ -61,7 +63,8 @@ AI_TEST(testTrainingRecorderEpisodeLifecycle) {
 }
 
 AI_TEST(testTrainingRecorderCompletesTransition) {
-  ai::TrainingRecorder recorder {};
+  ai::TrainingBuffer buffer {};
+  ai::TrainingRecorder recorder { buffer };
   recorder.beginEpisode();
 
   const auto observation = makeObservation(10.0f, 40);
@@ -99,7 +102,8 @@ AI_TEST(testTrainingRecorderCompletesTransition) {
 }
 
 AI_TEST(testTrainingRecorderRejectsInvalidCompletion) {
-  ai::TrainingRecorder recorder {};
+  ai::TrainingBuffer buffer {};
+  ai::TrainingRecorder recorder { buffer };
   recorder.beginEpisode();
 
   const auto action = makeMoveAction(41);
@@ -124,7 +128,8 @@ AI_TEST(testTrainingRecorderRejectsInvalidCompletion) {
 }
 
 AI_TEST(testTrainingRecorderRejectsNoneAction) {
-  ai::TrainingRecorder recorder {};
+  ai::TrainingBuffer buffer {};
+  ai::TrainingRecorder recorder { buffer };
   recorder.beginEpisode();
 
   expect(!recorder.startAction(makeObservation(1.0f, 40), {}), "None action is not recorded as a training action");
@@ -170,7 +175,8 @@ AI_TEST(testTrainingBufferCanBeResetIndependently) {
 }
 
 AI_TEST(testTrainingBufferReportsFullCapacity) {
-  ai::TrainingRecorder recorder {};
+  ai::TrainingBuffer buffer {};
+  ai::TrainingRecorder recorder { buffer };
   recorder.beginEpisode();
 
   const auto action = makeMoveAction(41);
