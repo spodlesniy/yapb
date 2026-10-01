@@ -29,6 +29,18 @@ BotActionExecutor::BotActionExecutor(Bot &bot)
   : m_bot(&bot) {
 }
 
+bool BotActionExecutor::isActionStillOwned (const Action &action) const {
+  if (m_bot == nullptr) {
+    return false;
+  }
+
+  if (action.type != ActionType::MoveToNode && action.type != ActionType::MoveToPosition) {
+    return true;
+  }
+
+  return allowsNavigationOverride (m_bot->getCurrentTaskId (), Task::Normal, Task::MoveToPosition);
+}
+
 ActionResult BotActionExecutor::execute(const Action &action, const Observation &observation) {
   if (m_bot == nullptr || m_bot->pev == nullptr || !observation.bot.alive) {
     return { action.type, ActionResultType::Rejected, 0.0f };
@@ -37,8 +49,7 @@ ActionResult BotActionExecutor::execute(const Action &action, const Observation 
   // During the transitional Neural runtime, existing YaPB tasks remain
   // authoritative for non-navigation behavior. AI navigation must not
   // silently replace combat, objective, or other higher-priority tasks.
-  if ((action.type == ActionType::MoveToNode || action.type == ActionType::MoveToPosition)
-      && !allowsNavigationOverride (m_bot->getCurrentTaskId (), Task::Normal, Task::MoveToPosition)) {
+  if (!isActionStillOwned (action)) {
     return { action.type, ActionResultType::Interrupted, 0.0f };
   }
 
