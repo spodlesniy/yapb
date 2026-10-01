@@ -352,11 +352,16 @@ if get_option('tests')
    # AI abstraction without requiring a GoldSrc runtime.
    ai_tests = executable(
       'yapb_ai_tests',
-      'tests/unit/ai_tests.cpp',
+      'tests/unit/ai_test.cpp',
+      'tests/unit/ai_action_tests.cpp',
+      'tests/unit/ai_observation_tests.cpp',
+      'tests/unit/ai_controller_tests.cpp',
+      'tests/unit/ai_action_validation_tests.cpp',
+      'tests/unit/ai_action_runtime_tests.cpp',
       'src/ai/ai_controller.cpp',
       'src/ai/ai_observation_builder.cpp',
       'src/ai/ai_action_validator.cpp',
-      include_directories: include_directories('inc'),
+      include_directories: include_directories('inc', 'tests/unit'),
    )
 
    test('yapb_ai_tests', ai_tests)
