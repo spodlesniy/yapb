@@ -6,11 +6,11 @@
 // SPDX-License-Identifier: MIT
 //
 
-#include <ai/ai_inference_features.h>
-
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+
+#include <ai/ai_inference_features.h>
 
 namespace ai {
 namespace {
@@ -64,7 +64,7 @@ template <typename Enum> size_t enumValue(Enum value) {
   return static_cast<size_t>(value);
 }
 
-void writeOneHot(std::array<float, kInferenceFeatureCount> &values, size_t base, uint8_t selected, size_t count) {
+void writeOneHot(float *values, size_t base, uint8_t selected, size_t count) {
 
   for (size_t i = 0; i < count; ++i) {
     values[base + i] = enumOneHot(selected, static_cast<uint8_t>(i));
@@ -147,12 +147,12 @@ InferenceFeatures encodeInferenceFeatures(const Observation &observation) {
   const auto taskBase = enumValue(InferenceFeature::Core::TaskBase);
   writeOneHot(values, taskBase, static_cast<uint8_t>(observation.bot.currentTask), 20);
 
-  std::array<size_t, kInferencePlayerSlots> playerIndices {};
-  for (size_t i = 0; i < playerIndices.size(); ++i) {
+  size_t playerIndices[kInferencePlayerSlots] {};
+  for (size_t i = 0; i < kInferencePlayerSlots; ++i) {
     playerIndices[i] = i < observation.playerCount ? i : kMaxObservedPlayers;
   }
 
-  std::sort(playerIndices.begin(), playerIndices.end(), [&](size_t left, size_t right) {
+  std::sort(playerIndices, playerIndices + kInferencePlayerSlots, [&](size_t left, size_t right) {
     if (left == kMaxObservedPlayers || right == kMaxObservedPlayers) {
       return left != kMaxObservedPlayers;
     }
@@ -194,12 +194,12 @@ InferenceFeatures encodeInferenceFeatures(const Observation &observation) {
   }
 
   const auto waypointBase = kCoreFeatureCount + kInferencePlayerSlots * kPlayerFeatureCount;
-  std::array<size_t, kInferenceWaypointSlots> waypointIndices {};
-  for (size_t i = 0; i < waypointIndices.size(); ++i) {
+  size_t waypointIndices[kInferenceWaypointSlots] {};
+  for (size_t i = 0; i < kInferenceWaypointSlots; ++i) {
     waypointIndices[i] = i < observation.waypointCount ? i : kMaxObservedWaypoints;
   }
 
-  std::sort(waypointIndices.begin(), waypointIndices.end(), [&](size_t left, size_t right) {
+  std::sort(waypointIndices, waypointIndices + kInferenceWaypointSlots, [&](size_t left, size_t right) {
     if (left == kMaxObservedWaypoints || right == kMaxObservedWaypoints) {
       return left != kMaxObservedWaypoints;
     }
