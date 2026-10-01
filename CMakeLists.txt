@@ -20,6 +20,7 @@ set(YAPB_SRC
     "src/ai/ai_controller.cpp"
     "src/ai/ai_observation_builder.cpp"
     "src/ai/ai_action_validator.cpp"
+    "src/ai/ai_bot_action_executor.cpp"
     "src/analyze.cpp"
     "src/botlib.cpp"
     "src/chatlib.cpp"

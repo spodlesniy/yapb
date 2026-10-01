@@ -28,6 +28,7 @@ using namespace cr;
 namespace ai {
 
 struct ObservationInput;
+class BotActionExecutor;
 ObservationInput buildObservationInput (const Bot &bot);
 
 } // namespace ai
@@ -225,6 +226,7 @@ public:
 class Bot final {
 public:
    friend class BotManager;
+   friend class ai::BotActionExecutor;
    friend ai::ObservationInput ai::buildObservationInput (const Bot &bot);
 
 private:
