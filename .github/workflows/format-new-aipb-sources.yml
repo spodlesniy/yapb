@@ -21,8 +21,7 @@ jobs:
 
       - name: Install format tools
         run: |
-          sudo apt-get update
-          sudo apt-get install -y clang-format clang-tidy
+          python3 -m pip install --disable-pip-version-check clang-format==18.1.8
 
       - name: Format new AiPB sources
         shell: bash
