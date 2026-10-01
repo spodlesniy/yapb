@@ -91,13 +91,12 @@ enum class Waypoint : size_t {
 
 } // namespace InferenceFeature
 
-constexpr size_t kCoreFeatureCount = static_cast<size_t> (InferenceFeature::Core::Count);
+constexpr size_t kCoreFeatureCount = static_cast<size_t> (InferenceFeature::Core::TaskBase) + 20;
 constexpr size_t kPlayerFeatureCount = static_cast<size_t> (InferenceFeature::Player::Count);
 constexpr size_t kWaypointFeatureCount = static_cast<size_t> (InferenceFeature::Waypoint::Count);
 
 constexpr size_t kInferenceFeatureCount =
    kCoreFeatureCount
-   + 10 + 3 + 7 + 4 + 4 + 20
    + kInferencePlayerSlots * kPlayerFeatureCount
    + kInferenceWaypointSlots * kWaypointFeatureCount;
 
