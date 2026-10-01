@@ -364,6 +364,7 @@ if get_option('tests')
       'tests/unit/ai_inference_policy_tests.cpp',
       'tests/unit/ai_inference_features_tests.cpp',
       'tests/unit/ai_inference_action_tests.cpp',
+      'tests/unit/ai_inference_model_runner_tests.cpp',
       'tests/unit/ai_bot_runtime_compile_tests.cpp',
       'src/ai/ai_controller.cpp',
       'src/ai/ai_observation_builder.cpp',
