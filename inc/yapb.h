@@ -755,6 +755,7 @@ public:
    FrameDelay m_thinkTimer {};
    ai::Observation m_aiObservation {};
    ai::ObservationState m_aiObservationState {};
+   float m_aiNextInferenceTime {};
    ai::BotRuntime m_aiRuntime;
 
 public:
