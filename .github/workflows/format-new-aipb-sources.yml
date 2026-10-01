@@ -24,10 +24,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y clang-format clang-tidy
 
-      - name: Configure compile database
-        run: |
-          meson setup format-build -D64bit=true -Dtests=true -Donnxruntime=false
-
       - name: Format new AiPB sources
         shell: bash
         run: |
@@ -45,35 +41,6 @@ jobs:
           clang-format --version
 
           for file in "${files[@]}"; do
-            clang-format -i --style=file "$file"
-          done
-
-      - name: Apply configured clang-tidy fixes
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          mapfile -t cpp_files < <(
-            {
-              find inc/ai src/ai tests/unit -type f \\
-                \\( -name '*.c' -o -name '*.cc' -o -name '*.cpp' -o -name '*.cxx' \\) \\
-                | sort
-            }
-          )
-
-          for file in "${cpp_files[@]}"; do
-            clang-tidy "$file" -p format-build \\
-              --header-filter='(^|/)(inc/ai|src/ai|tests/unit)/' \\
-              --fix-errors --fix-notes --quiet || true
-          done
-
-          for file in inc/ai src/ai tests/unit; do
-            if [ -d "$file" ]; then
-              find "$file" -type f \\
-                \\( -name '*.h' -o -name '*.hpp' -o -name '*.c' -o -name '*.cc' -o -name '*.cpp' -o -name '*.cxx' \\) \\
-                -print0
-            fi
-          done | while IFS= read -r -d '' file; do
             clang-format -i --style=file "$file"
           done
 
