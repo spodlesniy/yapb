@@ -7,9 +7,12 @@
 //
 
 #include "ai_test.h"
+#include "ai_test_tools.h"
 
 #include <ai/ai_inference_policy.h>
+#include <ai/ai_action_runtime.h>
 
+using ai::test::TestExecutor;
 using ai::test::expect;
 
 namespace {
@@ -55,6 +58,63 @@ AI_TEST (testInferencePolicy) {
       "inference input uses the current schema version");
    expect (provider.lastInput.observation.bot.currentGoalNode == 17,
       "inference input preserves observation state");
+}
+
+AI_TEST (testInferenceChain) {
+   TestInferenceProvider provider {};
+   ai::InferencePolicy policy { &provider };
+   TestExecutor executor {};
+   ai::ActionRuntime runtime { executor };
+
+   runtime.setMode (ai::ControlMode::Neural);
+   runtime.setPolicy (&policy);
+
+   ai::Observation observation {};
+   observation.bot.alive = true;
+   observation.bot.currentGoalNode = 31;
+
+   const ai::ActionResult result = runtime.step (observation);
+
+   expect (provider.callCount == 1,
+      "inference chain invokes provider exactly once");
+   expect (provider.lastInput.observation.bot.currentGoalNode == 31,
+      "inference chain forwards observation to provider");
+   expect (result.action == ai::ActionType::MoveToNode,
+      "inference chain forwards provider action into runtime");
+   expect (result.type == ai::ActionResultType::Accepted,
+      "inference chain reaches action executor");
+   expect (runtime.isActive (),
+      "inference action becomes active in runtime");
+   expect (executor.callCount () == 1,
+      "inference action is executed exactly once");
+   expect (executor.lastAction ().targetNode == 31,
+      "executor receives provider-selected target");
+}
+
+AI_TEST (testInferenceChainStopsOnProviderFailure) {
+   TestInferenceProvider provider {};
+   provider.status = ai::InferenceStatus::Error;
+
+   ai::InferencePolicy policy { &provider };
+   TestExecutor executor {};
+   ai::ActionRuntime runtime { executor };
+
+   runtime.setMode (ai::ControlMode::Neural);
+   runtime.setPolicy (&policy);
+
+   ai::Observation observation {};
+   observation.bot.alive = true;
+
+   const ai::ActionResult result = runtime.step (observation);
+
+   expect (provider.callCount == 1,
+      "provider failure is observed once");
+   expect (result.type == ai::ActionResultType::None,
+      "provider failure becomes a runtime no-op");
+   expect (!runtime.isActive (),
+      "provider failure cannot activate an action");
+   expect (executor.callCount () == 0,
+      "provider failure does not reach the executor");
 }
 
 AI_TEST (testInferencePolicyWithoutProvider) {
