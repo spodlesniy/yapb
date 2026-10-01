@@ -7,6 +7,7 @@
 //
 
 #include <ai/ai_onnx_model_runner.h>
+#include <ai/ai_inference_model_contract.h>
 
 #include <cstdio>
 #include <cstring>
@@ -44,6 +45,65 @@ struct OnnxModelRunner::Impl {
       setError (api->GetErrorMessage (status));
       api->ReleaseStatus (status);
       return false;
+   }
+
+   bool validateTensorContract (OrtTypeInfo *typeInfo, size_t expectedWidth) {
+      const OrtTensorTypeAndShapeInfo *tensorInfo {};
+
+      if (!check (api->CastTypeInfoToTensorInfo (typeInfo, &tensorInfo))) {
+         setError ("ONNX model input/output is not a tensor.");
+         return false;
+      }
+
+      ONNXTensorElementDataType elementType {};
+      if (!check (api->GetTensorElementType (tensorInfo, &elementType))) {
+         return false;
+      }
+
+      size_t dimensionCount {};
+      if (!check (api->GetDimensionsCount (tensorInfo, &dimensionCount))) {
+         return false;
+      }
+
+      std::vector<int64_t> dimensions (dimensionCount);
+      if (!dimensions.empty () && !check (api->GetDimensions (tensorInfo, dimensions.data (), dimensionCount))) {
+         return false;
+      }
+
+      InferenceTensorMetadata metadata {
+         true,
+         elementType == ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT,
+         dimensionCount,
+         dimensionCount > 0 ? dimensions[0] : 0,
+         dimensionCount > 1 ? dimensions[1] : 0
+      };
+
+      const auto error = validateInferenceTensor (metadata, expectedWidth);
+      if (error != InferenceTensorValidationError::None) {
+         switch (error) {
+         case InferenceTensorValidationError::NotTensor:
+            setError ("ONNX model input/output is not a tensor.");
+            break;
+         case InferenceTensorValidationError::WrongElementType:
+            setError ("ONNX model input/output must use float32.");
+            break;
+         case InferenceTensorValidationError::WrongRank:
+            setError ("ONNX model input/output must have rank 2.");
+            break;
+         case InferenceTensorValidationError::WrongBatch:
+            setError ("ONNX model input/output batch dimension must be 1.");
+            break;
+         case InferenceTensorValidationError::WrongWidth:
+            setError ("ONNX model input/output width does not match AiPB contract.");
+            break;
+         default:
+            setError ("ONNX model tensor contract is invalid.");
+            break;
+         }
+         return false;
+      }
+
+      return true;
    }
 
    void reset () {
@@ -169,6 +229,50 @@ bool OnnxModelRunner::load (const char *modelPath, const char *inputName, const 
 
    if (!m_impl->check (m_impl->api->CreateSessionFromArray (
       m_impl->env, modelData.data (), modelData.size (), m_impl->sessionOptions, &m_impl->session))) {
+      unload ();
+      return false;
+   }
+
+   size_t inputCount {};
+   size_t outputCount {};
+
+   if (!m_impl->check (m_impl->api->SessionGetInputCount (m_impl->session, &inputCount))
+      || !m_impl->check (m_impl->api->SessionGetOutputCount (m_impl->session, &outputCount))) {
+      unload ();
+      return false;
+   }
+
+   if (inputCount != 1 || outputCount != 1) {
+      m_impl->setError ("ONNX model must expose exactly one input and one output.");
+      unload ();
+      return false;
+   }
+
+   OrtTypeInfo *inputTypeInfo {};
+   OrtTypeInfo *outputTypeInfo {};
+
+   if (!m_impl->check (m_impl->api->SessionGetInputTypeInfo (m_impl->session, 0, &inputTypeInfo))) {
+      unload ();
+      return false;
+   }
+
+   const bool validInput = m_impl->validateTensorContract (inputTypeInfo, kInferenceFeatureCount);
+   m_impl->api->ReleaseTypeInfo (inputTypeInfo);
+
+   if (!validInput) {
+      unload ();
+      return false;
+   }
+
+   if (!m_impl->check (m_impl->api->SessionGetOutputTypeInfo (m_impl->session, 0, &outputTypeInfo))) {
+      unload ();
+      return false;
+   }
+
+   const bool validOutput = m_impl->validateTensorContract (outputTypeInfo, kInferenceActionTensorSize);
+   m_impl->api->ReleaseTypeInfo (outputTypeInfo);
+
+   if (!validOutput) {
       unload ();
       return false;
    }
