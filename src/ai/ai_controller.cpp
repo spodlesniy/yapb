@@ -18,7 +18,11 @@ void Controller::setPolicy(const Policy *policy) {
 }
 
 Action Controller::decide(const Observation &observation) const {
-  return m_policy != nullptr ? m_policy->decide(observation) : Action {};
+  if (m_mode != ControlMode::Neural || m_policy == nullptr) {
+    return {};
+  }
+
+  return m_policy->decide(observation);
 }
 
 } // namespace ai

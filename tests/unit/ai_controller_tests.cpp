@@ -15,13 +15,16 @@ using ai::test::TestPolicy;
 using ai::test::expect;
 
 AI_TEST (testLegacyController) {
-   const ai::Controller controller {};
+   ai::Controller controller {};
+   TestPolicy policy {};
 
    expect (controller.getMode () == ai::ControlMode::Legacy, "controller defaults to legacy mode");
    expect (controller.getPolicy () == nullptr, "legacy controller starts without a policy");
 
+   controller.setPolicy (&policy);
+
    const ai::Action action = controller.decide ({});
-   expect (action.type == ai::ActionType::None, "legacy policy is non-invasive");
+   expect (action.type == ai::ActionType::None, "legacy mode blocks policy execution");
 }
 
 AI_TEST (testPolicyInjection) {
