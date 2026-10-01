@@ -362,12 +362,14 @@ if get_option('tests')
       'tests/unit/ai_action_validation_tests.cpp',
       'tests/unit/ai_action_runtime_tests.cpp',
       'tests/unit/ai_inference_policy_tests.cpp',
+      'tests/unit/ai_inference_features_tests.cpp',
       'tests/unit/ai_bot_runtime_compile_tests.cpp',
       'src/ai/ai_controller.cpp',
       'src/ai/ai_observation_builder.cpp',
       'src/ai/ai_action_validator.cpp',
       'src/ai/ai_action_runtime.cpp',
       'src/ai/ai_goal_navigation_policy.cpp',
+      'src/ai/ai_inference_features.cpp',
       include_directories: include_directories('inc', 'tests/unit'),
    )
 
