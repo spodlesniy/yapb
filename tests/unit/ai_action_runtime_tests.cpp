@@ -96,6 +96,32 @@ AI_TEST (testActionPipeline) {
    expect (!pipeline.isActive (), "pipeline reset clears action state");
 }
 
+AI_TEST (testActionStateClearsOnCompletion) {
+   TestExecutor executor {};
+   ai::ActionState state {};
+   ai::ActionPipeline pipeline { executor, state };
+
+   ai::Observation observation {};
+   observation.bot.alive = true;
+
+   ai::Action action {};
+   action.type = ai::ActionType::MoveToNode;
+   action.targetNode = 41;
+
+   const ai::ActionResult result = pipeline.execute (action, observation);
+   expect (result.type == ai::ActionResultType::Accepted,
+      "accepted action is stored as active");
+   expect (state.isActive (),
+      "accepted action remains active");
+
+   executor.setResult (ai::ActionResultType::Completed);
+   const ai::ActionResult completed = pipeline.execute (action, observation);
+   expect (completed.type == ai::ActionResultType::Completed,
+      "completed action returns terminal result");
+   expect (!state.isActive (),
+      "completed action is cleared immediately");
+}
+
 AI_TEST (testNavigationTaskOwnership) {
    enum class TestTask {
       Normal,
