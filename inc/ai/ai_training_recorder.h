@@ -67,7 +67,9 @@ public:
   }
 
   void reset() {
-    m_transitions = {};
+    for (size_t i = 0; i < kTrainingTransitionCapacity; ++i) {
+      m_transitions[i] = {};
+    }
     m_size = 0;
     m_nextEpisodeId = 1;
   }
