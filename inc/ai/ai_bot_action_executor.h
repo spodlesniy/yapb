@@ -30,6 +30,8 @@ public:
   explicit BotActionExecutor(Bot &bot);
 
   ActionResult execute(const Action &action, const Observation &observation) override;
+
+  bool isActionStillOwned (const Action &action) const;
 };
 
 } // namespace ai
