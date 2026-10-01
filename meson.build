@@ -343,10 +343,9 @@ shared_library(
    target_name,
    sources,
    include_directories: includes,
-   cpp_args: cxxflags,
+   cpp_args: cxxflags + (['-DAIPB_WITH_ONNXRUNTIME'] if opt_onnxruntime else []),
    link_args: ldflags,
    dependencies: onnxruntime_dep,
-   cpp_args: cxxflags + (['-DAIPB_WITH_ONNXRUNTIME'] if opt_onnxruntime else []),
    gnu_symbol_visibility: 'hidden',
    name_prefix: ''
 )
