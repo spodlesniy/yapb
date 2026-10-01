@@ -11,11 +11,29 @@
 #include <ai/ai_action.h>
 #include <ai/ai_observation.h>
 
+#include <cstddef>
 #include <cstdint>
 
 namespace ai {
 
 constexpr uint32_t kInferenceActionSchemaVersion = 1;
+constexpr size_t kInferenceActionTensorSize = 10;
+
+// Stable positions in the single-output ONNX tensor.
+// Every value is represented as float by the model, then decoded explicitly.
+enum class InferenceActionTensorIndex : size_t {
+   ActionId = 0,
+   TargetNode,
+   TargetPlayer,
+   TargetPositionX,
+   TargetPositionY,
+   TargetPositionZ,
+   WeaponType,
+   GrenadeType,
+   Duration,
+   Confidence,
+   Count,
+};
 
 // Stable numeric action identifiers exposed to a model.
 //

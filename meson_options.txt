@@ -22,3 +22,6 @@ option('static_linkent', type : 'boolean', value : false,
 
 option('tests', type : 'boolean', value : false,
        description: 'Build and register YaPB unit tests.')
+
+option('onnxruntime', type : 'boolean', value : false,
+       description: 'Enables the optional ONNX Runtime inference backend.')

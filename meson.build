@@ -44,6 +44,9 @@ opt_native = get_option('native')
 opt_winxp = get_option('winxp')
 opt_nosimd = get_option('nosimd')
 opt_static_linkent = get_option('static_linkent')
+opt_onnxruntime = get_option('onnxruntime')
+
+onnxruntime_dep = dependency('onnxruntime', required: opt_onnxruntime)
 
 # cpp and ldflags from scratch
 cxxflags = []
@@ -342,6 +345,8 @@ shared_library(
    include_directories: includes,
    cpp_args: cxxflags,
    link_args: ldflags,
+   dependencies: onnxruntime_dep,
+   cpp_args: cxxflags + (['-DAIPB_WITH_ONNXRUNTIME'] if opt_onnxruntime else []),
    gnu_symbol_visibility: 'hidden',
    name_prefix: ''
 )
@@ -365,6 +370,7 @@ if get_option('tests')
       'tests/unit/ai_inference_features_tests.cpp',
       'tests/unit/ai_inference_action_tests.cpp',
       'tests/unit/ai_inference_model_runner_tests.cpp',
+      'tests/unit/ai_onnx_model_runner_tests.cpp',
       'tests/unit/ai_bot_runtime_compile_tests.cpp',
       'src/ai/ai_controller.cpp',
       'src/ai/ai_observation_builder.cpp',
@@ -373,7 +379,11 @@ if get_option('tests')
       'src/ai/ai_goal_navigation_policy.cpp',
       'src/ai/ai_inference_features.cpp',
       'src/ai/ai_inference_action_decoder.cpp',
+      'src/ai/ai_onnx_model_runner.cpp',
+   'src/ai/ai_onnx_model_runner.cpp',
       include_directories: include_directories('inc', 'tests/unit'),
+      dependencies: onnxruntime_dep,
+      cpp_args: (['-DAIPB_WITH_ONNXRUNTIME'] if opt_onnxruntime else []),
    )
 
    test('yapb_ai_tests', ai_tests)
