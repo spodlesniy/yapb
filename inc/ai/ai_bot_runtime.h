@@ -30,6 +30,22 @@ public:
 
   void setMode(ControlMode mode) {
     m_runtime.setMode(mode);
+
+    switch (mode) {
+    case ControlMode::Legacy:
+      m_runtime.setPolicy(&m_goalNavigationPolicy);
+      break;
+
+    case ControlMode::Neural:
+      m_runtime.setPolicy(m_inferencePolicy.getProvider() != nullptr
+                              ? static_cast<const Policy *>(&m_inferencePolicy)
+                              : nullptr);
+      break;
+
+    case ControlMode::Training:
+      m_runtime.setPolicy(nullptr);
+      break;
+    }
   }
 
   ControlMode getMode() const {
@@ -46,8 +62,10 @@ public:
 
   void setInferenceProvider(const InferenceProvider *provider) {
     m_inferencePolicy.setProvider(provider);
-    m_runtime.setPolicy(provider != nullptr ? static_cast<const Policy *>(&m_inferencePolicy)
-                                            : static_cast<const Policy *>(&m_goalNavigationPolicy));
+
+    if (m_runtime.getMode() == ControlMode::Neural) {
+      m_runtime.setPolicy(provider != nullptr ? static_cast<const Policy *>(&m_inferencePolicy) : nullptr);
+    }
   }
 
   const InferenceProvider *getInferenceProvider() const {

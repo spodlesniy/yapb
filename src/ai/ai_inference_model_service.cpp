@@ -17,6 +17,10 @@ InferenceModelConfigureResult InferenceModelService::configure(const char *model
   const char *requestedPath = modelPath != nullptr ? modelPath : "";
 
   if (m_configured && std::strcmp(m_modelPath, requestedPath) == 0) {
+    if (*requestedPath == '\0') {
+      return InferenceModelConfigureResult::Disabled;
+    }
+
     return m_runner.isReady() ? InferenceModelConfigureResult::Unchanged : InferenceModelConfigureResult::Failed;
   }
 
@@ -29,7 +33,6 @@ InferenceModelConfigureResult InferenceModelService::configure(const char *model
   }
 
   if (std::strlen(requestedPath) >= sizeof(m_modelPath)) {
-    std::snprintf(m_modelPath, sizeof(m_modelPath), "%s", requestedPath);
     return InferenceModelConfigureResult::Failed;
   }
 

@@ -62,3 +62,26 @@ AI_TEST(testInferenceModelServiceReloadsWhenPathChanges) {
   expect(first == ai::InferenceModelConfigureResult::Failed, "first missing model configuration fails");
   expect(second == ai::InferenceModelConfigureResult::Failed, "changed missing model path triggers a new load attempt");
 }
+
+AI_TEST(testInferenceModelServiceKeepsDisabledStateIdempotent) {
+  ai::InferenceModelService service {};
+
+  const auto first = service.configure ("");
+  const auto second = service.configure ("");
+
+  expect (first == ai::InferenceModelConfigureResult::Disabled, "first empty model configuration disables inference");
+  expect (second == ai::InferenceModelConfigureResult::Disabled, "repeated empty model configuration remains disabled");
+}
+
+AI_TEST(testInferenceModelServiceResetDisablesLoadedState) {
+  ai::InferenceModelService service {};
+
+  const auto configureResult = service.configure ("__aipb_missing_model__.onnx");
+  service.reset ();
+
+  expect (configureResult == ai::InferenceModelConfigureResult::Failed, "reset test starts from a failed model load");
+  expect (!service.isReady (), "reset leaves the model service unavailable");
+  expect (service.getProvider () == nullptr, "reset removes the inference provider");
+  expect (service.configure ("") == ai::InferenceModelConfigureResult::Disabled,
+          "empty configuration after reset remains explicitly disabled");
+}

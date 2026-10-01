@@ -3118,13 +3118,15 @@ void Bot::update () {
       break;
    }
 
+   auto &modelService = ai::getInferenceModelService ();
+
    if (m_aiRuntime.controller ().getMode () == ai::ControlMode::Neural) {
-      auto &modelService = ai::getInferenceModelService ();
       modelService.configure (cv_ai_model.as <StringRef> ().chars ());
       m_aiRuntime.setInferenceProvider (modelService.getProvider ());
    }
    else {
       m_aiRuntime.setInferenceProvider (nullptr);
+      modelService.configure ("");
    }
 
    m_canSetAimDirection = true;
