@@ -300,6 +300,47 @@ AI_TEST (testActionLoopLegacyTaskTransition) {
       "active AI action is executed again to observe the task transition");
 }
 
+AI_TEST (testActionLoopLegacyTaskRecovery) {
+   InterruptingExecutor executor {};
+   ai::Controller controller { ai::ControlMode::Neural };
+   ai::ActionState state {};
+   ai::ActionPipeline pipeline { executor, state };
+   ai::ActionLoop loop { controller, pipeline };
+   TestPolicy policy {};
+
+   ai::Observation observation {};
+   observation.bot.alive = true;
+   observation.bot.currentNode = 40;
+
+   controller.setPolicy (&policy);
+
+   const ai::ActionResult first = loop.step (observation);
+   expect (first.type == ai::ActionResultType::Accepted,
+      "AI action starts while legacy task is Normal");
+   expect (loop.isActive (),
+      "AI action is active before legacy interruption");
+
+   executor.setTask (InterruptingExecutor::Task::Attack);
+
+   const ai::ActionResult interrupted = loop.step (observation);
+   expect (interrupted.type == ai::ActionResultType::Interrupted,
+      "legacy Attack task interrupts the active AI action");
+   expect (!loop.isActive (),
+      "interrupted AI action is cleared");
+
+   executor.setTask (InterruptingExecutor::Task::Normal);
+
+   const ai::ActionResult recovered = loop.step (observation);
+   expect (recovered.type == ai::ActionResultType::Accepted,
+      "AI policy can start a new action after legacy task releases control");
+   expect (loop.isActive (),
+      "new AI action becomes active after legacy task recovery");
+   expect (loop.activeAction ().targetNode == 41,
+      "recovered AI control creates the policy-selected action rather than restoring stale state");
+   expect (executor.callCount () == 3,
+      "recovery executes exactly one new AI action after interruption");
+}
+
 AI_TEST (testActionState) {
    ai::ActionState state {};
 
