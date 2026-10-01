@@ -14,8 +14,9 @@
 namespace ai {
 
 // Adapts a backend-neutral InferenceProvider to the existing Policy contract.
-// This keeps Controller and the action runtime independent from the model
-// runtime and allows deterministic providers to be used in tests.
+// Provider errors and incompatible schema versions are intentionally converted
+// to a no-op action so the inference boundary cannot inject undefined behavior
+// into the action runtime.
 class InferencePolicy final : public Policy {
 private:
    const InferenceProvider *m_provider {};
@@ -38,7 +39,18 @@ public:
          return {};
       }
 
-      return m_provider->infer (observation);
+      const InferenceInput input { kInferenceSchemaVersion, observation };
+      if (!input.hasSupportedSchema ()) {
+         return {};
+      }
+
+      const InferenceResult result = m_provider->infer (input);
+
+      if (!result.hasSupportedSchema () || !result.isSuccess ()) {
+         return {};
+      }
+
+      return result.action;
    }
 };
 
