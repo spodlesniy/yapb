@@ -20,44 +20,43 @@ namespace ai {
 // inject undefined behavior into the action runtime.
 class InferencePolicy final : public Policy {
 private:
-   const InferenceProvider *m_provider {};
+  const InferenceProvider *m_provider {};
 
 public:
-   explicit InferencePolicy (const InferenceProvider *provider = nullptr)
-      : m_provider (provider) {
-   }
+  explicit InferencePolicy(const InferenceProvider *provider = nullptr) : m_provider(provider) {
+  }
 
-   void setProvider (const InferenceProvider *provider) {
-      m_provider = provider;
-   }
+  void setProvider(const InferenceProvider *provider) {
+    m_provider = provider;
+  }
 
-   const InferenceProvider *getProvider () const {
-      return m_provider;
-   }
+  const InferenceProvider *getProvider() const {
+    return m_provider;
+  }
 
-   Action decide (const Observation &observation) const override {
-      if (m_provider == nullptr) {
-         return {};
-      }
+  Action decide(const Observation &observation) const override {
+    if (m_provider == nullptr) {
+      return {};
+    }
 
-      const InferenceInput input { kInferenceInputSchemaVersion, observation };
-      if (!input.hasSupportedSchema ()) {
-         return {};
-      }
+    const InferenceInput input { kInferenceInputSchemaVersion, observation };
+    if (!input.hasSupportedSchema()) {
+      return {};
+    }
 
-      const InferenceResult result = m_provider->infer (input);
+    const InferenceResult result = m_provider->infer(input);
 
-      if (!result.isSuccess ()) {
-         return {};
-      }
+    if (!result.isSuccess()) {
+      return {};
+    }
 
-      const auto decoded = decodeInferenceAction (result.output, observation);
-      if (!decoded.isValid ()) {
-         return {};
-      }
+    const auto decoded = decodeInferenceAction(result.output, observation);
+    if (!decoded.isValid()) {
+      return {};
+    }
 
-      return decoded.action;
-   }
+    return decoded.action;
+  }
 };
 
 } // namespace ai

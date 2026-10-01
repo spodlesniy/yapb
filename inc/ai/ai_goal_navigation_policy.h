@@ -16,7 +16,7 @@ namespace ai {
 // through the AI action interface. It deliberately does not choose a new goal.
 class GoalNavigationPolicy final : public Policy {
 public:
-   Action decide (const Observation &observation) const override;
+  Action decide(const Observation &observation) const override;
 };
 
 } // namespace ai

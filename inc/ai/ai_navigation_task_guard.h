@@ -14,8 +14,8 @@ namespace ai {
 // navigation-neutral state. The task type itself remains engine-owned; this
 // generic helper keeps the ownership rule testable without the GoldSrc runtime.
 template <typename TaskType>
-constexpr bool allowsNavigationOverride (TaskType currentTask, TaskType normalTask, TaskType moveToPositionTask) {
-   return currentTask == normalTask || currentTask == moveToPositionTask;
+constexpr bool allowsNavigationOverride(TaskType currentTask, TaskType normalTask, TaskType moveToPositionTask) {
+  return currentTask == normalTask || currentTask == moveToPositionTask;
 }
 
 } // namespace ai

@@ -30,7 +30,7 @@ struct ActionSpec {
 };
 
 constexpr uint32_t actionParameter(ActionParameter parameter) {
-  return static_cast<uint32_t> (parameter);
+  return static_cast<uint32_t>(parameter);
 }
 
 constexpr ActionSpec getActionSpec(ActionType type) {
