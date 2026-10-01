@@ -1,0 +1,186 @@
+//
+// AiPB - training transition recorder.
+// AiPB, based on YaPB by YaPB Project Developers <yapb@jeefo.net>, based on PODBot by Markus Klinge ("CountFloyd").
+// Copyright © Aleksandr Podlesnyi <spodlesniy@gmail.com>.
+//
+// SPDX-License-Identifier: MIT
+//
+
+#pragma once
+
+#include <ai/ai_action_result.h>
+
+#include <array>
+#include <cstddef>
+#include <cstdint>
+
+namespace ai {
+
+constexpr size_t kTrainingTransitionCapacity = 256;
+
+enum class TrainingRecordResult : uint8_t {
+  Recorded,
+  NoPendingAction,
+  ActionMismatch,
+  NonTerminalResult,
+  BufferFull,
+};
+
+struct TrainingTransition {
+  uint64_t episodeId {};
+  Observation observation {};
+  Action action {};
+  float reward {};
+  Observation nextObservation {};
+  ActionResult result {};
+};
+
+class TrainingBuffer final {
+private:
+  std::array<TrainingTransition, kTrainingTransitionCapacity> m_transitions {};
+  size_t m_size {};
+  uint64_t m_nextEpisodeId { 1 };
+
+public:
+  uint64_t beginEpisode() {
+    const auto episodeId = m_nextEpisodeId++;
+
+    if (m_nextEpisodeId == 0) {
+      ++m_nextEpisodeId;
+    }
+    return episodeId;
+  }
+
+  bool append(uint64_t episodeId, const Observation &observation, const Action &action, float reward,
+              const Observation &nextObservation, const ActionResult &result) {
+    if (m_size >= m_transitions.size()) {
+      return false;
+    }
+
+    auto &transition = m_transitions[m_size++];
+    transition.episodeId = episodeId;
+    transition.observation = observation;
+    transition.action = action;
+    transition.reward = reward;
+    transition.nextObservation = nextObservation;
+    transition.result = result;
+    return true;
+  }
+
+  void reset() {
+    m_transitions = {};
+    m_size = 0;
+    m_nextEpisodeId = 1;
+  }
+
+  bool hasCapacity() const {
+    return m_size < m_transitions.size();
+  }
+
+  bool isFull() const {
+    return m_size >= m_transitions.size();
+  }
+
+  size_t size() const {
+    return m_size;
+  }
+
+  bool empty() const {
+    return m_size == 0;
+  }
+
+  const TrainingTransition &at(size_t index) const {
+    return m_transitions[index];
+  }
+};
+
+inline TrainingBuffer &getTrainingBuffer() {
+  static TrainingBuffer buffer {};
+  return buffer;
+}
+
+class TrainingRecorder final {
+private:
+  TrainingBuffer *m_buffer {};
+  uint64_t m_episodeId {};
+  bool m_pendingAction {};
+  Observation m_pendingObservation {};
+  Action m_pendingActionData {};
+
+public:
+  explicit TrainingRecorder(TrainingBuffer &buffer = getTrainingBuffer()) : m_buffer(&buffer) {
+  }
+
+  void beginEpisode() {
+    discardPendingAction();
+    m_episodeId = m_buffer->beginEpisode();
+  }
+
+  bool startAction(const Observation &observation, const Action &action) {
+    if (m_pendingAction || action.type == ActionType::None) {
+      return false;
+    }
+
+    m_pendingObservation = observation;
+    m_pendingActionData = action;
+    m_pendingAction = true;
+    return true;
+  }
+
+  TrainingRecordResult finishAction(const Observation &nextObservation, const ActionResult &result, float reward) {
+    if (!m_pendingAction) {
+      return TrainingRecordResult::NoPendingAction;
+    }
+
+    if (result.action != m_pendingActionData.type) {
+      return TrainingRecordResult::ActionMismatch;
+    }
+
+    if (!result.isTerminal()) {
+      return TrainingRecordResult::NonTerminalResult;
+    }
+
+    if (!m_buffer->hasCapacity()) {
+      return TrainingRecordResult::BufferFull;
+    }
+
+    const bool appended =
+      m_buffer->append(m_episodeId, m_pendingObservation, m_pendingActionData, reward, nextObservation, result);
+
+    if (!appended) {
+      return TrainingRecordResult::BufferFull;
+    }
+
+    discardPendingAction();
+    return TrainingRecordResult::Recorded;
+  }
+
+  void discardPendingAction() {
+    m_pendingAction = false;
+    m_pendingObservation = {};
+    m_pendingActionData = {};
+  }
+
+  void reset() {
+    m_episodeId = 0;
+    discardPendingAction();
+  }
+
+  bool hasPendingAction() const {
+    return m_pendingAction;
+  }
+
+  uint64_t episodeId() const {
+    return m_episodeId;
+  }
+
+  TrainingBuffer &buffer() {
+    return *m_buffer;
+  }
+
+  const TrainingBuffer &buffer() const {
+    return *m_buffer;
+  }
+};
+
+} // namespace ai

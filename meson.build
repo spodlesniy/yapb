@@ -379,6 +379,7 @@ if get_option('tests')
       'tests/unit/ai_inference_model_runner_tests.cpp',
       'tests/unit/ai_onnx_model_runner_tests.cpp',
       'tests/unit/ai_inference_model_service_tests.cpp',
+      'tests/unit/ai_training_recorder_tests.cpp',
       'tests/unit/ai_inference_model_contract_tests.cpp',
       'tests/unit/ai_bot_runtime_compile_tests.cpp',
       'src/ai/ai_controller.cpp',

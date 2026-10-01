@@ -7,8 +7,11 @@
 //
 
 #include <ai/ai_bot_runtime.h>
+#include <ai/ai_training_recorder.h>
 
 static_assert(sizeof(ai::BotRuntime) > 0, "BotRuntime header must remain self-contained");
+static_assert(sizeof(ai::TrainingRecorder) < sizeof(ai::TrainingTransition) * ai::kTrainingTransitionCapacity,
+              "BotRuntime training state must not embed the completed transition buffer");
 
 #include <ai/ai_inference_policy.h>
 

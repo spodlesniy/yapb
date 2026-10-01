@@ -12,6 +12,7 @@
 #include <ai/ai_bot_action_executor.h>
 #include <ai/ai_goal_navigation_policy.h>
 #include <ai/ai_inference_policy.h>
+#include <ai/ai_training_recorder.h>
 
 namespace ai {
 
@@ -22,6 +23,7 @@ class BotRuntime final {
 private:
   GoalNavigationPolicy m_goalNavigationPolicy {};
   InferencePolicy m_inferencePolicy {};
+  TrainingRecorder m_trainingRecorder {};
   BotActionExecutor m_executor;
   ActionRuntime m_runtime;
 
@@ -29,6 +31,7 @@ public:
   explicit BotRuntime(Bot &bot);
 
   void setMode(ControlMode mode) {
+    const auto previousMode = m_runtime.getMode();
     m_runtime.setMode(mode);
 
     switch (mode) {
@@ -44,7 +47,14 @@ public:
 
     case ControlMode::Training:
       m_runtime.setPolicy(nullptr);
+      if (previousMode != ControlMode::Training) {
+        m_trainingRecorder.beginEpisode();
+      }
       break;
+    }
+
+    if (previousMode == ControlMode::Training && mode != ControlMode::Training) {
+      m_trainingRecorder.discardPendingAction();
     }
   }
 
@@ -70,6 +80,22 @@ public:
 
   const InferenceProvider *getInferenceProvider() const {
     return m_inferencePolicy.getProvider();
+  }
+
+  TrainingRecorder &trainingRecorder() {
+    return m_trainingRecorder;
+  }
+
+  const TrainingRecorder &trainingRecorder() const {
+    return m_trainingRecorder;
+  }
+
+  TrainingBuffer &trainingBuffer() {
+    return m_trainingRecorder.buffer();
+  }
+
+  const TrainingBuffer &trainingBuffer() const {
+    return m_trainingRecorder.buffer();
   }
 
   bool isControlEnabled() const {
