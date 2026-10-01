@@ -1,0 +1,10 @@
+# AiPB formatting hooks.
+# clang-format is pinned to the project-approved LLVM 23.1.0 release.
+
+repos:
+  - repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: v23.1.0
+    hooks:
+      - id: clang-format
+        files: '^(inc/ai|src/ai)/.*\.(h|hpp|c|cc|cpp|cxx)$|^tests/unit/ai_.*\.(h|hpp|c|cc|cpp|cxx)$'
+        exclude: '(^|/)\.clang-(format|tidy)$'
