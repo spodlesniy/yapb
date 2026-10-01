@@ -31,7 +31,7 @@ struct ActionResult {
 
   bool isTerminal() const {
     return type == ActionResultType::Completed || type == ActionResultType::Rejected || type == ActionResultType::Invalid ||
-           type == ActionResultType::Failed || type == ActionResultType::Interrupted;
+      type == ActionResultType::Failed || type == ActionResultType::Interrupted;
   }
 };
 

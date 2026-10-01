@@ -25,10 +25,11 @@ bool isFinitePosition(const Vec3 &position) {
 
 } // namespace
 
-BotActionExecutor::BotActionExecutor(Bot &bot) : m_bot(&bot) {
+BotActionExecutor::BotActionExecutor(Bot &bot)
+  : m_bot(&bot) {
 }
 
-bool BotActionExecutor::isActionStillOwned(const Action &action) const {
+bool BotActionExecutor::isActionStillOwned (const Action &action) const {
   if (m_bot == nullptr) {
     return false;
   }
@@ -37,7 +38,7 @@ bool BotActionExecutor::isActionStillOwned(const Action &action) const {
     return true;
   }
 
-  return allowsNavigationOverride(m_bot->getCurrentTaskId(), Task::Normal, Task::MoveToPosition);
+  return allowsNavigationOverride (m_bot->getCurrentTaskId (), Task::Normal, Task::MoveToPosition);
 }
 
 ActionResult BotActionExecutor::execute(const Action &action, const Observation &observation) {
@@ -48,7 +49,7 @@ ActionResult BotActionExecutor::execute(const Action &action, const Observation 
   // During the transitional Neural runtime, existing YaPB tasks remain
   // authoritative for non-navigation behavior. AI navigation must not
   // silently replace combat, objective, or other higher-priority tasks.
-  if (!isActionStillOwned(action)) {
+  if (!isActionStillOwned (action)) {
     return { action.type, ActionResultType::Interrupted, 0.0f };
   }
 
@@ -75,11 +76,13 @@ ActionResult BotActionExecutor::executeMoveToNode(const Action &action) {
     return { action.type, ActionResultType::Completed, 0.0f };
   }
 
-  const bool targetChanged = m_bot->getCurrentTaskId() != Task::MoveToPosition || m_bot->getTask()->data != node;
+  const bool targetChanged = m_bot->getCurrentTaskId() != Task::MoveToPosition
+    || m_bot->getTask()->data != node;
 
   if (m_bot->getCurrentTaskId() != Task::MoveToPosition) {
     m_bot->startTask(Task::MoveToPosition, TaskPri::MoveToPosition, node, 0.0f, true);
-  } else if (targetChanged) {
+  }
+  else if (targetChanged) {
     m_bot->clearSearchNodes();
   }
 
@@ -112,12 +115,14 @@ ActionResult BotActionExecutor::executeMoveToPosition(const Action &action) {
     return { action.type, ActionResultType::Completed, 0.0f };
   }
 
-  const bool targetChanged = m_bot->getCurrentTaskId() != Task::MoveToPosition || m_bot->getTask()->data != node ||
-                             m_bot->m_position.distanceSq(target) > cr::sqrf(0.1f);
+  const bool targetChanged = m_bot->getCurrentTaskId() != Task::MoveToPosition
+    || m_bot->getTask()->data != node
+    || m_bot->m_position.distanceSq(target) > cr::sqrf(0.1f);
 
   if (m_bot->getCurrentTaskId() != Task::MoveToPosition) {
     m_bot->startTask(Task::MoveToPosition, TaskPri::MoveToPosition, node, 0.0f, true);
-  } else if (targetChanged) {
+  }
+  else if (targetChanged) {
     m_bot->clearSearchNodes();
   }
 

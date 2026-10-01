@@ -10,17 +10,19 @@
 
 namespace ai {
 
-Action GoalNavigationPolicy::decide(const Observation &observation) const {
-  if (!observation.bot.alive || observation.bot.currentGoalNode < 0 || observation.bot.currentGoalNode == observation.bot.currentNode) {
-    return {};
-  }
+Action GoalNavigationPolicy::decide (const Observation &observation) const {
+   if (!observation.bot.alive
+      || observation.bot.currentGoalNode < 0
+      || observation.bot.currentGoalNode == observation.bot.currentNode) {
+      return {};
+   }
 
-  Action action {};
-  action.type = ActionType::MoveToNode;
-  action.targetType = TargetType::Node;
-  action.targetNode = observation.bot.currentGoalNode;
-  action.confidence = 1.0f;
-  return action;
+   Action action {};
+   action.type = ActionType::MoveToNode;
+   action.targetType = TargetType::Node;
+   action.targetNode = observation.bot.currentGoalNode;
+   action.confidence = 1.0f;
+   return action;
 }
 
 } // namespace ai

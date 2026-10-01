@@ -16,6 +16,6 @@ namespace ai {
 
 // Builds an engine-independent snapshot from the live YaPB bot state.
 // The adapter only observes state; it does not change bot behavior.
-ObservationInput buildObservationInput(const Bot &bot);
+ObservationInput buildObservationInput (const Bot &bot);
 
 } // namespace ai

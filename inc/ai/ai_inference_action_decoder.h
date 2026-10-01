@@ -17,22 +17,25 @@
 namespace ai {
 
 enum class InferenceActionDecodeError : uint8_t {
-  None,
-  UnsupportedSchema,
-  InvalidActionId,
-  InvalidAction,
+   None,
+   UnsupportedSchema,
+   InvalidActionId,
+   InvalidAction,
 };
 
 struct InferenceActionDecodeResult {
-  Action action {};
-  InferenceActionDecodeError error { InferenceActionDecodeError::None };
-  ActionValidationError validationError { ActionValidationError::None };
+   Action action {};
+   InferenceActionDecodeError error { InferenceActionDecodeError::None };
+   ActionValidationError validationError { ActionValidationError::None };
 
-  bool isValid() const {
-    return error == InferenceActionDecodeError::None;
-  }
+   bool isValid () const {
+      return error == InferenceActionDecodeError::None;
+   }
 };
 
-InferenceActionDecodeResult decodeInferenceAction(const InferenceActionOutput &output, const Observation &observation);
+InferenceActionDecodeResult decodeInferenceAction (
+   const InferenceActionOutput &output,
+   const Observation &observation
+);
 
 } // namespace ai

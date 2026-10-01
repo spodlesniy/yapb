@@ -10,7 +10,9 @@
 
 namespace ai {
 
-ActionRuntime::ActionRuntime(ActionExecutor &executor) : m_pipeline(executor, m_actionState), m_loop(m_controller, m_pipeline) {
+ActionRuntime::ActionRuntime(ActionExecutor &executor)
+  : m_pipeline(executor, m_actionState),
+    m_loop(m_controller, m_pipeline) {
 }
 
 void ActionRuntime::setMode(ControlMode mode) {
@@ -43,7 +45,8 @@ const Policy *ActionRuntime::getPolicy() const {
 }
 
 bool ActionRuntime::isControlEnabled() const {
-  return m_controller.getMode() == ControlMode::Neural && m_controller.getPolicy() != nullptr;
+  return m_controller.getMode() == ControlMode::Neural
+    && m_controller.getPolicy() != nullptr;
 }
 
 Controller &ActionRuntime::controller() {

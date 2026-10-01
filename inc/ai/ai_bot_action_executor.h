@@ -31,7 +31,7 @@ public:
 
   ActionResult execute(const Action &action, const Observation &observation) override;
 
-  bool isActionStillOwned(const Action &action) const;
+  bool isActionStillOwned (const Action &action) const;
 };
 
 } // namespace ai

@@ -23,7 +23,9 @@ private:
   ActionState &m_state;
 
 public:
-  ActionPipeline(ActionExecutor &executor, ActionState &state) : m_executor(&executor), m_state(state) {
+  ActionPipeline(ActionExecutor &executor, ActionState &state)
+    : m_executor(&executor),
+      m_state(state) {
   }
 
   ActionPipeline(const ActionPipeline &) = delete;

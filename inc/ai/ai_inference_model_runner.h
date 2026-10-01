@@ -21,43 +21,44 @@ namespace ai {
 // it knows nothing about Observation, Bot, tasks, or Action validation.
 class InferenceModelRunner {
 public:
-  virtual ~InferenceModelRunner() = default;
+   virtual ~InferenceModelRunner () = default;
 
-  virtual InferenceResult run(const InferenceFeatures &features) const = 0;
+   virtual InferenceResult run (const InferenceFeatures &features) const = 0;
 };
 
 class ModelInferenceProvider final : public InferenceProvider {
 private:
-  const InferenceModelRunner *m_runner {};
+   const InferenceModelRunner *m_runner {};
 
 public:
-  explicit ModelInferenceProvider(const InferenceModelRunner *runner = nullptr) : m_runner(runner) {
-  }
+   explicit ModelInferenceProvider (const InferenceModelRunner *runner = nullptr)
+      : m_runner (runner) {
+   }
 
-  void setRunner(const InferenceModelRunner *runner) {
-    m_runner = runner;
-  }
+   void setRunner (const InferenceModelRunner *runner) {
+      m_runner = runner;
+   }
 
-  const InferenceModelRunner *getRunner() const {
-    return m_runner;
-  }
+   const InferenceModelRunner *getRunner () const {
+      return m_runner;
+   }
 
-  InferenceResult infer(const InferenceInput &input) const override {
-    if (!input.hasSupportedSchema()) {
-      InferenceResult result {};
-      result.status = InferenceStatus::InvalidInput;
-      return result;
-    }
+   InferenceResult infer (const InferenceInput &input) const override {
+      if (!input.hasSupportedSchema ()) {
+         InferenceResult result {};
+         result.status = InferenceStatus::InvalidInput;
+         return result;
+      }
 
-    if (m_runner == nullptr) {
-      InferenceResult result {};
-      result.status = InferenceStatus::Error;
-      return result;
-    }
+      if (m_runner == nullptr) {
+         InferenceResult result {};
+         result.status = InferenceStatus::Error;
+         return result;
+      }
 
-    const auto features = encodeInferenceFeatures(input.observation);
-    return m_runner->run(features);
-  }
+      const auto features = encodeInferenceFeatures (input.observation);
+      return m_runner->run (features);
+   }
 };
 
 } // namespace ai
