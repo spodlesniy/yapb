@@ -17,9 +17,7 @@ SpaceBeforeInitializerOptions:
   InConstructorInitializer: false
 SpacesInParens: Custom
 SpacesInParensOptions:
-  InFunctionCall: false
-  InFunctionDeclaration: false
-  InControlStatements: false
+  InConditionalStatements: false
   InCStyleCasts: true
   InEmptyParentheses: false
 PackConstructorInitializers: CurrentLine
