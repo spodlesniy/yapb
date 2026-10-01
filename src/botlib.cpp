@@ -8,6 +8,7 @@
 #include <yapb.h>
 
 #include <ai/ai_bot_adapter.h>
+#include <ai/ai_navigation_task_guard.h>
 
 ConVar cv_debug ("debug", "0", "Enables or disables useful messages about bot states. Not required for end users.", true, 0.0f, 4.0f);
 ConVar cv_ai_mode ("ai_mode", "0", "Selects AiPB control mode. 0 = Legacy, 1 = Neural, 2 = Training.", true, 0.0f, 2.0f);
@@ -3504,6 +3505,14 @@ void Bot::logic () {
 
    // check if need to use parachute
    checkParachute ();
+
+   // Legacy task selection can still happen after the AI decision (for
+   // example in overrideConditions, fall handling, or task execution).
+   // Never leave an AI navigation action active once legacy owns execution.
+   if (m_aiRuntime.isActive ()
+      && !ai::allowsNavigationOverride (getCurrentTaskId (), Task::Normal, Task::MoveToPosition)) {
+      m_aiRuntime.cancel ();
+   }
 
    // display some debugging thingy to host entity
    if (cv_debug.as <int> () >= 1) {
