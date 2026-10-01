@@ -8,10 +8,12 @@
 #include <yapb.h>
 
 #include <ai/ai_bot_adapter.h>
+#include <ai/ai_inference_model_service.h>
 #include <ai/ai_navigation_task_guard.h>
 
 ConVar cv_debug ("debug", "0", "Enables or disables useful messages about bot states. Not required for end users.", true, 0.0f, 4.0f);
 ConVar cv_ai_mode ("ai_mode", "0", "Selects AiPB control mode. 0 = Legacy, 1 = Neural, 2 = Training.", true, 0.0f, 2.0f);
+ConVar cv_ai_model ("ai_model", "", "Path to the ONNX model used by AiPB Neural mode.", false);
 ConVar cv_debug_goal ("debug_goal", "-1", "Forces all alive bots to build a path and go to the graph node specified here.", true, -1.0f, kMaxNodes);
 ConVar cv_user_follow_percent ("user_follow_percent", "20", "Specifies the percent of bots that can follow a leader at each round start.", true, 0.0f, 100.0f);
 ConVar cv_user_max_followers ("user_max_followers", "1", "Specifies how many bots can follow a single user.", true, 0.0f, static_cast <float> (kGameMaxPlayers / 4));
@@ -3114,6 +3116,15 @@ void Bot::update () {
    default:
       m_aiRuntime.setMode (ai::ControlMode::Legacy);
       break;
+   }
+
+   if (m_aiRuntime.controller ().getMode () == ai::ControlMode::Neural) {
+      auto &modelService = ai::getInferenceModelService ();
+      modelService.configure (cv_ai_model.as <StringRef> ().chars ());
+      m_aiRuntime.setInferenceProvider (modelService.getProvider ());
+   }
+   else {
+      m_aiRuntime.setInferenceProvider (nullptr);
    }
 
    m_canSetAimDirection = true;
