@@ -10,7 +10,6 @@
 
 #include <ai/ai_action_result.h>
 
-#include <array>
 #include <cstddef>
 #include <cstdint>
 
@@ -37,7 +36,7 @@ struct TrainingTransition {
 
 class TrainingBuffer final {
 private:
-  std::array<TrainingTransition, kTrainingTransitionCapacity> m_transitions {};
+  TrainingTransition m_transitions[kTrainingTransitionCapacity] {};
   size_t m_size {};
   uint64_t m_nextEpisodeId { 1 };
 
@@ -53,7 +52,7 @@ public:
 
   bool append(uint64_t episodeId, const Observation &observation, const Action &action, float reward,
               const Observation &nextObservation, const ActionResult &result) {
-    if (m_size >= m_transitions.size()) {
+    if (m_size >= kTrainingTransitionCapacity) {
       return false;
     }
 
@@ -74,11 +73,11 @@ public:
   }
 
   bool hasCapacity() const {
-    return m_size < m_transitions.size();
+    return m_size < kTrainingTransitionCapacity;
   }
 
   bool isFull() const {
-    return m_size >= m_transitions.size();
+    return m_size >= kTrainingTransitionCapacity;
   }
 
   size_t size() const {
