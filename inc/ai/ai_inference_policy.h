@@ -8,15 +8,16 @@
 
 #pragma once
 
+#include <ai/ai_inference_action_decoder.h>
 #include <ai/ai_inference_provider.h>
 #include <ai/ai_policy.h>
 
 namespace ai {
 
 // Adapts a backend-neutral InferenceProvider to the existing Policy contract.
-// Provider errors and incompatible schema versions are intentionally converted
-// to a no-op action so the inference boundary cannot inject undefined behavior
-// into the action runtime.
+// Provider errors, incompatible schemas, and invalid model actions are
+// intentionally converted to a no-op action so the inference boundary cannot
+// inject undefined behavior into the action runtime.
 class InferencePolicy final : public Policy {
 private:
    const InferenceProvider *m_provider {};
@@ -39,18 +40,23 @@ public:
          return {};
       }
 
-      const InferenceInput input { kInferenceSchemaVersion, observation };
+      const InferenceInput input { kInferenceInputSchemaVersion, observation };
       if (!input.hasSupportedSchema ()) {
          return {};
       }
 
       const InferenceResult result = m_provider->infer (input);
 
-      if (!result.hasSupportedSchema () || !result.isSuccess ()) {
+      if (!result.isSuccess ()) {
          return {};
       }
 
-      return result.action;
+      const auto decoded = decodeInferenceAction (result.output, observation);
+      if (!decoded.isValid ()) {
+         return {};
+      }
+
+      return decoded.action;
    }
 };
 

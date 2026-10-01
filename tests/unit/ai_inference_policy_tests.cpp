@@ -22,19 +22,18 @@ public:
    mutable int callCount {};
    mutable ai::InferenceInput lastInput {};
    ai::InferenceStatus status { ai::InferenceStatus::Success };
-   uint32_t resultSchemaVersion { ai::kInferenceSchemaVersion };
+   uint32_t resultSchemaVersion { ai::kInferenceActionSchemaVersion };
 
    ai::InferenceResult infer (const ai::InferenceInput &input) const override {
       ++callCount;
       lastInput = input;
 
       ai::InferenceResult result {};
-      result.schemaVersion = resultSchemaVersion;
       result.status = status;
-      result.action.type = ai::ActionType::MoveToNode;
-      result.action.targetType = ai::TargetType::Node;
-      result.action.targetNode = input.observation.bot.currentGoalNode;
-      result.action.confidence = 0.8f;
+      result.output.schemaVersion = resultSchemaVersion;
+      result.output.actionId = static_cast<uint8_t> (ai::InferenceActionId::MoveToNode);
+      result.output.targetNode = input.observation.bot.currentGoalNode;
+      result.output.confidence = 0.8f;
       return result;
    }
 };
@@ -54,7 +53,7 @@ AI_TEST (testInferencePolicy) {
    expect (action.targetNode == 17, "inference policy forwards observation to provider");
    expect (action.confidence == 0.8f, "inference policy preserves provider output");
    expect (provider.callCount == 1, "inference provider is invoked exactly once");
-   expect (provider.lastInput.schemaVersion == ai::kInferenceSchemaVersion,
+   expect (provider.lastInput.schemaVersion == ai::kInferenceInputSchemaVersion,
       "inference input uses the current schema version");
    expect (provider.lastInput.observation.bot.currentGoalNode == 17,
       "inference input preserves observation state");
@@ -149,7 +148,7 @@ AI_TEST (testInferencePolicyHandlesSchemaMismatch) {
    TestInferenceProvider provider {};
    ai::InferencePolicy policy { &provider };
 
-   provider.resultSchemaVersion = ai::kInferenceSchemaVersion + 1;
+   provider.resultSchemaVersion = ai::kInferenceActionSchemaVersion + 1;
 
    const ai::Action action = policy.decide ({});
 
@@ -161,12 +160,12 @@ AI_TEST (testInferenceContractDefaults) {
    const ai::InferenceInput input {};
    const ai::InferenceResult result {};
 
-   expect (input.schemaVersion == ai::kInferenceSchemaVersion,
+   expect (input.schemaVersion == ai::kInferenceInputSchemaVersion,
       "inference input defaults to current schema");
    expect (input.hasSupportedSchema (),
       "current inference input schema is supported");
-   expect (result.schemaVersion == ai::kInferenceSchemaVersion,
-      "inference result defaults to current schema");
+   expect (result.output.schemaVersion == ai::kInferenceActionSchemaVersion,
+      "inference output defaults to current schema");
    expect (!result.isSuccess (),
       "inference result defaults to no decision");
 }

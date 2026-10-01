@@ -8,21 +8,21 @@
 
 #pragma once
 
-#include <ai/ai_action.h>
+#include <ai/ai_inference_action.h>
 #include <ai/ai_observation.h>
 
 #include <cstdint>
 
 namespace ai {
 
-constexpr uint32_t kInferenceSchemaVersion = 1;
+constexpr uint32_t kInferenceInputSchemaVersion = 1;
 
 struct InferenceInput {
-   uint32_t schemaVersion { kInferenceSchemaVersion };
+   uint32_t schemaVersion { kInferenceInputSchemaVersion };
    Observation observation {};
 
    bool hasSupportedSchema () const {
-      return schemaVersion == kInferenceSchemaVersion;
+      return schemaVersion == kInferenceInputSchemaVersion;
    }
 };
 
@@ -34,13 +34,8 @@ enum class InferenceStatus : uint8_t {
 };
 
 struct InferenceResult {
-   uint32_t schemaVersion { kInferenceSchemaVersion };
    InferenceStatus status { InferenceStatus::NoDecision };
-   Action action {};
-
-   bool hasSupportedSchema () const {
-      return schemaVersion == kInferenceSchemaVersion;
-   }
+   InferenceActionOutput output {};
 
    bool isSuccess () const {
       return status == InferenceStatus::Success;
@@ -50,7 +45,7 @@ struct InferenceResult {
 // Backend-neutral inference contract.
 //
 // A provider owns the actual model/runtime interaction. It receives a versioned
-// semantic input and returns a versioned high-level action result. It must not
+// semantic input and returns a versioned primitive model output. It must not
 // know about GoldSrc, Bot, tasks, navigation, or engine input.
 class InferenceProvider {
 public:
