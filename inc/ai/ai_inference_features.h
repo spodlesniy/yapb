@@ -53,13 +53,13 @@ enum class Core : size_t {
    FirePauseRemaining,
    EnemyDistance,
    LastEnemyDistance,
-   WeaponBase,
-   ReloadBase,
-   ObjectiveBase,
-   NavigationBase,
-   PerceptionBase,
-   TaskBase,
-   Count,
+   WeaponBase = 30,
+   ReloadBase = WeaponBase + 10,
+   ObjectiveBase = ReloadBase + 3,
+   NavigationBase = ObjectiveBase + 7,
+   PerceptionBase = NavigationBase + 4,
+   TaskBase = PerceptionBase + 4,
+   Count = TaskBase + 20,
 };
 
 enum class Player : size_t {
@@ -91,7 +91,7 @@ enum class Waypoint : size_t {
 
 } // namespace InferenceFeature
 
-constexpr size_t kCoreFeatureCount = static_cast<size_t> (InferenceFeature::Core::TaskBase) + 20;
+constexpr size_t kCoreFeatureCount = static_cast<size_t> (InferenceFeature::Core::Count);
 constexpr size_t kPlayerFeatureCount = static_cast<size_t> (InferenceFeature::Player::Count);
 constexpr size_t kWaypointFeatureCount = static_cast<size_t> (InferenceFeature::Waypoint::Count);
 
