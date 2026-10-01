@@ -117,7 +117,11 @@ AI_TEST(testTrainingRecorderRejectsInvalidCompletion) {
          "mismatched result is rejected");
   expect(recorder.hasPendingAction(), "action remains pending after a mismatched result");
 
-  expect(recorder.finishAction(makeObservation(1.1f, 40), {}, 0.0f) == ai::TrainingRecordResult::NonTerminalResult,
+  ai::ActionResult nonTerminal {};
+  nonTerminal.action = action.type;
+  nonTerminal.type = ai::ActionResultType::Accepted;
+
+  expect(recorder.finishAction(makeObservation(1.1f, 40), nonTerminal, 0.0f) == ai::TrainingRecordResult::NonTerminalResult,
          "non-terminal result is rejected");
   expect(recorder.hasPendingAction(), "action remains pending after a non-terminal result");
 
