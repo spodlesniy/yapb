@@ -21,7 +21,8 @@ jobs:
 
       - name: Install format tools
         run: |
-          python3 -m pip install --disable-pip-version-check clang-format==18.1.8
+          python3 -m pip install --user --disable-pip-version-check clang-format==18.1.8
+          echo "$(python3 -m site --user-base)/bin" >> "$GITHUB_PATH"
 
       - name: Format new AiPB sources
         shell: bash
