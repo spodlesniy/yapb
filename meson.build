@@ -47,6 +47,10 @@ opt_static_linkent = get_option('static_linkent')
 opt_onnxruntime = get_option('onnxruntime')
 
 onnxruntime_dep = dependency('onnxruntime', required: opt_onnxruntime)
+onnx_cpp_args = []
+if opt_onnxruntime
+   onnx_cpp_args += '-DAIPB_WITH_ONNXRUNTIME'
+endif
 
 # cpp and ldflags from scratch
 cxxflags = []
@@ -343,7 +347,7 @@ shared_library(
    target_name,
    sources,
    include_directories: includes,
-   cpp_args: cxxflags + (['-DAIPB_WITH_ONNXRUNTIME'] if opt_onnxruntime else []),
+   cpp_args: cxxflags + onnx_cpp_args,
    link_args: ldflags,
    dependencies: onnxruntime_dep,
    gnu_symbol_visibility: 'hidden',
@@ -382,7 +386,7 @@ if get_option('tests')
    'src/ai/ai_onnx_model_runner.cpp',
       include_directories: include_directories('inc', 'tests/unit'),
       dependencies: onnxruntime_dep,
-      cpp_args: (['-DAIPB_WITH_ONNXRUNTIME'] if opt_onnxruntime else []),
+      cpp_args: onnx_cpp_args,
    )
 
    test('yapb_ai_tests', ai_tests)
