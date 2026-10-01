@@ -11,6 +11,7 @@
 #include <ai/ai_action_runtime.h>
 #include <ai/ai_bot_action_executor.h>
 #include <ai/ai_goal_navigation_policy.h>
+#include <ai/ai_inference_policy.h>
 
 namespace ai {
 
@@ -20,6 +21,7 @@ namespace ai {
 class BotRuntime final {
 private:
    GoalNavigationPolicy m_goalNavigationPolicy {};
+   InferencePolicy m_inferencePolicy {};
    BotActionExecutor m_executor;
    ActionRuntime m_runtime;
 
@@ -40,6 +42,15 @@ public:
 
    const Policy *getPolicy () const {
       return m_runtime.getPolicy ();
+   }
+
+   void setInferenceProvider (const InferenceProvider *provider) {
+      m_inferencePolicy.setProvider (provider);
+      m_runtime.setPolicy (provider != nullptr ? static_cast <const Policy *> (&m_inferencePolicy) : static_cast <const Policy *> (&m_goalNavigationPolicy));
+   }
+
+   const InferenceProvider *getInferenceProvider () const {
+      return m_inferencePolicy.getProvider ();
    }
 
    bool isControlEnabled () const {
