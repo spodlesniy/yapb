@@ -95,8 +95,63 @@ AI_TEST (testActionPipeline) {
    expect (!pipeline.isActive (), "pipeline reset clears action state");
 }
 
+AI_TEST (testActionLoopControlModes) {
+   TestPolicy policy {};
+   ai::Observation observation {};
+   observation.bot.alive = true;
+   observation.bot.currentNode = 40;
+
+   {
+      ai::Controller controller { ai::ControlMode::Legacy };
+      TestExecutor executor {};
+      ai::ActionState state {};
+      ai::ActionPipeline pipeline { executor, state };
+      ai::ActionLoop loop { controller, pipeline };
+
+      controller.setPolicy (&policy);
+
+      const ai::ActionResult result = loop.step (observation);
+      expect (result.action == ai::ActionType::None, "action loop blocks policy in Legacy mode");
+      expect (result.type == ai::ActionResultType::None, "Legacy mode produces no action result");
+      expect (executor.callCount () == 0, "Legacy mode does not invoke the executor");
+      expect (!loop.isActive (), "Legacy mode leaves the action loop inactive");
+   }
+
+   {
+      ai::Controller controller { ai::ControlMode::Neural };
+      TestExecutor executor {};
+      ai::ActionState state {};
+      ai::ActionPipeline pipeline { executor, state };
+      ai::ActionLoop loop { controller, pipeline };
+
+      controller.setPolicy (&policy);
+
+      const ai::ActionResult result = loop.step (observation);
+      expect (result.action == ai::ActionType::MoveToNode, "action loop executes policy in Neural mode");
+      expect (result.type == ai::ActionResultType::Accepted, "Neural mode returns the executor result");
+      expect (executor.callCount () == 1, "Neural mode invokes the executor");
+      expect (loop.isActive (), "Neural mode activates the action loop");
+   }
+
+   {
+      ai::Controller controller { ai::ControlMode::Training };
+      TestExecutor executor {};
+      ai::ActionState state {};
+      ai::ActionPipeline pipeline { executor, state };
+      ai::ActionLoop loop { controller, pipeline };
+
+      controller.setPolicy (&policy);
+
+      const ai::ActionResult result = loop.step (observation);
+      expect (result.action == ai::ActionType::None, "action loop blocks policy in Training mode");
+      expect (result.type == ai::ActionResultType::None, "Training mode produces no action result yet");
+      expect (executor.callCount () == 0, "Training mode does not invoke the executor");
+      expect (!loop.isActive (), "Training mode leaves the action loop inactive");
+   }
+}
+
 AI_TEST (testActionLoop) {
-   ai::Controller controller {};
+   ai::Controller controller { ai::ControlMode::Neural };
    TestExecutor executor {};
    ai::ActionState state {};
    ai::ActionPipeline pipeline { executor, state };
