@@ -3181,7 +3181,11 @@ void Bot::update () {
    else if (!m_botMovement) {
       resetMovement ();
    }
-   updateAIObservation ();
+   if (m_aiRuntime.controller ().getMode () == ai::ControlMode::Legacy
+      || m_aiRuntime.controller ().getPolicy () == nullptr) {
+      updateAIObservation ();
+   }
+
    runMovement ();
 }
 
@@ -3404,6 +3408,14 @@ void Bot::logic () {
       avoidGrenades ();
    }
    m_isUsingGrenade = false;
+
+   const bool aiControlActive = m_aiRuntime.controller ().getMode () != ai::ControlMode::Legacy
+      && m_aiRuntime.controller ().getPolicy () != nullptr;
+
+   if (aiControlActive) {
+      updateAIObservation ();
+      m_aiRuntime.step (m_aiObservation);
+   }
 
    executeTasks (); // execute current task
    setAimDirection (); // choose aim direction
