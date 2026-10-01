@@ -12,9 +12,8 @@ namespace ai {
 
 BotRuntime::BotRuntime (Bot &bot)
    : m_executor (bot),
-     m_pipeline (m_executor, m_actionState),
-     m_loop (m_controller, m_pipeline) {
-   m_controller.setPolicy (&m_goalNavigationPolicy);
+     m_runtime (m_executor) {
+   m_runtime.setPolicy (&m_goalNavigationPolicy);
 }
 
 } // namespace ai

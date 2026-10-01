@@ -20,6 +20,72 @@ namespace ai {
 class BotRuntime final {
 private:
    GoalNavigationPolicy m_goalNavigationPolicy {};
+   BotActionExecutor m_executor;
+   ActionRuntime m_runtime;
+
+public:
+   explicit BotRuntime (Bot &bot);
+
+   void setMode (ControlMode mode) {
+      m_runtime.setMode (mode);
+   }
+
+   ControlMode getMode () const {
+      return m_runtime.getMode ();
+   }
+
+   void setPolicy (const Policy *policy) {
+      m_runtime.setPolicy (policy);
+   }
+
+   const Policy *getPolicy () const {
+      return m_runtime.getPolicy ();
+   }
+
+   bool isControlEnabled () const {
+      return m_runtime.isControlEnabled ();
+   }
+
+   Controller &controller () {
+      return m_runtime.controller ();
+   }
+
+   const Controller &controller () const {
+      return m_runtime.controller ();
+   }
+
+   ActionState &actionState () {
+      return m_runtime.actionState ();
+   }
+
+   const ActionState &actionState () const {
+      return m_runtime.actionState ();
+   }
+
+   ActionResult step (const Observation &observation) {
+      return m_runtime.step (observation);
+   }
+
+   bool cancel () {
+      return m_runtime.cancel ();
+   }
+
+   void reset () {
+      m_runtime.reset ();
+   }
+
+   bool isActive () const {
+      return m_runtime.isActive ();
+   }
+
+   const Action &activeAction () const {
+      return m_runtime.activeAction ();
+   }
+
+   const ActionResult &result () const {
+      return m_runtime.result ();
+   }
+};
    Controller m_controller {};
    ActionState m_actionState {};
    BotActionExecutor m_executor;

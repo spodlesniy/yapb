@@ -8,10 +8,12 @@ namespace ai::test {
 class TestExecutor final : public ai::ActionExecutor {
 private:
    int m_callCount {};
+   ai::Action m_lastAction {};
 
 public:
    ai::ActionResult execute (const ai::Action &action, const ai::Observation &observation) override {
       ++m_callCount;
+      m_lastAction = action;
 
       ai::ActionResult result {};
       result.action = action.type;
@@ -21,6 +23,10 @@ public:
 
    int callCount () const {
       return m_callCount;
+   }
+
+   const ai::Action &lastAction () const {
+      return m_lastAction;
    }
 };
 
