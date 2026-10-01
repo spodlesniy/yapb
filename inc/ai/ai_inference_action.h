@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include <ai/ai_action.h>
 #include <ai/ai_observation.h>
 
 #include <cstdint>
