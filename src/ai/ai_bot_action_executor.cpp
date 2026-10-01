@@ -33,6 +33,15 @@ ActionResult BotActionExecutor::execute(const Action &action, const Observation 
     return { action.type, ActionResultType::Rejected, 0.0f };
   }
 
+  // During the transitional Neural runtime, existing YaPB tasks remain
+  // authoritative for non-navigation behavior. AI navigation must not
+  // silently replace combat, objective, or other higher-priority tasks.
+  if ((action.type == ActionType::MoveToNode || action.type == ActionType::MoveToPosition)
+      && m_bot->getCurrentTaskId () != Task::Normal
+      && m_bot->getCurrentTaskId () != Task::MoveToPosition) {
+    return { action.type, ActionResultType::Interrupted, 0.0f };
+  }
+
   switch (action.type) {
   case ActionType::MoveToNode:
     return executeMoveToNode(action);
