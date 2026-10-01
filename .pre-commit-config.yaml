@@ -6,5 +6,6 @@ repos:
     rev: v23.1.0
     hooks:
       - id: clang-format
+        args: [--Wno-error=unknown]
         files: '^(inc/ai|src/ai)/.*\.(h|hpp|c|cc|cpp|cxx)$|^tests/unit/ai_.*\.(h|hpp|c|cc|cpp|cxx)$'
         exclude: '(^|/)\.clang-(format|tidy)$'
