@@ -28,44 +28,19 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-
-          mapfile -t files < <(
-            {
-              find inc/ai src/ai tests/unit -type f \\
-                \\( -name '*.h' -o -name '*.hpp' -o -name '*.c' -o -name '*.cc' -o -name '*.cpp' -o -name '*.cxx' \\) \\
-                | sort
-            }
-          )
-
-          printf 'Formatting %s new AiPB source files...\\n' "${#files[@]}"
           clang-format --version
-
-          for file in "${files[@]}"; do
-            clang-format -i --style=file "$file"
-          done
+          find inc/ai src/ai tests/unit -type f \
+            \( -name '*.h' -o -name '*.hpp' -o -name '*.c' -o -name '*.cc' -o -name '*.cpp' -o -name '*.cxx' \) \
+            -print0 | xargs -0 clang-format -i --style=file
 
       - name: Verify formatting
         shell: bash
         run: |
           set -euo pipefail
-
           git diff --check
-
-          mapfile -t files < <(
-            {
-              find inc/ai src/ai tests/unit -type f \\
-                \\( -name '*.h' -o -name '*.hpp' -o -name '*.c' -o -name '*.cc' -o -name '*.cpp' -o -name '*.cxx' \\) \\
-                | sort
-            }
-          )
-
-          for file in "${files[@]}"; do
-            clang-format --dry-run --Werror --style=file "$file"
-          done
-
-          if git diff --quiet; then
-            exit 0
-          fi
+          find inc/ai src/ai tests/unit -type f \
+            \( -name '*.h' -o -name '*.hpp' -o -name '*.c' -o -name '*.cc' -o -name '*.cpp' -o -name '*.cxx' \) \
+            -print0 | xargs -0 -n1 clang-format --dry-run --Werror --style=file
 
       - name: Commit formatted sources
         shell: bash
