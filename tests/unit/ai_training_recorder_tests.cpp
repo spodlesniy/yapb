@@ -31,13 +31,20 @@ ai::Observation makeObservation(float gameTime, int currentNode) {
   return observation;
 }
 
+ai::ActionResult makeCompletedResult(ai::ActionType action) {
+  ai::ActionResult result {};
+  result.action = action;
+  result.type = ai::ActionResultType::Completed;
+  return result;
+}
+
 } // namespace
 
 AI_TEST(testTrainingRecorderStartsEmpty) {
   ai::TrainingRecorder recorder {};
 
-  expect(recorder.empty(), "training recorder starts empty");
-  expect(recorder.size() == 0, "training recorder starts with zero transitions");
+  expect(recorder.buffer().empty(), "training recorder starts empty");
+  expect(recorder.buffer().size() == 0, "training recorder starts with zero transitions");
   expect(recorder.episodeId() == 0, "training recorder starts before the first episode");
   expect(!recorder.hasPendingAction(), "training recorder starts without a pending action");
 }
@@ -50,7 +57,7 @@ AI_TEST(testTrainingRecorderEpisodeLifecycle) {
 
   recorder.beginEpisode();
   expect(recorder.episodeId() == 2, "beginEpisode advances the episode id");
-  expect(recorder.empty(), "starting a new episode does not erase completed transitions");
+  expect(recorder.buffer().empty(), "starting a new episode does not erase completed transitions");
 }
 
 AI_TEST(testTrainingRecorderCompletesTransition) {
@@ -70,7 +77,7 @@ AI_TEST(testTrainingRecorderCompletesTransition) {
   const auto nonTerminal = recorder.finishAction(makeObservation(10.1f, 40), accepted, 0.25f);
   expect(nonTerminal == ai::TrainingRecordResult::NonTerminalResult, "non-terminal result does not emit a transition");
   expect(recorder.hasPendingAction(), "non-terminal result keeps the action pending");
-  expect(recorder.empty(), "non-terminal result leaves the transition buffer unchanged");
+  expect(recorder.buffer().empty(), "non-terminal result leaves the transition buffer unchanged");
 
   ai::ActionResult completed {};
   completed.action = action.type;
@@ -80,9 +87,9 @@ AI_TEST(testTrainingRecorderCompletesTransition) {
   const auto recorded = recorder.finishAction(makeObservation(10.8f, 41), completed, 1.5f);
   expect(recorded == ai::TrainingRecordResult::Recorded, "terminal result records a transition");
   expect(!recorder.hasPendingAction(), "recorded transition clears the pending action");
-  expect(recorder.size() == 1, "recorded transition increments buffer size");
+  expect(recorder.buffer().size() == 1, "recorded transition increments buffer size");
 
-  const auto &transition = recorder.at(0);
+  const auto &transition = recorder.buffer().at(0);
   expect(transition.episodeId == 1, "transition stores its episode id");
   expect(transition.observation.gameTime == 10.0f, "transition stores the starting observation");
   expect(transition.action.targetNode == 41, "transition stores the selected action");
@@ -179,8 +186,8 @@ AI_TEST(testTrainingBufferReportsFullCapacity) {
            "recorder records each transition before the buffer is full");
   }
 
-  expect(recorder.isFull(), "recorder reports a full transition buffer");
-  expect(recorder.size() == ai::kTrainingTransitionCapacity, "recorder reaches its configured transition capacity");
+  expect(recorder.buffer().isFull(), "recorder reports a full transition buffer");
+  expect(recorder.buffer().size() == ai::kTrainingTransitionCapacity, "recorder reaches its configured transition capacity");
 
   expect(recorder.startAction(makeObservation(999.0f, 999), action), "recorder can keep a pending action after the buffer fills");
   expect(recorder.finishAction(makeObservation(999.5f, 1000), completed, 0.0f) == ai::TrainingRecordResult::BufferFull,
