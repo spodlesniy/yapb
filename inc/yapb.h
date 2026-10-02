@@ -865,6 +865,10 @@ public:
       return m_aiRuntime.actionState ();
    }
 
+   ai::TrainingDatasetWriteResult saveTrainingDataset (const char *filePath) const {
+      return m_aiRuntime.saveTrainingDataset (filePath);
+   }
+
    // bots array index
    int index () const {
       return m_index;

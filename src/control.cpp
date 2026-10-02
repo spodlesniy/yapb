@@ -356,6 +356,34 @@ int BotControl::cmdExec () {
    return BotCommandResult::Handled;
 }
 
+int BotControl::cmdSaveTraining () {
+   enum args { alias = 1, file };
+
+   if (!hasArg (file)) {
+      return BotCommandResult::BadFormat;
+   }
+
+   if (bots.begin () == bots.end ()) {
+      msg ("Unable to save training dataset: no bots are available.");
+      return BotCommandResult::Handled;
+   }
+
+   auto bot = *bots.begin ();
+   if (!bot) {
+      msg ("Unable to save training dataset: bot is unavailable.");
+      return BotCommandResult::Handled;
+   }
+
+   const auto result = bot->saveTrainingDataset (arg <StringRef> (file).chars ());
+   if (!result.isValid ()) {
+      msg ("Unable to save training dataset to "%s".", arg <StringRef> (file));
+      return BotCommandResult::Handled;
+   }
+
+   msg ("Training dataset saved to "%s" (%d transitions).", arg <StringRef> (file), static_cast <int> (result.count));
+   return BotCommandResult::Handled;
+}
+
 int BotControl::cmdNode () {
    enum args { root, alias, cmd, cmd2 };
 
@@ -2303,6 +2331,13 @@ BotControl::BotControl () {
          "Executes a client command on bot entity.",
 
          &BotControl::cmdExec
+      },
+      {
+         "ai_save_training",
+         "ai_save_training [file]",
+         "Saves the collected AI training dataset to a JSONL file.",
+
+         &BotControl::cmdSaveTraining
       }
    };
 
