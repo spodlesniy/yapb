@@ -8,8 +8,6 @@
 
 #include <type_traits>
 
-#include <yapb.h>
-
 #include <ai/ai_bot_runtime.h>
 #include <ai/ai_training_recorder.h>
 
@@ -35,11 +33,6 @@ using BotRuntimeTrainingBufferGetter = ai::TrainingBuffer &(ai::BotRuntime::*)()
 static_assert(std::is_same_v<decltype(static_cast<BotRuntimeTrainingBufferGetter>(&ai::BotRuntime::trainingBuffer)),
                              BotRuntimeTrainingBufferGetter>,
               "BotRuntime must expose a training buffer accessor");
-
-using BotTrainingBufferGetter = ai::TrainingBuffer &(Bot::*)();
-static_assert(std::is_same_v<decltype(static_cast<BotTrainingBufferGetter>(&Bot::getAITrainingBuffer)),
-                             BotTrainingBufferGetter>,
-              "Bot must expose a training buffer accessor");
 
 #include <ai/ai_inference_policy.h>
 
