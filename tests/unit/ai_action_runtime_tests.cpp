@@ -514,7 +514,5 @@ AI_TEST(testActionRuntime) {
     expect(runtime.result().type == ai::ActionResultType::Interrupted, "mode cancellation produces interrupted result");
     expect(runtime.getMode() == ai::ControlMode::Legacy, "runtime reports the new control mode");
     expect(!runtime.isControlEnabled(), "runtime disables control outside Neural mode");
-}
-
   }
 }
