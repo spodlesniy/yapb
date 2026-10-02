@@ -134,6 +134,7 @@ public:
 
   void reset() {
     m_runtime.reset();
+    m_trainingCollector.reset();
   }
 
   bool isActive() const {

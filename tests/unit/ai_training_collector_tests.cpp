@@ -45,6 +45,38 @@ ai::Observation makeObservation(float gameTime, int currentNode) {
 
 } // namespace
 
+AI_TEST(testTrainingCollectorResetPreservesBuffer) {
+  ai::TrainingBuffer buffer {};
+  ai::TrainingRecorder recorder { buffer };
+  FixedRewardProvider rewards {};
+  ai::TrainingCollector collector { recorder, rewards };
+
+  ai::test::TestExecutor executor {};
+  executor.setResult(ai::ActionResultType::Completed);
+
+  ai::ActionRuntime runtime { executor };
+  ai::test::TestPolicy policy {};
+  runtime.setMode(ai::ControlMode::Training);
+  runtime.setPolicy(&policy);
+
+  collector.step(runtime, makeObservation(40.0f, 60));
+  expect(recorder.hasPendingAction(), "reset test starts with a pending action");
+  expect(recorder.episodeId() != 0, "reset test starts an episode");
+
+  executor.setResult(ai::ActionResultType::Completed);
+  collector.step(runtime, makeObservation(41.0f, 61));
+  expect(buffer.size() == 1, "reset test creates a completed sample");
+
+  collector.step(runtime, makeObservation(42.0f, 61));
+  expect(recorder.hasPendingAction(), "reset test starts a new pending action");
+
+  collector.reset();
+
+  expect(!recorder.hasPendingAction(), "collector reset clears pending action");
+  expect(recorder.episodeId() == 0, "collector reset clears current episode");
+  expect(buffer.size() == 1, "collector reset preserves previously recorded samples");
+}
+
 AI_TEST(testTrainingCollectorRecordsTrainingCompletion) {
   ai::TrainingBuffer buffer {};
   ai::TrainingRecorder recorder { buffer };
