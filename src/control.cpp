@@ -363,18 +363,9 @@ int BotControl::cmdSaveTraining () {
       return BotCommandResult::BadFormat;
    }
 
-   if (bots.begin () == bots.end ()) {
-      msg ("Unable to save training dataset: no bots are available.");
-      return BotCommandResult::Handled;
-   }
-
-   auto bot = *bots.begin ();
-   if (!bot) {
-      msg ("Unable to save training dataset: bot is unavailable.");
-      return BotCommandResult::Handled;
-   }
-
-   const auto result = bot->saveTrainingDataset (arg <StringRef> (file).chars ());
+   const auto result = ai::writeTrainingDataset (
+      ai::getTrainingBuffer (), arg <StringRef> (file).chars ()
+   );
    if (!result.isValid ()) {
       msg ("Unable to save training dataset to "%s".", arg <StringRef> (file));
       return BotCommandResult::Handled;
