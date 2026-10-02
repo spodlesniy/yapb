@@ -10,8 +10,7 @@
 
 #include <cstdio>
 
-#include <crlib/twin.h>
-#include <crlib/files.h>
+#include <crlib/crlib.h>
 
 namespace ai {
 namespace {
