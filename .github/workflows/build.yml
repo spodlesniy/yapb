@@ -116,7 +116,7 @@ jobs:
 
   bot-msvc:
     if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master' || github.event_name == 'release'
-    needs: [unit-tests]
+    needs: [unit-tests, training-tools]
     env:
       name: windows-x86-msvc
 
@@ -161,7 +161,7 @@ jobs:
 
   bot-apple:
     if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master' || github.event_name == 'release'
-    needs: [unit-tests]
+    needs: [unit-tests, training-tools]
     env:
       name: apple-arm64
 
