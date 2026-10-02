@@ -45,6 +45,30 @@ ai::Observation makeObservation(float gameTime, int currentNode) {
 
 } // namespace
 
+AI_TEST(testTrainingCollectorCanReplaceRewardProvider) {
+  ai::TrainingBuffer buffer {};
+  ai::TrainingRecorder recorder { buffer };
+  FixedRewardProvider initialRewards {};
+  FixedRewardProvider replacementRewards {};
+  ai::TrainingCollector collector { recorder, initialRewards };
+
+  collector.setRewardProvider(replacementRewards);
+
+  ai::test::TestExecutor executor {};
+  executor.setResult(ai::ActionResultType::Completed);
+
+  ai::ActionRuntime runtime { executor };
+  ai::test::TestPolicy policy {};
+  runtime.setMode(ai::ControlMode::Training);
+  runtime.setPolicy(&policy);
+
+  const auto result = collector.step(runtime, makeObservation(60.0f, 80));
+
+  expect(result.type == ai::ActionResultType::Completed, "replacement provider test completes the action");
+  expect(initialRewards.callCount == 0, "replaced reward provider is not invoked");
+  expect(replacementRewards.callCount == 1, "replacement reward provider is invoked");
+}
+
 AI_TEST(testTrainingCollectorEndsEpisode) {
   ai::TrainingBuffer buffer {};
   ai::TrainingRecorder recorder { buffer };
