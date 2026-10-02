@@ -375,6 +375,12 @@ int BotControl::cmdSaveTraining () {
    return BotCommandResult::Handled;
 }
 
+int BotControl::cmdClearTraining () {
+   ai::getTrainingBuffer ().clear ();
+   msg ("AI training dataset has been cleared.");
+   return BotCommandResult::Handled;
+}
+
 int BotControl::cmdNode () {
    enum args { root, alias, cmd, cmd2 };
 
@@ -2329,6 +2335,13 @@ BotControl::BotControl () {
          "Saves the collected AI training dataset to a JSONL file.",
 
          &BotControl::cmdSaveTraining
+      },
+      {
+         "ai_clear_training",
+         "ai_clear_training",
+         "Clears collected AI training transitions without resetting the training episode sequence.",
+
+         &BotControl::cmdClearTraining
       }
    };
 
