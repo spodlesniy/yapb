@@ -14,6 +14,7 @@
 #include <ai/ai_inference_policy.h>
 #include <ai/ai_reward_provider.h>
 #include <ai/ai_training_collector.h>
+#include <ai/ai_training_dataset.h>
 #include <ai/ai_training_recorder.h>
 
 namespace ai {
@@ -125,6 +126,10 @@ public:
 
   const TrainingBuffer &trainingBuffer() const {
     return m_trainingRecorder.buffer();
+  }
+
+  TrainingDatasetWriteResult saveTrainingDataset(const char *filePath) const {
+    return writeTrainingDataset(m_trainingRecorder.buffer(), filePath);
   }
 
   bool isControlEnabled() const {

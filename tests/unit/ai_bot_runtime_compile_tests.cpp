@@ -34,6 +34,11 @@ static_assert(std::is_same_v<decltype(static_cast<BotRuntimeTrainingBufferGetter
                              BotRuntimeTrainingBufferGetter>,
               "BotRuntime must expose a training buffer accessor");
 
+using BotRuntimeTrainingDatasetSaver = ai::TrainingDatasetWriteResult (ai::BotRuntime::*)(const char *) const;
+static_assert(std::is_same_v<decltype(static_cast<BotRuntimeTrainingDatasetSaver>(&ai::BotRuntime::saveTrainingDataset)),
+                             BotRuntimeTrainingDatasetSaver>,
+              "BotRuntime must expose a training dataset save entry point");
+
 #include <ai/ai_inference_policy.h>
 
 namespace {
