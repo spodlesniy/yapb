@@ -128,8 +128,8 @@ public:
     return m_trainingCollector.step(m_runtime, observation, allowDecision);
   }
 
-  bool cancel() {
-    return m_runtime.cancel();
+  bool cancel(const Observation &nextObservation) {
+    return m_trainingCollector.cancel(m_runtime, nextObservation);
   }
 
   void reset() {
