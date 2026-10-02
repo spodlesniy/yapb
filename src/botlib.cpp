@@ -3107,15 +3107,15 @@ void Bot::update () {
 
    switch (cv_ai_mode.as <int> ()) {
    case 1:
-      m_aiRuntime.setMode (ai::ControlMode::Neural);
+      m_aiRuntime.setMode (ai::ControlMode::Neural, m_aiObservation);
       break;
 
    case 2:
-      m_aiRuntime.setMode (ai::ControlMode::Training);
+      m_aiRuntime.setMode (ai::ControlMode::Training, m_aiObservation);
       break;
 
    default:
-      m_aiRuntime.setMode (ai::ControlMode::Legacy);
+      m_aiRuntime.setMode (ai::ControlMode::Legacy, m_aiObservation);
       break;
    }
 

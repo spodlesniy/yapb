@@ -34,8 +34,16 @@ private:
 public:
   explicit BotRuntime(Bot &bot);
 
-  void setMode(ControlMode mode) {
+  void setMode(ControlMode mode, const Observation &nextObservation) {
     const auto previousMode = m_runtime.getMode();
+    if (mode == previousMode) {
+      return;
+    }
+
+    if ((previousMode == ControlMode::Neural || previousMode == ControlMode::Training) && m_runtime.isActive()) {
+      m_trainingCollector.cancel(m_runtime, nextObservation);
+    }
+
     m_runtime.setMode(mode);
 
     switch (mode) {

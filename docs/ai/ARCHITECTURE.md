@@ -69,7 +69,7 @@ When lifecycle behavior changes, verify the interaction among:
 
 `BotRuntime -> TrainingCollector -> ActionRuntime -> TrainingRecorder`
 
-Changing `ActionRuntime` control mode cancels any active action before the new mode becomes authoritative. This applies to all mode transitions, including `Neural <-> Training`.
+Changing `BotRuntime` control mode first routes an active `Neural` or `Training` action through `TrainingCollector` with the current observation, then changes the underlying `ActionRuntime` mode. This preserves the terminal transition at mode boundaries before the new mode becomes authoritative.
 
 Avoid creating multiple independent sources of truth for episode and pending-action state.
 

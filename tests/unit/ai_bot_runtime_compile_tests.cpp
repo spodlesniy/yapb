@@ -20,6 +20,10 @@ static_assert(std::is_same_v<decltype(static_cast<BotRuntimeRewardProviderSetter
                              BotRuntimeRewardProviderSetter>,
               "BotRuntime must expose a reward provider setter");
 
+using BotRuntimeModeSetter = void (ai::BotRuntime::*)(ai::ControlMode, const ai::Observation &);
+static_assert(std::is_same_v<decltype(static_cast<BotRuntimeModeSetter>(&ai::BotRuntime::setMode)), BotRuntimeModeSetter>,
+              "BotRuntime mode setter must accept the current observation");
+
 using BotRuntimeTrainingEpisodeBegin = void (ai::BotRuntime::*)();
 static_assert(std::is_same_v<decltype(static_cast<BotRuntimeTrainingEpisodeBegin>(&ai::BotRuntime::beginTrainingEpisode)),
                              BotRuntimeTrainingEpisodeBegin>,
