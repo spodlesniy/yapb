@@ -52,7 +52,6 @@ AI_TEST(testTrainingCollectorResetPreservesBuffer) {
   ai::TrainingCollector collector { recorder, rewards };
 
   ai::test::TestExecutor executor {};
-  executor.setResult(ai::ActionResultType::Completed);
 
   ai::ActionRuntime runtime { executor };
   ai::test::TestPolicy policy {};
