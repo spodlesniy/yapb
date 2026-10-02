@@ -6,6 +6,7 @@
 // SPDX-License-Identifier: MIT
 //
 
+#include <ai/ai_inference_action_encoder.h>
 #include <ai/ai_training_sample.h>
 
 namespace ai {
