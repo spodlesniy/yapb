@@ -42,6 +42,8 @@ Training data is collected around the action lifecycle:
 
 `beginEpisode -> startAction -> execution -> terminal/cancel -> reward -> finishAction`
 
+A recorder may start an action only while an active non-zero episode identifier exists.
+
 The main responsibilities are split as follows:
 
 - `TrainingRecorder` owns transition lifecycle state and stores completed transitions in the training buffer.

@@ -127,7 +127,7 @@ public:
   }
 
   bool startAction(const Observation &observation, const Action &action) {
-    if (m_pendingAction || action.type == ActionType::None) {
+    if (m_episodeId == 0 || m_pendingAction || action.type == ActionType::None) {
       return false;
     }
 

@@ -73,6 +73,17 @@ AI_TEST(testTrainingBufferExposesReadOnlyData) {
   expect(data[0].reward == 1.25f, "data exposes the recorded transition contents");
 }
 
+AI_TEST(testTrainingRecorderRequiresActiveEpisode) {
+  ai::TrainingBuffer buffer {};
+  ai::TrainingRecorder recorder { buffer };
+
+  const auto action = makeMoveAction(41);
+  expect(!recorder.startAction(makeObservation(1.0f, 40), action),
+         "recorder rejects actions when no training episode is active");
+  expect(!recorder.hasPendingAction(), "rejected action does not create pending state");
+  expect(buffer.empty(), "rejected action does not modify the training buffer");
+}
+
 AI_TEST(testTrainingRecorderStartsEmpty) {
   ai::TrainingBuffer buffer {};
   ai::TrainingRecorder recorder { buffer };
