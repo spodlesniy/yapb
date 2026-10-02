@@ -339,3 +339,96 @@ AI_TEST(testTrainingSampleEncodingPreservesNonZeroRewardAndTerminalState) {
   expect(encoded.sample.result == ai::ActionResultType::Failed, "failed result metadata is preserved");
   expect(encoded.sample.terminal, "failed result is marked terminal");
 }
+
+AI_TEST(testTrainingBufferBatchEncoding) {
+  ai::TrainingBuffer buffer {};
+  ai::TrainingRecorder recorder { buffer };
+  recorder.beginEpisode();
+
+  const auto firstAction = makeMoveAction(41);
+  expect(recorder.startAction(makeObservation(1.0f, 40), firstAction), "batch test starts the first action");
+  expect(recorder.finishAction(makeObservation(1.5f, 41), makeCompletedResult(firstAction.type), 1.0f) ==
+             ai::TrainingRecordResult::Recorded,
+         "batch test records the first transition");
+
+  const auto secondAction = makeMoveAction(42);
+  expect(recorder.startAction(makeObservation(2.0f, 41), secondAction), "batch test starts the second action");
+  expect(recorder.finishAction(makeObservation(2.5f, 42), makeCompletedResult(secondAction.type), -1.0f) ==
+             ai::TrainingRecordResult::Recorded,
+         "batch test records the second transition");
+
+  ai::TrainingSample samples[2] {};
+  const auto encoded = ai::encodeTrainingBuffer(buffer, samples, 2);
+
+  expect(encoded.isValid(), "training buffer encodes as a complete batch");
+  expect(encoded.count == 2, "batch encoder returns the number of encoded samples");
+  expect(encoded.failedIndex == 0, "successful batch does not report a failed index");
+  expect(samples[0].episodeId == 1, "first sample preserves the episode id");
+  expect(samples[0].action.targetNode == 41, "first sample preserves its action");
+  expect(samples[0].reward == 1.0f, "first sample preserves its reward");
+  expect(samples[1].action.targetNode == 42, "second sample preserves its action");
+  expect(samples[1].reward == -1.0f, "second sample preserves its reward");
+}
+
+AI_TEST(testTrainingBufferBatchEncodingRejectsSmallOutputBuffer) {
+  ai::TrainingBuffer buffer {};
+  ai::TrainingRecorder recorder { buffer };
+  recorder.beginEpisode();
+
+  const auto action = makeMoveAction(41);
+  expect(recorder.startAction(makeObservation(1.0f, 40), action), "small-buffer test starts an action");
+  expect(recorder.finishAction(makeObservation(1.5f, 41), makeCompletedResult(action.type), 1.0f) ==
+             ai::TrainingRecordResult::Recorded,
+         "small-buffer test records a transition");
+
+  ai::TrainingSample samples[1] {};
+  const auto encoded = ai::encodeTrainingBuffer(buffer, samples, 0);
+
+  expect(encoded.error == ai::TrainingSampleEncodeError::OutputBufferTooSmall,
+         "batch encoder rejects an undersized output buffer");
+  expect(encoded.count == 0, "small output buffer produces no encoded samples");
+}
+
+AI_TEST(testTrainingBufferBatchEncodingRejectsNullOutputBuffer) {
+  ai::TrainingBuffer buffer {};
+  ai::TrainingRecorder recorder { buffer };
+  recorder.beginEpisode();
+
+  const auto action = makeMoveAction(41);
+  expect(recorder.startAction(makeObservation(1.0f, 40), action), "null-buffer test starts an action");
+  expect(recorder.finishAction(makeObservation(1.5f, 41), makeCompletedResult(action.type), 1.0f) ==
+             ai::TrainingRecordResult::Recorded,
+         "null-buffer test records a transition");
+
+  const auto encoded = ai::encodeTrainingBuffer(buffer, nullptr, buffer.size());
+
+  expect(encoded.error == ai::TrainingSampleEncodeError::NullOutputBuffer,
+         "batch encoder rejects a null output buffer");
+  expect(encoded.count == 0, "null output buffer produces no encoded samples");
+}
+
+AI_TEST(testTrainingBufferBatchEncodingStopsOnInvalidTransition) {
+  ai::TrainingBuffer buffer {};
+  const auto episode = buffer.beginEpisode();
+
+  expect(buffer.append(episode, makeObservation(1.0f, 40), makeMoveAction(41), 1.0f,
+                       makeObservation(1.5f, 41), makeCompletedResult(ai::ActionType::MoveToNode)),
+         "invalid-batch test appends a valid transition");
+
+  ai::TrainingTransition unsupported {};
+  unsupported.episodeId = episode;
+  unsupported.action.type = ai::ActionType::Count;
+  unsupported.result = makeCompletedResult(unsupported.action.type);
+  expect(buffer.append(unsupported.episodeId, unsupported.observation, unsupported.action, unsupported.reward,
+                       unsupported.nextObservation, unsupported.result),
+         "invalid-batch test appends an unsupported transition");
+
+  ai::TrainingSample samples[2] {};
+  const auto encoded = ai::encodeTrainingBuffer(buffer, samples, 2);
+
+  expect(encoded.error == ai::TrainingSampleEncodeError::UnsupportedAction,
+         "batch encoder reports the first transition encoding error");
+  expect(encoded.failedIndex == 1, "batch encoder reports the failed transition index");
+  expect(encoded.count == 1, "batch encoder reports successfully encoded samples before failure");
+  expect(samples[0].action.targetNode == 41, "batch encoder keeps the successfully encoded prefix");
+}

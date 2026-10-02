@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 
 #include <ai/ai_inference_action.h>
@@ -20,6 +21,8 @@ enum class TrainingSampleEncodeError : uint8_t {
   None,
   InvalidEpisode,
   UnsupportedAction,
+  NullOutputBuffer,
+  OutputBufferTooSmall,
 };
 
 struct TrainingSample {
@@ -47,5 +50,17 @@ struct TrainingSampleEncodeResult {
 };
 
 TrainingSampleEncodeResult encodeTrainingTransition(const TrainingTransition &transition);
+
+struct TrainingBatchEncodeResult {
+  size_t count {};
+  size_t failedIndex {};
+  TrainingSampleEncodeError error { TrainingSampleEncodeError::None };
+
+  bool isValid() const {
+    return error == TrainingSampleEncodeError::None;
+  }
+};
+
+TrainingBatchEncodeResult encodeTrainingBuffer(const TrainingBuffer &buffer, TrainingSample *samples, size_t capacity);
 
 } // namespace ai

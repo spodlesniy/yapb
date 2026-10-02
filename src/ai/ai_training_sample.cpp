@@ -37,4 +37,39 @@ TrainingSampleEncodeResult encodeTrainingTransition(const TrainingTransition &tr
   return result;
 }
 
+
+TrainingBatchEncodeResult encodeTrainingBuffer(const TrainingBuffer &buffer, TrainingSample *samples, size_t capacity) {
+  TrainingBatchEncodeResult result {};
+  const auto count = buffer.size();
+
+  if (count == 0) {
+    return result;
+  }
+
+  if (samples == nullptr) {
+    result.error = TrainingSampleEncodeError::NullOutputBuffer;
+    return result;
+  }
+
+  if (capacity < count) {
+    result.error = TrainingSampleEncodeError::OutputBufferTooSmall;
+    return result;
+  }
+
+  for (size_t i = 0; i < count; ++i) {
+    const auto encoded = encodeTrainingTransition(buffer.at(i));
+
+    if (!encoded.isValid()) {
+      result.failedIndex = i;
+      result.error = encoded.error;
+      return result;
+    }
+
+    samples[i] = encoded.sample;
+    result.count = i + 1;
+  }
+
+  return result;
+}
+
 } // namespace ai
