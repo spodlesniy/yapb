@@ -865,6 +865,14 @@ public:
       return m_aiRuntime.actionState ();
    }
 
+   ai::TrainingBuffer &getAITrainingBuffer () {
+      return m_aiRuntime.trainingBuffer ();
+   }
+
+   const ai::TrainingBuffer &getAITrainingBuffer () const {
+      return m_aiRuntime.trainingBuffer ();
+   }
+
    // bots array index
    int index () const {
       return m_index;

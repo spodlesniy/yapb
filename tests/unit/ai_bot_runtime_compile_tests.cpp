@@ -29,6 +29,16 @@ static_assert(std::is_same_v<decltype(static_cast<BotRuntimeTrainingEpisodeBegin
                              BotRuntimeTrainingEpisodeBegin>,
               "BotRuntime must expose a training episode lifecycle entry point");
 
+using BotRuntimeTrainingBufferGetter = ai::TrainingBuffer &(ai::BotRuntime::*)();
+static_assert(std::is_same_v<decltype(static_cast<BotRuntimeTrainingBufferGetter>(&ai::BotRuntime::trainingBuffer)),
+                             BotRuntimeTrainingBufferGetter>,
+              "BotRuntime must expose a training buffer accessor");
+
+using BotTrainingBufferGetter = ai::TrainingBuffer &(ai::Bot::*)();
+static_assert(std::is_same_v<decltype(static_cast<BotTrainingBufferGetter>(&ai::Bot::getAITrainingBuffer)),
+                             BotTrainingBufferGetter>,
+              "Bot must expose a training buffer accessor");
+
 #include <ai/ai_inference_policy.h>
 
 namespace {
