@@ -66,11 +66,15 @@ public:
     return true;
   }
 
-  void reset() {
+  void clear() {
     for (size_t i = 0; i < kTrainingTransitionCapacity; ++i) {
       m_transitions[i] = {};
     }
     m_size = 0;
+  }
+
+  void reset() {
+    clear();
     m_nextEpisodeId = 1;
   }
 

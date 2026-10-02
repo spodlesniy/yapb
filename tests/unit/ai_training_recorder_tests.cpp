@@ -201,6 +201,22 @@ AI_TEST(testTrainingRecorderResetDoesNotEraseSharedSamples) {
   expect(recorder.episodeId() == 0, "recorder reset clears its own episode state");
 }
 
+AI_TEST(testTrainingBufferCanBeClearedWithoutResettingEpisodeIds) {
+  ai::TrainingBuffer buffer {};
+
+  const auto firstEpisode = buffer.beginEpisode();
+  expect(firstEpisode == 1, "first buffer episode starts at one");
+  expect(buffer.append(firstEpisode, makeObservation(1.0f, 40), makeMoveAction(41), 1.0f,
+                     makeObservation(1.5f, 41), makeCompletedResult(ai::ActionType::MoveToNode)),
+         "buffer accepts the first sample");
+
+  buffer.clear();
+
+  expect(buffer.empty(), "clear removes completed transitions");
+  const auto secondEpisode = buffer.beginEpisode();
+  expect(secondEpisode == 2, "clear preserves the episode id sequence");
+}
+
 AI_TEST(testTrainingBufferCanBeResetIndependently) {
   ai::TrainingBuffer buffer {};
   ai::TrainingRecorder first { buffer };

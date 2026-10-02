@@ -53,7 +53,8 @@ The main responsibilities are split as follows:
 - `RewardProvider` supplies reward values without embedding game-specific heuristics into the recorder.
 - `BotRuntime` uses `ZeroRewardProvider` by default and can be configured with another `RewardProvider` for live training.
 - A configured reward provider must outlive the `BotRuntime` that uses it.
-- `TrainingBuffer` owns fixed-capacity transition storage and exposes read-only contiguous data access.
+- `TrainingBuffer` owns fixed-capacity transition storage, exposes read-only contiguous data access, and separates sample clearing from full state reset.
+- `TrainingBuffer::clear()` removes collected transitions without resetting the episode ID sequence; `reset()` performs a full state reset.
 
 Ending an episode clears the recorder's pending action and episode identifier but does not erase the already collected buffer.
 
