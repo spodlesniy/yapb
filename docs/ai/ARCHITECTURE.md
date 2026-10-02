@@ -47,6 +47,8 @@ The main responsibilities are split as follows:
 - `TrainingRecorder` owns transition lifecycle state and stores completed transitions in the training buffer.
 - `TrainingCollector` coordinates runtime execution with recording and asks the reward provider for rewards.
 - `RewardProvider` supplies reward values without embedding game-specific heuristics into the recorder.
+- `BotRuntime` uses `ZeroRewardProvider` by default and can be configured with another `RewardProvider` for live training.
+- A configured reward provider must outlive the `BotRuntime` that uses it.
 - `TrainingBuffer` owns fixed-capacity transition storage and exposes read-only contiguous data access.
 
 Ending an episode clears the recorder's pending action and episode identifier but does not erase the already collected buffer.

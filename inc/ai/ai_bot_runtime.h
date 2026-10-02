@@ -88,6 +88,10 @@ public:
     return m_inferencePolicy.getProvider();
   }
 
+  void setRewardProvider(const RewardProvider *provider) {
+    m_trainingCollector.setRewardProvider(provider != nullptr ? *provider : m_zeroRewardProvider);
+  }
+
   TrainingRecorder &trainingRecorder() {
     return m_trainingRecorder;
   }
