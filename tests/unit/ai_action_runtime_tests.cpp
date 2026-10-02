@@ -188,6 +188,19 @@ AI_TEST(testActionLoopControlModes) {
     expect(result.type == ai::ActionResultType::Accepted, "Training mode returns the executor result");
     expect(executor.callCount() == 1, "Training mode invokes the executor");
     expect(loop.isActive(), "Training mode activates the action loop");
+  };
+
+  {
+    ai::Controller controller { ai::ControlMode::Training };
+    TestExecutor executor {};
+    ai::ActionState state {};
+    ai::ActionPipeline pipeline { executor, state };
+    ai::ActionLoop loop { controller, pipeline };
+
+    controller.setPolicy(&policy);
+
+    expect(controller.decide(observation).type == ai::ActionType::MoveToNode,
+           "training controller exposes its configured policy");
   }
 }
 
@@ -432,6 +445,12 @@ AI_TEST(testActionRuntime) {
 
   expect(runtime.getMode() == ai::ControlMode::Legacy, "runtime starts in Legacy mode");
   expect(!runtime.isControlEnabled(), "runtime is disabled in Legacy mode");
+
+  runtime.setMode(ai::ControlMode::Training);
+  runtime.setPolicy(&policy);
+  expect(runtime.isControlEnabled(), "Training runtime enables control when a policy is available");
+  expect(runtime.step(observation).type == ai::ActionResultType::Accepted,
+         "Training runtime executes the configured policy");
 
   runtime.setMode(ai::ControlMode::Neural);
 

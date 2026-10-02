@@ -43,7 +43,9 @@ const Policy *ActionRuntime::getPolicy() const {
 }
 
 bool ActionRuntime::isControlEnabled() const {
-  return m_controller.getMode() == ControlMode::Neural && m_controller.getPolicy() != nullptr;
+  const auto mode = m_controller.getMode();
+  const bool aiMode = mode == ControlMode::Neural || mode == ControlMode::Training;
+  return aiMode && m_controller.getPolicy() != nullptr;
 }
 
 Controller &ActionRuntime::controller() {
