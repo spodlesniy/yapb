@@ -437,68 +437,81 @@ AI_TEST(testActionCancellation) {
 }
 
 AI_TEST(testActionRuntime) {
-  TestExecutor executor {};
-  ai::ActionRuntime runtime { executor };
   ai::Observation observation {};
   observation.bot.alive = true;
   observation.bot.currentNode = 40;
 
-  expect(runtime.getMode() == ai::ControlMode::Legacy, "runtime starts in Legacy mode");
-  expect(!runtime.isControlEnabled(), "runtime is disabled in Legacy mode");
+  {
+    TestExecutor executor {};
+    ai::ActionRuntime runtime { executor };
+    TestPolicy policy {};
 
-  runtime.setMode(ai::ControlMode::Training);
-  runtime.setPolicy(&policy);
-  expect(runtime.isControlEnabled(), "Training runtime enables control when a policy is available");
-  expect(runtime.step(observation).type == ai::ActionResultType::Accepted,
-         "Training runtime executes the configured policy");
+    expect(runtime.getMode() == ai::ControlMode::Legacy, "runtime starts in Legacy mode");
+    expect(!runtime.isControlEnabled(), "runtime is disabled in Legacy mode");
 
-  runtime.setMode(ai::ControlMode::Neural);
+    runtime.setMode(ai::ControlMode::Training);
+    runtime.setPolicy(&policy);
 
-  const ai::ActionResult withoutPolicy = runtime.step(observation);
-  expect(withoutPolicy.action == ai::ActionType::None, "Neural runtime is a no-op without a policy");
-  expect(withoutPolicy.type == ai::ActionResultType::None, "runtime returns no result without a policy");
-  expect(executor.callCount() == 0, "runtime does not execute without a policy");
-  expect(!runtime.isActive(), "runtime remains inactive without a policy");
+    expect(runtime.isControlEnabled(), "Training runtime enables control when a policy is available");
 
-  TestPolicy policy {};
-  runtime.setPolicy(&policy);
+    const ai::ActionResult trainingResult = runtime.step(observation);
+    expect(trainingResult.action == ai::ActionType::MoveToNode, "Training runtime forwards policy action");
+    expect(trainingResult.type == ai::ActionResultType::Accepted, "Training runtime executes policy action");
+    expect(runtime.isActive(), "Training runtime keeps the accepted action active");
+    expect(executor.callCount() == 1, "Training runtime invokes the executor once");
+  }
 
-  expect(runtime.isControlEnabled(), "Neural runtime enables control when a policy is available");
+  {
+    TestExecutor executor {};
+    ai::ActionRuntime runtime { executor };
 
-  const ai::ActionResult accepted = runtime.step(observation);
-  expect(accepted.action == ai::ActionType::MoveToNode, "runtime forwards policy action");
-  expect(accepted.type == ai::ActionResultType::Accepted, "runtime executes policy action");
-  expect(runtime.isActive(), "runtime keeps accepted action active");
-  expect(runtime.activeAction().targetNode == 41, "runtime stores policy target");
-  expect(runtime.actionState().isActive(), "runtime exposes shared action state");
-  expect(executor.lastAction().targetNode == 41, "runtime sends the policy action to the executor");
-  expect(executor.callCount() == 1, "runtime invokes the executor once");
+    runtime.setMode(ai::ControlMode::Neural);
 
-  observation.bot.currentNode = 80;
+    const ai::ActionResult withoutPolicy = runtime.step(observation);
+    expect(withoutPolicy.action == ai::ActionType::None, "Neural runtime is a no-op without a policy");
+    expect(withoutPolicy.type == ai::ActionResultType::None, "runtime returns no result without a policy");
+    expect(executor.callCount() == 0, "runtime does not execute without a policy");
+    expect(!runtime.isActive(), "runtime remains inactive without a policy");
 
-  const ai::ActionResult continued = runtime.step(observation);
-  expect(continued.action == ai::ActionType::MoveToNode, "runtime continues active action");
-  expect(runtime.activeAction().targetNode == 41, "runtime does not replace an active action with a later policy output");
-  expect(executor.lastAction().targetNode == 41, "executor receives the active action again");
-  expect(executor.callCount() == 2, "runtime executes active action again");
+    TestPolicy policy {};
+    runtime.setPolicy(&policy);
 
-  observation.bot.alive = false;
+    expect(runtime.isControlEnabled(), "Neural runtime enables control when a policy is available");
 
-  const ai::ActionResult rejected = runtime.step(observation);
-  expect(rejected.type == ai::ActionResultType::Rejected, "runtime propagates executor terminal result");
-  expect(!runtime.isActive(), "terminal result clears runtime action state");
-  expect(runtime.result().type == ai::ActionResultType::Rejected, "runtime preserves terminal result");
+    const ai::ActionResult accepted = runtime.step(observation);
+    expect(accepted.action == ai::ActionType::MoveToNode, "runtime forwards policy action");
+    expect(accepted.type == ai::ActionResultType::Accepted, "runtime executes policy action");
+    expect(runtime.isActive(), "runtime keeps accepted action active");
+    expect(runtime.activeAction().targetNode == 41, "runtime stores policy target");
+    expect(runtime.actionState().isActive(), "runtime exposes shared action state");
+    expect(executor.lastAction().targetNode == 41, "runtime sends the policy action to the executor");
+    expect(executor.callCount() == 1, "runtime invokes the executor once");
 
-  observation.bot.alive = true;
+    observation.bot.currentNode = 80;
 
-  const ai::ActionResult restarted = runtime.step(observation);
-  expect(restarted.type == ai::ActionResultType::Accepted, "runtime can start another action after completion");
-  expect(runtime.isActive(), "runtime is active before mode cancellation");
+    const ai::ActionResult continued = runtime.step(observation);
+    expect(continued.action == ai::ActionType::MoveToNode, "runtime continues active action");
+    expect(runtime.activeAction().targetNode == 41, "runtime does not replace an active action with a later policy output");
+    expect(executor.lastAction().targetNode == 41, "executor receives the active action again");
+    expect(executor.callCount() == 2, "runtime executes active action again");
 
-  runtime.setMode(ai::ControlMode::Legacy);
+    observation.bot.alive = false;
 
-  expect(!runtime.isActive(), "switching away from Neural mode cancels active action");
-  expect(runtime.result().type == ai::ActionResultType::Interrupted, "mode cancellation produces interrupted result");
-  expect(runtime.getMode() == ai::ControlMode::Legacy, "runtime reports the new control mode");
-  expect(!runtime.isControlEnabled(), "runtime disables control outside Neural mode");
+    const ai::ActionResult rejected = runtime.step(observation);
+    expect(rejected.type == ai::ActionResultType::Rejected, "runtime propagates executor terminal result");
+    expect(!runtime.isActive(), "terminal result clears runtime action state");
+    expect(runtime.result().type == ai::ActionResultType::Rejected, "runtime preserves terminal result");
+
+    observation.bot.alive = true;
+
+    const ai::ActionResult restarted = runtime.step(observation);
+    expect(restarted.type == ai::ActionResultType::Accepted, "runtime can start another action after completion");
+    expect(runtime.isActive(), "runtime is active before mode cancellation");
+
+    runtime.setMode(ai::ControlMode::Legacy);
+
+    expect(!runtime.isActive(), "switching away from Neural mode cancels active action");
+    expect(runtime.result().type == ai::ActionResultType::Interrupted, "mode cancellation produces interrupted result");
+    expect(runtime.getMode() == ai::ControlMode::Legacy, "runtime reports the new control mode");
+    expect(!runtime.isControlEnabled(), "runtime disables control outside Neural mode");
 }
