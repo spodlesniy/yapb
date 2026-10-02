@@ -55,6 +55,24 @@ AI_TEST(testTrainingRecorderEndsEpisode) {
   expect(buffer.empty(), "endEpisode preserves the completed transition buffer");
 }
 
+AI_TEST(testTrainingBufferExposesReadOnlyData) {
+  ai::TrainingBuffer buffer {};
+  ai::TrainingRecorder recorder { buffer };
+  recorder.beginEpisode();
+
+  const auto action = makeMoveAction(41);
+  expect(recorder.startAction(makeObservation(3.0f, 40), action), "recorder accepts an action");
+
+  expect(recorder.finishAction(makeObservation(3.5f, 41), makeCompletedResult(action.type), 1.25f) ==
+             ai::TrainingRecordResult::Recorded,
+         "recorder records a transition");
+
+  const auto *data = buffer.data();
+  expect(data != nullptr, "training buffer exposes its storage address");
+  expect(data == &buffer.at(0), "data points at the first recorded transition");
+  expect(data[0].reward == 1.25f, "data exposes the recorded transition contents");
+}
+
 AI_TEST(testTrainingRecorderStartsEmpty) {
   ai::TrainingBuffer buffer {};
   ai::TrainingRecorder recorder { buffer };

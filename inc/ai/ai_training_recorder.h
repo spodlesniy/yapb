@@ -8,10 +8,10 @@
 
 #pragma once
 
-#include <ai/ai_action_result.h>
-
 #include <cstddef>
 #include <cstdint>
+
+#include <ai/ai_action_result.h>
 
 namespace ai {
 
@@ -92,6 +92,10 @@ public:
 
   const TrainingTransition &at(size_t index) const {
     return m_transitions[index];
+  }
+
+  const TrainingTransition *data() const {
+    return m_transitions;
   }
 };
 
