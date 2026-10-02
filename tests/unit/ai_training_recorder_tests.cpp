@@ -40,6 +40,21 @@ ai::ActionResult makeCompletedResult(ai::ActionType action) {
 
 } // namespace
 
+AI_TEST(testTrainingRecorderEndsEpisode) {
+  ai::TrainingBuffer buffer {};
+  ai::TrainingRecorder recorder { buffer };
+  recorder.beginEpisode();
+
+  const auto action = makeMoveAction(41);
+  expect(recorder.startAction(makeObservation(2.0f, 40), action), "recorder starts an action before episode end");
+
+  recorder.endEpisode();
+
+  expect(recorder.episodeId() == 0, "endEpisode clears the active episode id");
+  expect(!recorder.hasPendingAction(), "endEpisode discards the pending action");
+  expect(buffer.empty(), "endEpisode preserves the completed transition buffer");
+}
+
 AI_TEST(testTrainingRecorderStartsEmpty) {
   ai::TrainingBuffer buffer {};
   ai::TrainingRecorder recorder { buffer };

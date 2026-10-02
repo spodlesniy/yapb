@@ -45,6 +45,28 @@ ai::Observation makeObservation(float gameTime, int currentNode) {
 
 } // namespace
 
+AI_TEST(testTrainingCollectorEndsEpisode) {
+  ai::TrainingBuffer buffer {};
+  ai::TrainingRecorder recorder { buffer };
+  FixedRewardProvider rewards {};
+  ai::TrainingCollector collector { recorder, rewards };
+
+  ai::test::TestExecutor executor {};
+  ai::ActionRuntime runtime { executor };
+  ai::test::TestPolicy policy {};
+  runtime.setMode(ai::ControlMode::Training);
+  runtime.setPolicy(&policy);
+
+  collector.step(runtime, makeObservation(50.0f, 70));
+  expect(recorder.hasPendingAction(), "collector starts an action before episode end");
+
+  collector.endEpisode();
+
+  expect(recorder.episodeId() == 0, "collector ends the active episode");
+  expect(!recorder.hasPendingAction(), "collector endEpisode discards pending action");
+  expect(buffer.empty(), "collector endEpisode preserves the existing buffer");
+}
+
 AI_TEST(testTrainingCollectorResetPreservesBuffer) {
   ai::TrainingBuffer buffer {};
   ai::TrainingRecorder recorder { buffer };

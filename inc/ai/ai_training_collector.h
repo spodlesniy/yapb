@@ -34,6 +34,8 @@ public:
 
   bool cancel(ActionRuntime &runtime, const Observation &nextObservation);
 
+  void endEpisode();
+
   void reset();
 };
 

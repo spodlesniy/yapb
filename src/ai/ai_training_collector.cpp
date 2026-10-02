@@ -63,6 +63,10 @@ bool TrainingCollector::cancel(ActionRuntime &runtime, const Observation &nextOb
   return true;
 }
 
+void TrainingCollector::endEpisode() {
+  m_recorder->endEpisode();
+}
+
 void TrainingCollector::reset() {
   m_recorder->reset();
 }

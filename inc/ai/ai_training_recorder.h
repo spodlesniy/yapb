@@ -117,6 +117,11 @@ public:
     m_episodeId = m_buffer->beginEpisode();
   }
 
+  void endEpisode() {
+    discardPendingAction();
+    m_episodeId = 0;
+  }
+
   bool startAction(const Observation &observation, const Action &action) {
     if (m_pendingAction || action.type == ActionType::None) {
       return false;
