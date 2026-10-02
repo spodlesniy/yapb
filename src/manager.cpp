@@ -1823,7 +1823,7 @@ void Bot::kick (bool silent) {
 }
 
 void Bot::cancelAIAction () {
-   m_aiRuntime.cancel ();
+   m_aiRuntime.cancel (m_aiObservation);
 }
 
 void Bot::markStale () {
