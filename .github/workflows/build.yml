@@ -19,23 +19,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  training-tools:
-    name: Training tools tests
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v7.0.1
-
-      - name: Setup Python
-        uses: actions/setup-python@v7.0.0
-        with:
-          python-version: '3.x'
-
-      - name: Run training tool tests
-        working-directory: tools/aipb_training
-        run: python -m unittest test_validate_dataset.py
-
   unit-tests:
     name: AI unit tests
     runs-on: ubuntu-latest
@@ -63,9 +46,27 @@ jobs:
           name: meson-test-logs
           path: unit-tests/meson-logs/testlog.txt
 
+  training-tools:
+    name: Training tools tests
+    needs: [unit-tests]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7.0.1
+
+      - name: Setup Python
+        uses: actions/setup-python@v7.0.0
+        with:
+          python-version: '3.x'
+
+      - name: Run training tool tests
+        working-directory: tools/aipb_training
+        run: python -m unittest test_validate_dataset.py
+
   bot-build:
     if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master' || github.event_name == 'release'
-    needs: [unit-tests]
+    needs: [unit-tests, training-tools]
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/yapb/builder:latest
