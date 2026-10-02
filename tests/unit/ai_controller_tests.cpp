@@ -46,6 +46,22 @@ AI_TEST (testPolicyInjection) {
    expect (action.confidence == 0.75f, "custom policy confidence is preserved");
 }
 
+AI_TEST (testTrainingControllerExecutesPolicy) {
+   ai::Controller controller {};
+   TestPolicy policy {};
+   ai::Observation observation {};
+   observation.bot.currentNode = 41;
+
+   controller.setMode (ai::ControlMode::Training);
+   controller.setPolicy (&policy);
+
+   const ai::Action action = controller.decide (observation);
+
+   expect (action.type == ai::ActionType::MoveToNode, "training mode executes the configured policy");
+   expect (action.targetNode == 42, "training mode forwards the observation to the policy");
+   expect (action.confidence == 0.75f, "training mode preserves policy confidence");
+}
+
 AI_TEST (testControllerModes) {
    ai::Controller controller {};
 

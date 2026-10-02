@@ -136,6 +136,123 @@ AI_TEST(testNavigationTaskOwnership) {
   }
 }
 
+AI_TEST(testActionExecutor) {
+  TestExecutor executor {};
+
+  ai::Action action {};
+  action.type = ai::ActionType::MoveToNode;
+
+  ai::Observation observation {};
+  observation.bot.alive = true;
+
+  const ai::ActionResult accepted = executor.execute(action, observation);
+  expect(accepted.action == ai::ActionType::MoveToNode, "executor result preserves submitted action");
+  expect(accepted.type == ai::ActionResultType::Accepted, "executor can accept an action");
+
+  observation.bot.alive = false;
+
+  const ai::ActionResult rejected = executor.execute(action, observation);
+  expect(rejected.action == ai::ActionType::MoveToNode, "executor preserves action on rejection");
+  expect(rejected.type == ai::ActionResultType::Rejected, "executor can reject an action");
+}
+
+AI_TEST(testActionPipeline) {
+  TestExecutor executor {};
+  ai::ActionState state {};
+  ai::ActionPipeline pipeline { executor, state };
+
+  ai::Observation observation {};
+  observation.bot.alive = true;
+
+  ai::Action valid {};
+  valid.type = ai::ActionType::MoveToNode;
+  valid.targetType = ai::TargetType::Node;
+  valid.targetNode = 12;
+  valid.confidence = 0.75f;
+
+  const ai::ActionResult accepted = pipeline.execute(valid, observation);
+  expect(accepted.action == ai::ActionType::MoveToNode, "pipeline preserves valid action type");
+  expect(accepted.type == ai::ActionResultType::Accepted, "pipeline forwards valid action to executor");
+  expect(pipeline.isActive(), "pipeline keeps accepted action active");
+  expect(pipeline.activeAction().targetNode == 12, "pipeline stores active action payload");
+  expect(state.isActive(), "pipeline shares the externally owned action state");
+  expect(executor.callCount() == 1, "pipeline invokes executor for valid action");
+
+  ai::Action replacement {};
+  replacement.type = ai::ActionType::Reload;
+  replacement.weaponType = ai::WeaponType::Rifle;
+
+  const ai::ActionResult continued = pipeline.execute(replacement, observation);
+  expect(continued.action == ai::ActionType::MoveToNode, "pipeline keeps active action when new action is submitted");
+  expect(continued.type == ai::ActionResultType::Accepted, "pipeline continues executing active action");
+  expect(pipeline.activeAction().type == ai::ActionType::MoveToNode, "pipeline ignores replacement action while active");
+  expect(executor.callCount() == 2, "pipeline executes active action again");
+
+  ai::Action invalid {};
+  invalid.type = ai::ActionType::MoveToNode;
+  invalid.targetType = ai::TargetType::Node;
+  invalid.targetNode = -1;
+
+  const int callsBeforeInvalid = executor.callCount();
+  const ai::ActionResult stillActive = pipeline.execute(invalid, observation);
+  expect(stillActive.action == ai::ActionType::MoveToNode, "invalid new action does not replace active action");
+  expect(executor.callCount() == callsBeforeInvalid + 1, "pipeline keeps executing active action");
+
+  observation.bot.alive = false;
+
+  const ai::ActionResult runtimeRejected = pipeline.execute(valid, observation);
+  expect(runtimeRejected.action == ai::ActionType::MoveToNode, "pipeline preserves active action on terminal rejection");
+  expect(runtimeRejected.type == ai::ActionResultType::Rejected, "pipeline preserves executor rejection");
+  expect(!pipeline.isActive(), "terminal executor result clears active action");
+
+  const ai::ActionResult invalidAfterTerminal = pipeline.execute(invalid, observation);
+  expect(invalidAfterTerminal.type == ai::ActionResultType::Invalid, "pipeline validates new action after terminal result");
+  expect(executor.callCount() == callsBeforeInvalid + 2, "invalid action after terminal result does not reach executor");
+
+  pipeline.reset();
+  expect(!pipeline.isActive(), "pipeline reset clears action state");
+}
+
+AI_TEST(testActionStateClearsOnCompletion) {
+  TestExecutor executor {};
+  ai::ActionState state {};
+  ai::ActionPipeline pipeline { executor, state };
+
+  ai::Observation observation {};
+  observation.bot.alive = true;
+
+  ai::Action action {};
+  action.type = ai::ActionType::MoveToNode;
+  action.targetType = ai::TargetType::Node;
+  action.targetNode = 41;
+  action.confidence = 0.75f;
+
+  const ai::ActionResult result = pipeline.execute(action, observation);
+  expect(result.type == ai::ActionResultType::Accepted, "accepted action is stored as active");
+  expect(state.isActive(), "accepted action remains active");
+
+  executor.setResult(ai::ActionResultType::Completed);
+  const ai::ActionResult completed = pipeline.execute(action, observation);
+  expect(completed.type == ai::ActionResultType::Completed, "completed action returns terminal result");
+  expect(!state.isActive(), "completed action is cleared immediately");
+}
+
+AI_TEST(testNavigationTaskOwnership) {
+  enum class TestTask { Normal, MoveToPosition, Pause, Attack, DefuseBomb, PlantBomb, Camp, SeekCover, EscapeFromBomb };
+
+  expect(ai::allowsNavigationOverride(TestTask::Normal, TestTask::Normal, TestTask::MoveToPosition), "Normal task allows AI navigation");
+  expect(ai::allowsNavigationOverride(TestTask::MoveToPosition, TestTask::Normal, TestTask::MoveToPosition),
+         "MoveToPosition task allows AI navigation");
+
+  const TestTask blockingTasks[] = { TestTask::Pause, TestTask::Attack,    TestTask::DefuseBomb,    TestTask::PlantBomb,
+                                     TestTask::Camp,  TestTask::SeekCover, TestTask::EscapeFromBomb };
+
+  for (const auto task : blockingTasks) {
+    expect(!ai::allowsNavigationOverride(task, TestTask::Normal, TestTask::MoveToPosition),
+           "higher-priority legacy task blocks AI navigation");
+  }
+}
+
 AI_TEST(testActionLoopControlModes) {
   TestPolicy policy {};
   ai::Observation observation {};
@@ -184,13 +301,12 @@ AI_TEST(testActionLoopControlModes) {
     controller.setPolicy(&policy);
 
     const ai::ActionResult result = loop.step(observation);
-    expect(result.action == ai::ActionType::None, "action loop blocks policy in Training mode");
-    expect(result.type == ai::ActionResultType::None, "Training mode produces no action result yet");
-    expect(executor.callCount() == 0, "Training mode does not invoke the executor");
-    expect(!loop.isActive(), "Training mode leaves the action loop inactive");
+    expect(result.action == ai::ActionType::MoveToNode, "action loop executes policy in Training mode");
+    expect(result.type == ai::ActionResultType::Accepted, "Training mode returns the executor result");
+    expect(executor.callCount() == 1, "Training mode invokes the executor");
+    expect(loop.isActive(), "Training mode activates the action loop");
   }
 }
-
 AI_TEST(testActionLoop) {
   ai::Controller controller { ai::ControlMode::Neural };
   TestExecutor executor {};

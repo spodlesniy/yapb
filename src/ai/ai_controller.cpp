@@ -18,7 +18,7 @@ void Controller::setPolicy(const Policy *policy) {
 }
 
 Action Controller::decide(const Observation &observation) const {
-  if (m_mode != ControlMode::Neural || m_policy == nullptr) {
+  if ((m_mode != ControlMode::Neural && m_mode != ControlMode::Training) || m_policy == nullptr) {
     return {};
   }
 
