@@ -43,8 +43,10 @@ void expect(bool condition, const char *message) {
 
   if (g_currentTest != nullptr) {
     std::fprintf(stderr, "FAIL [%s]: %s\n", g_currentTest, message);
+    std::fflush(stderr);
   } else {
     std::fprintf(stderr, "FAIL: %s\n", message);
+    std::fflush(stderr);
   }
 
   ++g_failures;
@@ -66,10 +68,14 @@ int runAll() {
 
   if (g_failures != 0) {
     std::fprintf(stderr, "%d AI unit test assertion(s) failed.\n", g_failures);
+    std::fflush(stderr);
+
     return 1;
   }
 
   std::printf("AI unit tests passed (%zu test cases).\n", getTests().size());
+  std::fflush(stdout);
+
   return 0;
 }
 

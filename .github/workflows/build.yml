@@ -36,7 +36,7 @@ jobs:
         run: meson setup unit-tests -D64bit=true -Dtests=true
       - name: Run unit tests
         run: |
-          meson test -C unit-tests --print-errorlogs
+          meson test -C unit-tests --print-errorlogs --verbose
           file unit-tests/yapb_ai_tests
 
   bot-build:
