@@ -62,7 +62,7 @@ jobs:
 
       - name: Run training tool tests
         working-directory: tools/aipb_training
-        run: python -m unittest test_validate_dataset.py
+        run: python -m unittest discover -p 'test_*.py'
 
   bot-build:
     if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master' || github.event_name == 'release'

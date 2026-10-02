@@ -117,12 +117,12 @@ def _validate_sample(value: Any, line_number: int) -> int:
     return observation_size
 
 
-def validate_dataset(path: str | Path) -> int:
+def iter_validated_samples(path: str | Path):
+    """Yield validated sample dictionaries in file order."""
     dataset_path = Path(path)
     _require(dataset_path.is_file(), f"dataset file does not exist: {dataset_path}")
 
     feature_count: int | None = None
-    sample_count = 0
 
     with dataset_path.open("r", encoding="utf-8") as stream:
         first_line = stream.readline()
@@ -160,9 +160,11 @@ def validate_dataset(path: str | Path) -> int:
                     current_feature_count == feature_count,
                     f"line {line_number}: feature count differs from earlier samples",
                 )
-            sample_count += 1
+            yield value
 
-    return sample_count
+
+def validate_dataset(path: str | Path) -> int:
+    return sum(1 for _ in iter_validated_samples(path))
 
 
 def main() -> int:
