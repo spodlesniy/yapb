@@ -40,7 +40,9 @@ The normal cycle is:
 When CI is red:
 
 - Inspect the exact workflow run and failing log.
-- Identify the actual compiler, linker, or test failure.
+- The unit-test workflow runs Meson with `--print-errorlogs --verbose`.
+- The unit-test job uploads `unit-tests/meson-logs/testlog.txt` as the `meson-test-logs` artifact on failure.
+- Identify the actual compiler, linker, or test failure from the workflow log and, when needed, the uploaded Meson test log.
 - Fix that root cause in a narrowly scoped corrective iteration.
 - Re-run CI before proceeding.
 
