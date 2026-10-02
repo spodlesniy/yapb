@@ -163,7 +163,7 @@ TrainingDatasetWriteResult writeTrainingDataset(const TrainingBuffer &buffer, co
     result.count = i + 1;
   }
 
-  if (!file.flush()) {
+  if (file.flush()) {
     result.error = TrainingDatasetWriteError::IoError;
     return result;
   }
