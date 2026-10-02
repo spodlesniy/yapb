@@ -45,7 +45,7 @@ public:
       return -1.0f;
 
     case ActionResultType::Interrupted:
-      return -0.25f;
+      return 0.0f;
 
     case ActionResultType::None:
     case ActionResultType::Accepted:

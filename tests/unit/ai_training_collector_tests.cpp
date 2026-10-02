@@ -77,8 +77,20 @@ AI_TEST(testActionOutcomeRewardProvider) {
   ai::ActionResult interrupted {};
   interrupted.action = ai::ActionType::MoveToNode;
   interrupted.type = ai::ActionResultType::Interrupted;
-  expect(rewards.compute(observation, action, observation, interrupted) == -0.25f,
-         "interrupted action receives a moderate baseline penalty");
+  expect(rewards.compute(observation, action, observation, interrupted) == 0.0f,
+         "interrupted action receives a neutral baseline reward");
+
+  ai::ActionResult accepted {};
+  accepted.action = ai::ActionType::MoveToNode;
+  accepted.type = ai::ActionResultType::Accepted;
+  expect(rewards.compute(observation, action, observation, accepted) == 0.0f,
+         "accepted action receives a neutral baseline reward");
+
+  ai::ActionResult none {};
+  none.action = ai::ActionType::MoveToNode;
+  none.type = ai::ActionResultType::None;
+  expect(rewards.compute(observation, action, observation, none) == 0.0f,
+         "non-terminal empty result receives a neutral baseline reward");
 }
 
 AI_TEST(testTrainingCollectorCanReplaceRewardProvider) {

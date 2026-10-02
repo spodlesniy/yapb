@@ -51,7 +51,7 @@ The main responsibilities are split as follows:
 - `TrainingRecorder` owns transition lifecycle state and stores completed transitions in the training buffer.
 - `TrainingCollector` coordinates runtime execution with recording and asks the reward provider for rewards.
 - `RewardProvider` supplies reward values without embedding game-specific heuristics into the recorder.
-- `ActionOutcomeRewardProvider` provides the baseline action-result reward policy used by `BotRuntime` training by default.
+- `ActionOutcomeRewardProvider` provides the baseline action-result reward policy used by `BotRuntime` training by default; completed actions are rewarded positively, rejected/invalid/failed actions negatively, and interruptions neutrally.
 - `BotRuntime` uses `ActionOutcomeRewardProvider` by default and can be configured with another `RewardProvider`; passing `nullptr` explicitly restores `ZeroRewardProvider`.
 - A configured reward provider must outlive the `BotRuntime` that uses it.
 - `TrainingBuffer` owns fixed-capacity transition storage, exposes read-only contiguous data access, and separates sample clearing from full state reset.
