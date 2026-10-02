@@ -3539,7 +3539,7 @@ void Bot::logic () {
    // Never leave an AI navigation action active once legacy owns execution.
    if (m_aiRuntime.isActive ()
       && !ai::allowsNavigationOverride (getCurrentTaskId (), Task::Normal, Task::MoveToPosition)) {
-      m_aiRuntime.cancel ();
+      m_aiRuntime.cancel (m_aiObservation);
    }
 
    // display some debugging thingy to host entity
