@@ -224,6 +224,11 @@ if(YAPB_BUILD_TESTS)
       "src/ai/ai_training_dataset.cpp"
    )
     target_compile_features(yapb_ai_tests PRIVATE cxx_std_17)
-    target_include_directories(yapb_ai_tests PRIVATE "inc")
+    target_include_directories(yapb_ai_tests PRIVATE
+        "inc"
+        "ext"
+        "ext/crlib"
+        "ext/linkage"
+    )
     add_test(NAME yapb_ai_tests COMMAND yapb_ai_tests)
 endif()

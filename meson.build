@@ -400,7 +400,7 @@ if get_option('tests')
       'src/ai/ai_inference_action_encoder.cpp',
       'src/ai/ai_onnx_model_runner.cpp',
       'src/ai/ai_inference_model_service.cpp',
-      include_directories: include_directories('inc', 'tests/unit'),
+      include_directories: include_directories('inc', 'tests/unit', 'ext', 'ext/crlib', 'ext/linkage'),
       dependencies: onnxruntime_dep,
       cpp_args: onnx_cpp_args + ['-DAIPB_TEST_SOURCE_ROOT="' + meson.project_source_root () + '"'],
    )
