@@ -19,6 +19,23 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  training-tools:
+    name: Training tools tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7.0.1
+
+      - name: Setup Python
+        uses: actions/setup-python@v7.0.0
+        with:
+          python-version: '3.x'
+
+      - name: Run training tool tests
+        working-directory: tools/aipb_training
+        run: python -m unittest test_validate_dataset.py
+
   unit-tests:
     name: AI unit tests
     runs-on: ubuntu-latest
