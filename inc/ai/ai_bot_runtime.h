@@ -60,7 +60,7 @@ public:
     }
 
     if (previousMode == ControlMode::Training && mode != ControlMode::Training) {
-      m_trainingRecorder.discardPendingAction();
+      m_trainingCollector.endEpisode();
     }
   }
 
