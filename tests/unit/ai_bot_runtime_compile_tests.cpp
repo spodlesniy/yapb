@@ -8,6 +8,8 @@
 
 #include <type_traits>
 
+#include <yapb.h>
+
 #include <ai/ai_bot_runtime.h>
 #include <ai/ai_training_recorder.h>
 
@@ -34,8 +36,8 @@ static_assert(std::is_same_v<decltype(static_cast<BotRuntimeTrainingBufferGetter
                              BotRuntimeTrainingBufferGetter>,
               "BotRuntime must expose a training buffer accessor");
 
-using BotTrainingBufferGetter = ai::TrainingBuffer &(ai::Bot::*)();
-static_assert(std::is_same_v<decltype(static_cast<BotTrainingBufferGetter>(&ai::Bot::getAITrainingBuffer)),
+using BotTrainingBufferGetter = ai::TrainingBuffer &(Bot::*)();
+static_assert(std::is_same_v<decltype(static_cast<BotTrainingBufferGetter>(&Bot::getAITrainingBuffer)),
                              BotTrainingBufferGetter>,
               "Bot must expose a training buffer accessor");
 
