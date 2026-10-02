@@ -516,3 +516,25 @@ AI_TEST(testActionRuntime) {
     expect(!runtime.isControlEnabled(), "runtime disables control outside Neural mode");
   }
 }
+AI_TEST(testActionRuntimeCancelsActiveActionOnModeChange) {
+  TestExecutor executor {};
+  ai::ActionRuntime runtime { executor };
+  TestPolicy policy {};
+  ai::Observation observation {};
+  observation.bot.alive = true;
+  observation.bot.currentNode = 40;
+
+  runtime.setMode(ai::ControlMode::Training);
+  runtime.setPolicy(&policy);
+
+  const auto started = runtime.step(observation);
+  expect(started.type == ai::ActionResultType::Accepted, "mode change test starts an active AI action");
+  expect(runtime.isActive(), "mode change test keeps the action active before switching modes");
+
+  runtime.setMode(ai::ControlMode::Neural);
+
+  expect(!runtime.isActive(), "switching between AI modes cancels the active action");
+  expect(runtime.result().type == ai::ActionResultType::Interrupted,
+         "switching between AI modes produces an interrupted result");
+  expect(runtime.getMode() == ai::ControlMode::Neural, "runtime enters the requested AI mode after cancellation");
+}

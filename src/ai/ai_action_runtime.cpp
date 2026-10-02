@@ -18,9 +18,7 @@ void ActionRuntime::setMode(ControlMode mode) {
     return;
   }
 
-  if (mode != ControlMode::Neural) {
-    m_loop.cancel();
-  }
+  m_loop.cancel();
 
   m_controller.setMode(mode);
 }
