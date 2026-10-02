@@ -44,6 +44,8 @@ Training data is collected around the action lifecycle:
 
 A recorder may start an action only while an active non-zero episode identifier exists.
 
+A training episode starts when 'Training' mode is entered and a new episode starts at each new game round while 'Training' remains enabled. Leaving 'Training' ends the current episode without erasing collected transitions.
+
 The main responsibilities are split as follows:
 
 - `TrainingRecorder` owns transition lifecycle state and stores completed transitions in the training buffer.

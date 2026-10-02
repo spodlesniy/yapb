@@ -1493,6 +1493,7 @@ void Bot::newRound () {
 
    cancelAIAction ();
    m_aiObservationState.invalidate ();
+   m_aiRuntime.beginTrainingEpisode ();
 
    // delete all allocated path nodes
    clearSearchNodes ();

@@ -20,6 +20,11 @@ static_assert(std::is_same_v<decltype(static_cast<BotRuntimeRewardProviderSetter
                              BotRuntimeRewardProviderSetter>,
               "BotRuntime must expose a reward provider setter");
 
+using BotRuntimeTrainingEpisodeBegin = void (ai::BotRuntime::*)();
+static_assert(std::is_same_v<decltype(static_cast<BotRuntimeTrainingEpisodeBegin>(&ai::BotRuntime::beginTrainingEpisode)),
+                             BotRuntimeTrainingEpisodeBegin>,
+              "BotRuntime must expose a training episode lifecycle entry point");
+
 #include <ai/ai_inference_policy.h>
 
 namespace {

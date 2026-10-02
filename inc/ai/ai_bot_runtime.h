@@ -54,7 +54,7 @@ public:
       // TrainingCollector records the resulting action lifecycle separately.
       m_runtime.setPolicy(&m_goalNavigationPolicy);
       if (previousMode != ControlMode::Training) {
-        m_trainingRecorder.beginEpisode();
+        beginTrainingEpisode();
       }
       break;
     }
@@ -86,6 +86,14 @@ public:
 
   const InferenceProvider *getInferenceProvider() const {
     return m_inferencePolicy.getProvider();
+  }
+
+  void beginTrainingEpisode() {
+    if (m_runtime.getMode() != ControlMode::Training) {
+      return;
+    }
+
+    m_trainingRecorder.beginEpisode();
   }
 
   void setRewardProvider(const RewardProvider *provider) {
