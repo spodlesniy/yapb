@@ -44,6 +44,12 @@ Observation, policy, action, result, training, and reward abstractions should re
 
 Reason: the AI layer should be testable and replaceable without entangling model-facing contracts with the game engine implementation.
 
+## D009 — Use a non-zero baseline training reward
+
+The default training reward provider maps terminal action outcomes to a small, deterministic reward signal: successful completion is positive, rejected/invalid/failed actions are negative, and interrupted actions receive a smaller penalty.
+
+Reason: a training pipeline that records only zero rewards cannot distinguish useful from unsuccessful actions. The baseline is intentionally simple and engine-independent so richer game-specific reward shaping can be introduced later behind the same provider interface.
+
 ## D008 — Preserve explicit control modes
 
 `Legacy`, `Neural`, and `Training` remain distinct runtime modes with different responsibilities.

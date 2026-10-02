@@ -30,4 +30,30 @@ public:
   }
 };
 
+// Baseline reward policy for action-level training data.
+// It is intentionally independent of the game engine and uses only the terminal action result.
+class ActionOutcomeRewardProvider final : public RewardProvider {
+public:
+  float compute(const Observation &, const Action &, const Observation &, const ActionResult &result) const override {
+    switch (result.type) {
+    case ActionResultType::Completed:
+      return 1.0f;
+
+    case ActionResultType::Rejected:
+    case ActionResultType::Invalid:
+    case ActionResultType::Failed:
+      return -1.0f;
+
+    case ActionResultType::Interrupted:
+      return -0.25f;
+
+    case ActionResultType::None:
+    case ActionResultType::Accepted:
+      return 0.0f;
+    }
+
+    return 0.0f;
+  }
+};
+
 } // namespace ai

@@ -45,6 +45,42 @@ ai::Observation makeObservation(float gameTime, int currentNode) {
 
 } // namespace
 
+AI_TEST(testActionOutcomeRewardProvider) {
+  ai::ActionOutcomeRewardProvider rewards {};
+  ai::Observation observation {};
+  ai::Action action {};
+
+  ai::ActionResult completed {};
+  completed.action = ai::ActionType::MoveToNode;
+  completed.type = ai::ActionResultType::Completed;
+  expect(rewards.compute(observation, action, observation, completed) == 1.0f,
+         "completed action receives a positive baseline reward");
+
+  ai::ActionResult rejected {};
+  rejected.action = ai::ActionType::MoveToNode;
+  rejected.type = ai::ActionResultType::Rejected;
+  expect(rewards.compute(observation, action, observation, rejected) == -1.0f,
+         "rejected action receives a negative baseline reward");
+
+  ai::ActionResult invalid {};
+  invalid.action = ai::ActionType::MoveToNode;
+  invalid.type = ai::ActionResultType::Invalid;
+  expect(rewards.compute(observation, action, observation, invalid) == -1.0f,
+         "invalid action receives a negative baseline reward");
+
+  ai::ActionResult failed {};
+  failed.action = ai::ActionType::MoveToNode;
+  failed.type = ai::ActionResultType::Failed;
+  expect(rewards.compute(observation, action, observation, failed) == -1.0f,
+         "failed action receives a negative baseline reward");
+
+  ai::ActionResult interrupted {};
+  interrupted.action = ai::ActionType::MoveToNode;
+  interrupted.type = ai::ActionResultType::Interrupted;
+  expect(rewards.compute(observation, action, observation, interrupted) == -0.25f,
+         "interrupted action receives a moderate baseline penalty");
+}
+
 AI_TEST(testTrainingCollectorCanReplaceRewardProvider) {
   ai::TrainingBuffer buffer {};
   ai::TrainingRecorder recorder { buffer };

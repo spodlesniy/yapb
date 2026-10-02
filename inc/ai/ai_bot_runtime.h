@@ -26,6 +26,7 @@ private:
   GoalNavigationPolicy m_goalNavigationPolicy {};
   InferencePolicy m_inferencePolicy {};
   TrainingRecorder m_trainingRecorder {};
+  ActionOutcomeRewardProvider m_defaultRewardProvider {};
   ZeroRewardProvider m_zeroRewardProvider {};
   TrainingCollector m_trainingCollector;
   BotActionExecutor m_executor;
