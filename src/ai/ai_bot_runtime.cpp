@@ -10,7 +10,7 @@
 
 namespace ai {
 
-BotRuntime::BotRuntime(Bot &bot) : m_trainingCollector(m_trainingRecorder, m_zeroRewardProvider), m_executor(bot), m_runtime(m_executor) {
+BotRuntime::BotRuntime(Bot &bot) : m_trainingCollector(m_trainingRecorder, m_defaultRewardProvider), m_executor(bot), m_runtime(m_executor) {
   m_runtime.setPolicy(&m_goalNavigationPolicy);
 }
 

@@ -28,6 +28,8 @@ private:
   TrainingRecorder m_trainingRecorder {};
   ActionOutcomeRewardProvider m_defaultRewardProvider {};
   ZeroRewardProvider m_zeroRewardProvider {};
+  // ActionOutcomeRewardProvider is the default training reward source.
+  // ZeroRewardProvider remains available through an explicit nullptr override.
   TrainingCollector m_trainingCollector;
   BotActionExecutor m_executor;
   ActionRuntime m_runtime;
