@@ -9,6 +9,7 @@
 #include "ai_test.h"
 
 #include <ai/ai_training_recorder.h>
+#include <ai/ai_training_sample.h>
 
 using ai::test::expect;
 
@@ -263,4 +264,78 @@ AI_TEST(testTrainingBufferReportsFullCapacity) {
   expect(recorder.finishAction(makeObservation(999.5f, 1000), completed, 0.0f) == ai::TrainingRecordResult::BufferFull,
          "full buffer refuses to silently drop a transition");
   expect(recorder.hasPendingAction(), "full buffer keeps the pending transition available for a future flush");
+}
+
+AI_TEST(testTrainingSampleEncoding) {
+  ai::TrainingTransition transition {};
+  transition.episodeId = 7;
+  transition.observation = makeObservation(12.0f, 40);
+  transition.observation.roundTimeRemaining = 300.0f;
+  transition.action = makeMoveAction(41);
+  transition.reward = 1.5f;
+  transition.nextObservation = makeObservation(13.0f, 41);
+  transition.nextObservation.roundTimeRemaining = 240.0f;
+  transition.result = makeCompletedResult(transition.action.type);
+  transition.result.elapsedTime = 1.0f;
+
+  const auto encoded = ai::encodeTrainingTransition(transition);
+
+  expect(encoded.isValid(), "completed transition encodes into a training sample");
+  expect(encoded.sample.hasSupportedSchema(), "training sample uses supported inference schemas");
+  expect(encoded.sample.episodeId == 7, "training sample preserves the episode id");
+  expect(encoded.sample.action.actionId == static_cast<uint8_t>(ai::InferenceActionId::MoveToNode),
+         "training sample encodes the action with the stable model id");
+  expect(encoded.sample.observation.at(static_cast<size_t>(ai::InferenceFeature::Core::RoundTimeRemaining)) == 0.5f,
+         "training sample contains encoded observation features");
+  expect(encoded.sample.action.targetNode == 41, "training sample preserves the action target");
+  expect(encoded.sample.reward == 1.5f, "training sample preserves reward");
+  expect(encoded.sample.nextObservation.at(static_cast<size_t>(ai::InferenceFeature::Core::RoundTimeRemaining)) == 0.4f,
+         "training sample contains encoded next-observation features");
+  expect(encoded.sample.result == ai::ActionResultType::Completed, "training sample preserves the terminal result type");
+  expect(encoded.sample.elapsedTime == 1.0f, "training sample preserves action elapsed time");
+  expect(encoded.sample.terminal, "terminal action result is marked terminal");
+}
+
+AI_TEST(testTrainingSampleEncodingRejectsInvalidEpisode) {
+  ai::TrainingTransition transition {};
+  transition.action = makeMoveAction(41);
+  transition.result = makeCompletedResult(transition.action.type);
+
+  const auto encoded = ai::encodeTrainingTransition(transition);
+
+  expect(encoded.error == ai::TrainingSampleEncodeError::InvalidEpisode,
+         "training sample encoder rejects transitions without an episode");
+}
+
+AI_TEST(testTrainingSampleEncodingRejectsUnsupportedAction) {
+  ai::TrainingTransition transition {};
+  transition.episodeId = 1;
+  transition.action.type = ai::ActionType::Count;
+  transition.result = makeCompletedResult(transition.action.type);
+
+  const auto encoded = ai::encodeTrainingTransition(transition);
+
+  expect(encoded.error == ai::TrainingSampleEncodeError::UnsupportedAction,
+         "training sample encoder rejects unsupported actions");
+}
+
+AI_TEST(testTrainingSampleEncodingPreservesNonZeroRewardAndTerminalState) {
+  ai::TrainingTransition transition {};
+  transition.episodeId = 3;
+  transition.observation = makeObservation(20.0f, 50);
+  transition.action = makeMoveAction(51);
+  transition.reward = -1.0f;
+  transition.nextObservation = makeObservation(21.0f, 50);
+
+  ai::ActionResult failed {};
+  failed.action = transition.action.type;
+  failed.type = ai::ActionResultType::Failed;
+  transition.result = failed;
+
+  const auto encoded = ai::encodeTrainingTransition(transition);
+
+  expect(encoded.isValid(), "failed transition still produces a training sample");
+  expect(encoded.sample.reward == -1.0f, "negative reward is preserved");
+  expect(encoded.sample.result == ai::ActionResultType::Failed, "failed result metadata is preserved");
+  expect(encoded.sample.terminal, "failed result is marked terminal");
 }
