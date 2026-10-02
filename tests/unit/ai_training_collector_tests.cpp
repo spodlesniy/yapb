@@ -45,6 +45,55 @@ ai::Observation makeObservation(float gameTime, int currentNode) {
 
 } // namespace
 
+AI_TEST(testTrainingCollectorRecordsTrainingCompletion) {
+  ai::TrainingBuffer buffer {};
+  ai::TrainingRecorder recorder { buffer };
+  FixedRewardProvider rewards {};
+  ai::TrainingCollector collector { recorder, rewards };
+
+  ai::test::TestExecutor executor {};
+  ai::ActionRuntime runtime { executor };
+  ai::test::TestPolicy policy {};
+  runtime.setMode(ai::ControlMode::Training);
+  runtime.setPolicy(&policy);
+
+  const auto first = collector.step(runtime, makeObservation(20.0f, 40));
+  expect(first.type == ai::ActionResultType::Accepted, "training mode forwards the initial accepted action");
+  expect(recorder.hasPendingAction(), "training mode starts a training action");
+  expect(recorder.episodeId() != 0, "collector starts an episode when needed");
+  expect(buffer.empty(), "non-terminal training action is not recorded");
+
+  executor.setResult(ai::ActionResultType::Completed);
+  const auto completed = collector.step(runtime, makeObservation(21.0f, 41));
+
+  expect(completed.type == ai::ActionResultType::Completed, "training mode forwards the terminal action result");
+  expect(buffer.size() == 1, "training mode records one completed transition");
+  expect(!recorder.hasPendingAction(), "recorded training transition clears pending state");
+  expect(rewards.callCount == 1, "training mode computes reward exactly once");
+}
+
+AI_TEST(testTrainingCollectorRecordsTrainingCancellation) {
+  ai::TrainingBuffer buffer {};
+  ai::TrainingRecorder recorder { buffer };
+  FixedRewardProvider rewards {};
+  ai::TrainingCollector collector { recorder, rewards };
+
+  ai::test::TestExecutor executor {};
+  ai::ActionRuntime runtime { executor };
+  ai::test::TestPolicy policy {};
+  runtime.setMode(ai::ControlMode::Training);
+  runtime.setPolicy(&policy);
+
+  collector.step(runtime, makeObservation(30.0f, 50));
+  expect(recorder.hasPendingAction(), "training cancellation test starts a pending action");
+
+  expect(collector.cancel(runtime, makeObservation(30.5f, 51)), "collector cancels the active training action");
+  expect(runtime.result().type == ai::ActionResultType::Interrupted, "training cancellation exposes the interrupted result");
+  expect(buffer.size() == 1, "training cancellation records one transition");
+  expect(buffer.at(0).result.type == ai::ActionResultType::Interrupted, "training transition stores interruption result");
+  expect(rewards.callCount == 1, "training cancellation computes one reward");
+}
+
 AI_TEST(testTrainingCollectorRecordsCompletedAction) {
   ai::TrainingBuffer buffer {};
   ai::TrainingRecorder recorder { buffer };

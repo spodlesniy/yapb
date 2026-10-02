@@ -14,7 +14,10 @@ ActionResult TrainingCollector::step(ActionRuntime &runtime, const Observation &
   const bool wasActive = runtime.isActive();
   const auto result = runtime.step(observation, allowDecision);
 
-  if (runtime.getMode() != ControlMode::Neural) {
+  const auto mode = runtime.getMode();
+  const bool recordingMode = mode == ControlMode::Neural || mode == ControlMode::Training;
+
+  if (!recordingMode) {
     return result;
   }
 
@@ -42,7 +45,10 @@ bool TrainingCollector::cancel(ActionRuntime &runtime, const Observation &nextOb
     return false;
   }
 
-  if (runtime.getMode() != ControlMode::Neural || !m_recorder->hasPendingAction()) {
+  const auto mode = runtime.getMode();
+  const bool recordingMode = mode == ControlMode::Neural || mode == ControlMode::Training;
+
+  if (!recordingMode || !m_recorder->hasPendingAction()) {
     return true;
   }
 
