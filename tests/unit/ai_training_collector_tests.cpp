@@ -66,6 +66,7 @@ AI_TEST(testTrainingCollectorResetPreservesBuffer) {
   collector.step(runtime, makeObservation(41.0f, 61));
   expect(buffer.size() == 1, "reset test creates a completed sample");
 
+  executor.setResult(ai::ActionResultType::Accepted);
   collector.step(runtime, makeObservation(42.0f, 61));
   expect(recorder.hasPendingAction(), "reset test starts a new pending action");
 
