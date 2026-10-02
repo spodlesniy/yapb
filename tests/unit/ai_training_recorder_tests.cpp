@@ -8,8 +8,11 @@
 
 #include "ai_test.h"
 
+#include <cstdio>
+
 #include <ai/ai_training_recorder.h>
 #include <ai/ai_training_sample.h>
+#include <ai/ai_training_dataset.h>
 
 using ai::test::expect;
 
@@ -431,4 +434,64 @@ AI_TEST(testTrainingBufferBatchEncodingStopsOnInvalidTransition) {
   expect(encoded.failedIndex == 1, "batch encoder reports the failed transition index");
   expect(encoded.count == 1, "batch encoder reports successfully encoded samples before failure");
   expect(samples[0].action.targetNode == 41, "batch encoder keeps the successfully encoded prefix");
+}
+
+AI_TEST(testTrainingDatasetWriter) {
+  const char *path = "aipb-training-test.jsonl";
+
+  ai::TrainingBuffer buffer {};
+  const auto episode = buffer.beginEpisode();
+  const auto action = makeMoveAction(41);
+  expect(buffer.append(episode, makeObservation(1.0f, 40), action, 1.0f,
+                       makeObservation(1.5f, 41), makeCompletedResult(action.type)),
+         "dataset writer test appends a transition");
+
+  const auto written = ai::writeTrainingDataset(buffer, path);
+
+  expect(written.isValid(), "dataset writer writes a valid buffer");
+  expect(written.count == 1, "dataset writer reports the number of written samples");
+
+  std::FILE *file = std::fopen(path, "rb");
+  expect(file != nullptr, "dataset writer creates the output file");
+
+  if (file != nullptr) {
+    std::fseek(file, 0, SEEK_END);
+    const auto length = std::ftell(file);
+    std::fclose(file);
+    expect(length > 0, "dataset writer produces non-empty output");
+  }
+
+  std::remove(path);
+}
+
+AI_TEST(testTrainingDatasetWriterRejectsInvalidPath) {
+  ai::TrainingBuffer buffer {};
+  const auto written = ai::writeTrainingDataset(buffer, nullptr);
+
+  expect(written.error == ai::TrainingDatasetWriteError::InvalidPath,
+         "dataset writer rejects a null output path");
+}
+
+AI_TEST(testTrainingDatasetWriterRejectsUnsupportedTransition) {
+  ai::TrainingBuffer buffer {};
+  const auto episode = buffer.beginEpisode();
+
+  ai::Action action {};
+  action.type = ai::ActionType::Count;
+  ai::ActionResult result {};
+  result.action = action.type;
+  result.type = ai::ActionResultType::Completed;
+
+  expect(buffer.append(episode, makeObservation(1.0f, 40), action, 0.0f,
+                       makeObservation(1.5f, 40), result),
+         "dataset writer test appends an unsupported transition");
+
+  const char *path = "aipb-training-invalid-test.jsonl";
+  const auto written = ai::writeTrainingDataset(buffer, path);
+
+  expect(written.error == ai::TrainingDatasetWriteError::UnsupportedAction,
+         "dataset writer reports unsupported action encoding");
+  expect(written.count == 0, "dataset writer reports no samples after the first encoding failure");
+
+  std::remove(path);
 }

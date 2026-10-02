@@ -25,6 +25,7 @@ set(YAPB_SRC
     "src/ai/ai_bot_runtime.cpp"
     "src/ai/ai_inference_action_encoder.cpp"
     "src/ai/ai_training_sample.cpp"
+    "src/ai/ai_training_dataset.cpp"
     "src/ai/ai_goal_navigation_policy.cpp"
     "src/analyze.cpp"
     "src/botlib.cpp"
@@ -220,6 +221,7 @@ if(YAPB_BUILD_TESTS)
       "src/ai/ai_onnx_model_runner.cpp"
       "src/ai/ai_training_collector.cpp"
       "src/ai/ai_training_sample.cpp"
+      "src/ai/ai_training_dataset.cpp"
    )
     target_compile_features(yapb_ai_tests PRIVATE cxx_std_17)
     target_include_directories(yapb_ai_tests PRIVATE "inc")
