@@ -50,7 +50,9 @@ public:
       break;
 
     case ControlMode::Training:
-      m_runtime.setPolicy(nullptr);
+      // Training uses the deterministic navigation policy as its behavior source.
+      // TrainingCollector records the resulting action lifecycle separately.
+      m_runtime.setPolicy(&m_goalNavigationPolicy);
       if (previousMode != ControlMode::Training) {
         m_trainingRecorder.beginEpisode();
       }
