@@ -6,6 +6,7 @@
 // SPDX-License-Identifier: MIT
 //
 
+#include <ai/ai_action_task_mapping.h>
 #include <ai/ai_bot_action_executor.h>
 #include <ai/ai_navigation_task_guard.h>
 
@@ -59,9 +60,30 @@ ActionResult BotActionExecutor::execute(const Action &action, const Observation 
   case ActionType::MoveToPosition:
     return executeMoveToPosition(action);
 
+  case ActionType::Wait:
+  case ActionType::HoldPosition:
+  case ActionType::Camp:
+  case ActionType::SeekCover:
+  case ActionType::AttackTarget:
+  case ActionType::HuntTarget:
+  case ActionType::PlantBomb:
+  case ActionType::DefuseBomb:
+  case ActionType::PickupItem:
+  case ActionType::EscapeFromBomb:
+  case ActionType::Fire:
+    return executeObservedTaskAction(action, observation);
+
   default:
     return { action.type, ActionResultType::Rejected, 0.0f };
   }
+}
+
+ActionResult BotActionExecutor::executeObservedTaskAction(const Action &action, const Observation &observation) {
+  if (!actionMatchesObservedTask(action, observation)) {
+    return { action.type, ActionResultType::Rejected, 0.0f };
+  }
+
+  return { action.type, ActionResultType::Completed, 0.0f };
 }
 
 ActionResult BotActionExecutor::executeMoveToNode(const Action &action) {

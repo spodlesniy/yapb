@@ -158,3 +158,10 @@ Reason: inference failures should not stop the bot from receiving an executable 
 `GoalNavigationPolicy` remains the Training-mode behavior source, but it now maps observable YaPB tasks to explicit AI actions when the observation contains the required data. Unsupported or under-specified tasks fall back to the selected navigation goal.
 
 Reason: a training dataset containing only `MoveToNode` transitions cannot teach the model combat, objective, pickup, cover, or other action selection. Using the existing task state as a deterministic teacher increases action coverage without introducing online learning or changing the shared model contract.
+
+
+## D026 — Keep teacher task actions under the YaPB task stack
+
+When a policy output corresponds to the task already active in the observation, `BotActionExecutor` acknowledges the action as completed without replacing the legacy task. Actions for unrelated tasks remain rejected until an explicit executor implementation is added.
+
+Reason: the first multi-action training dataset should reflect real YaPB behavior without changing task priority or introducing a second competing task scheduler. Direct AI ownership of combat and objective tasks can be added later with explicit execution semantics and tests.

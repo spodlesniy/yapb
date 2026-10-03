@@ -388,6 +388,7 @@ if get_option('tests')
       'tests/unit/ai_inference_model_contract_tests.cpp',
       'tests/unit/ai_bot_runtime_compile_tests.cpp',
       'tests/unit/ai_goal_navigation_policy_tests.cpp',
+      'tests/unit/ai_action_task_mapping_tests.cpp',
       'src/ai/ai_controller.cpp',
       'src/ai/ai_observation_builder.cpp',
       'src/ai/ai_action_validator.cpp',
