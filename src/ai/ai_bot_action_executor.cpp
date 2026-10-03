@@ -119,14 +119,23 @@ ActionResult BotActionExecutor::execute(const Action &action, const Observation 
   case ActionType::HuntTarget:
     m_directAttackTargetActive = false;
     m_directAttackAction = {};
+    m_directSeekCoverActive = false;
     m_observedTaskActive = false;
     m_observedTaskAction = {};
     return executeHuntTarget(action, observation);
 
+  case ActionType::SeekCover:
+    m_directAttackTargetActive = false;
+    m_directAttackAction = {};
+    m_directHuntTargetActive = false;
+    m_directHuntAction = {};
+    m_observedTaskActive = false;
+    m_observedTaskAction = {};
+    return executeSeekCover(action);
+
   case ActionType::Wait:
   case ActionType::HoldPosition:
   case ActionType::Camp:
-  case ActionType::SeekCover:
   case ActionType::PlantBomb:
   case ActionType::DefuseBomb:
   case ActionType::PickupItem:
