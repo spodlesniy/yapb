@@ -393,6 +393,7 @@ if get_option('tests')
       'src/ai/ai_controller.cpp',
       'src/ai/ai_observation_builder.cpp',
       'src/ai/ai_action_validator.cpp',
+      'src/ai/ai_bot_action_executor.cpp',
       'src/ai/ai_action_runtime.cpp',
       'src/ai/ai_training_collector.cpp',
       'src/ai/ai_training_sample.cpp',
