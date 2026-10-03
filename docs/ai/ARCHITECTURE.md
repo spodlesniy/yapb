@@ -158,6 +158,8 @@ The initial training core uses PyTorch with SmoothL1 loss and AdamW. Training an
 
 The training orchestration layer performs deterministic episode-level train/validation splitting, seeded training shuffling, epoch execution, and checkpoint persistence. A last.pt checkpoint is written after every epoch; best.pt is written whenever validation loss improves. Checkpoints store model/optimizer state together with the fixed model contract, model architecture, configuration, and metrics.
 
+Checkpoints contain model/optimizer state, configuration, architecture, metrics, and epoch history. Training can resume from a compatible checkpoint; the target epochs may increase while training-affecting parameters remain fixed. The compute device may change when resuming.
+
 ONNX export remains a separate deployment step.
 
 ## Runtime integration

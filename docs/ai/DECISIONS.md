@@ -88,3 +88,10 @@ Reason: keep the first optimization loop small and testable while preserving the
 Training and validation samples are separated by episode_id; a single episode must never occur in both sets.
 
 Reason: transitions from the same gameplay episode are correlated. Splitting individual transitions would allow near-duplicate state sequences to appear on both sides of the evaluation boundary and produce leakage.
+
+
+## D016 — Resume checkpoints only with compatible training parameters
+
+A resumed run keeps the checkpoint's batch size, validation split, seed, learning rate, and weight decay unchanged. The requested epoch count may increase, and the compute device may change.
+
+Reason: preserving these training-affecting settings keeps the data split, epoch shuffling, optimizer behavior, and continuation reproducible while allowing a run to move between compute devices.

@@ -15,6 +15,10 @@ from .trainer import TrainingMetrics, create_optimizer, evaluate, train_epoch
 from .training_contract import PolicyTrainingBatch, encode_policy_batch
 
 
+CHECKPOINT_FORMAT = "aipb-policy-checkpoint"
+CHECKPOINT_VERSION = 1
+
+
 @dataclass(frozen=True)
 class TrainingConfig:
     epochs: int = 10
@@ -56,6 +60,7 @@ class TrainingRunResult:
     validation_samples: int
     last_checkpoint_path: Path
     best_checkpoint_path: Path | None
+    start_epoch: int
 
 
 def split_samples_by_episode(
@@ -126,21 +131,61 @@ def _policy_batches(
     ]
 
 
+def _serialize_history(history: Sequence[EpochMetrics]) -> list[dict]:
+    return [
+        {
+            "epoch": metrics.epoch,
+            "train_loss": metrics.train.loss,
+            "train_samples": metrics.train.samples,
+            "validation_loss": metrics.validation.loss,
+            "validation_samples": metrics.validation.samples,
+        }
+        for metrics in history
+    ]
+
+
+def _deserialize_history(values: object) -> list[EpochMetrics]:
+    if values is None:
+        return []
+    if not isinstance(values, list):
+        raise ValueError("checkpoint history must be a list")
+
+    history: list[EpochMetrics] = []
+    for value in values:
+        if not isinstance(value, dict):
+            raise ValueError("checkpoint history entry must be an object")
+        history.append(
+            EpochMetrics(
+                epoch=int(value["epoch"]),
+                train=TrainingMetrics(
+                    loss=float(value["train_loss"]),
+                    samples=int(value["train_samples"]),
+                ),
+                validation=TrainingMetrics(
+                    loss=float(value["validation_loss"]),
+                    samples=int(value["validation_samples"]),
+                ),
+            )
+        )
+    return history
+
+
 def _checkpoint_payload(
     model,
     optimizer,
     epoch: int,
     config: TrainingConfig,
-    metrics: EpochMetrics,
+    history: Sequence[EpochMetrics],
     best_epoch: int,
     best_validation_loss: float,
 ) -> dict:
     return {
-        "format": "aipb-policy-checkpoint",
-        "version": 1,
+        "format": CHECKPOINT_FORMAT,
+        "version": CHECKPOINT_VERSION,
         "epoch": epoch,
         "best_epoch": best_epoch,
         "best_validation_loss": best_validation_loss,
+        "history": _serialize_history(history),
         "config": asdict(config),
         "model": {
             "feature_count": MODEL_FEATURE_COUNT,
@@ -149,12 +194,6 @@ def _checkpoint_payload(
         },
         "model_state": model.state_dict(),
         "optimizer_state": optimizer.state_dict(),
-        "metrics": {
-            "train_loss": metrics.train.loss,
-            "train_samples": metrics.train.samples,
-            "validation_loss": metrics.validation.loss,
-            "validation_samples": metrics.validation.samples,
-        },
     }
 
 
@@ -164,7 +203,7 @@ def save_checkpoint(
     optimizer,
     epoch: int,
     config: TrainingConfig,
-    metrics: EpochMetrics,
+    history: Sequence[EpochMetrics],
     best_epoch: int,
     best_validation_loss: float,
 ) -> Path:
@@ -182,13 +221,41 @@ def save_checkpoint(
             optimizer,
             epoch,
             config,
-            metrics,
+            history,
             best_epoch,
             best_validation_loss,
         ),
         checkpoint_path,
     )
     return checkpoint_path
+
+
+def _validate_resume_config(
+    checkpoint_config: object,
+    config: TrainingConfig,
+    checkpoint_epoch: int,
+) -> None:
+    if not isinstance(checkpoint_config, dict):
+        raise ValueError("checkpoint config must be an object")
+
+    fields = (
+        "batch_size",
+        "validation_split",
+        "seed",
+        "learning_rate",
+        "weight_decay",
+    )
+    current = asdict(config)
+
+    for field in fields:
+        if checkpoint_config.get(field) != current[field]:
+            raise ValueError(f"resume configuration mismatch for {field}")
+
+    if checkpoint_epoch >= config.epochs:
+        raise ValueError(
+            f"checkpoint is already at epoch {checkpoint_epoch}; "
+            f"target epochs is {config.epochs}"
+        )
 
 
 def load_checkpoint(
@@ -203,9 +270,9 @@ def load_checkpoint(
     except ModuleNotFoundError as exc:
         raise RuntimeError("PyTorch is required for checkpointing.") from exc
 
-    checkpoint = torch.load(Path(path), map_location=device, weights_only=False)
+    checkpoint = torch.load(Path(path), map_location=device, weights_only=True)
 
-    if checkpoint.get("format") != "aipb-policy-checkpoint" or checkpoint.get("version") != 1:
+    if checkpoint.get("format") != CHECKPOINT_FORMAT or checkpoint.get("version") != CHECKPOINT_VERSION:
         raise ValueError("unsupported AiPB policy checkpoint format")
 
     model_contract = checkpoint.get("model", {})
@@ -225,8 +292,9 @@ def run_training(
     samples: Sequence[TrainingSample],
     config: TrainingConfig,
     checkpoint_dir: str | Path = "tools/aipb_training/checkpoints",
+    resume_from: str | Path | None = None,
 ) -> TrainingRunResult:
-    """Run the configured training/validation loop and persist last/best checkpoints."""
+    """Run training, optionally resuming from a compatible checkpoint."""
     config.validate()
 
     train_samples, validation_samples = split_samples_by_episode(
@@ -253,12 +321,28 @@ def run_training(
     last_path = directory / "last.pt"
     best_path = directory / "best.pt"
 
+    start_epoch = 1
     history: list[EpochMetrics] = []
     best_epoch = 0
     best_validation_loss = float("inf")
     best_checkpoint_path: Path | None = None
 
-    for epoch in range(1, config.epochs + 1):
+    if resume_from is not None:
+        checkpoint = load_checkpoint(resume_from, model, optimizer, config.device)
+        checkpoint_epoch = int(checkpoint["epoch"])
+        _validate_resume_config(checkpoint.get("config"), config, checkpoint_epoch)
+        history = _deserialize_history(checkpoint.get("history"))
+        if history and history[-1].epoch != checkpoint_epoch:
+            raise ValueError("checkpoint history does not end at checkpoint epoch")
+        start_epoch = checkpoint_epoch + 1
+        best_epoch = int(checkpoint.get("best_epoch", 0))
+        best_validation_loss = float(checkpoint.get("best_validation_loss", float("inf")))
+
+        candidate_best = Path(resume_from).parent / "best.pt"
+        if candidate_best.is_file():
+            best_checkpoint_path = candidate_best
+
+    for epoch in range(start_epoch, config.epochs + 1):
         train_batches = _policy_batches(
             train_samples,
             config.batch_size,
@@ -290,7 +374,7 @@ def run_training(
                 optimizer,
                 epoch,
                 config,
-                epoch_metrics,
+                history,
                 best_epoch,
                 best_validation_loss,
             )
@@ -302,7 +386,7 @@ def run_training(
             optimizer,
             epoch,
             config,
-            epoch_metrics,
+            history,
             best_epoch,
             best_validation_loss,
         )
@@ -315,4 +399,5 @@ def run_training(
         validation_samples=len(validation_samples),
         last_checkpoint_path=last_path,
         best_checkpoint_path=best_checkpoint_path,
+        start_epoch=start_epoch,
     )

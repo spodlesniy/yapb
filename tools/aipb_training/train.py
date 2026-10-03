@@ -20,6 +20,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--learning-rate", type=float, default=1e-3)
     parser.add_argument("--weight-decay", type=float, default=1e-4)
     parser.add_argument("--device", default="cpu")
+    parser.add_argument(
+        "--resume",
+        default=None,
+        help="Resume from a compatible PyTorch checkpoint. Epochs is the target total.",
+    )
     return parser
 
 
@@ -39,6 +44,7 @@ def main() -> int:
             device=args.device,
         ),
         args.checkpoint_dir,
+        resume_from=args.resume,
     )
 
     for metrics in result.history:

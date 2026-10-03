@@ -9,7 +9,12 @@ from pathlib import Path
 
 from ..dataset import TrainingAction, TrainingObservation, TrainingSample
 from ..model_contract import MODEL_FEATURE_COUNT
-from ..training_run import TrainingConfig, run_training, split_samples_by_episode
+from ..training_run import (
+    TrainingConfig,
+    load_checkpoint,
+    run_training,
+    split_samples_by_episode,
+)
 
 TORCH_AVAILABLE = importlib.util.find_spec("torch") is not None
 
@@ -19,12 +24,20 @@ def make_sample(episode_id: int, index: int) -> TrainingSample:
     return TrainingSample(
         episode_id=episode_id,
         observation=TrainingObservation(values),
-        action=TrainingAction(1, 42, -1, (1.0, 2.0, 3.0), 1, 0, 0.5, 0.8),
+        action=TrainingAction(1, 42, -1, (1.0, 2.0, 3.0), 1, 0, 0.8, 0.8),
         reward=1.0,
         next_observation=TrainingObservation(values),
         result=2,
         elapsed_time=0.5,
         terminal=index == 2,
+    )
+
+
+def make_samples() -> tuple[TrainingSample, ...]:
+    return tuple(
+        make_sample(episode_id, index)
+        for episode_id in range(1, 5)
+        for index in range(3)
     )
 
 
@@ -43,11 +56,7 @@ class TrainingConfigTests(unittest.TestCase):
 
 class TrainingSplitTests(unittest.TestCase):
     def test_split_is_deterministic_and_keeps_episodes_together(self) -> None:
-        samples = tuple(
-            make_sample(episode_id, index)
-            for episode_id in range(1, 5)
-            for index in range(3)
-        )
+        samples = make_samples()
 
         first_train, first_validation = split_samples_by_episode(samples, 0.25, 1234)
         second_train, second_validation = split_samples_by_episode(samples, 0.25, 1234)
@@ -81,11 +90,7 @@ class TrainingRunTests(unittest.TestCase):
     def test_training_run_creates_last_and_best_checkpoints(self) -> None:
         import tempfile
 
-        samples = tuple(
-            make_sample(episode_id, index)
-            for episode_id in range(1, 5)
-            for index in range(3)
-        )
+        samples = make_samples()
 
         with tempfile.TemporaryDirectory() as directory:
             result = run_training(
@@ -95,11 +100,100 @@ class TrainingRunTests(unittest.TestCase):
             )
 
             self.assertEqual(len(result.history), 2)
+            self.assertEqual(result.start_epoch, 1)
             self.assertEqual(result.train_samples + result.validation_samples, 12)
             self.assertGreaterEqual(result.best_epoch, 1)
             self.assertTrue(result.last_checkpoint_path.is_file())
             self.assertIsNotNone(result.best_checkpoint_path)
             self.assertTrue(result.best_checkpoint_path.is_file())
+
+    def test_resume_matches_uninterrupted_training(self) -> None:
+        import tempfile
+        import torch
+
+        samples = make_samples()
+        one_epoch = TrainingConfig(epochs=1, batch_size=4, validation_split=0.25, seed=7)
+        two_epochs = TrainingConfig(epochs=2, batch_size=4, validation_split=0.25, seed=7)
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            uninterrupted_dir = root / "uninterrupted"
+            resumed_dir = root / "resumed"
+
+            run_training(samples, two_epochs, uninterrupted_dir)
+            first = run_training(samples, one_epoch, resumed_dir)
+
+            resumed = run_training(
+                samples,
+                two_epochs,
+                resumed_dir,
+                resume_from=first.last_checkpoint_path,
+            )
+
+            uninterrupted_checkpoint = torch.load(
+                uninterrupted_dir / "last.pt",
+                weights_only=True,
+            )
+            resumed_checkpoint = torch.load(
+                resumed.last_checkpoint_path,
+                weights_only=True,
+            )
+
+            self.assertEqual(resumed.start_epoch, 2)
+            self.assertEqual(len(resumed.history), 2)
+
+            for name, value in uninterrupted_checkpoint["model_state"].items():
+                self.assertTrue(torch.equal(value, resumed_checkpoint["model_state"][name]))
+
+            self.assertEqual(uninterrupted_checkpoint["optimizer_state"], resumed_checkpoint["optimizer_state"])
+
+    def test_resume_rejects_changed_training_parameters(self) -> None:
+        import tempfile
+
+        samples = make_samples()
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            first = run_training(
+                samples,
+                TrainingConfig(epochs=1, batch_size=4, validation_split=0.25, seed=7),
+                root,
+            )
+
+            with self.assertRaises(ValueError):
+                run_training(
+                    samples,
+                    TrainingConfig(epochs=2, batch_size=8, validation_split=0.25, seed=7),
+                    root,
+                    resume_from=first.last_checkpoint_path,
+                )
+
+    def test_load_checkpoint_restores_model_and_optimizer(self) -> None:
+        import tempfile
+        import torch
+
+        from ..policy_model import build_policy_model
+        from ..trainer import create_optimizer
+
+        samples = make_samples()
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            result = run_training(
+                samples,
+                TrainingConfig(epochs=1, batch_size=4, validation_split=0.25, seed=7),
+                root,
+            )
+
+            model = build_policy_model()
+            optimizer = create_optimizer(model)
+            checkpoint = load_checkpoint(result.last_checkpoint_path, model, optimizer)
+
+            self.assertEqual(checkpoint["epoch"], 1)
+            self.assertEqual(checkpoint["format"], "aipb-policy-checkpoint")
+            self.assertIn("model_state", checkpoint)
+            self.assertIn("optimizer_state", checkpoint)
+            self.assertTrue(all(torch.isfinite(p).all().item() for p in model.parameters()))
 
 
 if __name__ == "__main__":
