@@ -28,6 +28,7 @@ C++ runtime -> JSONL -> Python training package -> ONNX -> C++ runtime
     ├── export.py                 # ONNX export command-line entry point
     ├── deploy.py                 # validated ONNX deployment into the package tree
     ├── evaluation.py             # checkpoint evaluation metrics
+    ├── dataset_stats.py          # dataset composition and action coverage
     └── tests/
         ├── __init__.py
         ├── test_validate_dataset.py
@@ -129,6 +130,14 @@ Export a trained checkpoint to a deployment model:
     python -m tools.aipb_training.export checkpoints/best.pt policy.onnx
 
 The command validates the ONNX graph and runtime contract and verifies output parity with ONNX Runtime before returning successfully.
+
+## Dataset statistics
+
+Inspect dataset composition before training:
+
+    python -m tools.aipb_training.dataset_stats dataset.jsonl
+
+The report shows sample and episode counts, terminal transition count, and how many of the 25 supported action IDs are actually represented, including per-action counts and percentages.
 
 ## Evaluation
 

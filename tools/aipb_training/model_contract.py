@@ -18,6 +18,37 @@ MODEL_FEATURE_COUNT = 230
 MODEL_ACTION_TENSOR_SIZE = 10
 MODEL_ACTION_ID_COUNT = 25
 
+MODEL_ACTION_ID_NAMES = (
+    "None",
+    "MoveToNode",
+    "MoveToPosition",
+    "FollowPlayer",
+    "SeekCover",
+    "Retreat",
+    "HoldPosition",
+    "Explore",
+    "AttackTarget",
+    "HuntTarget",
+    "AimAtTarget",
+    "Fire",
+    "Reload",
+    "ChangeWeapon",
+    "PlantBomb",
+    "DefuseBomb",
+    "PickupItem",
+    "EscapeFromBomb",
+    "RescueHostage",
+    "ProtectObjective",
+    "Wait",
+    "Camp",
+    "ThrowGrenade",
+    "ThrowFlashbang",
+    "ThrowSmoke",
+)
+
+if len(MODEL_ACTION_ID_NAMES) != MODEL_ACTION_ID_COUNT:
+    raise RuntimeError("model action ID name table does not match the action ID count")
+
 MODEL_RUNTIME_INPUT_SHAPE = (1, MODEL_FEATURE_COUNT)
 MODEL_RUNTIME_OUTPUT_SHAPE = (1, MODEL_ACTION_TENSOR_SIZE)
 MODEL_ONNX_OPSET_VERSION = 18

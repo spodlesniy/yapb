@@ -179,3 +179,10 @@ Reason: incremental development should preserve the roadmap directly in the code
 The Python training package derives the valid action-ID range from `MODEL_ACTION_ID_COUNT = 25`, matching the C++ `InferenceActionId::Count` contract. Dataset validation and evaluation use this constant instead of duplicating the numeric upper bound.
 
 Reason: action IDs are part of the stable model contract. Duplicated numeric ranges can silently diverge between dataset validation, evaluation, and the C++ runtime.
+
+
+## D029 — Inspect action coverage before training
+
+The Python training package provides a dataset statistics command that reports sample count, episode count, terminal transitions, and coverage/distribution across the 25 supported action IDs. The action-ID names are stored alongside the model contract so reporting does not duplicate numeric IDs or labels elsewhere.
+
+Reason: the teacher policy was expanded to multiple action types. Measuring actual dataset coverage before training exposes missing or highly dominant actions before model quality is interpreted.

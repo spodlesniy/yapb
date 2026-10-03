@@ -149,6 +149,7 @@ tools/aipb_training/
 ├── export.py
 ├── deploy.py
 ├── evaluation.py
+├── dataset_stats.py
 └── tests/
     ├── __init__.py
     ├── test_validate_dataset.py
@@ -180,6 +181,8 @@ Checkpoints contain model/optimizer state, configuration, architecture, metrics,
 ONNX export is implemented as a separate deployment step. It consumes a compatible PyTorch checkpoint, emits the static [1,230] -> [1,10] contract at ONNX opset 18, validates the graph, and verifies numerical parity against the PyTorch model with ONNX Runtime. The `export.py` command-line entry point exposes this step without requiring callers to write Python code. The `deploy.py` command then validates the exported model again and places it in the standard package tree at `cfg/addons/yapb/data/models/aipb_policy.onnx`.
 
 ## Offline checkpoint evaluation
+
+Dataset statistics are a separate offline step from training. They stream the validated JSONL dataset and report samples, episodes, terminal transitions, and action-ID coverage.
 
 Checkpoint evaluation is a separate offline step from training. It reuses the checkpoint's `validation_split` and `seed` so the validation boundary remains deterministic and consistent with the training run. The default validation report contains overall SmoothL1 loss, overall mean absolute error, runtime-style action ID accuracy, and per-output mean absolute error for the ten-value action tensor.
 
