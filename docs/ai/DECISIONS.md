@@ -228,3 +228,9 @@ HuntTarget is executed through ActionExecutionContext using the last observed en
 
 Reason: hunting a lost enemy is a navigation decision, not a new pathfinding algorithm. Reusing YaPB pathfinding preserves established movement behavior while allowing the AI action to own when and why that navigation is active.
 
+
+## D036 — Gate offline training-tool tests on training-tool changes
+
+GitHub Actions runs the Python training-tool test suite for explicit manual runs and releases, and for pushes that change `tools/aipb_training/**`. C++-only changes do not spend CI time on the independent Python suite. Production build jobs do not require the optional training-tools job to run.
+
+Reason: the offline Python package has no runtime dependency on the C++ implementation. Running its tests for every C++ change adds CI time without increasing coverage, while gating on the complete Python package directory still catches changes to implementation, tests, requirements, and supporting data.
