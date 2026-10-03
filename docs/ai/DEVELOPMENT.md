@@ -28,6 +28,7 @@ For every touched source file, verify:
 - No `std::array` was introduced.
 - Fixed-size arrays use ordinary C-style arrays.
 - All source-code comments are written in English.
+- Code that is explicitly known to be temporary, transitional, or scheduled for replacement must include a specific English `// TODO: ...` comment describing what will be replaced or implemented.
 - New tests are syntactically balanced.
 - Test functions are not duplicated.
 - The relevant test target actually compiles and runs the changed tests.

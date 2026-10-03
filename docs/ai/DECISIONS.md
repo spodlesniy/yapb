@@ -165,3 +165,10 @@ Reason: a training dataset containing only `MoveToNode` transitions cannot teach
 When a policy output corresponds to the task already active in the observation, `BotActionExecutor` acknowledges the action as completed without replacing the legacy task. Actions for unrelated tasks remain rejected until an explicit executor implementation is added.
 
 Reason: the first multi-action training dataset should reflect real YaPB behavior without changing task priority or introducing a second competing task scheduler. Direct AI ownership of combat and objective tasks can be added later with explicit execution semantics and tests.
+
+
+## D027 — Mark confirmed future rewrites with explicit TODO comments
+
+When code is intentionally temporary, transitional, or already known to require a future redesign, it must carry a specific English `// TODO: ...` comment describing the intended replacement or next implementation. Generic TODO markers without actionable context are not sufficient.
+
+Reason: incremental development should preserve the roadmap directly in the code so that temporary compatibility layers and transitional implementations are not mistaken for final architecture.
