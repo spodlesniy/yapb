@@ -75,6 +75,9 @@ void BotActionExecutor::cancel() {
   if (m_directHuntTargetActive && m_context != nullptr) {
     m_context->cancelHuntTarget(m_directHuntAction.targetPlayer);
   }
+  if (m_directSeekCoverActive && m_context != nullptr) {
+    m_context->cancelSeekCover();
+  }
   m_directAttackTargetActive = false;
   m_directAttackAction = {};
   m_directHuntTargetActive = false;
