@@ -38,7 +38,7 @@ def sample(action_id: int, episode_id: int, terminal: bool) -> dict:
             "confidence": 1.0,
         },
         "reward": 1.0,
-        "next_observation": {"schema_version": 1, "values": values},
+        "next_observation": {"schema_version": MODEL_FEATURE_SCHEMA_VERSION, "values": values},
         "result": 1,
         "elapsed_time": 0.25,
         "terminal": terminal,

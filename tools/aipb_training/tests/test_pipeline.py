@@ -44,7 +44,7 @@ def _make_sample(episode_id: int, index: int) -> dict:
         },
         "reward": 1.0,
         "next_observation": {
-            "schema_version": 1,
+            "schema_version": MODEL_FEATURE_SCHEMA_VERSION,
             "values": next_observation,
         },
         "result": 2,
