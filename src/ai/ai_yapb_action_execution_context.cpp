@@ -149,11 +149,12 @@ bool YaPBActionExecutionContext::huntTarget(int targetPlayer) {
   if (!m_huntTargetActive || m_huntTargetPlayer != targetPlayer) {
     m_huntTargetActive = true;
     m_huntTargetPlayer = targetPlayer;
-    m_huntTargetOrigin = target->v.origin;
+    m_huntTargetOrigin = { target->v.origin.x, target->v.origin.y, target->v.origin.z };
     m_huntNavigationTaskCreated = false;
   }
 
-  const int node = graph.getNearest(m_huntTargetOrigin);
+  const auto targetOrigin = Vector { m_huntTargetOrigin.x, m_huntTargetOrigin.y, m_huntTargetOrigin.z };
+  const int node = graph.getNearest(targetOrigin);
   if (!graph.exists(node)) {
     return false;
   }
@@ -162,7 +163,7 @@ bool YaPBActionExecutionContext::huntTarget(int targetPlayer) {
     m_bot->startTask(Task::MoveToPosition, TaskPri::MoveToPosition, node, 0.0f, true);
     m_huntNavigationTaskCreated = true;
   }
-  else if (m_bot->getTask()->data != node || m_bot->m_position.distanceSq(m_huntTargetOrigin) > cr::sqrf(0.1f)) {
+  else if (m_bot->getTask()->data != node || m_bot->m_position.distanceSq(targetOrigin) > cr::sqrf(0.1f)) {
     m_bot->clearSearchNodes();
   }
 
@@ -201,7 +202,7 @@ void YaPBActionExecutionContext::cancelHuntTarget(int targetPlayer) {
     m_bot->m_position.clear();
     m_huntTargetActive = false;
     m_huntTargetPlayer = -1;
-    m_huntTargetOrigin.clear();
+    m_huntTargetOrigin = {};
     m_huntNavigationTaskCreated = false;
   }
 }
