@@ -29,6 +29,7 @@ namespace ai {
 
 struct ObservationInput;
 class BotActionExecutor;
+class YaPBActionExecutionContext;
 ObservationInput buildObservationInput (const Bot &bot);
 
 } // namespace ai
@@ -227,6 +228,7 @@ class Bot final {
 public:
    friend class BotManager;
    friend class ai::BotActionExecutor;
+   friend class ai::YaPBActionExecutionContext;
    friend ai::ObservationInput ai::buildObservationInput (const Bot &bot);
 
 private:

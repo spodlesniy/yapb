@@ -60,12 +60,16 @@ BotActionExecutor::BotActionExecutor(ActionExecutionContext &context) : m_contex
 
 bool BotActionExecutor::isActionStillOwned(const Action &action) const {
   if (m_context == nullptr) return false;
-  if (action.type != ActionType::MoveToNode && action.type != ActionType::MoveToPosition && action.type != ActionType::HuntTarget) return true;
+  if (action.type != ActionType::MoveToNode && action.type != ActionType::MoveToPosition
+      && action.type != ActionType::HuntTarget && action.type != ActionType::SeekCover
+      && action.type != ActionType::EscapeFromBomb) {
+    return true;
+  }
   return m_context->allowsNavigationOverride();
 }
 
 bool BotActionExecutor::suppressesLegacyTaskExecution() const {
-  return m_directAttackTargetActive || m_directHuntTargetActive || m_directSeekCoverActive;
+  return m_directAttackTargetActive;
 }
 
 void BotActionExecutor::cancel() {
@@ -78,10 +82,15 @@ void BotActionExecutor::cancel() {
   if (m_directSeekCoverActive && m_context != nullptr) {
     m_context->cancelSeekCover();
   }
+  if (m_directEscapeFromBombActive && m_context != nullptr) {
+    m_context->cancelEscapeFromBomb();
+  }
   m_directAttackTargetActive = false;
   m_directAttackAction = {};
   m_directHuntTargetActive = false;
   m_directHuntAction = {};
+  m_directSeekCoverActive = false;
+  m_directEscapeFromBombActive = false;
   m_observedTaskActive = false;
   m_observedTaskAction = {};
 }
@@ -132,9 +141,20 @@ ActionResult BotActionExecutor::execute(const Action &action, const Observation 
     m_directAttackAction = {};
     m_directHuntTargetActive = false;
     m_directHuntAction = {};
+    m_directEscapeFromBombActive = false;
     m_observedTaskActive = false;
     m_observedTaskAction = {};
     return executeSeekCover(action);
+
+  case ActionType::EscapeFromBomb:
+    m_directAttackTargetActive = false;
+    m_directAttackAction = {};
+    m_directHuntTargetActive = false;
+    m_directHuntAction = {};
+    m_directSeekCoverActive = false;
+    m_observedTaskActive = false;
+    m_observedTaskAction = {};
+    return executeEscapeFromBomb(action, observation);
 
   case ActionType::Wait:
   case ActionType::HoldPosition:
@@ -142,7 +162,6 @@ ActionResult BotActionExecutor::execute(const Action &action, const Observation 
   case ActionType::PlantBomb:
   case ActionType::DefuseBomb:
   case ActionType::PickupItem:
-  case ActionType::EscapeFromBomb:
   case ActionType::Fire:
     return executeObservedTaskAction(action, observation);
 
@@ -212,6 +231,36 @@ ActionResult BotActionExecutor::executeSeekCover(const Action &action) {
   }
 
   m_directSeekCoverActive = true;
+  return { action.type, ActionResultType::Accepted, 0.0f };
+}
+
+ActionResult BotActionExecutor::executeEscapeFromBomb(const Action &action, const Observation &observation) {
+  const bool bombPlanted = observation.bot.objectiveFlags & ObjectiveFlag::BombPlanted;
+
+  if (!bombPlanted) {
+    if (!m_directEscapeFromBombActive) {
+      return { action.type, ActionResultType::Rejected, 0.0f };
+    }
+
+    cancel();
+    return { action.type, ActionResultType::Completed, 0.0f };
+  }
+
+  if (m_context->isEscapeFromBombReached()) {
+    cancel();
+    return { action.type, ActionResultType::Completed, 0.0f };
+  }
+
+  if (!m_context->escapeFromBomb()) {
+    if (!m_directEscapeFromBombActive) {
+      return { action.type, ActionResultType::Rejected, 0.0f };
+    }
+
+    cancel();
+    return { action.type, ActionResultType::Completed, 0.0f };
+  }
+
+  m_directEscapeFromBombActive = true;
   return { action.type, ActionResultType::Accepted, 0.0f };
 }
 

@@ -160,11 +160,11 @@ Reason: inference failures should not stop the bot from receiving an executable 
 Reason: a training dataset containing only `MoveToNode` transitions cannot teach the model combat, objective, pickup, cover, or other action selection. Using the existing task state as a deterministic teacher increases action coverage without introducing online learning or changing the shared model contract.
 
 
-## D026 — Keep teacher task actions under the YaPB task stack
+## D026 — Keep not-yet-direct teacher actions under the YaPB task stack
 
-When a policy output corresponds to the task already active in the observation, `BotActionExecutor` acknowledges the action as accepted while the legacy task continues, then completes the AI action when the observed task leaves that state. Actions for unrelated tasks remain rejected until an explicit executor implementation is added.
+When a policy output corresponds to a task that does not yet have direct AI-owned execution semantics, `BotActionExecutor` may acknowledge that action against the observed YaPB task while the legacy task continues. AttackTarget, HuntTarget, SeekCover, and EscapeFromBomb are direct actions and are no longer part of this transitional set.
 
-Reason: the first multi-action training dataset should reflect real YaPB behavior without changing task priority or introducing a second competing task scheduler. Direct AI ownership of combat and objective tasks can be added later with explicit execution semantics and tests.
+Reason: transitional task-backed actions preserve existing YaPB behavior while direct AI execution semantics are added incrementally. Each action leaves this compatibility path only after explicit execution semantics, ownership, cancellation, and tests are in place.
 
 
 ## D027 — Mark confirmed future rewrites with explicit TODO comments
@@ -240,3 +240,15 @@ Reason: the offline Python package has no runtime dependency on the C++ implemen
 SeekCover is executed through ActionExecutionContext. The YaPB adapter selects a cover waypoint using the existing cover-node search, reuses the existing navigation machinery to move there, and exposes completion/cancellation to the AI executor. Legacy task execution is suppressed while the direct action is active.
 
 Reason: cover selection is an AI decision that should own its lifecycle without duplicating YaPB pathfinding. Reusing the established navigation primitive preserves movement behavior while removing the transitional task-stack acknowledgement from the AI action path.
+
+## D038 — Keep MoveToPosition as a navigation execution primitive
+
+Direct AI-owned navigation actions may create and update a YaPB MoveToPosition task as an engine-side path progression primitive. This task is not the source of the high-level decision; the AI executor owns the action lifecycle and cancellation. Legacy task execution remains enabled for these direct navigation actions so YaPB's existing path progression and movement mechanics continue.
+
+Reason: UpdateNavigation/path progression is implemented inside the MoveToPosition task path. Suppressing the task executor would prevent direct HuntTarget, SeekCover, and EscapeFromBomb actions from advancing through their waypoint paths.
+
+## D039 — Make EscapeFromBomb a direct AI-owned objective navigation action
+
+EscapeFromBomb is executed through ActionExecutionContext using the planted bomb origin to select a safe waypoint outside the existing YaPB safety radius. The selected waypoint is navigated through the existing MoveToPosition primitive while the AI executor owns the lifecycle and cancellation. The action completes when the safe waypoint is reached or when the bomb is no longer planted.
+
+Reason: the high-level decision to escape is AI-owned, while waypoint selection and movement reuse the established objective/navigation mechanics without introducing a second pathfinding implementation.

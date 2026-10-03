@@ -291,6 +291,113 @@ void YaPBActionExecutionContext::cancelSeekCover() {
   m_seekCoverNavigationTaskCreated = false;
 }
 
+bool YaPBActionExecutionContext::escapeFromBomb() {
+  if (m_bot == nullptr || m_bot->pev == nullptr || !gameState.isBombPlanted()) {
+    return false;
+  }
+
+  if (!m_escapeFromBombActive) {
+    const auto currentTask = m_bot->getCurrentTaskId();
+
+    if (currentTask != Task::Normal && currentTask != Task::MoveToPosition && currentTask != Task::EscapeFromBomb) {
+      return false;
+    }
+
+    const auto &bombOrigin = gameState.getBombOrigin();
+
+    if (bombOrigin.empty()) {
+      return false;
+    }
+
+    const float safeRadius = m_bot->rg(1513.0f, 2048.0f);
+    float nearestDistanceSq = kInfiniteDistance;
+    int bestNode = kInvalidNodeIndex;
+
+    for (const auto &path : graph) {
+      if (path.origin.distanceSq(bombOrigin) < cr::sqrf(safeRadius) || m_bot->isOccupiedNode(path.number)) {
+        continue;
+      }
+
+      const float distanceSq = m_bot->pev->origin.distanceSq(path.origin);
+
+      if (distanceSq < nearestDistanceSq) {
+        nearestDistanceSq = distanceSq;
+        bestNode = path.number;
+      }
+    }
+
+    if (!graph.exists(bestNode)) {
+      bestNode = graph.getFarest(m_bot->pev->origin, safeRadius);
+    }
+
+    if (!graph.exists(bestNode)) {
+      return false;
+    }
+
+    m_escapeFromBombActive = true;
+    m_escapeFromBombNode = bestNode;
+    m_escapeFromBombNavigationTaskCreated = false;
+
+    if (currentTask == Task::MoveToPosition || currentTask == Task::EscapeFromBomb) {
+      m_bot->clearTask(currentTask);
+    }
+
+    m_bot->startTask(Task::MoveToPosition, TaskPri::MoveToPosition, bestNode, 0.0f, true);
+    m_escapeFromBombNavigationTaskCreated = true;
+  }
+
+  if (m_bot->getCurrentTaskId() != Task::MoveToPosition) {
+    if (m_bot->getCurrentTaskId() != Task::Normal) {
+      return false;
+    }
+
+    m_bot->startTask(Task::MoveToPosition, TaskPri::MoveToPosition, m_escapeFromBombNode, 0.0f, true);
+  }
+
+  m_bot->getTask()->data = m_escapeFromBombNode;
+  m_bot->m_position.clear();
+  m_bot->m_prevGoalIndex = m_escapeFromBombNode;
+  m_bot->m_chosenGoalIndex = m_escapeFromBombNode;
+  m_bot->m_aimFlags |= AimFlags::Nav;
+  return true;
+}
+
+bool YaPBActionExecutionContext::isEscapeFromBombReached() const {
+  if (m_bot == nullptr || m_bot->pev == nullptr || !m_escapeFromBombActive
+      || !graph.exists(m_escapeFromBombNode)) {
+    return false;
+  }
+
+  const auto &path = graph[m_escapeFromBombNode];
+  const float reachDistance = cr::max(kNavigationReachDistance, path.radius);
+
+  return m_bot->m_currentNodeIndex == m_escapeFromBombNode
+      && m_bot->pev->origin.distanceSq(path.origin) <= cr::sqrf(reachDistance);
+}
+
+void YaPBActionExecutionContext::cancelEscapeFromBomb() {
+  if (m_bot == nullptr) {
+    return;
+  }
+
+  if (m_escapeFromBombActive && m_escapeFromBombNavigationTaskCreated
+      && m_bot->getCurrentTaskId() == Task::MoveToPosition) {
+    m_bot->clearTask(Task::MoveToPosition);
+  }
+
+  if (m_escapeFromBombActive) {
+    m_bot->clearSearchNodes();
+    m_bot->m_prevGoalIndex = kInvalidNodeIndex;
+    m_bot->m_chosenGoalIndex = kInvalidNodeIndex;
+    m_bot->m_position.clear();
+    m_bot->m_aimFlags &= ~AimFlags::Nav;
+  }
+
+  m_escapeFromBombActive = false;
+  m_escapeFromBombNode = kInvalidNodeIndex;
+  m_escapeFromBombNavigationTaskCreated = false;
+}
+
 
 
 } // namespace ai
