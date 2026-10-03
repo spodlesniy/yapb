@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import unittest
 
-from .model_contract import (
+from tools.aipb_training.model_contract import (
     MODEL_ACTION_TENSOR_SIZE,
     MODEL_FEATURE_COUNT,
     MODEL_INPUT_DTYPE,

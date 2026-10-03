@@ -8,7 +8,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from .dataset import (
+from tools.aipb_training.dataset import (
     TrainingAction,
     TrainingBatch,
     TrainingObservation,
@@ -17,7 +17,7 @@ from .dataset import (
     iter_training_samples,
     load_training_dataset,
 )
-from .model_contract import MODEL_FEATURE_COUNT
+from tools.aipb_training.model_contract import MODEL_FEATURE_COUNT
 
 
 METADATA = {

@@ -18,10 +18,11 @@ C++ runtime -> JSONL -> Python training package -> ONNX -> C++ runtime
     ├── dataset.py                # typed samples and deterministic batching
     ├── model_contract.py         # stable model I/O contract
     ├── training_contract.py      # dataset batch -> model target encoding
-    ├── test_validate_dataset.py
-    ├── test_dataset.py
-    ├── test_model_contract.py
-    └── test_training_contract.py
+    └── tests/
+        ├── test_validate_dataset.py
+        ├── test_dataset.py
+        ├── test_model_contract.py
+        └── test_training_contract.py
 
 Future training components belong here as separate modules:
 

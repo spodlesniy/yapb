@@ -5,9 +5,9 @@ from __future__ import annotations
 
 import unittest
 
-from .dataset import TrainingAction, TrainingBatch, TrainingObservation, TrainingSample
-from .model_contract import MODEL_FEATURE_COUNT
-from .training_contract import ACTION_TENSOR_SIZE, encode_action_target, encode_policy_batch
+from tools.aipb_training.dataset import TrainingAction, TrainingBatch, TrainingObservation, TrainingSample
+from tools.aipb_training.model_contract import MODEL_FEATURE_COUNT
+from tools.aipb_training.training_contract import ACTION_TENSOR_SIZE, encode_action_target, encode_policy_batch
 
 
 def make_sample(
