@@ -19,6 +19,25 @@ from ..training_run import (
 TORCH_AVAILABLE = importlib.util.find_spec("torch") is not None
 
 
+def assert_optimizer_states_equal(test_case: unittest.TestCase, first: dict, second: dict) -> None:
+    test_case.assertEqual(first["param_groups"], second["param_groups"])
+    test_case.assertEqual(first["state"].keys(), second["state"].keys())
+
+    import torch
+
+    for parameter_id in first["state"]:
+        first_state = first["state"][parameter_id]
+        second_state = second["state"][parameter_id]
+        test_case.assertEqual(first_state.keys(), second_state.keys())
+        for key in first_state:
+            first_value = first_state[key]
+            second_value = second_state[key]
+            if torch.is_tensor(first_value):
+                test_case.assertTrue(torch.equal(first_value, second_value))
+            else:
+                test_case.assertEqual(first_value, second_value)
+
+
 def make_sample(episode_id: int, index: int) -> TrainingSample:
     values = (float(index),) * MODEL_FEATURE_COUNT
     return TrainingSample(
@@ -145,7 +164,7 @@ class TrainingRunTests(unittest.TestCase):
             for name, value in uninterrupted_checkpoint["model_state"].items():
                 self.assertTrue(torch.equal(value, resumed_checkpoint["model_state"][name]))
 
-            self.assertEqual(uninterrupted_checkpoint["optimizer_state"], resumed_checkpoint["optimizer_state"])
+            assert_optimizer_states_equal(\n                self,\n                uninterrupted_checkpoint["optimizer_state"],\n                resumed_checkpoint["optimizer_state"],\n            )
 
     def test_resume_rejects_changed_training_parameters(self) -> None:
         import tempfile

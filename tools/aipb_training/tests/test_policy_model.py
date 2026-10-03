@@ -26,7 +26,7 @@ class PolicyModelArchitectureTests(unittest.TestCase):
 
         model = build_policy_model()
 
-        self.assertEqual(len(list(model.parameters())), 8)
+        self.assertEqual(len(list(model.parameters())), 10)
 
         import torch
 
