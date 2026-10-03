@@ -37,6 +37,12 @@ Future training components belong here as separate modules:
 
 These components are intentionally separated so the model I/O contract remains independent from the training loop.
 
+## Training core
+
+The initial training core uses a robust SmoothL1 loss over the ten-value raw action tensor and AdamW with a learning rate of 1e-3 and weight decay of 1e-4. One training pass updates model parameters; evaluation runs with gradients disabled and restores the model's previous training/evaluation state.
+
+The current trainer operates on already batched `PolicyTrainingBatch` values. Dataset splitting, checkpointing, and ONNX export are separate concerns and are not performed by this low-level training core.
+
 ## Training data
 
 The current dataset record contains:

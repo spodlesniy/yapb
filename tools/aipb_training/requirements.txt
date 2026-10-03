@@ -1,2 +1,1 @@
-# Runtime dependency for the offline training backend.
-torch>=2.5
+torch>=2.14.1,<2.15

@@ -74,3 +74,10 @@ Reason: model training and inference must remain interchangeable without hidden 
 The first trainable policy model is a PyTorch MLP with LayerNorm and hidden widths 256, 256, and 128, producing the fixed 10-value AiPB action tensor.
 
 Reason: establish a small, deterministic baseline against the already fixed observation/action contract before introducing more complex architectures or training methods. The model architecture can be replaced later without changing the dataset or runtime I/O contract.
+
+
+## D013 — Keep the first training loop framework-backed but low-level
+
+The initial training core uses PyTorch SmoothL1 loss over the fixed ten-value action tensor and AdamW with learning rate 1e-3 and weight decay 1e-4. It accepts already prepared framework-neutral batches and leaves dataset splitting, checkpointing, and ONNX export to separate layers.
+
+Reason: keep the first optimization loop small and testable while preserving the fixed model I/O contract and avoiding hidden dataset or deployment policy inside the optimizer layer.

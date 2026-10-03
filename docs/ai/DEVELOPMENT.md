@@ -36,6 +36,7 @@ For Python training code, also verify:
 
 - Production modules remain under `tools/aipb_training/`.
 - Tests remain under `tools/aipb_training/tests/`.
+- Training-core tests must remain runnable without PyTorch and skip only the framework-dependent execution tests when PyTorch is unavailable.
 - The Python test directory is an importable package.
 - CI discovers the intended `test_*.py` files.
 - Package-qualified imports work from the repository root.

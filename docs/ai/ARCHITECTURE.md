@@ -154,7 +154,9 @@ The first policy model is a framework-backed feed-forward baseline:
 
 Training uses PyTorch. The model has no recurrent state or dropout, so evaluation/inference is deterministic for a fixed model state and input.
 
-Future training components belong to this package as separate modules, including the training loop, evaluation, and ONNX export.
+The initial training core uses PyTorch with SmoothL1 loss and AdamW. Training and evaluation operate on framework-neutral PolicyTrainingBatch values; the trainer does not own dataset splitting or model export.
+
+Future training components belong to this package as separate modules, including higher-level dataset orchestration, checkpointing, evaluation/reporting, and ONNX export.
 
 ## Runtime integration
 
