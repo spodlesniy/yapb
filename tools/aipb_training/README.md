@@ -27,6 +27,7 @@ C++ runtime -> JSONL -> Python training package -> ONNX -> C++ runtime
     ├── onnx_export.py            # ONNX export and deployment validation
     ├── export.py                 # ONNX export command-line entry point
     ├── deploy.py                 # validated ONNX deployment into the package tree
+    ├── evaluation.py             # checkpoint evaluation metrics
     └── tests/
         ├── __init__.py
         ├── test_validate_dataset.py
@@ -37,7 +38,8 @@ C++ runtime -> JSONL -> Python training package -> ONNX -> C++ runtime
         ├── test_training_run.py
         ├── test_onnx_export.py
         ├── test_export.py
-        └── test_pipeline.py
+        ├── test_pipeline.py
+        └── test_evaluation.py
 
 These components are intentionally separated so the model I/O contract remains independent from the training loop.
 
@@ -127,6 +129,14 @@ Export a trained checkpoint to a deployment model:
     python -m tools.aipb_training.export checkpoints/best.pt policy.onnx
 
 The command validates the ONNX graph and runtime contract and verifies output parity with ONNX Runtime before returning successfully.
+
+## Evaluation
+
+Evaluate a trained checkpoint on the same deterministic episode split used by its training configuration:
+
+    python -m tools.aipb_training.evaluation dataset.jsonl checkpoints/best.pt
+
+The default split is validation. The report includes SmoothL1 loss, overall mean absolute error, and mean absolute error for each of the ten model outputs. The `--split train` option is available for comparing training-set and held-out behavior.
 
 ## Deployment
 

@@ -130,3 +130,10 @@ Reason: keep model deployment consistent with the existing YaPB package layout w
 The `ai_model` cvar defaults to `addons/yapb/data/models/aipb_policy.onnx`, the same location produced by the deployment command. An empty value remains an explicit way to disable model loading.
 
 Reason: after deployment, a packaged model should be discoverable by the existing Neural-mode configuration without requiring an additional manual path setting, while empty configuration must preserve an explicit disabled state.
+
+
+## D022 — Evaluate checkpoints on the checkpoint-defined episode split
+
+The evaluation tool reuses the checkpoint's stored validation split and seed to reconstruct the same train/validation boundary used during training. Evaluation defaults to the validation split and reports loss plus per-output mean absolute error.
+
+Reason: evaluation must measure the model on the intended held-out episodes without silently changing the boundary or leaking training samples into the validation report.
