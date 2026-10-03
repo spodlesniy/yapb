@@ -26,6 +26,7 @@ C++ runtime -> JSONL -> Python training package -> ONNX -> C++ runtime
     ├── train.py                  # training command-line entry point
     ├── onnx_export.py            # ONNX export and deployment validation
     ├── export.py                 # ONNX export command-line entry point
+    ├── deploy.py                 # validated ONNX deployment into the package tree
     └── tests/
         ├── __init__.py
         ├── test_validate_dataset.py
@@ -125,6 +126,16 @@ Export a trained checkpoint to a deployment model:
     python -m tools.aipb_training.export checkpoints/best.pt policy.onnx
 
 The command validates the ONNX graph and runtime contract and verifies output parity with ONNX Runtime before returning successfully.
+
+## Deployment
+
+Deploy an already exported model into the standard package tree:
+
+    python -m tools.aipb_training.deploy policy.onnx
+
+The deployment command validates the ONNX runtime contract before copying the model to `cfg/addons/yapb/data/models/aipb_policy.onnx`. Because the release packager copies the repository `cfg` tree into the package, the deployed model is included in normal YaPB packages.
+
+Use `--output` to place the model at another path when preparing a custom package.
 
 ## Export requirement
 

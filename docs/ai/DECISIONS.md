@@ -116,3 +116,10 @@ Reason: training and deployment are separate lifecycle steps. A dedicated export
 The C++ ONNX runner queries the model's actual input and output names and requires them to match the names configured for the session before the runner becomes ready. The default names are the shared contract values `input` and `output`.
 
 Reason: a model can have otherwise valid tensor shapes and types while using different names. Detecting that mismatch during loading avoids a later inference failure and makes deployment validation fail at the model boundary.
+
+
+## D020 — Use a canonical package location for deployed AI models
+
+Validated ONNX deployment artifacts use `cfg/addons/yapb/data/models/aipb_policy.onnx` as the default package location. The deployment command validates the model before copying it into that tree; the existing release packager then includes it through the normal `cfg` copy step.
+
+Reason: keep model deployment consistent with the existing YaPB package layout without coupling model training to release creation or changing the default Neural-mode behavior when no model is supplied.
