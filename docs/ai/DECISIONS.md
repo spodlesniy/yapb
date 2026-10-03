@@ -221,3 +221,10 @@ ActionPipeline notifies the ActionExecutor when an action is cancelled or the ru
 
 Reason: engine-side action state must be released at the same boundary as engine-independent action state.
 
+
+## D035 — Make HuntTarget a direct AI-owned navigation action
+
+HuntTarget is executed through ActionExecutionContext using the last observed enemy position as its navigation destination. The YaPB adapter reuses the existing waypoint graph and pathfinding task as an engine-side navigation primitive, while the AI executor owns the action lifecycle and cancellation.
+
+Reason: hunting a lost enemy is a navigation decision, not a new pathfinding algorithm. Reusing YaPB pathfinding preserves established movement behavior while allowing the AI action to own when and why that navigation is active.
+

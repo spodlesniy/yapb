@@ -30,8 +30,12 @@ public:
   int moveToPositionCalls {};
   int attackTargetCalls {};
   int cancelAttackTargetCalls {};
+  int huntTargetCalls {};
+  int cancelHuntTargetCalls {};
   int lastNode { -1 };
   int lastAttackTarget { -1 };
+  int lastHuntTarget { -1 };
+  bool huntTargetReached {};
   ai::Vec3 lastPosition {};
 
   bool isAlive() const override {
@@ -74,6 +78,21 @@ public:
   void cancelAttackTarget(int targetPlayer) override {
     ++cancelAttackTargetCalls;
     lastAttackTarget = targetPlayer;
+  }
+
+  bool huntTarget(int targetPlayer) override {
+    ++huntTargetCalls;
+    lastHuntTarget = targetPlayer;
+    return true;
+  }
+
+  bool isHuntTargetReached(int targetPlayer) const override {
+    return huntTargetReached && targetPlayer == lastHuntTarget;
+  }
+
+  void cancelHuntTarget(int targetPlayer) override {
+    ++cancelHuntTargetCalls;
+    lastHuntTarget = targetPlayer;
   }
 };
 
@@ -231,6 +250,65 @@ AI_TEST(testBotActionExecutorCompletesAttackWhenTargetChanges) {
   expect(result.type == ai::ActionResultType::Completed, "changed target completes active attack");
   expect(context.cancelAttackTargetCalls == 1, "completed attack releases target");
   expect(!executor.suppressesLegacyTaskExecution(), "completed attack releases ownership");
+}
+
+ai::Observation huntObservation(int targetPlayer) {
+  auto observation = aliveObservation();
+  observation.combat.lastEnemyEntity = targetPlayer;
+  observation.playerCount = 1;
+  observation.players[0].entityIndex = targetPlayer;
+  observation.players[0].valid = true;
+  observation.players[0].alive = true;
+  observation.players[0].enemy = true;
+  return observation;
+}
+
+AI_TEST(testBotActionExecutorDirectlyExecutesHuntTarget) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  auto action = ai::Action {};
+  action.type = ai::ActionType::HuntTarget;
+  action.targetType = ai::TargetType::Player;
+  action.targetPlayer = 9;
+
+  const auto result = executor.execute(action, huntObservation(9));
+
+  expect(result.type == ai::ActionResultType::Accepted, "remembered enemy hunt is accepted");
+  expect(context.huntTargetCalls == 1, "hunt target is delegated");
+  expect(context.lastHuntTarget == 9, "hunt target is preserved");
+}
+
+AI_TEST(testBotActionExecutorCompletesHuntWhenTargetPositionIsReached) {
+  MockActionExecutionContext context {};
+  context.huntTargetReached = true;
+  ai::BotActionExecutor executor(context);
+
+  auto action = ai::Action {};
+  action.type = ai::ActionType::HuntTarget;
+  action.targetType = ai::TargetType::Player;
+  action.targetPlayer = 9;
+
+  const auto result = executor.execute(action, huntObservation(9));
+
+  expect(result.type == ai::ActionResultType::Completed, "reached hunt target completes the action");
+  expect(context.huntTargetCalls == 0, "reached hunt target is not delegated");
+}
+
+AI_TEST(testBotActionExecutorCancelsDirectHunt) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  auto action = ai::Action {};
+  action.type = ai::ActionType::HuntTarget;
+  action.targetType = ai::TargetType::Player;
+  action.targetPlayer = 9;
+
+  executor.execute(action, huntObservation(9));
+  executor.cancel();
+
+  expect(context.cancelHuntTargetCalls == 1, "cancel releases direct hunt");
+  expect(context.lastHuntTarget == 9, "cancel releases active hunt target");
 }
 
 AI_TEST(testBotActionExecutorCancelReleasesDirectAttack) {

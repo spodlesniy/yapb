@@ -42,7 +42,7 @@ BotActionExecutor::BotActionExecutor(ActionExecutionContext &context) : m_contex
 
 bool BotActionExecutor::isActionStillOwned(const Action &action) const {
   if (m_context == nullptr) return false;
-  if (action.type != ActionType::MoveToNode && action.type != ActionType::MoveToPosition) return true;
+  if (action.type != ActionType::MoveToNode && action.type != ActionType::MoveToPosition && action.type != ActionType::HuntTarget) return true;
   return m_context->allowsNavigationOverride();
 }
 
@@ -54,8 +54,13 @@ void BotActionExecutor::cancel() {
   if (m_directAttackTargetActive && m_context != nullptr) {
     m_context->cancelAttackTarget(m_directAttackAction.targetPlayer);
   }
+  if (m_directHuntTargetActive && m_context != nullptr) {
+    m_context->cancelHuntTarget(m_directHuntAction.targetPlayer);
+  }
   m_directAttackTargetActive = false;
   m_directAttackAction = {};
+  m_directHuntTargetActive = false;
+  m_directHuntAction = {};
   m_observedTaskActive = false;
   m_observedTaskAction = {};
 }
@@ -67,6 +72,7 @@ ActionResult BotActionExecutor::execute(const Action &action, const Observation 
   }
 
   if (!isActionStillOwned(action)) {
+    cancel();
     return { action.type, ActionResultType::Interrupted, 0.0f };
   }
 
@@ -86,15 +92,23 @@ ActionResult BotActionExecutor::execute(const Action &action, const Observation 
     return executeMoveToPosition(action);
 
   case ActionType::AttackTarget:
+    m_directHuntTargetActive = false;
+    m_directHuntAction = {};
     m_observedTaskActive = false;
     m_observedTaskAction = {};
     return executeAttackTarget(action, observation);
+
+  case ActionType::HuntTarget:
+    m_directAttackTargetActive = false;
+    m_directAttackAction = {};
+    m_observedTaskActive = false;
+    m_observedTaskAction = {};
+    return executeHuntTarget(action, observation);
 
   case ActionType::Wait:
   case ActionType::HoldPosition:
   case ActionType::Camp:
   case ActionType::SeekCover:
-  case ActionType::HuntTarget:
   case ActionType::PlantBomb:
   case ActionType::DefuseBomb:
   case ActionType::PickupItem:
@@ -122,6 +136,33 @@ ActionResult BotActionExecutor::executeAttackTarget(const Action &action, const 
   }
   m_directAttackAction = action;
   m_directAttackTargetActive = true;
+  return { action.type, ActionResultType::Accepted, 0.0f };
+}
+
+ActionResult BotActionExecutor::executeHuntTarget(const Action &action, const Observation &observation) {
+  if (!hasObservedLastEnemyTarget(action, observation)) {
+    if (!m_directHuntTargetActive) {
+      return { action.type, ActionResultType::Rejected, 0.0f };
+    }
+    cancel();
+    return { action.type, ActionResultType::Completed, 0.0f };
+  }
+
+  if (m_context->isHuntTargetReached(action.targetPlayer)) {
+    cancel();
+    return { action.type, ActionResultType::Completed, 0.0f };
+  }
+
+  if (!m_context->huntTarget(action.targetPlayer)) {
+    if (!m_directHuntTargetActive) {
+      return { action.type, ActionResultType::Rejected, 0.0f };
+    }
+    cancel();
+    return { action.type, ActionResultType::Completed, 0.0f };
+  }
+
+  m_directHuntAction = action;
+  m_directHuntTargetActive = true;
   return { action.type, ActionResultType::Accepted, 0.0f };
 }
 

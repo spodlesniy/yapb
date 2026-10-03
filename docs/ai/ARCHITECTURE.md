@@ -197,7 +197,7 @@ The dependency direction is:
 
 This boundary must remain semantic: the AI executor should not expose `Bot`, `BotTask`, `Task`, `Vector`, `pev`, or other YaPB internals through its contract. Future direct AI-owned combat and objective execution should extend the context with explicit capabilities rather than reintroducing a concrete `Bot` dependency.
 
-AttackTarget is the first direct AI-owned action. It requires the observed current live enemy, resolves that target through the semantic execution context, reuses YaPB combat aiming and attack-movement helpers with legacy task changes disabled, and suppresses the legacy task function while the action remains active. Other task-backed actions remain transitional until their direct execution semantics are implemented.
+AttackTarget and HuntTarget are direct AI-owned actions. AttackTarget requires the observed current live enemy and reuses YaPB combat aiming and attack-movement helpers with legacy task changes disabled. HuntTarget uses the last observed enemy position as a navigation target and reuses YaPB pathfinding through the semantic execution context. Both actions own their execution lifecycle and release their engine-side state on cancellation; other task-backed actions remain transitional until their direct execution semantics are implemented.
 
 ## Runtime integration
 

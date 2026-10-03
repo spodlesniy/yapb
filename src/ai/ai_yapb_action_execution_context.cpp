@@ -131,5 +131,82 @@ void YaPBActionExecutionContext::cancelAttackTarget(int targetPlayer) {
   m_bot->m_wantsToFire = false;
 }
 
+bool YaPBActionExecutionContext::huntTarget(int targetPlayer) {
+  if (m_bot == nullptr || m_bot->pev == nullptr || targetPlayer <= 0 || targetPlayer > game.maxClients()) {
+    return false;
+  }
+
+  auto *target = game.entityOfIndex(targetPlayer);
+  if (game.isNullEntity(target) || !game.isPlayerEntity(target) || !game.isAliveEntity(target)) {
+    return false;
+  }
+
+  const auto targetTeam = game.is(GameFlags::FreeForAll) ? game.getRealPlayerTeam(target) : game.getPlayerTeam(target);
+  if (targetTeam == Team::Invalid || targetTeam == m_bot->m_team || !game.isNullEntity(m_bot->m_enemy)) {
+    return false;
+  }
+
+  if (!m_huntTargetActive || m_huntTargetPlayer != targetPlayer) {
+    m_huntTargetActive = true;
+    m_huntTargetPlayer = targetPlayer;
+    m_huntTargetOrigin = target->v.origin;
+    m_huntNavigationTaskCreated = false;
+  }
+
+  const int node = graph.getNearest(m_huntTargetOrigin);
+  if (!graph.exists(node)) {
+    return false;
+  }
+
+  if (m_bot->getCurrentTaskId() != Task::MoveToPosition) {
+    m_bot->startTask(Task::MoveToPosition, TaskPri::MoveToPosition, node, 0.0f, true);
+    m_huntNavigationTaskCreated = true;
+  }
+  else if (m_bot->getTask()->data != node || m_bot->m_position.distanceSq(m_huntTargetOrigin) > cr::sqrf(0.1f)) {
+    m_bot->clearSearchNodes();
+  }
+
+  m_bot->getTask()->data = node;
+  m_bot->m_position = m_huntTargetOrigin;
+  m_bot->m_prevGoalIndex = node;
+  m_bot->m_chosenGoalIndex = node;
+  m_bot->m_aimFlags |= AimFlags::Nav;
+  return true;
+}
+
+bool YaPBActionExecutionContext::isHuntTargetReached(int targetPlayer) const {
+  if (m_bot == nullptr || m_bot->pev == nullptr || !m_huntTargetActive || m_huntTargetPlayer != targetPlayer) {
+    return false;
+  }
+
+  const int node = graph.getNearest(m_huntTargetOrigin);
+  if (!graph.exists(node)) {
+    return false;
+  }
+
+  return m_bot->m_currentNodeIndex == node &&
+         m_bot->pev->origin.distanceSq(graph[node].origin) <= cr::sqrf(cr::max(kNavigationReachDistance, graph[node].radius));
+}
+
+void YaPBActionExecutionContext::cancelHuntTarget(int targetPlayer) {
+  if (m_bot == nullptr) {
+    return;
+  }
+
+  if (m_huntTargetPlayer == targetPlayer) {
+    if (m_huntNavigationTaskCreated) {
+      m_bot->clearTask(Task::MoveToPosition);
+    }
+    m_bot->clearSearchNodes();
+    m_bot->m_position.clear();
+    m_huntTargetActive = false;
+    m_huntTargetPlayer = -1;
+    m_huntTargetOrigin.clear();
+    m_huntNavigationTaskCreated = false;
+  }
+}
+
+
+
 
 } // namespace ai

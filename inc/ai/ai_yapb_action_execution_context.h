@@ -18,6 +18,10 @@ namespace ai {
 class YaPBActionExecutionContext final : public ActionExecutionContext {
 private:
   Bot *m_bot {};
+  bool m_huntTargetActive {};
+  int m_huntTargetPlayer { -1 };
+  Vector m_huntTargetOrigin {};
+  bool m_huntNavigationTaskCreated {};
 
 public:
   explicit YaPBActionExecutionContext(Bot &bot);
@@ -33,6 +37,10 @@ public:
 
   bool attackTarget(int targetPlayer) override;
   void cancelAttackTarget(int targetPlayer) override;
+
+  bool huntTarget(int targetPlayer) override;
+  bool isHuntTargetReached(int targetPlayer) const override;
+  void cancelHuntTarget(int targetPlayer) override;
 };
 
 } // namespace ai
