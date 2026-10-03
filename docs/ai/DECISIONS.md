@@ -67,3 +67,10 @@ Reason: model training requires a separate lifecycle, may use different compute 
 The Python training package and C++ inference runtime share one fixed model I/O contract: float32 input `[N, 230]` during training and deployed runtime input `[1, 230]`; float32 action output `[N, 10]` during training and deployed runtime output `[1, 10]`. The ten output positions are stable and must not be reordered.
 
 Reason: model training and inference must remain interchangeable without hidden reshaping or field-order assumptions.
+
+
+## D012 — Start with a simple feed-forward policy baseline
+
+The first trainable policy model is a PyTorch MLP with LayerNorm and hidden widths 256, 256, and 128, producing the fixed 10-value AiPB action tensor.
+
+Reason: establish a small, deterministic baseline against the already fixed observation/action contract before introducing more complex architectures or training methods. The model architecture can be replaced later without changing the dataset or runtime I/O contract.

@@ -14,23 +14,28 @@ C++ runtime -> JSONL -> Python training package -> ONNX -> C++ runtime
 
     tools/aipb_training/
     ├── __init__.py
+    ├── README.md
+    ├── requirements.txt
     ├── validate_dataset.py       # JSONL contract validation
     ├── dataset.py                # typed samples and deterministic batching
     ├── model_contract.py         # stable model I/O contract
+    ├── policy_model.py           # initial policy network
     ├── training_contract.py      # dataset batch -> model target encoding
     └── tests/
+        ├── __init__.py
         ├── test_validate_dataset.py
         ├── test_dataset.py
         ├── test_model_contract.py
+        ├── test_policy_model.py
         └── test_training_contract.py
 
 Future training components belong here as separate modules:
 
-- trainer.py: model construction, loss, optimizer, training loop
+- trainer.py: model construction, loss, optimizer, and training loop
 - evaluate.py: offline evaluation
 - export.py: model export and ONNX contract checks
 
-These components are intentionally not added until the model contract is fixed.
+These components are intentionally separated so the model I/O contract remains independent from the training loop.
 
 ## Training data
 
@@ -45,6 +50,22 @@ The current dataset record contains:
 - terminal
 
 The current policy training contract uses only observation and action as supervised input/target data. Reward and transition fields remain in the dataset because they are part of the runtime training record and can support later training methods.
+
+## Policy model
+
+The first policy model is a small feed-forward network intended as a baseline for supervised behavior cloning:
+
+    input [N, 230]
+        -> LayerNorm(230)
+        -> Linear(230, 256) + ReLU
+        -> Linear(256, 256) + ReLU
+        -> Linear(256, 128) + ReLU
+        -> Linear(128, 10)
+        -> output [N, 10]
+
+The model has no dropout, recurrent state, or other inference-time state. Its output remains the raw AiPB action tensor.
+
+PyTorch is the training backend. It is imported lazily by the model builder so dataset validation and lightweight package tests do not require PyTorch.
 
 ## Policy model input
 
