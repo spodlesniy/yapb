@@ -36,7 +36,8 @@ C++ runtime -> JSONL -> Python training package -> ONNX -> C++ runtime
         ├── test_training_contract.py
         ├── test_training_run.py
         ├── test_onnx_export.py
-        └── test_export.py
+        ├── test_export.py
+        └── test_pipeline.py
 
 These components are intentionally separated so the model I/O contract remains independent from the training loop.
 

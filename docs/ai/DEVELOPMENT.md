@@ -32,6 +32,7 @@ For every touched source file, verify:
 - Test functions are not duplicated.
 - The relevant test target actually compiles and runs the changed tests.
 - Python training orchestration tests must cover deterministic episode splitting and checkpoint behavior.
+- The end-to-end training pipeline smoke test should exercise JSONL loading, one-epoch training, ONNX export/validation, and deployment into a temporary package tree.
 
 For Python training code, also verify:
 
