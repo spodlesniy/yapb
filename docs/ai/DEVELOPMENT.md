@@ -60,7 +60,7 @@ using:
 python -m unittest discover -s tools/aipb_training/tests -t . -p 'test_*.py'
 ```
 
-The training-tool job uses `actions/setup-python` pip caching with `tools/aipb_training/requirements.txt` as the dependency cache key input, so package downloads are reused until the requirements change.
+The training-tool job uses `actions/setup-python` pip caching with `tools/aipb_training/requirements.txt` as the dependency cache key input, so package downloads are reused until the requirements change. The requirements use CPU-only PyTorch, avoiding CUDA/NVIDIA runtime downloads in the CI environment. Test output is captured to `python-test.log` and uploaded as the `python-test-logs` artifact when the training-tool job fails.
 
 When CI is red:
 

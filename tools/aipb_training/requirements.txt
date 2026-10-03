@@ -1,5 +1,9 @@
 # Runtime and deployment dependencies for the offline training backend.
-torch==2.14.1
+#
+# Use the CPU-only PyTorch wheel so the training tools do not pull CUDA/NVIDIA
+# runtime libraries into CPU-based development and CI environments.
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.14.1+cpu
 onnx==1.23.1
 onnxscript==0.7.2
 onnxruntime==1.30.0

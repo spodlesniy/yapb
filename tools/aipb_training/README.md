@@ -72,7 +72,7 @@ The first policy model is a small feed-forward network intended as a baseline fo
 
 The model has no dropout, recurrent state, or other inference-time state. Its output remains the raw AiPB action tensor.
 
-PyTorch is the training backend. The deployment toolchain additionally uses ONNX, ONNX Script, and ONNX Runtime. Dependencies are pinned in requirements.txt.
+PyTorch is the training backend. The pinned requirements use the CPU-only PyTorch wheel, so the training tools do not require CUDA or NVIDIA runtime libraries. The deployment toolchain additionally uses ONNX, ONNX Script, and ONNX Runtime. GPU-specific PyTorch builds can be installed separately when GPU training is desired.
 
 ## Policy model input
 
