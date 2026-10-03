@@ -27,7 +27,8 @@ C++ runtime -> JSONL -> Python training package -> ONNX -> C++ runtime
         ├── test_dataset.py
         ├── test_model_contract.py
         ├── test_policy_model.py
-        └── test_training_contract.py
+        ├── test_training_contract.py
+        └── test_training_run.py
 
 Future training components belong here as separate modules:
 

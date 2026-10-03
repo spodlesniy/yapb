@@ -95,7 +95,7 @@ The current supervised policy-training contract uses:
 
 as input and target. Transition fields such as `reward`, `next_observation`, and `terminal` remain in the dataset for future training methods and evaluation.
 
-The package is intentionally framework-neutral until the model architecture, loss, optimizer, and training loop are introduced.
+The package keeps dataset contracts framework-neutral, while the actual policy model and training core use PyTorch.
 
 Python training batches use:
 
@@ -156,7 +156,9 @@ Training uses PyTorch. The model has no recurrent state or dropout, so evaluatio
 
 The initial training core uses PyTorch with SmoothL1 loss and AdamW. Training and evaluation operate on framework-neutral PolicyTrainingBatch values; the trainer does not own dataset splitting or model export.
 
-Future training components belong to this package as separate modules, including higher-level dataset orchestration, checkpointing, evaluation/reporting, and ONNX export.
+The training orchestration layer performs deterministic episode-level train/validation splitting, seeded training shuffling, epoch execution, and checkpoint persistence. A last.pt checkpoint is written after every epoch; best.pt is written whenever validation loss improves. Checkpoints store model/optimizer state together with the fixed model contract, model architecture, configuration, and metrics.
+
+ONNX export remains a separate deployment step.
 
 ## Runtime integration
 

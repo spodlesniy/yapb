@@ -21,3 +21,5 @@ build/
 **/*.cbp
 **/CMakeScripts
 **/compile_commands.json
+
+/tools/aipb_training/checkpoints/

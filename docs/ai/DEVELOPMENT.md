@@ -31,6 +31,7 @@ For every touched source file, verify:
 - New tests are syntactically balanced.
 - Test functions are not duplicated.
 - The relevant test target actually compiles and runs the changed tests.
+- Python training orchestration tests must cover deterministic episode splitting and checkpoint behavior.
 
 For Python training code, also verify:
 

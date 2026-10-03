@@ -81,3 +81,10 @@ Reason: establish a small, deterministic baseline against the already fixed obse
 The initial training core uses PyTorch SmoothL1 loss over the fixed ten-value action tensor and AdamW with learning rate 1e-3 and weight decay 1e-4. It accepts already prepared framework-neutral batches and leaves dataset splitting, checkpointing, and ONNX export to separate layers.
 
 Reason: keep the first optimization loop small and testable while preserving the fixed model I/O contract and avoiding hidden dataset or deployment policy inside the optimizer layer.
+
+
+## D014 — Split training and validation by episode
+
+Training and validation samples are separated by episode_id; a single episode must never occur in both sets.
+
+Reason: transitions from the same gameplay episode are correlated. Splitting individual transitions would allow near-duplicate state sequences to appear on both sides of the evaluation boundary and produce leakage.
