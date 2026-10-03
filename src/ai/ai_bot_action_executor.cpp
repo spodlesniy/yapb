@@ -193,6 +193,25 @@ ActionResult BotActionExecutor::executeHuntTarget(const Action &action, const Ob
   return { action.type, ActionResultType::Accepted, 0.0f };
 }
 
+ActionResult BotActionExecutor::executeSeekCover(const Action &action) {
+  if (m_context->isSeekCoverReached()) {
+    cancel();
+    return { action.type, ActionResultType::Completed, 0.0f };
+  }
+
+  if (!m_context->seekCover()) {
+    if (!m_directSeekCoverActive) {
+      return { action.type, ActionResultType::Rejected, 0.0f };
+    }
+
+    cancel();
+    return { action.type, ActionResultType::Completed, 0.0f };
+  }
+
+  m_directSeekCoverActive = true;
+  return { action.type, ActionResultType::Accepted, 0.0f };
+}
+
 ActionResult BotActionExecutor::executeObservedTaskAction(const Action &action, const Observation &observation) {
   if (!m_observedTaskActive || !sameObservedTaskAction(action, m_observedTaskAction)) {
     m_observedTaskActive = false;
