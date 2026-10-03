@@ -53,7 +53,7 @@ For tests, pay particular attention to fixture state, object lifecycle, braces, 
 
 The normal cycle is:
 
-`small change -> one commit -> automatic unit-test CI -> next change`
+`one coherent iteration -> one commit -> automatic unit-test CI -> next iteration`
 
 The C++ AI unit-test build links the production `src/ai/ai_bot_action_executor.cpp` directly into the standalone AI test executable. The executor depends only on the engine-independent `ActionExecutionContext`, so unit tests provide a mock context and exercise the production implementation without linking the game DLL. The YaPB-specific adapter remains production-only.
 

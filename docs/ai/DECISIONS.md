@@ -8,11 +8,11 @@ All AiPB changes are made in `spodlesniy/yapb`. The upstream `yapb/yapb` reposit
 
 Reason: preserve a clean boundary between the user's fork and upstream.
 
-## D002 — One logical iteration per commit
+## D002 — One coherent logical iteration per commit
 
-A completed logical iteration produces one commit.
+A completed logical iteration produces one commit. One iteration may include the implementation, focused tests, and documentation changes required to complete that coherent step.
 
-Reason: small commits keep review, rollback, CI diagnosis, and historical tracking precise.
+Reason: keeping one coherent change set in one commit makes review, rollback, CI diagnosis, and historical tracking precise without forcing unrelated work into the same history entry.
 
 ## D003 — Use fixed C arrays instead of std::array
 
@@ -202,3 +202,9 @@ Reason: a raw vector width is insufficient for interpreting model inputs during 
 `TaskType::Spraypaint` is encoded as the 21st task one-hot feature. This increments the feature schema from v1 to v2 and the model input width from 230 to 231. Existing 230-input checkpoints and ONNX models are intentionally incompatible with the new runtime contract.
 
 Reason: silently reusing a model with changed feature semantics risks incorrect inference. Explicit versioning forces old checkpoints and deployment artifacts to be retrained or rejected rather than silently reused.
+
+## D032 — Decouple action execution from YaPB through a semantic context
+
+`BotActionExecutor` depends on the engine-independent `ActionExecutionContext` interface rather than directly depending on `Bot` or other YaPB internals. The production `YaPBActionExecutionContext` translates semantic execution capabilities into the existing YaPB runtime.
+
+Reason: the executor must remain independently unit-testable and must not pull engine-specific dependencies into the AI control layer. Future direct AI-owned combat and objective execution should extend the semantic context with explicit capabilities instead of restoring a concrete YaPB dependency.
