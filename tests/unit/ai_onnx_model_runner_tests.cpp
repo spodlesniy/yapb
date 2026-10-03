@@ -38,6 +38,18 @@ AI_TEST(testOnnxModelRunnerCanBeUnloaded) {
 
 #if defined(AIPB_WITH_ONNXRUNTIME)
 
+AI_TEST(testOnnxModelRunnerRejectsMismatchedReferenceModelNames) {
+  ai::OnnxModelRunner runner {};
+
+  const char *modelPath = AIPB_TEST_SOURCE_ROOT "/tests/data/aipb_reference_model.onnx";
+
+  expect(!runner.load(modelPath, "wrong_input", "output"), "mismatched input name is rejected");
+  expect(!runner.isReady(), "input name rejection leaves runner inactive");
+
+  expect(!runner.load(modelPath, "input", "wrong_output"), "mismatched output name is rejected");
+  expect(!runner.isReady(), "output name rejection leaves runner inactive");
+}
+
 AI_TEST(testOnnxModelRunnerLoadsReferenceModel) {
   ai::OnnxModelRunner runner {};
 

@@ -50,3 +50,12 @@ AI_TEST(testInferenceModelContractConstants) {
   expect(ai::kInferenceActionTensorSize == 10, "model output tensor size is fixed at ten values");
   expect(ai::kInferenceFeatureCount > 0, "model input tensor has a fixed positive width");
 }
+
+
+AI_TEST(testInferenceModelNameContract) {
+  expect(ai::inferenceModelNameMatches(ai::kInferenceModelInputName, "input"), "default input name matches");
+  expect(ai::inferenceModelNameMatches(ai::kInferenceModelOutputName, "output"), "default output name matches");
+  expect(!ai::inferenceModelNameMatches("other", "input"), "different model name is rejected");
+  expect(!ai::inferenceModelNameMatches(nullptr, "input"), "missing model name is rejected");
+  expect(!ai::inferenceModelNameMatches("input", nullptr), "missing expected name is rejected");
+}

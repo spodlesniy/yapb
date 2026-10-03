@@ -10,8 +10,16 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 
 namespace ai {
+
+constexpr const char kInferenceModelInputName[] = "input";
+constexpr const char kInferenceModelOutputName[] = "output";
+
+inline bool inferenceModelNameMatches(const char *actualName, const char *expectedName) {
+  return actualName != nullptr && expectedName != nullptr && std::strcmp(actualName, expectedName) == 0;
+}
 
 enum class InferenceTensorValidationError : uint8_t {
   None,

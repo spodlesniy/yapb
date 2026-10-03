@@ -128,7 +128,7 @@ The ten output values are fixed and shared by the Python training side and the C
 | 8 | `duration` |
 | 9 | `confidence` |
 
-The model represents all ten values as float32. The C++ action decoder and validator remain responsible for interpreting discrete values and validating the resulting action.
+The model represents all ten values as float32. The C++ action decoder and validator remain responsible for interpreting discrete values and validating the resulting action. The ONNX runner also verifies that the actual model input/output names match the configured names before marking the model ready.
 
 The current Python package structure is:
 

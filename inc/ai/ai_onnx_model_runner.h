@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include <ai/ai_inference_model_contract.h>
 #include <ai/ai_inference_model_runner.h>
 
 namespace ai {
@@ -31,7 +32,7 @@ public:
   OnnxModelRunner(OnnxModelRunner &&) = delete;
   OnnxModelRunner &operator=(OnnxModelRunner &&) = delete;
 
-  bool load(const char *modelPath, const char *inputName = "input", const char *outputName = "output");
+  bool load(const char *modelPath, const char *inputName = kInferenceModelInputName, const char *outputName = kInferenceModelOutputName);
   void unload();
 
   bool isReady() const;

@@ -109,3 +109,10 @@ Reason: the C++ runtime validates a singleton batch and fixed tensor widths. Kee
 The ONNX exporter is exposed through a dedicated `python -m tools.aipb_training.export` command rather than being coupled to the training command.
 
 Reason: training and deployment are separate lifecycle steps. A dedicated export command allows an already-trained checkpoint to be validated and converted without retraining or embedding deployment concerns into the training orchestration.
+
+
+## D019 — Validate ONNX model tensor names during C++ model loading
+
+The C++ ONNX runner queries the model's actual input and output names and requires them to match the names configured for the session before the runner becomes ready. The default names are the shared contract values `input` and `output`.
+
+Reason: a model can have otherwise valid tensor shapes and types while using different names. Detecting that mismatch during loading avoids a later inference failure and makes deployment validation fail at the model boundary.

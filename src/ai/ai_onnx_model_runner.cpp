@@ -239,6 +239,42 @@ bool OnnxModelRunner::load(const char *modelPath, const char *inputName, const c
     return false;
   }
 
+  OrtAllocator *nameAllocator {};
+  if (!m_impl->check(m_impl->api->GetAllocatorWithDefaultOptions(&nameAllocator))) {
+    unload();
+    return false;
+  }
+
+  char *actualInputName {};
+  if (!m_impl->check(m_impl->api->SessionGetInputName(m_impl->session, 0, nameAllocator, &actualInputName))) {
+    unload();
+    return false;
+  }
+
+  const bool inputNameMatches = inferenceModelNameMatches(actualInputName, inputName);
+  m_impl->api->AllocatorFree(nameAllocator, actualInputName);
+
+  if (!inputNameMatches) {
+    m_impl->setError("ONNX model input name does not match the configured input name.");
+    unload();
+    return false;
+  }
+
+  char *actualOutputName {};
+  if (!m_impl->check(m_impl->api->SessionGetOutputName(m_impl->session, 0, nameAllocator, &actualOutputName))) {
+    unload();
+    return false;
+  }
+
+  const bool outputNameMatches = inferenceModelNameMatches(actualOutputName, outputName);
+  m_impl->api->AllocatorFree(nameAllocator, actualOutputName);
+
+  if (!outputNameMatches) {
+    m_impl->setError("ONNX model output name does not match the configured output name.");
+    unload();
+    return false;
+  }
+
   OrtTypeInfo *inputTypeInfo {};
   OrtTypeInfo *outputTypeInfo {};
 
