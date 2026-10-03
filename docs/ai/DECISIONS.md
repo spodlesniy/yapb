@@ -123,3 +123,10 @@ Reason: a model can have otherwise valid tensor shapes and types while using dif
 Validated ONNX deployment artifacts use `cfg/addons/yapb/data/models/aipb_policy.onnx` as the default package location. The deployment command validates the model before copying it into that tree; the existing release packager then includes it through the normal `cfg` copy step.
 
 Reason: keep model deployment consistent with the existing YaPB package layout without coupling model training to release creation or changing the default Neural-mode behavior when no model is supplied.
+
+
+## D021 — Use the canonical deployed model path as the Neural-mode default
+
+The `ai_model` cvar defaults to `addons/yapb/data/models/aipb_policy.onnx`, the same location produced by the deployment command. An empty value remains an explicit way to disable model loading.
+
+Reason: after deployment, a packaged model should be discoverable by the existing Neural-mode configuration without requiring an additional manual path setting, while empty configuration must preserve an explicit disabled state.

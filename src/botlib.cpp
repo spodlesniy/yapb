@@ -13,7 +13,7 @@
 
 ConVar cv_debug ("debug", "0", "Enables or disables useful messages about bot states. Not required for end users.", true, 0.0f, 4.0f);
 ConVar cv_ai_mode ("ai_mode", "0", "Selects AiPB control mode. 0 = Legacy, 1 = Neural, 2 = Training.", true, 0.0f, 2.0f);
-ConVar cv_ai_model ("ai_model", "", "Path to the ONNX model used by AiPB Neural mode.", false);
+ConVar cv_ai_model ("ai_model", ai::kDefaultInferenceModelPath, "Path to the ONNX model used by AiPB Neural mode. Empty disables model loading.", false);
 ConVar cv_ai_inference_interval ("ai_inference_interval", "0.1", "Minimum interval in seconds between new AiPB Neural inference decisions. 0 means every AI step.", true, 0.0f, 2.0f);
 ConVar cv_debug_goal ("debug_goal", "-1", "Forces all alive bots to build a path and go to the graph node specified here.", true, -1.0f, kMaxNodes);
 ConVar cv_user_follow_percent ("user_follow_percent", "20", "Specifies the percent of bots that can follow a leader at each round start.", true, 0.0f, 100.0f);

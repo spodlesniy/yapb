@@ -133,7 +133,7 @@ Deploy an already exported model into the standard package tree:
 
     python -m tools.aipb_training.deploy policy.onnx
 
-The deployment command validates the ONNX runtime contract before copying the model to `cfg/addons/yapb/data/models/aipb_policy.onnx`. Because the release packager copies the repository `cfg` tree into the package, the deployed model is included in normal YaPB packages.
+The deployment command validates the ONNX runtime contract before copying the model to `cfg/addons/yapb/data/models/aipb_policy.onnx`. The runtime uses this same path as the default `ai_model` value. Because the release packager copies the repository `cfg` tree into the package, the deployed model is included in normal YaPB packages.
 
 Use `--output` to place the model at another path when preparing a custom package.
 

@@ -15,6 +15,8 @@
 
 namespace ai {
 
+constexpr const char kDefaultInferenceModelPath[] = "addons/yapb/data/models/aipb_policy.onnx";
+
 enum class InferenceModelConfigureResult : uint8_t {
   Unchanged,
   Disabled,

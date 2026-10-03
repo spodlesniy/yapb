@@ -85,3 +85,8 @@ AI_TEST(testInferenceModelServiceResetDisablesLoadedState) {
   expect (service.configure ("") == ai::InferenceModelConfigureResult::Disabled,
           "empty configuration after reset remains explicitly disabled");
 }
+
+AI_TEST(testInferenceModelServiceDefaultModelPath) {
+  expect(std::strcmp(ai::kDefaultInferenceModelPath, "addons/yapb/data/models/aipb_policy.onnx") == 0,
+         "default inference model path matches the package model location");
+}
