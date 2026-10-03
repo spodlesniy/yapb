@@ -71,7 +71,7 @@ The first policy model is a small feed-forward network intended as a baseline fo
 
     input [N, 231]
         -> LayerNorm(231)
-        -> Linear(230, 256) + ReLU
+        -> Linear(231, 256) + ReLU
         -> Linear(256, 256) + ReLU
         -> Linear(256, 128) + ReLU
         -> Linear(128, 10)
@@ -93,7 +93,7 @@ The exported policy model has exactly one input:
 | Runtime shape | [1, 231] |
 | Meaning | AiPB inference feature vector |
 
-During Python training, a batch has shape [N, 230], where N is the training batch size.
+During Python training, a batch has shape [N, 231], where N is the training batch size.
 
 ## Policy model output
 

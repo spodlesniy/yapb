@@ -11,7 +11,7 @@ from pathlib import Path
 
 from ..dataset import load_training_dataset
 from ..deploy import deploy_model
-from ..model_contract import MODEL_FEATURE_COUNT
+from ..model_contract import MODEL_FEATURE_COUNT, MODEL_FEATURE_SCHEMA_VERSION
 from ..onnx_export import validate_onnx_model
 from ..training_run import TrainingConfig, run_training
 
@@ -57,7 +57,7 @@ def _write_dataset(path: Path) -> None:
     metadata = {
         "format": "aipb-training-jsonl",
         "version": 1,
-        "feature_schema_version": 2,
+        "feature_schema_version": MODEL_FEATURE_SCHEMA_VERSION,
         "action_schema_version": 1,
         "type": "metadata",
     }

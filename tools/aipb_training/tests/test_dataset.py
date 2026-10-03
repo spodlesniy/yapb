@@ -17,13 +17,13 @@ from tools.aipb_training.dataset import (
     iter_training_samples,
     load_training_dataset,
 )
-from tools.aipb_training.model_contract import MODEL_FEATURE_COUNT
+from tools.aipb_training.model_contract import MODEL_FEATURE_COUNT, MODEL_FEATURE_SCHEMA_VERSION
 
 
 METADATA = {
     "format": "aipb-training-jsonl",
     "version": 1,
-    "feature_schema_version": 1,
+    "feature_schema_version": MODEL_FEATURE_SCHEMA_VERSION,
     "action_schema_version": 1,
     "type": "metadata",
 }
@@ -32,7 +32,7 @@ METADATA = {
 def make_sample(episode_id: int) -> dict:
     return {
         "episode_id": episode_id,
-        "observation": {"schema_version": 1, "values": [0.1] * MODEL_FEATURE_COUNT},
+        "observation": {"schema_version": MODEL_FEATURE_SCHEMA_VERSION, "values": [0.1] * MODEL_FEATURE_COUNT},
         "action": {
             "schema_version": 1,
             "action_id": 1,
@@ -45,7 +45,7 @@ def make_sample(episode_id: int) -> dict:
             "confidence": 0.8,
         },
         "reward": 1.0,
-        "next_observation": {"schema_version": 1, "values": [0.2] * MODEL_FEATURE_COUNT},
+        "next_observation": {"schema_version": MODEL_FEATURE_SCHEMA_VERSION, "values": [0.2] * MODEL_FEATURE_COUNT},
         "result": 1,
         "elapsed_time": 0.5,
         "terminal": True,
@@ -110,7 +110,7 @@ class TrainingDatasetLoaderTests(unittest.TestCase):
 
         self.assertEqual(metadata.format, "aipb-training-jsonl")
         self.assertEqual(metadata.version, 1)
-        self.assertEqual(metadata.feature_schema_version, 1)
+        self.assertEqual(metadata.feature_schema_version, MODEL_FEATURE_SCHEMA_VERSION)
         self.assertEqual(metadata.action_schema_version, 1)
         self.assertEqual(len(samples), 1)
         self.assertIsInstance(samples, tuple)

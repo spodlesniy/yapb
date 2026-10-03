@@ -169,7 +169,7 @@ tools/aipb_training/
 
 The first policy model is a framework-backed feed-forward baseline:
 
-`LayerNorm(231) -> Linear(230,256) -> ReLU -> Linear(256,256) -> ReLU -> Linear(256,128) -> ReLU -> Linear(128,10)`
+`LayerNorm(231) -> Linear(231,256) -> ReLU -> Linear(256,256) -> ReLU -> Linear(256,128) -> ReLU -> Linear(128,10)`
 
 Training uses PyTorch. The model has no recurrent state or dropout, so evaluation/inference is deterministic for a fixed model state and input.
 

@@ -9,12 +9,13 @@ import unittest
 from pathlib import Path
 
 from ..dataset_stats import MODEL_ACTION_ID_COUNT, build_parser, summarize_dataset
+from ..model_contract import MODEL_FEATURE_SCHEMA_VERSION
 
 
 METADATA = {
     "format": "aipb-training-jsonl",
     "version": 1,
-    "feature_schema_version": 2,
+    "feature_schema_version": MODEL_FEATURE_SCHEMA_VERSION,
     "action_schema_version": 1,
     "type": "metadata",
 }
@@ -24,7 +25,7 @@ def sample(action_id: int, episode_id: int, terminal: bool) -> dict:
     values = [0.0] * 231
     return {
         "episode_id": episode_id,
-        "observation": {"schema_version": 1, "values": values},
+        "observation": {"schema_version": MODEL_FEATURE_SCHEMA_VERSION, "values": values},
         "action": {
             "schema_version": 1,
             "action_id": action_id,
