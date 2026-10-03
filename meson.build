@@ -369,6 +369,17 @@ run_target('package',
 if get_option('tests')
    # Unit tests are kept independent from the game DLL. They exercise the
    # AI abstraction without requiring a GoldSrc runtime.
+   # Compile the BotActionExecutor implementation in the AI test build without linking the game DLL.
+   # This keeps the production executor implementation covered by the normal unit-test CI compile.
+   ai_executor_compile = static_library(
+      'yapb_ai_action_executor_compile',
+      'src/ai/ai_bot_action_executor.cpp',
+      include_directories: include_directories('inc', 'tests/unit', 'ext', 'ext/crlib', 'ext/linkage'),
+      dependencies: onnxruntime_dep,
+      link_with: ai_executor_compile,
+      cpp_args: onnx_cpp_args + ['-DAIPB_TEST_SOURCE_ROOT="' + meson.project_source_root () + '"'],
+   )
+
    ai_tests = executable(
       'yapb_ai_tests',
       'tests/unit/ai_test.cpp',
