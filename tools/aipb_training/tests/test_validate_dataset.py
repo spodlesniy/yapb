@@ -14,13 +14,13 @@ from tools.aipb_training.validate_dataset import DatasetValidationError, validat
 METADATA = {
     "format": "aipb-training-jsonl",
     "version": 1,
-    "feature_schema_version": 1,
+    "feature_schema_version": 2,
     "action_schema_version": 1,
     "type": "metadata",
 }
 
 
-def make_sample(feature_count: int = 2) -> dict:
+def make_sample(feature_count: int = 231) -> dict:
     return {
         "episode_id": 1,
         "observation": {"schema_version": 1, "values": [0.1] * feature_count},
@@ -55,6 +55,12 @@ class TrainingDatasetValidatorTests(unittest.TestCase):
     def test_valid_metadata_only_dataset(self) -> None:
         path = self.write_dataset([METADATA])
         self.assertEqual(validate_dataset(path), 0)
+
+    def test_rejects_wrong_runtime_feature_count(self) -> None:
+        path = self.write_dataset([METADATA, make_sample(230)])
+
+        with self.assertRaises(DatasetValidationError):
+            validate_dataset(path)
 
     def test_valid_dataset_counts_samples(self) -> None:
         path = self.write_dataset([METADATA, make_sample()])

@@ -8,6 +8,7 @@ import unittest
 from tools.aipb_training.model_contract import (
     MODEL_ACTION_TENSOR_SIZE,
     MODEL_FEATURE_COUNT,
+    MODEL_FEATURE_SCHEMA_VERSION,
     MODEL_INPUT_DTYPE,
     MODEL_INPUT_NAME,
     MODEL_OUTPUT_DTYPE,
@@ -23,8 +24,9 @@ class ModelContractTests(unittest.TestCase):
     def test_runtime_input_contract(self) -> None:
         self.assertEqual(MODEL_INPUT_NAME, "input")
         self.assertEqual(MODEL_INPUT_DTYPE, "float32")
-        self.assertEqual(MODEL_RUNTIME_INPUT_SHAPE, (1, 230))
-        self.assertEqual(MODEL_FEATURE_COUNT, 230)
+        self.assertEqual(MODEL_RUNTIME_INPUT_SHAPE, (1, 231))
+        self.assertEqual(MODEL_FEATURE_COUNT, 231)
+        self.assertEqual(MODEL_FEATURE_SCHEMA_VERSION, 2)
 
     def test_runtime_output_contract(self) -> None:
         self.assertEqual(MODEL_OUTPUT_NAME, "output")
@@ -34,9 +36,9 @@ class ModelContractTests(unittest.TestCase):
         self.assertEqual(ModelOutputIndex.CONFIDENCE, 9)
 
     def test_feature_count_validation(self) -> None:
-        validate_feature_count(230)
+        validate_feature_count(231)
         with self.assertRaises(ValueError):
-            validate_feature_count(229)
+            validate_feature_count(230)
 
 
 if __name__ == "__main__":

@@ -14,14 +14,14 @@ from ..dataset_stats import MODEL_ACTION_ID_COUNT, build_parser, summarize_datas
 METADATA = {
     "format": "aipb-training-jsonl",
     "version": 1,
-    "feature_schema_version": 1,
+    "feature_schema_version": 2,
     "action_schema_version": 1,
     "type": "metadata",
 }
 
 
 def sample(action_id: int, episode_id: int, terminal: bool) -> dict:
-    values = [0.0] * 230
+    values = [0.0] * 231
     return {
         "episode_id": episode_id,
         "observation": {"schema_version": 1, "values": values},

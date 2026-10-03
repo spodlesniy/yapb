@@ -85,6 +85,7 @@ CORE_FEATURE_NAMES = (
     "task.shoot_breakable",
     "task.hide",
     "task.blind",
+    "task.spraypaint",
 )
 
 PLAYER_FEATURE_NAMES = (

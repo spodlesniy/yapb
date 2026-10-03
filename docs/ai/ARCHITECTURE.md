@@ -99,14 +99,14 @@ The package keeps dataset contracts framework-neutral, while the actual policy m
 
 Python training batches use:
 
-- input: `[N, 230]` float32;
+- input: `[N, 231]` float32;
 - target: `[N, 10]` float32.
 
 The deployed ONNX runtime contract remains single-sample:
 
 - input name: `input`;
 - input type: float32;
-- input shape: `[1, 230]`;
+- input shape: `[1, 231]`;
 - output name: `output`;
 - output type: float32;
 - output shape: `[1, 10]`.
@@ -169,7 +169,7 @@ tools/aipb_training/
 
 The first policy model is a framework-backed feed-forward baseline:
 
-`LayerNorm(230) -> Linear(230,256) -> ReLU -> Linear(256,256) -> ReLU -> Linear(256,128) -> ReLU -> Linear(128,10)`
+`LayerNorm(231) -> Linear(230,256) -> ReLU -> Linear(256,256) -> ReLU -> Linear(256,128) -> ReLU -> Linear(128,10)`
 
 Training uses PyTorch. The model has no recurrent state or dropout, so evaluation/inference is deterministic for a fixed model state and input.
 
@@ -209,7 +209,7 @@ Avoid creating multiple independent sources of truth for episode and pending-act
 
 Waypoint information is part of the navigation/observation pipeline. It should be exposed to the AI through model-facing contracts rather than forcing inference code to know engine internals.
 
-The inference feature contract must use fixed-size C arrays where a fixed-size feature vector is required. Do not introduce `std::array` into the AI contract or feature encoder. The Python feature contract mirrors the current ordered 230-value layout for tooling and analysis. The current C++ task one-hot block covers 20 task values and does not yet encode `Spraypaint`; this is explicitly tracked as a future contract change.
+The inference feature contract must use fixed-size C arrays where a fixed-size feature vector is required. Do not introduce `std::array` into the AI contract or feature encoder. The Python feature contract mirrors the current ordered 231-value layout for tooling and analysis. The current C++ task one-hot block covers all 21 task values, including `Spraypaint`. The feature schema is version 2 and the model input width is 231.
 
 ## Design principles
 

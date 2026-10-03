@@ -64,7 +64,7 @@ Reason: model training requires a separate lifecycle, may use different compute 
 
 ## D011 — Keep one shared model I/O contract
 
-The Python training package and C++ inference runtime share one fixed model I/O contract: float32 input `[N, 230]` during training and deployed runtime input `[1, 230]`; float32 action output `[N, 10]` during training and deployed runtime output `[1, 10]`. The ten output positions are stable and must not be reordered.
+The Python training package and C++ inference runtime share one fixed model I/O contract: float32 input `[N, 231]` during training and deployed runtime input `[1, 231]`; float32 action output `[N, 10]` during training and deployed runtime output `[1, 10]`. The ten output positions are stable and must not be reordered.
 
 Reason: model training and inference must remain interchangeable without hidden reshaping or field-order assumptions.
 
@@ -192,6 +192,13 @@ Reason: the teacher policy was expanded to multiple action types. Measuring actu
 
 The Python training package exposes an ordered feature-name contract for the current 230-value input vector. The names follow the C++ encoder's Core, Player, and Waypoint block order and are checked for exact width, uniqueness, and selected boundary indices.
 
-The current task feature block intentionally remains at 20 slots; `TaskType::Spraypaint` is not yet encoded and is tracked by an explicit C++ TODO until the deployed feature contract can be changed deliberately.
+The task feature block now contains all 21 `TaskType` values, including `Spraypaint`. This change increments the feature schema and model input width.
 
 Reason: a raw vector width is insufficient for interpreting model inputs during dataset analysis, debugging, and future feature changes. The semantic index provides a stable tool-facing description without silently changing the deployed model contract.
+
+
+## D031 — Version the feature contract when task semantics change
+
+`TaskType::Spraypaint` is encoded as the 21st task one-hot feature. This increments the feature schema from v1 to v2 and the model input width from 230 to 231. Existing 230-input checkpoints and ONNX models are intentionally incompatible with the new runtime contract.
+
+Reason: silently reusing a model with changed feature semantics risks incorrect inference. Explicit versioning forces old checkpoints and deployment artifacts to be retrained or rejected rather than silently reused.

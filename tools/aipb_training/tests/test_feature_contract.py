@@ -23,7 +23,7 @@ class FeatureContractTests(unittest.TestCase):
         self.assertEqual(len(MODEL_FEATURE_INDEX), MODEL_FEATURE_COUNT)
 
     def test_feature_blocks_have_expected_sizes(self) -> None:
-        self.assertEqual(len(CORE_FEATURE_NAMES), 78)
+        self.assertEqual(len(CORE_FEATURE_NAMES), 79)
         self.assertEqual(len(PLAYER_FEATURE_NAMES), 11)
         self.assertEqual(len(WAYPOINT_FEATURE_NAMES), 8)
 
@@ -36,12 +36,14 @@ class FeatureContractTests(unittest.TestCase):
         self.assertEqual(MODEL_FEATURE_INDEX["perception.seeing_enemy"], 54)
         self.assertEqual(MODEL_FEATURE_INDEX["task.unknown"], 58)
         self.assertEqual(MODEL_FEATURE_INDEX["task.blind"], 77)
+        self.assertEqual(MODEL_FEATURE_INDEX["task.spraypaint"], 78)
 
     def test_player_and_waypoint_blocks_are_contiguous(self) -> None:
         player_base = len(CORE_FEATURE_NAMES)
         waypoint_base = player_base + 8 * len(PLAYER_FEATURE_NAMES)
 
         self.assertEqual(MODEL_FEATURE_INDEX["player.0.valid"], player_base)
+        self.assertEqual(player_base, 79)
         self.assertEqual(MODEL_FEATURE_INDEX["player.7.armor"], waypoint_base - 1)
         self.assertEqual(MODEL_FEATURE_INDEX["waypoint.0.present"], waypoint_base)
         self.assertEqual(MODEL_FEATURE_INDEX["waypoint.7.distance"], MODEL_FEATURE_COUNT - 1)

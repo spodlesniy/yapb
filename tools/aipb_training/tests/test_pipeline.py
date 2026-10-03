@@ -57,7 +57,7 @@ def _write_dataset(path: Path) -> None:
     metadata = {
         "format": "aipb-training-jsonl",
         "version": 1,
-        "feature_schema_version": 1,
+        "feature_schema_version": 2,
         "action_schema_version": 1,
         "type": "metadata",
     }

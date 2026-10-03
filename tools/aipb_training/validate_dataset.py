@@ -9,12 +9,12 @@ import math
 from pathlib import Path
 from typing import Any
 
-from .model_contract import MODEL_ACTION_ID_COUNT
+from .model_contract import MODEL_ACTION_ID_COUNT, MODEL_FEATURE_COUNT
 
 
 EXPECTED_FORMAT = "aipb-training-jsonl"
 EXPECTED_DATASET_VERSION = 1
-EXPECTED_FEATURE_SCHEMA_VERSION = 1
+EXPECTED_FEATURE_SCHEMA_VERSION = 2
 EXPECTED_ACTION_SCHEMA_VERSION = 1
 REQUIRED_OBSERVATION_KEYS = {"schema_version", "values"}
 REQUIRED_ACTION_KEYS = {
@@ -65,6 +65,7 @@ def _validate_observation(value: Any, field_name: str) -> int:
     values = value["values"]
     _require(isinstance(values, list), f"{field_name}.values must be an array")
     _require(all(_is_number(item) for item in values), f"{field_name}.values must contain finite numbers")
+    _require(len(values) == MODEL_FEATURE_COUNT, f"{field_name}.values must contain exactly {MODEL_FEATURE_COUNT} features")
     return len(values)
 
 

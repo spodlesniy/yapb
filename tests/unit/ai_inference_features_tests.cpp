@@ -16,7 +16,7 @@ using ai::test::expect;
 using ai::test::expectNear;
 
 AI_TEST(testInferenceFeatureSchema) {
-  expect(ai::kInferenceFeatureSchemaVersion == 1, "inference feature schema starts at version one");
+  expect(ai::kInferenceFeatureSchemaVersion == 2, "inference feature schema uses the current version");
   expect(ai::kInferenceFeatureCount > 0, "inference feature vector is non-empty");
 
   const ai::InferenceFeatures features {};
@@ -94,6 +94,11 @@ AI_TEST(testInferenceFeatureEncoding) {
              "current waypoint is encoded explicitly");
   expectNear(features.at(waypointBase(0) + static_cast<size_t>(ai::InferenceFeature::Waypoint::IsGoal)), 0.0f, 0.0001f,
              "goal waypoint flag is encoded explicitly");
+
+  observation.bot.currentTask = ai::TaskType::Spraypaint;
+  const auto spraypaintFeatures = ai::encodeInferenceFeatures(observation);
+  expectNear(spraypaintFeatures.at(core(ai::InferenceFeature::Core::TaskBase) + 20), 1.0f, 0.0001f,
+             "spraypaint task is encoded in the new task slot");
 }
 
 AI_TEST(testInferenceFeatureSanitizesInvalidValues) {
