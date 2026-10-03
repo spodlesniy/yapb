@@ -56,7 +56,7 @@ public:
       break;
 
     case ControlMode::Neural:
-      m_runtime.setPolicy(m_inferencePolicy.getProvider() != nullptr
+      m_runtime.setPolicy((m_inferencePolicy.getProvider() != nullptr || m_inferencePolicy.getFallbackPolicy() != nullptr)
                               ? static_cast<const Policy *>(&m_inferencePolicy)
                               : nullptr);
       break;
@@ -92,8 +92,23 @@ public:
     m_inferencePolicy.setProvider(provider);
 
     if (m_runtime.getMode() == ControlMode::Neural) {
-      m_runtime.setPolicy(provider != nullptr ? static_cast<const Policy *>(&m_inferencePolicy) : nullptr);
+      m_runtime.setPolicy(provider != nullptr || m_inferencePolicy.getFallbackPolicy() != nullptr
+                              ? static_cast<const Policy *>(&m_inferencePolicy)
+                              : nullptr);
     }
+  }
+
+  void setInferenceFallbackEnabled(bool enabled) {
+    m_inferencePolicy.setFallbackPolicy(enabled ? static_cast<const Policy *>(&m_goalNavigationPolicy) : nullptr);
+
+    if (m_runtime.getMode() == ControlMode::Neural) {
+      const bool inferenceAvailable = m_inferencePolicy.getProvider() != nullptr;
+      m_runtime.setPolicy(inferenceAvailable || enabled ? static_cast<const Policy *>(&m_inferencePolicy) : nullptr);
+    }
+  }
+
+  bool isInferenceFallbackEnabled() const {
+    return m_inferencePolicy.getFallbackPolicy() != nullptr;
   }
 
   const InferenceProvider *getInferenceProvider() const {

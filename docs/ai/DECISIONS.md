@@ -144,3 +144,10 @@ Reason: evaluation must measure the model on the intended held-out episodes with
 Checkpoint evaluation reports action ID accuracy after applying the same non-negative float-to-integer truncation semantics used by the C++ inference decoder, while treating action IDs outside the supported model range as incorrect.
 
 Reason: the policy output is a float tensor, but `action_id` is decoded as an integer at runtime. Reporting raw regression error alone does not show how often the model selects the intended discrete action.
+
+
+## D024 — Use an explicit deterministic fallback for failed Neural decisions
+
+Neural mode may use `GoalNavigationPolicy` as an explicit fallback when the inference provider is unavailable or returns an incompatible, unsuccessful, or invalid action result. The behavior is controlled by `ai_fallback` and defaults to enabled. A valid Neural action, including a deliberate no-op action, is returned unchanged.
+
+Reason: inference failures should not stop the bot from receiving an executable action, but fallback behavior must remain explicit and must not silently replace valid model decisions.

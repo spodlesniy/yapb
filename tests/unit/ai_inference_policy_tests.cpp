@@ -17,6 +17,20 @@ using ai::test::TestExecutor;
 
 namespace {
 
+class TestFallbackPolicy final : public ai::Policy {
+public:
+  mutable int callCount {};
+
+  ai::Action decide(const ai::Observation &observation) const override {
+    ++callCount;
+    ai::Action action {};
+    action.type = ai::ActionType::MoveToNode;
+    action.targetType = ai::TargetType::Node;
+    action.targetNode = observation.bot.currentGoalNode;
+    action.confidence = 0.5f;
+    return action;
+  }
+};
 class TestInferenceProvider final : public ai::InferenceProvider {
 public:
   mutable int callCount {};
@@ -147,4 +161,53 @@ AI_TEST(testInferenceContractDefaults) {
   expect(input.hasSupportedSchema(), "current inference input schema is supported");
   expect(result.output.schemaVersion == ai::kInferenceActionSchemaVersion, "inference output defaults to current schema");
   expect(!result.isSuccess(), "inference result defaults to no decision");
+}
+
+AI_TEST(testInferencePolicyFallbackOnProviderFailure) {
+  TestInferenceProvider provider {};
+  provider.status = ai::InferenceStatus::Error;
+  TestFallbackPolicy fallback {};
+
+  ai::InferencePolicy policy { &provider };
+  policy.setFallbackPolicy(&fallback);
+
+  ai::Observation observation {};
+  observation.bot.currentGoalNode = 42;
+
+  const ai::Action action = policy.decide(observation);
+
+  expect(action.type == ai::ActionType::MoveToNode, "provider failure uses fallback policy");
+  expect(action.targetNode == 42, "fallback receives current observation");
+  expect(fallback.callCount == 1, "fallback is invoked once");
+}
+
+AI_TEST(testInferencePolicyFallbackWithoutProvider) {
+  TestFallbackPolicy fallback {};
+  ai::InferencePolicy policy {};
+  policy.setFallbackPolicy(&fallback);
+
+  ai::Observation observation {};
+  observation.bot.currentGoalNode = 19;
+
+  const ai::Action action = policy.decide(observation);
+
+  expect(action.type == ai::ActionType::MoveToNode, "missing provider uses fallback policy");
+  expect(action.targetNode == 19, "fallback receives current observation");
+  expect(fallback.callCount == 1, "fallback is invoked once");
+}
+
+AI_TEST(testInferencePolicyKeepsValidProviderAction) {
+  TestInferenceProvider provider {};
+  TestFallbackPolicy fallback {};
+  ai::InferencePolicy policy { &provider };
+  policy.setFallbackPolicy(&fallback);
+
+  ai::Observation observation {};
+  observation.bot.currentGoalNode = 7;
+
+  const ai::Action action = policy.decide(observation);
+
+  expect(action.type == ai::ActionType::MoveToNode, "valid provider action remains authoritative");
+  expect(action.targetNode == 7, "valid provider target is preserved");
+  expect(fallback.callCount == 0, "fallback is not used for valid inference");
 }

@@ -15,6 +15,7 @@ ConVar cv_debug ("debug", "0", "Enables or disables useful messages about bot st
 ConVar cv_ai_mode ("ai_mode", "0", "Selects AiPB control mode. 0 = Legacy, 1 = Neural, 2 = Training.", true, 0.0f, 2.0f);
 ConVar cv_ai_model ("ai_model", ai::kDefaultInferenceModelPath, "Path to the ONNX model used by AiPB Neural mode. Empty disables model loading.", false);
 ConVar cv_ai_inference_interval ("ai_inference_interval", "0.1", "Minimum interval in seconds between new AiPB Neural inference decisions. 0 means every AI step.", true, 0.0f, 2.0f);
+ConVar cv_ai_fallback ("ai_fallback", "1", "Uses deterministic GoalNavigationPolicy when Neural inference cannot produce a valid action. 0 disables fallback.", true, 0.0f, 1.0f);
 ConVar cv_debug_goal ("debug_goal", "-1", "Forces all alive bots to build a path and go to the graph node specified here.", true, -1.0f, kMaxNodes);
 ConVar cv_user_follow_percent ("user_follow_percent", "20", "Specifies the percent of bots that can follow a leader at each round start.", true, 0.0f, 100.0f);
 ConVar cv_user_max_followers ("user_max_followers", "1", "Specifies how many bots can follow a single user.", true, 0.0f, static_cast <float> (kGameMaxPlayers / 4));
@@ -3104,6 +3105,7 @@ void Bot::frame () {
 void Bot::update () {
    const auto tid = getCurrentTaskId ();
    m_aiObservationState.invalidate ();
+   m_aiRuntime.setInferenceFallbackEnabled (cv_ai_fallback.as <int> () != 0);
 
    switch (cv_ai_mode.as <int> ()) {
    case 1:

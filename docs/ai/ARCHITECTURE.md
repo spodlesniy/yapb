@@ -30,7 +30,7 @@ The contracts between these stages should not depend on a particular inference f
 
 ### Neural
 
-`Neural` uses `InferencePolicy` when an inference provider is available. Runtime execution remains separate from the inference implementation.
+`Neural` uses `InferencePolicy` when an inference provider is available. When enabled, an explicit `GoalNavigationPolicy` fallback is used only if inference cannot provide a valid action. Runtime execution remains separate from the inference implementation.
 
 ### Training
 
@@ -195,7 +195,7 @@ When lifecycle behavior changes, verify the interaction among:
 
 `BotRuntime -> TrainingCollector -> ActionRuntime -> TrainingRecorder`
 
-`ai_model` defaults to `addons/yapb/data/models/aipb_policy.onnx`, matching the canonical deployment location. An empty `ai_model` explicitly disables model loading.
+`ai_model` defaults to `addons/yapb/data/models/aipb_policy.onnx`, matching the canonical deployment location. An empty `ai_model` explicitly disables model loading. `ai_fallback` controls whether Neural mode uses `GoalNavigationPolicy` when inference has no valid result; it defaults to enabled.
 
 Changing `BotRuntime` control mode first routes an active `Neural` or `Training` action through `TrainingCollector` with the current observation, then changes the underlying `ActionRuntime` mode. This preserves the terminal transition at mode boundaries before the new mode becomes authoritative.
 

@@ -49,3 +49,8 @@ public:
   }
 };
 } // namespace
+
+using BotRuntimeFallbackSetter = void (ai::BotRuntime::*)(bool);
+static_assert(std::is_same_v<decltype(static_cast<BotRuntimeFallbackSetter>(&ai::BotRuntime::setInferenceFallbackEnabled)),
+                             BotRuntimeFallbackSetter>,
+              "BotRuntime must expose the inference fallback setter");
