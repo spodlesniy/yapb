@@ -34,7 +34,7 @@ The contracts between these stages should not depend on a particular inference f
 
 ### Training
 
-`Training` currently uses `GoalNavigationPolicy` as a deterministic behavior source while collecting transitions. This is a data-collection mode, not online neural-network weight training.
+`Training` currently uses `GoalNavigationPolicy` as a deterministic, task-aware behavior source while collecting transitions. It maps observable YaPB tasks to explicit AI actions and falls back to navigation goals when required task data is not present. This is a data-collection mode, not online neural-network weight training.
 
 The current training architecture deliberately separates game execution from model training:
 

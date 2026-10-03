@@ -151,3 +151,10 @@ Reason: the policy output is a float tensor, but `action_id` is decoded as an in
 Neural mode may use `GoalNavigationPolicy` as an explicit fallback when the inference provider is unavailable or returns an incompatible, unsuccessful, or invalid action result. The behavior is controlled by `ai_fallback` and defaults to enabled. A valid Neural action, including a deliberate no-op action, is returned unchanged.
 
 Reason: inference failures should not stop the bot from receiving an executable action, but fallback behavior must remain explicit and must not silently replace valid model decisions.
+
+
+## D025 — Use task-aware deterministic teacher actions for Training mode
+
+`GoalNavigationPolicy` remains the Training-mode behavior source, but it now maps observable YaPB tasks to explicit AI actions when the observation contains the required data. Unsupported or under-specified tasks fall back to the selected navigation goal.
+
+Reason: a training dataset containing only `MoveToNode` transitions cannot teach the model combat, objective, pickup, cover, or other action selection. Using the existing task state as a deterministic teacher increases action coverage without introducing online learning or changing the shared model contract.
