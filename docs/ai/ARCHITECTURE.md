@@ -34,7 +34,13 @@ The contracts between these stages should not depend on a particular inference f
 
 ### Training
 
-`Training` currently uses `GoalNavigationPolicy` as a deterministic behavior source while collecting transitions. This allows the training data pipeline to be exercised before a learned policy is responsible for behavior.
+`Training` currently uses `GoalNavigationPolicy` as a deterministic behavior source while collecting transitions. This is a data-collection mode, not online neural-network weight training.
+
+The current training architecture deliberately separates game execution from model training:
+
+`CS 1.6 + AiPB C++ -> training JSONL -> Python offline training -> ONNX model -> CS 1.6 + AiPB C++`
+
+Python does not participate in the game process during data collection or inference.
 
 ## Training lifecycle
 
@@ -58,6 +64,91 @@ The main responsibilities are split as follows:
 - `TrainingBuffer::clear()` removes collected transitions without resetting the episode ID sequence; `reset()` performs a full state reset.
 
 Ending an episode clears the recorder's pending action and episode identifier but does not erase the already collected buffer.
+
+## Dataset and offline training pipeline
+
+The C++ runtime exports the collected transitions as `aipb-training-jsonl`.
+
+Each record contains:
+
+- `episode_id`
+- `observation`
+- `action`
+- `reward`
+- `next_observation`
+- `result`
+- `elapsed_time`
+- `terminal`
+
+The Python training package is located in `tools/aipb_training/`. It is an offline package and is not loaded by the game process.
+
+Its current responsibilities are:
+
+- validate the JSONL dataset;
+- load validated records into typed immutable Python structures;
+- create deterministic contiguous batches;
+- encode batches into the model input/target contract.
+
+The current supervised policy-training contract uses:
+
+`observation -> action`
+
+as input and target. Transition fields such as `reward`, `next_observation`, and `terminal` remain in the dataset for future training methods and evaluation.
+
+The package is intentionally framework-neutral until the model architecture, loss, optimizer, and training loop are introduced.
+
+Python training batches use:
+
+- input: `[N, 230]` float32;
+- target: `[N, 10]` float32.
+
+The deployed ONNX runtime contract remains single-sample:
+
+- input name: `input`;
+- input type: float32;
+- input shape: `[1, 230]`;
+- output name: `output`;
+- output type: float32;
+- output shape: `[1, 10]`.
+
+## Model output contract
+
+The ten output values are fixed and shared by the Python training side and the C++ inference side:
+
+| Index | Field |
+| ---: | --- |
+| 0 | `action_id` |
+| 1 | `target_node` |
+| 2 | `target_player` |
+| 3 | `target_position.x` |
+| 4 | `target_position.y` |
+| 5 | `target_position.z` |
+| 6 | `weapon_type` |
+| 7 | `grenade_type` |
+| 8 | `duration` |
+| 9 | `confidence` |
+
+The model represents all ten values as float32. The C++ action decoder and validator remain responsible for interpreting discrete values and validating the resulting action.
+
+The current Python package structure is:
+
+```text
+tools/aipb_training/
+├── __init__.py
+├── README.md
+├── validate_dataset.py
+├── dataset.py
+├── model_contract.py
+├── training_contract.py
+└── tests/
+    ├── __init__.py
+    ├── test_validate_dataset.py
+    ├── test_dataset.py
+    ├── test_model_contract.py
+    └── test_training_contract.py
+```
+
+Future training components belong to this package as separate modules, including the training loop, evaluation, and ONNX export.
 
 ## Runtime integration
 
@@ -86,6 +177,8 @@ The inference feature contract must use fixed-size C arrays where a fixed-size f
 - Keep AI interfaces small and explicit.
 - Separate policy selection from action execution.
 - Separate reward calculation from transition storage.
+- Separate in-game data collection from offline model training.
 - Keep training lifecycle state explicit.
 - Preserve legacy behavior as an independent control path.
+- Keep the Python training package independent from the game process.
 - Prefer deterministic, testable components at the policy/runtime boundary.

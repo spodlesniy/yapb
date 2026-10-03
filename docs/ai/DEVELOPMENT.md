@@ -8,11 +8,14 @@ One iteration should:
 
 1. Define one narrow behavioral or structural change.
 2. Inspect the relevant interfaces and dependencies before editing.
-3. Implement only that change.
-4. Run focused validation locally when available.
-5. Inspect the complete diff.
-6. Commit exactly that logical iteration.
-7. Push the commit and use the automatic unit-test CI result as the normal gate for the next iteration.
+3. Inspect the affected `docs/ai` documentation and determine whether the current implementation changes require documentation updates.
+4. Implement only that change.
+5. Run focused validation locally when available.
+6. Inspect the complete diff.
+7. Commit exactly that logical iteration.
+8. Push the commit and use the automatic unit-test CI result as the normal gate for the next iteration.
+
+When an iteration changes a durable architecture, workflow, or engineering decision, update the corresponding `docs/ai` document in the same logical iteration.
 
 Do not accumulate multiple unrelated fixes before committing.
 
@@ -29,6 +32,14 @@ For every touched source file, verify:
 - Test functions are not duplicated.
 - The relevant test target actually compiles and runs the changed tests.
 
+For Python training code, also verify:
+
+- Production modules remain under `tools/aipb_training/`.
+- Tests remain under `tools/aipb_training/tests/`.
+- The Python test directory is an importable package.
+- CI discovers the intended `test_*.py` files.
+- Package-qualified imports work from the repository root.
+
 For tests, pay particular attention to fixture state, object lifecycle, braces, and accidental changes to neighboring test scopes.
 
 ## CI policy
@@ -36,6 +47,16 @@ For tests, pay particular attention to fixture state, object lifecycle, braces, 
 The normal cycle is:
 
 `small change -> one commit -> automatic unit-test CI -> next change`
+
+The Python training-tool job runs all tests under:
+
+`tools/aipb_training/tests/`
+
+using:
+
+```text
+python -m unittest discover -s tools/aipb_training/tests -t . -p 'test_*.py'
+```
 
 When CI is red:
 

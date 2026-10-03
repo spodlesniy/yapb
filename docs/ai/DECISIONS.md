@@ -55,3 +55,15 @@ Reason: legacy behavior must remain isolated, neural behavior must remain model-
 The default training reward provider maps terminal action outcomes to a small, deterministic reward signal: successful completion is positive, rejected/invalid/failed actions are negative, and interrupted actions are neutral.
 
 Reason: a training pipeline that records only zero rewards cannot distinguish useful from unsuccessful actions. Interruption can represent control transfer or lifecycle cancellation rather than poor action quality, so it remains neutral until richer game-specific reward shaping is introduced behind the same provider interface.
+
+## D010 — Offline Python training is separate from the game runtime
+
+The Python training package runs outside the Counter-Strike 1.6 process and consumes exported C++ training datasets.
+
+Reason: model training requires a separate lifecycle, may use different compute resources, and must not destabilize the game runtime. The C++ side is responsible for data collection and inference; Python is responsible for offline training and model export.
+
+## D011 — Keep one shared model I/O contract
+
+The Python training package and C++ inference runtime share one fixed model I/O contract: float32 input `[N, 230]` during training and deployed runtime input `[1, 230]`; float32 action output `[N, 10]` during training and deployed runtime output `[1, 10]`. The ten output positions are stable and must not be reordered.
+
+Reason: model training and inference must remain interchangeable without hidden reshaping or field-order assumptions.

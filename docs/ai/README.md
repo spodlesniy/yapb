@@ -4,10 +4,12 @@ This directory contains durable project guidance for AI-assisted development of 
 
 ## Documents
 
-- [Architecture](ARCHITECTURE.md) — current AI runtime, policy, action, and training responsibilities.
+- [Architecture](ARCHITECTURE.md) — current AI runtime, policy, action, training responsibilities, offline Python training, and model I/O.
 - [Development](DEVELOPMENT.md) — iteration, commit, CI, review, and verification workflow.
 - [Coding Rules](CODING_RULES.md) — repository-specific implementation constraints and source-code conventions.
 - [Decisions](DECISIONS.md) — important decisions and their rationale so future work does not accidentally revert them.
+
+The offline Python training package itself is documented in [tools/aipb_training/README.md](../../tools/aipb_training/README.md).
 
 ## Source of truth
 
