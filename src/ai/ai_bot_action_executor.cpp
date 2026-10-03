@@ -85,12 +85,16 @@ void BotActionExecutor::cancel() {
   if (m_directEscapeFromBombActive && m_context != nullptr) {
     m_context->cancelEscapeFromBomb();
   }
+  if (m_directPlantBombActive && m_context != nullptr) {
+    m_context->cancelPlantBomb();
+  }
   m_directAttackTargetActive = false;
   m_directAttackAction = {};
   m_directHuntTargetActive = false;
   m_directHuntAction = {};
   m_directSeekCoverActive = false;
   m_directEscapeFromBombActive = false;
+  m_directPlantBombActive = false;
   m_observedTaskActive = false;
   m_observedTaskAction = {};
 }
@@ -159,7 +163,19 @@ ActionResult BotActionExecutor::execute(const Action &action, const Observation 
   case ActionType::Wait:
   case ActionType::HoldPosition:
   case ActionType::Camp:
+    return executeObservedTaskAction(action, observation);
+
   case ActionType::PlantBomb:
+    m_directAttackTargetActive = false;
+    m_directAttackAction = {};
+    m_directHuntTargetActive = false;
+    m_directHuntAction = {};
+    m_directSeekCoverActive = false;
+    m_directEscapeFromBombActive = false;
+    m_observedTaskActive = false;
+    m_observedTaskAction = {};
+    return executePlantBomb(action, observation);
+
   case ActionType::DefuseBomb:
   case ActionType::PickupItem:
   case ActionType::Fire:
@@ -261,6 +277,34 @@ ActionResult BotActionExecutor::executeEscapeFromBomb(const Action &action, cons
   }
 
   m_directEscapeFromBombActive = true;
+  return { action.type, ActionResultType::Accepted, 0.0f };
+}
+
+ActionResult BotActionExecutor::executePlantBomb(const Action &action, const Observation &observation) {
+  const uint32_t flags = observation.bot.objectiveFlags;
+  const bool bombPlanted = flags & ObjectiveFlag::BombPlanted;
+  const bool bombCarrier = flags & ObjectiveFlag::BombCarrier;
+  const bool inBombZone = flags & ObjectiveFlag::InBombZone;
+
+  if (bombPlanted || !bombCarrier || !inBombZone) {
+    if (!m_directPlantBombActive) {
+      return { action.type, ActionResultType::Rejected, 0.0f };
+    }
+
+    cancel();
+    return { action.type, ActionResultType::Completed, 0.0f };
+  }
+
+  if (!m_context->plantBomb()) {
+    if (!m_directPlantBombActive) {
+      return { action.type, ActionResultType::Rejected, 0.0f };
+    }
+
+    cancel();
+    return { action.type, ActionResultType::Completed, 0.0f };
+  }
+
+  m_directPlantBombActive = true;
   return { action.type, ActionResultType::Accepted, 0.0f };
 }
 

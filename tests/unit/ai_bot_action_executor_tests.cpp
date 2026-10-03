@@ -42,6 +42,8 @@ public:
   bool huntTargetReached {};
   bool seekCoverReached {};
   bool escapeFromBombReached {};
+  int plantBombCalls {};
+  int cancelPlantBombCalls {};
   ai::Vec3 lastPosition {};
 
   bool isAlive() const override {
@@ -125,6 +127,15 @@ public:
 
   void cancelEscapeFromBomb() override {
     ++cancelEscapeFromBombCalls;
+  }
+
+  bool plantBomb() override {
+    ++plantBombCalls;
+    return true;
+  }
+
+  void cancelPlantBomb() override {
+    ++cancelPlantBombCalls;
   }
 };
 
@@ -493,15 +504,140 @@ AI_TEST(testBotActionExecutorCancelsDirectEscapeFromBomb) {
   expect(context.cancelEscapeFromBombCalls == 1, "cancel releases direct escape");
 }
 
+AI_TEST(testBotActionExecutorDirectlyExecutesPlantBomb) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  auto observation = aliveObservation();
+  observation.bot.objectiveFlags = ai::ObjectiveFlag::BombCarrier | ai::ObjectiveFlag::InBombZone;
+
+  auto action = ai::Action {};
+  action.type = ai::ActionType::PlantBomb;
+
+  const auto result = executor.execute(action, observation);
+
+  expect(result.type == ai::ActionResultType::Accepted, "plant bomb is accepted while carrying C4 in the bomb zone");
+  expect(context.plantBombCalls == 1, "plant bomb is delegated");
+  expect(!executor.suppressesLegacyTaskExecution(), "plant bomb keeps legacy task execution enabled");
+}
+
+AI_TEST(testBotActionExecutorCompletesPlantBombWhenBombIsPlanted) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  auto observation = aliveObservation();
+  observation.bot.objectiveFlags = ai::ObjectiveFlag::BombCarrier | ai::ObjectiveFlag::InBombZone;
+
+  auto action = ai::Action {};
+  action.type = ai::ActionType::PlantBomb;
+
+  auto result = executor.execute(action, observation);
+  expect(result.type == ai::ActionResultType::Accepted, "plant bomb starts before completion");
+
+  observation.bot.objectiveFlags |= ai::ObjectiveFlag::BombPlanted;
+  result = executor.execute(action, observation);
+
+  expect(result.type == ai::ActionResultType::Completed, "planted bomb completes the action");
+  expect(context.cancelPlantBombCalls == 1, "completion releases direct plant bomb");
+}
+
+AI_TEST(testBotActionExecutorCompletesPlantBombWhenC4IsLost) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  auto observation = aliveObservation();
+  observation.bot.objectiveFlags = ai::ObjectiveFlag::BombCarrier | ai::ObjectiveFlag::InBombZone;
+
+  auto action = ai::Action {};
+  action.type = ai::ActionType::PlantBomb;
+
+  auto result = executor.execute(action, observation);
+  expect(result.type == ai::ActionResultType::Accepted, "plant bomb starts with carried C4");
+
+  observation.bot.objectiveFlags = ai::ObjectiveFlag::InBombZone;
+  result = executor.execute(action, observation);
+
+  expect(result.type == ai::ActionResultType::Completed, "losing C4 completes the active action");
+  expect(context.cancelPlantBombCalls == 1, "C4 loss releases direct plant bomb");
+}
+
+AI_TEST(testBotActionExecutorCompletesPlantBombWhenLeavingBombZone) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  auto observation = aliveObservation();
+  observation.bot.objectiveFlags = ai::ObjectiveFlag::BombCarrier | ai::ObjectiveFlag::InBombZone;
+
+  auto action = ai::Action {};
+  action.type = ai::ActionType::PlantBomb;
+
+  auto result = executor.execute(action, observation);
+  expect(result.type == ai::ActionResultType::Accepted, "plant bomb starts inside the bomb zone");
+
+  observation.bot.objectiveFlags = ai::ObjectiveFlag::BombCarrier;
+  result = executor.execute(action, observation);
+
+  expect(result.type == ai::ActionResultType::Completed, "leaving the bomb zone completes the active action");
+  expect(context.cancelPlantBombCalls == 1, "leaving the zone releases direct plant bomb");
+}
+
+AI_TEST(testBotActionExecutorRejectsPlantBombWithoutC4) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  auto action = ai::Action {};
+  action.type = ai::ActionType::PlantBomb;
+
+  auto observation = aliveObservation();
+  observation.bot.objectiveFlags = ai::ObjectiveFlag::InBombZone;
+
+  const auto result = executor.execute(action, observation);
+
+  expect(result.type == ai::ActionResultType::Rejected, "plant bomb without C4 is rejected");
+  expect(context.plantBombCalls == 0, "plant bomb is not delegated without C4");
+}
+
+AI_TEST(testBotActionExecutorRejectsPlantBombOutsideBombZone) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  auto action = ai::Action {};
+  action.type = ai::ActionType::PlantBomb;
+
+  auto observation = aliveObservation();
+  observation.bot.objectiveFlags = ai::ObjectiveFlag::BombCarrier;
+
+  const auto result = executor.execute(action, observation);
+
+  expect(result.type == ai::ActionResultType::Rejected, "plant bomb outside the bomb zone is rejected");
+  expect(context.plantBombCalls == 0, "plant bomb is not delegated outside the bomb zone");
+}
+
+AI_TEST(testBotActionExecutorCancelsDirectPlantBomb) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  auto observation = aliveObservation();
+  observation.bot.objectiveFlags = ai::ObjectiveFlag::BombCarrier | ai::ObjectiveFlag::InBombZone;
+
+  auto action = ai::Action {};
+  action.type = ai::ActionType::PlantBomb;
+
+  executor.execute(action, observation);
+  executor.cancel();
+
+  expect(context.cancelPlantBombCalls == 1, "cancel releases direct plant bomb");
+}
+
 AI_TEST(testBotActionExecutorCompletesObservedTaskLifecycle) {
   MockActionExecutionContext context {};
   ai::BotActionExecutor executor(context);
 
   ai::Observation observation = aliveObservation();
-  observation.bot.currentTask = ai::TaskType::PlantBomb;
+  observation.bot.currentTask = ai::TaskType::Camp;
 
   auto action = ai::Action {};
-  action.type = ai::ActionType::PlantBomb;
+  action.type = ai::ActionType::Camp;
 
   auto result = executor.execute(action, observation);
   expect(result.type == ai::ActionResultType::Accepted, "matching task starts the action");

@@ -162,7 +162,7 @@ Reason: a training dataset containing only `MoveToNode` transitions cannot teach
 
 ## D026 — Keep not-yet-direct teacher actions under the YaPB task stack
 
-When a policy output corresponds to a task that does not yet have direct AI-owned execution semantics, `BotActionExecutor` may acknowledge that action against the observed YaPB task while the legacy task continues. AttackTarget, HuntTarget, SeekCover, and EscapeFromBomb are direct actions and are no longer part of this transitional set.
+When a policy output corresponds to a task that does not yet have direct AI-owned execution semantics, `BotActionExecutor` may acknowledge that action against the observed YaPB task while the legacy task continues. AttackTarget, HuntTarget, SeekCover, EscapeFromBomb, and PlantBomb are direct actions and are no longer part of this transitional set.
 
 Reason: transitional task-backed actions preserve existing YaPB behavior while direct AI execution semantics are added incrementally. Each action leaves this compatibility path only after explicit execution semantics, ownership, cancellation, and tests are in place.
 
@@ -252,3 +252,16 @@ Reason: UpdateNavigation/path progression is implemented inside the MoveToPositi
 EscapeFromBomb is executed through ActionExecutionContext using the planted bomb origin to select a safe waypoint outside the existing YaPB safety radius. The selected waypoint is navigated through the existing MoveToPosition primitive while the AI executor owns the lifecycle and cancellation. The action completes when the safe waypoint is reached or when the bomb is no longer planted.
 
 Reason: the high-level decision to escape is AI-owned, while waypoint selection and movement reuse the established objective/navigation mechanics without introducing a second pathfinding implementation.
+
+
+## D040 — Respect GitHub interaction limits without fragmenting logical work
+
+GitHub API and interaction limits are an operational constraint. A logical AiPB iteration must still be published as one coherent commit containing the implementation, focused tests, documentation updates, and corrective changes required to make that iteration complete. Tool-call minimization should come from batched inspection, reuse of unchanged repository state, and atomic tree/commit publication rather than from splitting one logical change into multiple micro-commits.
+
+Reason: fragmented history makes CI diagnosis, review, rollback, and architectural tracking harder while consuming additional GitHub operations. Interaction limits should shape how the work is prepared and validated, not redefine the semantic boundary of an iteration.
+
+## D041 — Make PlantBomb a direct AI-owned objective action
+
+PlantBomb is executed through ActionExecutionContext. The YaPB adapter validates the C4, bomb-zone, and bomb-state prerequisites and reuses the existing PlantBomb task as the engine-side interaction primitive. The AI executor owns the action lifecycle and cancellation, while legacy task execution remains enabled so the established planting mechanics continue.
+
+Reason: C4 planting already contains established weapon selection, input, zone, enemy, and completion behavior in YaPB. Reusing that task avoids duplicating game mechanics while making the policy's PlantBomb decision explicit and independently testable.

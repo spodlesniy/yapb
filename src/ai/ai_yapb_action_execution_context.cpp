@@ -291,6 +291,36 @@ void YaPBActionExecutionContext::cancelSeekCover() {
   m_seekCoverNavigationTaskCreated = false;
 }
 
+bool YaPBActionExecutionContext::plantBomb() {
+  if (m_bot == nullptr || m_bot->pev == nullptr || !m_bot->m_hasC4 || !m_bot->m_inBombZone
+      || gameState.isBombPlanted()) {
+    return false;
+  }
+
+  const auto currentTask = m_bot->getCurrentTaskId();
+
+  if (currentTask == Task::PlantBomb) {
+    return true;
+  }
+
+  if (currentTask != Task::Normal) {
+    return false;
+  }
+
+  m_bot->startTask(Task::PlantBomb, TaskPri::PlantBomb, kInvalidNodeIndex, 0.0f, false);
+  return true;
+}
+
+void YaPBActionExecutionContext::cancelPlantBomb() {
+  if (m_bot == nullptr) {
+    return;
+  }
+
+  if (m_bot->getCurrentTaskId() == Task::PlantBomb) {
+    m_bot->clearTask(Task::PlantBomb);
+  }
+}
+
 bool YaPBActionExecutionContext::escapeFromBomb() {
   if (m_bot == nullptr || m_bot->pev == nullptr || !gameState.isBombPlanted()) {
     return false;

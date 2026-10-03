@@ -55,6 +55,9 @@ public:
   bool escapeFromBomb() override;
   bool isEscapeFromBombReached() const override;
   void cancelEscapeFromBomb() override;
+
+  bool plantBomb() override;
+  void cancelPlantBomb() override;
 };
 
 } // namespace ai

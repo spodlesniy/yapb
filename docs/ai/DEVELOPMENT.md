@@ -112,3 +112,9 @@ Never modify or push to:
 `yapb/yapb`
 
 The repository fork is the only intended development target for AiPB changes.
+
+## GitHub interaction and commit discipline
+
+Current GitHub interaction limits are treated as an execution constraint, not as a reason to fragment the repository history. Before editing, batch the required reads and avoid re-fetching unchanged files. For a completed logical iteration, prepare the full implementation, focused tests, and required documentation together, then publish them as exactly one commit. Intermediate corrective changes are folded into the same iteration whenever they are discovered before publication; they must not become separate micro-commits merely to reduce the size of an individual API operation.
+
+When a larger validation checkpoint is required, use the resulting CI status to validate the single published commit rather than creating an extra checkpoint commit with no independent semantic change.

@@ -40,6 +40,9 @@ public:
   virtual bool escapeFromBomb() = 0;
   virtual bool isEscapeFromBombReached() const = 0;
   virtual void cancelEscapeFromBomb() = 0;
+
+  virtual bool plantBomb() = 0;
+  virtual void cancelPlantBomb() = 0;
 };
 
 } // namespace ai
