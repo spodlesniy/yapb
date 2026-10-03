@@ -19,50 +19,81 @@ bool isFinitePosition(const Vec3 &position) {
   return std::isfinite(position.x) && std::isfinite(position.y) && std::isfinite(position.z);
 }
 
+bool hasObservedEnemyTarget(const Action &action, const Observation &observation) {
+  if (action.targetType != TargetType::Player || observation.combat.enemyEntity != action.targetPlayer
+      || !(observation.combat.perceptionFlags & static_cast<uint32_t>(PerceptionFlag::SeeingEnemy))) {
+    return false;
+  }
+
+  const auto count = observation.playerCount > kMaxObservedPlayers ? kMaxObservedPlayers : observation.playerCount;
+  for (size_t i = 0; i < count; ++i) {
+    const auto &player = observation.players[i];
+    if (player.valid && player.alive && player.enemy && player.visible && player.entityIndex == action.targetPlayer) {
+      return true;
+    }
+  }
+  return false;
+}
+
 } // namespace
 
 BotActionExecutor::BotActionExecutor(ActionExecutionContext &context) : m_context(&context) {
 }
 
 bool BotActionExecutor::isActionStillOwned(const Action &action) const {
-  if (m_context == nullptr) {
-    return false;
-  }
-
-  if (action.type != ActionType::MoveToNode && action.type != ActionType::MoveToPosition) {
-    return true;
-  }
-
+  if (m_context == nullptr) return false;
+  if (action.type != ActionType::MoveToNode && action.type != ActionType::MoveToPosition) return true;
   return m_context->allowsNavigationOverride();
+}
+
+bool BotActionExecutor::suppressesLegacyTaskExecution() const {
+  return m_directAttackTargetActive;
+}
+
+void BotActionExecutor::cancel() {
+  if (m_directAttackTargetActive && m_context != nullptr) {
+    m_context->cancelAttackTarget(m_directAttackAction.targetPlayer);
+  }
+  m_directAttackTargetActive = false;
+  m_directAttackAction = {};
+  m_observedTaskActive = false;
+  m_observedTaskAction = {};
 }
 
 ActionResult BotActionExecutor::execute(const Action &action, const Observation &observation) {
   if (m_context == nullptr || !m_context->isAlive() || !observation.bot.alive) {
+    cancel();
     return { action.type, ActionResultType::Rejected, 0.0f };
   }
 
-  // During the transitional Neural runtime, existing YaPB tasks remain authoritative for non-navigation behavior.
-  // TODO: Replace task-stack acknowledgement with direct AI-owned execution for non-navigation actions.
   if (!isActionStillOwned(action)) {
     return { action.type, ActionResultType::Interrupted, 0.0f };
   }
 
   switch (action.type) {
   case ActionType::MoveToNode:
+    m_directAttackTargetActive = false;
+    m_directAttackAction = {};
     m_observedTaskActive = false;
     m_observedTaskAction = {};
     return executeMoveToNode(action);
 
   case ActionType::MoveToPosition:
+    m_directAttackTargetActive = false;
+    m_directAttackAction = {};
     m_observedTaskActive = false;
     m_observedTaskAction = {};
     return executeMoveToPosition(action);
+
+  case ActionType::AttackTarget:
+    m_observedTaskActive = false;
+    m_observedTaskAction = {};
+    return executeAttackTarget(action, observation);
 
   case ActionType::Wait:
   case ActionType::HoldPosition:
   case ActionType::Camp:
   case ActionType::SeekCover:
-  case ActionType::AttackTarget:
   case ActionType::HuntTarget:
   case ActionType::PlantBomb:
   case ActionType::DefuseBomb:
@@ -78,7 +109,22 @@ ActionResult BotActionExecutor::execute(const Action &action, const Observation 
   }
 }
 
-// TODO: Replace this transitional task-stack acknowledgement with direct execution of the corresponding AI action.
+ActionResult BotActionExecutor::executeAttackTarget(const Action &action, const Observation &observation) {
+  if (!hasObservedEnemyTarget(action, observation)) {
+    if (!m_directAttackTargetActive) return { action.type, ActionResultType::Rejected, 0.0f };
+    cancel();
+    return { action.type, ActionResultType::Completed, 0.0f };
+  }
+  if (!m_context->attackTarget(action.targetPlayer)) {
+    if (!m_directAttackTargetActive) return { action.type, ActionResultType::Rejected, 0.0f };
+    cancel();
+    return { action.type, ActionResultType::Completed, 0.0f };
+  }
+  m_directAttackAction = action;
+  m_directAttackTargetActive = true;
+  return { action.type, ActionResultType::Accepted, 0.0f };
+}
+
 ActionResult BotActionExecutor::executeObservedTaskAction(const Action &action, const Observation &observation) {
   if (!m_observedTaskActive || !sameObservedTaskAction(action, m_observedTaskAction)) {
     m_observedTaskActive = false;

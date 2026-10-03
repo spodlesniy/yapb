@@ -3462,7 +3462,9 @@ void Bot::logic () {
       m_aiNextInferenceTime = 0.0f;
    }
 
-   executeTasks (); // execute current task
+   if (!m_aiRuntime.suppressesLegacyTaskExecution ()) {
+      executeTasks (); // execute current task
+   }
    setAimDirection (); // choose aim direction
    updateLookAngles (); // and turn to chosen aim direction
    doFireWeapons (); // fire the weapons

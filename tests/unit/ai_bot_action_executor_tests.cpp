@@ -28,7 +28,10 @@ public:
 
   int moveToNodeCalls {};
   int moveToPositionCalls {};
+  int attackTargetCalls {};
+  int cancelAttackTargetCalls {};
   int lastNode { -1 };
+  int lastAttackTarget { -1 };
   ai::Vec3 lastPosition {};
 
   bool isAlive() const override {
@@ -60,6 +63,17 @@ public:
     ++moveToPositionCalls;
     lastPosition = position;
     lastNode = node;
+  }
+
+  bool attackTarget(int targetPlayer) override {
+    ++attackTargetCalls;
+    lastAttackTarget = targetPlayer;
+    return true;
+  }
+
+  void cancelAttackTarget(int targetPlayer) override {
+    ++cancelAttackTargetCalls;
+    lastAttackTarget = targetPlayer;
   }
 };
 
@@ -176,6 +190,60 @@ AI_TEST(testBotActionExecutorRejectsNonFinitePosition) {
 
   expect(result.type == ai::ActionResultType::Invalid, "non-finite position is invalid");
   expect(context.moveToPositionCalls == 0, "invalid position is not delegated");
+}
+
+ai::Observation attackObservation(int targetPlayer) {
+  auto observation = aliveObservation();
+  observation.combat.enemyEntity = targetPlayer;
+  observation.combat.perceptionFlags = static_cast<uint32_t>(ai::PerceptionFlag::SeeingEnemy);
+  observation.playerCount = 1;
+  observation.players[0].entityIndex = targetPlayer;
+  observation.players[0].valid = true;
+  observation.players[0].alive = true;
+  observation.players[0].enemy = true;
+  observation.players[0].visible = true;
+  return observation;
+}
+
+AI_TEST(testBotActionExecutorDirectlyExecutesAttackTarget) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+  ai::Action action {};
+  action.type = ai::ActionType::AttackTarget;
+  action.targetType = ai::TargetType::Player;
+  action.targetPlayer = 9;
+  const auto result = executor.execute(action, attackObservation(9));
+  expect(result.type == ai::ActionResultType::Accepted, "visible enemy attack is accepted");
+  expect(context.attackTargetCalls == 1, "attack target is delegated");
+  expect(context.lastAttackTarget == 9, "attack target is preserved");
+  expect(executor.suppressesLegacyTaskExecution(), "direct attack owns task execution");
+}
+
+AI_TEST(testBotActionExecutorCompletesAttackWhenTargetChanges) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+  ai::Action action {};
+  action.type = ai::ActionType::AttackTarget;
+  action.targetType = ai::TargetType::Player;
+  action.targetPlayer = 9;
+  executor.execute(action, attackObservation(9));
+  const auto result = executor.execute(action, attackObservation(10));
+  expect(result.type == ai::ActionResultType::Completed, "changed target completes active attack");
+  expect(context.cancelAttackTargetCalls == 1, "completed attack releases target");
+  expect(!executor.suppressesLegacyTaskExecution(), "completed attack releases ownership");
+}
+
+AI_TEST(testBotActionExecutorCancelReleasesDirectAttack) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+  ai::Action action {};
+  action.type = ai::ActionType::AttackTarget;
+  action.targetType = ai::TargetType::Player;
+  action.targetPlayer = 9;
+  executor.execute(action, attackObservation(9));
+  executor.cancel();
+  expect(context.cancelAttackTargetCalls == 1, "cancel releases direct attack");
+  expect(!executor.suppressesLegacyTaskExecution(), "cancel releases ownership");
 }
 
 AI_TEST(testBotActionExecutorCompletesObservedTaskLifecycle) {

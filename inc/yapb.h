@@ -539,7 +539,7 @@ private:
    void updateTeamJoin ();
    void updateTeamCommands ();
    void decideFollowUser ();
-   void attackMovement ();
+   void attackMovement (bool allowTaskChanges = true);
    void findValidNode ();
    void setPathOrigin ();
    void fireWeapons ();

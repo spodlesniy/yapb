@@ -98,4 +98,38 @@ void YaPBActionExecutionContext::moveToPosition(const Vec3 &position, int node) 
   m_bot->m_chosenGoalIndex = node;
 }
 
+bool YaPBActionExecutionContext::attackTarget(int targetPlayer) {
+  if (m_bot == nullptr || m_bot->pev == nullptr || targetPlayer <= 0 || targetPlayer > game.maxClients()) return false;
+  auto *target = game.entityOfIndex(targetPlayer);
+  if (game.isNullEntity(target) || !game.isPlayerEntity(target) || !game.isAliveEntity(target)) return false;
+  const auto targetTeam = game.is(GameFlags::FreeForAll) ? game.getRealPlayerTeam(target) : game.getPlayerTeam(target);
+  if (targetTeam == Team::Invalid || targetTeam == m_bot->m_team) return false;
+
+  m_bot->m_enemy = target;
+  m_bot->m_enemyOrigin = target->v.origin;
+  m_bot->m_enemyBodyPartSet = nullptr;
+  m_bot->m_enemySurpriseTime = 0.0f;
+  m_bot->m_aimFlags |= AimFlags::Enemy;
+  m_bot->m_moveToGoal = false;
+  m_bot->m_checkTerrain = false;
+  m_bot->m_wantsToFire = true;
+  m_bot->m_navTimeset = game.time();
+  m_bot->ignoreCollision();
+  m_bot->focusEnemy();
+  m_bot->attackMovement(false);
+  return true;
+}
+
+void YaPBActionExecutionContext::cancelAttackTarget(int targetPlayer) {
+  if (m_bot == nullptr) return;
+  if (targetPlayer > 0 && m_bot->m_enemy != nullptr && !game.isNullEntity(m_bot->m_enemy)
+      && game.indexOfEntity(m_bot->m_enemy) == targetPlayer) {
+    m_bot->m_enemy = nullptr;
+    m_bot->m_enemyOrigin.clear();
+  }
+  m_bot->m_aimFlags &= ~AimFlags::Enemy;
+  m_bot->m_wantsToFire = false;
+}
+
+
 } // namespace ai

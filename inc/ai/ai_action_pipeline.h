@@ -47,10 +47,12 @@ public:
   }
 
   bool cancel() {
+    m_executor->cancel();
     return m_state.cancel();
   }
 
   void reset() {
+    m_executor->cancel();
     m_state.reset();
   }
 

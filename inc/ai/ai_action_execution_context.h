@@ -25,6 +25,9 @@ public:
 
   virtual void moveToNode(int node) = 0;
   virtual void moveToPosition(const Vec3 &position, int node) = 0;
+
+  virtual bool attackTarget(int targetPlayer) = 0;
+  virtual void cancelAttackTarget(int targetPlayer) = 0;
 };
 
 } // namespace ai

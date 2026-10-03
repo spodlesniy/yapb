@@ -30,6 +30,9 @@ public:
 
   void moveToNode(int node) override;
   void moveToPosition(const Vec3 &position, int node) override;
+
+  bool attackTarget(int targetPlayer) override;
+  void cancelAttackTarget(int targetPlayer) override;
 };
 
 } // namespace ai

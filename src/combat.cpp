@@ -1427,7 +1427,7 @@ void Bot::focusEnemy () {
    }
 }
 
-void Bot::attackMovement () {
+void Bot::attackMovement (bool allowTaskChanges) {
    // no enemy? no need to do strafing
    if (game.isNullEntity (m_enemy)) {
       return;
@@ -1470,7 +1470,7 @@ void Bot::attackMovement () {
          && !gameState.isBombPlanted ()
          && (isEnemyCone || m_isVIP || m_isReloading || m_infectedEnemyTeam)) {
 
-         if (m_retreatTime < game.time ()) {
+         if (allowTaskChanges && m_retreatTime < game.time ()) {
             startTask (Task::SeekCover, TaskPri::SeekCover, kInvalidNodeIndex, 0.0f, true);
          }
 

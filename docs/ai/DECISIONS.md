@@ -208,3 +208,16 @@ Reason: silently reusing a model with changed feature semantics risks incorrect 
 `BotActionExecutor` depends on the engine-independent `ActionExecutionContext` interface rather than directly depending on `Bot` or other YaPB internals. The production `YaPBActionExecutionContext` translates semantic execution capabilities into the existing YaPB runtime.
 
 Reason: the executor must remain independently unit-testable and must not pull engine-specific dependencies into the AI control layer. Future direct AI-owned combat and objective execution should extend the semantic context with explicit capabilities instead of restoring a concrete YaPB dependency.
+
+## D033 — Make AttackTarget the first direct AI-owned gameplay action
+
+AttackTarget is executed directly through ActionExecutionContext instead of being acknowledged through the YaPB task stack. Execution is accepted only for the currently observed live enemy, reuses the existing YaPB combat aiming and attack-movement helpers, disables task creation from the attack movement path, and suppresses the legacy task function while the AI action is active.
+
+Reason: this provides the first real AI-owned combat action without duplicating established aiming and movement behavior or allowing the legacy task stack to immediately overwrite the AI decision.
+
+## D034 — Route action cancellation through the executor
+
+ActionPipeline notifies the ActionExecutor when an action is cancelled or the runtime is reset. Direct AI-owned executors use this hook to release engine-side action state.
+
+Reason: engine-side action state must be released at the same boundary as engine-independent action state.
+

@@ -153,6 +153,10 @@ public:
     return m_runtime.isControlEnabled();
   }
 
+  bool suppressesLegacyTaskExecution() const {
+    return m_executor.suppressesLegacyTaskExecution();
+  }
+
   Controller &controller() {
     return m_runtime.controller();
   }
