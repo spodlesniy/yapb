@@ -19,6 +19,7 @@ C++ runtime -> JSONL -> Python training package -> ONNX -> C++ runtime
     ├── validate_dataset.py       # JSONL contract validation
     ├── dataset.py                # typed samples and deterministic batching
     ├── model_contract.py         # stable model I/O contract
+    ├── feature_contract.py       # ordered semantic feature names
     ├── policy_model.py           # initial policy network
     ├── training_contract.py      # dataset batch -> model target encoding
     ├── trainer.py                # loss, optimizer, and low-level training loop

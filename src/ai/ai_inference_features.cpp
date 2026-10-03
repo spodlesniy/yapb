@@ -144,6 +144,7 @@ InferenceFeatures encodeInferenceFeatures(const Observation &observation) {
     values[perceptionBase + i] = booleanFeature(bitSet(observation.combat.perceptionFlags, static_cast<uint32_t>(i)));
   }
 
+  // TODO: Expand the task one-hot block to include TaskType::Spraypaint and update the deployed feature contract.
   const auto taskBase = enumValue(InferenceFeature::Core::TaskBase);
   writeOneHot(values, taskBase, static_cast<uint8_t>(observation.bot.currentTask), 20);
 

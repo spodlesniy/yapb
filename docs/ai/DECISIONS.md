@@ -186,3 +186,12 @@ Reason: action IDs are part of the stable model contract. Duplicated numeric ran
 The Python training package provides a dataset statistics command that reports sample count, episode count, terminal transitions, and coverage/distribution across the 25 supported action IDs. The action-ID names are stored alongside the model contract so reporting does not duplicate numeric IDs or labels elsewhere.
 
 Reason: the teacher policy was expanded to multiple action types. Measuring actual dataset coverage before training exposes missing or highly dominant actions before model quality is interpreted.
+
+
+## D030 — Keep an explicit semantic index for the model feature vector
+
+The Python training package exposes an ordered feature-name contract for the current 230-value input vector. The names follow the C++ encoder's Core, Player, and Waypoint block order and are checked for exact width, uniqueness, and selected boundary indices.
+
+The current task feature block intentionally remains at 20 slots; `TaskType::Spraypaint` is not yet encoded and is tracked by an explicit C++ TODO until the deployed feature contract can be changed deliberately.
+
+Reason: a raw vector width is insufficient for interpreting model inputs during dataset analysis, debugging, and future feature changes. The semantic index provides a stable tool-facing description without silently changing the deployed model contract.
