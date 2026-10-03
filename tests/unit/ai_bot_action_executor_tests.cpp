@@ -281,7 +281,6 @@ AI_TEST(testBotActionExecutorDirectlyExecutesHuntTarget) {
 
 AI_TEST(testBotActionExecutorCompletesHuntWhenTargetPositionIsReached) {
   MockActionExecutionContext context {};
-  context.huntTargetReached = true;
   ai::BotActionExecutor executor(context);
 
   auto action = ai::Action {};
@@ -289,10 +288,15 @@ AI_TEST(testBotActionExecutorCompletesHuntWhenTargetPositionIsReached) {
   action.targetType = ai::TargetType::Player;
   action.targetPlayer = 9;
 
-  const auto result = executor.execute(action, huntObservation(9));
+  auto result = executor.execute(action, huntObservation(9));
+  expect(result.type == ai::ActionResultType::Accepted, "hunt starts before target is reached");
+  expect(context.huntTargetCalls == 1, "hunt target is delegated before completion");
 
-  expect(result.type == ai::ActionResultType::Completed, "reached hunt target completes the action");
-  expect(context.huntTargetCalls == 0, "reached hunt target is not delegated");
+  context.huntTargetReached = true;
+  result = executor.execute(action, huntObservation(9));
+
+  expect(result.type == ai::ActionResultType::Completed, "reached hunt target completes the active action");
+  expect(context.cancelHuntTargetCalls == 1, "completion releases the active hunt target");
 }
 
 AI_TEST(testBotActionExecutorCancelsDirectHunt) {
