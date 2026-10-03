@@ -56,9 +56,13 @@ ActionResult BotActionExecutor::execute(const Action &action, const Observation 
 
   switch (action.type) {
   case ActionType::MoveToNode:
+    m_observedTaskActive = false;
+    m_observedTaskAction = {};
     return executeMoveToNode(action);
 
   case ActionType::MoveToPosition:
+    m_observedTaskActive = false;
+    m_observedTaskAction = {};
     return executeMoveToPosition(action);
 
   case ActionType::Wait:
@@ -75,16 +79,32 @@ ActionResult BotActionExecutor::execute(const Action &action, const Observation 
     return executeObservedTaskAction(action, observation);
 
   default:
+    m_observedTaskActive = false;
+    m_observedTaskAction = {};
     return { action.type, ActionResultType::Rejected, 0.0f };
   }
 }
 
-// TODO: Replace this transitional acknowledgement path with direct execution of the corresponding AI action.
+// TODO: Replace this transitional task-stack acknowledgement with direct execution of the corresponding AI action.
 ActionResult BotActionExecutor::executeObservedTaskAction(const Action &action, const Observation &observation) {
-  if (!actionMatchesObservedTask(action, observation)) {
-    return { action.type, ActionResultType::Rejected, 0.0f };
+  if (!m_observedTaskActive || !sameObservedTaskAction(action, m_observedTaskAction)) {
+    m_observedTaskActive = false;
+
+    if (!actionMatchesObservedTask(action, observation)) {
+      return { action.type, ActionResultType::Rejected, 0.0f };
+    }
+
+    m_observedTaskAction = action;
+    m_observedTaskActive = true;
+    return { action.type, ActionResultType::Accepted, 0.0f };
   }
 
+  if (actionMatchesObservedTask(action, observation)) {
+    return { action.type, ActionResultType::Accepted, 0.0f };
+  }
+
+  m_observedTaskActive = false;
+  m_observedTaskAction = {};
   return { action.type, ActionResultType::Completed, 0.0f };
 }
 

@@ -52,4 +52,19 @@ constexpr bool actionMatchesObservedTask(const Action &action, const Observation
   }
 }
 
+constexpr bool sameObservedTaskAction(const Action &left, const Action &right) {
+  if (left.type != right.type) {
+    return false;
+  }
+
+  switch (left.type) {
+  case ActionType::AttackTarget:
+  case ActionType::HuntTarget:
+    return left.targetPlayer == right.targetPlayer;
+
+  default:
+    return true;
+  }
+}
+
 } // namespace ai

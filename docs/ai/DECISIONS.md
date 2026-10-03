@@ -162,7 +162,7 @@ Reason: a training dataset containing only `MoveToNode` transitions cannot teach
 
 ## D026 — Keep teacher task actions under the YaPB task stack
 
-When a policy output corresponds to the task already active in the observation, `BotActionExecutor` acknowledges the action as completed without replacing the legacy task. Actions for unrelated tasks remain rejected until an explicit executor implementation is added.
+When a policy output corresponds to the task already active in the observation, `BotActionExecutor` acknowledges the action as accepted while the legacy task continues, then completes the AI action when the observed task leaves that state. Actions for unrelated tasks remain rejected until an explicit executor implementation is added.
 
 Reason: the first multi-action training dataset should reflect real YaPB behavior without changing task priority or introducing a second competing task scheduler. Direct AI ownership of combat and objective tasks can be added later with explicit execution semantics and tests.
 

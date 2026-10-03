@@ -20,6 +20,8 @@ namespace ai {
 class BotActionExecutor final : public ActionExecutor {
 private:
   Bot *m_bot {};
+  Action m_observedTaskAction {};
+  bool m_observedTaskActive {};
 
 private:
   ActionResult executeMoveToNode(const Action &action);

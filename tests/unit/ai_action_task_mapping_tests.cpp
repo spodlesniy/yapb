@@ -84,3 +84,30 @@ AI_TEST(testObservedTaskActionMappingRejectsUnrelatedActions) {
 
   expect(!ai::actionMatchesObservedTask(action, observation), "unrelated action is rejected");
 }
+
+AI_TEST(testObservedTaskActionIdentity) {
+  ai::Action attackOne {};
+  attackOne.type = ai::ActionType::AttackTarget;
+  attackOne.targetPlayer = 7;
+
+  ai::Action attackSame {};
+  attackSame.type = ai::ActionType::AttackTarget;
+  attackSame.targetPlayer = 7;
+
+  ai::Action attackOther {};
+  attackOther.type = ai::ActionType::AttackTarget;
+  attackOther.targetPlayer = 8;
+
+  expect(ai::sameObservedTaskAction(attackOne, attackSame), "same combat target identifies the same task action");
+  expect(!ai::sameObservedTaskAction(attackOne, attackOther), "different combat target identifies a different task action");
+
+  ai::Action campOne {};
+  campOne.type = ai::ActionType::Camp;
+  campOne.duration = 2.0f;
+
+  ai::Action campSame {};
+  campSame.type = ai::ActionType::Camp;
+  campSame.duration = 5.0f;
+
+  expect(ai::sameObservedTaskAction(campOne, campSame), "task action identity ignores runtime timing parameters");
+}
