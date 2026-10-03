@@ -49,6 +49,7 @@ ActionResult BotActionExecutor::execute(const Action &action, const Observation 
   // During the transitional Neural runtime, existing YaPB tasks remain
   // authoritative for non-navigation behavior. AI navigation must not
   // silently replace combat, objective, or other higher-priority tasks.
+  // TODO: Replace task-stack acknowledgement with direct AI-owned execution for non-navigation actions.
   if (!isActionStillOwned(action)) {
     return { action.type, ActionResultType::Interrupted, 0.0f };
   }
@@ -78,6 +79,7 @@ ActionResult BotActionExecutor::execute(const Action &action, const Observation 
   }
 }
 
+// TODO: Replace this transitional acknowledgement path with direct execution of the corresponding AI action.
 ActionResult BotActionExecutor::executeObservedTaskAction(const Action &action, const Observation &observation) {
   if (!actionMatchesObservedTask(action, observation)) {
     return { action.type, ActionResultType::Rejected, 0.0f };
