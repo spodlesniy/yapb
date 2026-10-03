@@ -99,7 +99,7 @@ Reason: preserving these training-affecting settings keeps the data split, epoch
 
 ## D017 — Export the first policy with a static ONNX contract
 
-The deployment exporter uses the PyTorch dynamo-based ONNX exporter with an explicit opset version of 18. The exported model must expose one float32 input [1, 230] named input and one float32 output [1, 10] named output.
+The deployment exporter uses the PyTorch dynamo-based ONNX exporter with an explicit opset version of 18. The exported model must expose one float32 input [1, 231] named input and one float32 output [1, 10] named output.
 
 Reason: the C++ runtime validates a singleton batch and fixed tensor widths. Keeping the deployed shape static prevents accidental runtime incompatibility and makes the exported artifact directly consumable by the existing ONNX runner.
 
@@ -190,7 +190,7 @@ Reason: the teacher policy was expanded to multiple action types. Measuring actu
 
 ## D030 — Keep an explicit semantic index for the model feature vector
 
-The Python training package exposes an ordered feature-name contract for the current 230-value input vector. The names follow the C++ encoder's Core, Player, and Waypoint block order and are checked for exact width, uniqueness, and selected boundary indices.
+The Python training package exposes an ordered feature-name contract for the current 231-value input vector. The names follow the C++ encoder's Core, Player, and Waypoint block order and are checked for exact width, uniqueness, and selected boundary indices.
 
 The task feature block now contains all 21 `TaskType` values, including `Spraypaint`. This change increments the feature schema and model input width.
 
