@@ -1,24 +1,19 @@
 //
-// AiPB - YaPB navigation action executor.
+// AiPB - AI action executor.
 // AiPB, based on YaPB by YaPB Project Developers <yapb@jeefo.net>, based on PODBot by Markus Klinge ("CountFloyd").
 // Copyright © Aleksandr Podlesnyi <spodlesniy@gmail.com>.
 //
 // SPDX-License-Identifier: MIT
 //
 
-#include <ai/ai_action_task_mapping.h>
-#include <ai/ai_bot_action_executor.h>
-#include <ai/ai_navigation_task_guard.h>
-
-#include <yapb.h>
-
 #include <cmath>
 
+#include <ai/ai_action_execution_context.h>
+#include <ai/ai_action_task_mapping.h>
+#include <ai/ai_bot_action_executor.h>
+
 namespace ai {
-
 namespace {
-
-constexpr float kNavigationReachDistance = 48.0f;
 
 bool isFinitePosition(const Vec3 &position) {
   return std::isfinite(position.x) && std::isfinite(position.y) && std::isfinite(position.z);
@@ -26,11 +21,11 @@ bool isFinitePosition(const Vec3 &position) {
 
 } // namespace
 
-BotActionExecutor::BotActionExecutor(Bot &bot) : m_bot(&bot) {
+BotActionExecutor::BotActionExecutor(ActionExecutionContext &context) : m_context(&context) {
 }
 
 bool BotActionExecutor::isActionStillOwned(const Action &action) const {
-  if (m_bot == nullptr) {
+  if (m_context == nullptr) {
     return false;
   }
 
@@ -38,17 +33,15 @@ bool BotActionExecutor::isActionStillOwned(const Action &action) const {
     return true;
   }
 
-  return allowsNavigationOverride(m_bot->getCurrentTaskId(), Task::Normal, Task::MoveToPosition);
+  return m_context->allowsNavigationOverride();
 }
 
 ActionResult BotActionExecutor::execute(const Action &action, const Observation &observation) {
-  if (m_bot == nullptr || m_bot->pev == nullptr || !observation.bot.alive) {
+  if (m_context == nullptr || !m_context->isAlive() || !observation.bot.alive) {
     return { action.type, ActionResultType::Rejected, 0.0f };
   }
 
-  // During the transitional Neural runtime, existing YaPB tasks remain
-  // authoritative for non-navigation behavior. AI navigation must not
-  // silently replace combat, objective, or other higher-priority tasks.
+  // During the transitional Neural runtime, existing YaPB tasks remain authoritative for non-navigation behavior.
   // TODO: Replace task-stack acknowledgement with direct AI-owned execution for non-navigation actions.
   if (!isActionStillOwned(action)) {
     return { action.type, ActionResultType::Interrupted, 0.0f };
@@ -111,27 +104,15 @@ ActionResult BotActionExecutor::executeObservedTaskAction(const Action &action, 
 ActionResult BotActionExecutor::executeMoveToNode(const Action &action) {
   const int node = action.targetNode;
 
-  if (!graph.exists(node)) {
+  if (!m_context->navigationNodeExists(node)) {
     return { action.type, ActionResultType::Rejected, 0.0f };
   }
 
-  if (isNavigationTargetReached(node)) {
+  if (m_context->isNavigationTargetReached(node)) {
     return { action.type, ActionResultType::Completed, 0.0f };
   }
 
-  const bool targetChanged = m_bot->getCurrentTaskId() != Task::MoveToPosition || m_bot->getTask()->data != node;
-
-  if (m_bot->getCurrentTaskId() != Task::MoveToPosition) {
-    m_bot->startTask(Task::MoveToPosition, TaskPri::MoveToPosition, node, 0.0f, true);
-  } else if (targetChanged) {
-    m_bot->clearSearchNodes();
-  }
-
-  m_bot->getTask()->data = node;
-  m_bot->m_position.clear();
-  m_bot->m_prevGoalIndex = node;
-  m_bot->m_chosenGoalIndex = node;
-
+  m_context->moveToNode(node);
   return { action.type, ActionResultType::Accepted, 0.0f };
 }
 
@@ -140,47 +121,18 @@ ActionResult BotActionExecutor::executeMoveToPosition(const Action &action) {
     return { action.type, ActionResultType::Invalid, 0.0f };
   }
 
-  const Vector target {
-    action.targetPosition.x,
-    action.targetPosition.y,
-    action.targetPosition.z,
-  };
+  const int node = m_context->navigationNodeForPosition(action.targetPosition);
 
-  const int node = graph.getNearest(target);
-
-  if (!graph.exists(node)) {
+  if (!m_context->navigationNodeExists(node)) {
     return { action.type, ActionResultType::Rejected, 0.0f };
   }
 
-  if (isNavigationTargetReached(node)) {
+  if (m_context->isNavigationTargetReached(node)) {
     return { action.type, ActionResultType::Completed, 0.0f };
   }
 
-  const bool targetChanged = m_bot->getCurrentTaskId() != Task::MoveToPosition || m_bot->getTask()->data != node ||
-                             m_bot->m_position.distanceSq(target) > cr::sqrf(0.1f);
-
-  if (m_bot->getCurrentTaskId() != Task::MoveToPosition) {
-    m_bot->startTask(Task::MoveToPosition, TaskPri::MoveToPosition, node, 0.0f, true);
-  } else if (targetChanged) {
-    m_bot->clearSearchNodes();
-  }
-
-  m_bot->getTask()->data = node;
-  m_bot->m_position = target;
-  m_bot->m_prevGoalIndex = node;
-  m_bot->m_chosenGoalIndex = node;
-
+  m_context->moveToPosition(action.targetPosition, node);
   return { action.type, ActionResultType::Accepted, 0.0f };
-}
-
-bool BotActionExecutor::isNavigationTargetReached(int node) const {
-  if (!graph.exists(node) || m_bot->m_currentNodeIndex != node) {
-    return false;
-  }
-
-  const auto &path = graph[node];
-  const float reachDistance = cr::max(kNavigationReachDistance, path.radius);
-  return m_bot->pev->origin.distanceSq(path.origin) <= cr::sqrf(reachDistance);
 }
 
 } // namespace ai

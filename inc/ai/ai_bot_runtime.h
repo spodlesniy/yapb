@@ -10,6 +10,7 @@
 
 #include <ai/ai_action_runtime.h>
 #include <ai/ai_bot_action_executor.h>
+#include <ai/ai_yapb_action_execution_context.h>
 #include <ai/ai_goal_navigation_policy.h>
 #include <ai/ai_inference_policy.h>
 #include <ai/ai_reward_provider.h>
@@ -32,6 +33,7 @@ private:
   // ActionOutcomeRewardProvider is the default training reward source.
   // ZeroRewardProvider remains available through an explicit nullptr override.
   TrainingCollector m_trainingCollector;
+  YaPBActionExecutionContext m_executionContext;
   BotActionExecutor m_executor;
   ActionRuntime m_runtime;
 

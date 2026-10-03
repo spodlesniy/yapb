@@ -187,6 +187,16 @@ Dataset statistics are a separate offline step from training. They stream the va
 
 Checkpoint evaluation is a separate offline step from training. It reuses the checkpoint's `validation_split` and `seed` so the validation boundary remains deterministic and consistent with the training run. The default validation report contains overall SmoothL1 loss, overall mean absolute error, runtime-style action ID accuracy, and per-output mean absolute error for the ten-value action tensor.
 
+## Action execution boundary
+
+`BotActionExecutor` depends only on the engine-independent `ActionExecutionContext` interface. The production `YaPBActionExecutionContext` is the adapter that translates semantic execution capabilities into the existing YaPB task, navigation, and GoldSrc-facing state. Standalone AI unit tests inject a mock context and therefore link the production executor without the game DLL.
+
+The dependency direction is:
+
+`BotActionExecutor -> ActionExecutionContext <- YaPBActionExecutionContext -> Bot / YaPB`
+
+This boundary must remain semantic: the AI executor should not expose `Bot`, `BotTask`, `Task`, `Vector`, `pev`, or other YaPB internals through its contract. Future direct AI-owned combat and objective execution should extend the context with explicit capabilities rather than reintroducing a concrete `Bot` dependency.
+
 ## Runtime integration
 
 `BotRuntime` owns the high-level mode and AI components and routes stepping through the training collector.

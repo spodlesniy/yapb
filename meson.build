@@ -289,6 +289,8 @@ sources = files(
    'src/ai/ai_observation_builder.cpp',
    'src/ai/ai_action_validator.cpp',
    'src/ai/ai_bot_action_executor.cpp',
+   'src/ai/ai_bot_action_executor.cpp',
+   'src/ai/ai_yapb_action_execution_context.cpp',
    'src/ai/ai_action_runtime.cpp',
    'src/ai/ai_bot_runtime.cpp',
    'src/ai/ai_training_collector.cpp',
@@ -367,19 +369,7 @@ run_target('package',
 
 
 if get_option('tests')
-   # Unit tests are kept independent from the game DLL. They exercise the
-   # AI abstraction without requiring a GoldSrc runtime.
-   # Compile the BotActionExecutor implementation in the AI test build without linking the game DLL.
-   # This keeps the production executor implementation covered by the normal unit-test CI compile.
-   ai_executor_compile = static_library(
-      'yapb_ai_action_executor_compile',
-      'src/ai/ai_bot_action_executor.cpp',
-      include_directories: include_directories('inc', 'tests/unit', 'ext', 'ext/crlib', 'ext/linkage'),
-      dependencies: onnxruntime_dep,
-      link_with: ai_executor_compile,
-      cpp_args: onnx_cpp_args + ['-DAIPB_TEST_SOURCE_ROOT="' + meson.project_source_root () + '"'],
-   )
-
+   # Unit tests remain independent from the game DLL. Engine-specific action execution is supplied through a mock context.
    ai_tests = executable(
       'yapb_ai_tests',
       'tests/unit/ai_test.cpp',
@@ -400,6 +390,7 @@ if get_option('tests')
       'tests/unit/ai_bot_runtime_compile_tests.cpp',
       'tests/unit/ai_goal_navigation_policy_tests.cpp',
       'tests/unit/ai_action_task_mapping_tests.cpp',
+   'tests/unit/ai_bot_action_executor_tests.cpp',
       'src/ai/ai_controller.cpp',
       'src/ai/ai_observation_builder.cpp',
       'src/ai/ai_action_validator.cpp',

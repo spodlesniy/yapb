@@ -2,7 +2,7 @@
 
 ## Iteration model
 
-Each logical development iteration is intentionally small.
+Each logical development iteration is coherent and reviewable; it may include the implementation, tests, and documentation needed to complete that step.
 
 One iteration should:
 
@@ -53,7 +53,7 @@ The normal cycle is:
 
 `small change -> one commit -> automatic unit-test CI -> next change`
 
-The C++ AI unit-test build also compiles `src/ai/ai_bot_action_executor.cpp` through a compile-only static library linked into the standalone AI test executable. The executor is intentionally compile-tested without linking the full game DLL, so normal AI unit-test CI catches implementation-level compile regressions without turning the unit-test target into a game-runtime integration test.
+The C++ AI unit-test build links the production `src/ai/ai_bot_action_executor.cpp` directly into the standalone AI test executable. The executor depends only on the engine-independent `ActionExecutionContext`, so unit tests provide a mock context and exercise the production implementation without linking the game DLL. The YaPB-specific adapter remains production-only.
 
 The Python training-tool job runs all tests under:
 
