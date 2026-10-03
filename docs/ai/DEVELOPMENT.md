@@ -17,6 +17,8 @@ One iteration should:
 
 When an iteration changes a durable architecture, workflow, or engineering decision, update the corresponding `docs/ai` document in the same logical iteration.
 
+For temporary or task-specific Git branches, delete the branch from the fork immediately after the task is fully completed and its changes are merged into the target branch. This cleanup rule does not apply to permanent development branches.
+
 Do not accumulate multiple unrelated fixes before committing.
 
 ## Pre-commit checks
