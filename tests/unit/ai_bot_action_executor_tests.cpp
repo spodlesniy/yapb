@@ -251,12 +251,10 @@ AI_TEST(testBotActionExecutorCompletesObservedTaskLifecycle) {
   ai::BotActionExecutor executor(context);
 
   ai::Observation observation = aliveObservation();
-  observation.bot.currentTask = ai::TaskType::Attack;
-  observation.combat.enemyEntity = 9;
+  observation.bot.currentTask = ai::TaskType::PlantBomb;
 
   auto action = ai::Action {};
-  action.type = ai::ActionType::AttackTarget;
-  action.targetPlayer = 9;
+  action.type = ai::ActionType::PlantBomb;
 
   auto result = executor.execute(action, observation);
   expect(result.type == ai::ActionResultType::Accepted, "matching task starts the action");
