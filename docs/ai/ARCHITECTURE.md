@@ -80,7 +80,7 @@ Each record contains:
 - `elapsed_time`
 - `terminal`
 
-The Python training package is located in `tools/aipb_training/`. It is an offline package and is not loaded by the game process.
+The Python training package is located in `tools/aipb_training/`. It is an offline package and is not loaded by the game process. Training and deployment are exposed as separate command-line steps: `train.py` creates checkpoints and `export.py` converts a checkpoint into a validated ONNX deployment artifact.
 
 Its current responsibilities are:
 
@@ -160,7 +160,7 @@ The training orchestration layer performs deterministic episode-level train/vali
 
 Checkpoints contain model/optimizer state, configuration, architecture, metrics, and epoch history. Training can resume from a compatible checkpoint; the target epochs may increase while training-affecting parameters remain fixed. The compute device may change when resuming.
 
-ONNX export is implemented as a separate deployment step. It consumes a compatible PyTorch checkpoint, emits the static [1,230] -> [1,10] contract at ONNX opset 18, validates the graph, and verifies numerical parity against the PyTorch model with ONNX Runtime.
+ONNX export is implemented as a separate deployment step. It consumes a compatible PyTorch checkpoint, emits the static [1,230] -> [1,10] contract at ONNX opset 18, validates the graph, and verifies numerical parity against the PyTorch model with ONNX Runtime. The `export.py` command-line entry point exposes this step without requiring callers to write Python code.
 
 ## Runtime integration
 
