@@ -164,7 +164,11 @@ class TrainingRunTests(unittest.TestCase):
             for name, value in uninterrupted_checkpoint["model_state"].items():
                 self.assertTrue(torch.equal(value, resumed_checkpoint["model_state"][name]))
 
-            assert_optimizer_states_equal(\n                self,\n                uninterrupted_checkpoint["optimizer_state"],\n                resumed_checkpoint["optimizer_state"],\n            )
+            assert_optimizer_states_equal(
+                self,
+                uninterrupted_checkpoint["optimizer_state"],
+                resumed_checkpoint["optimizer_state"],
+            )
 
     def test_resume_rejects_changed_training_parameters(self) -> None:
         import tempfile

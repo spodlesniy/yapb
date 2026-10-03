@@ -60,6 +60,8 @@ using:
 python -m unittest discover -s tools/aipb_training/tests -t . -p 'test_*.py'
 ```
 
+The training-tool job uses `actions/setup-python` pip caching with `tools/aipb_training/requirements.txt` as the dependency cache key input, so package downloads are reused until the requirements change.
+
 When CI is red:
 
 - Inspect the exact workflow run and failing log.
