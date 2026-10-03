@@ -234,3 +234,9 @@ Reason: hunting a lost enemy is a navigation decision, not a new pathfinding alg
 GitHub Actions runs the Python training-tool test suite for explicit manual runs and releases, and for pushes that change `tools/aipb_training/**`. C++-only changes do not spend CI time on the independent Python suite. Production build jobs do not require the optional training-tools job to run.
 
 Reason: the offline Python package has no runtime dependency on the C++ implementation. Running its tests for every C++ change adds CI time without increasing coverage, while gating on the complete Python package directory still catches changes to implementation, tests, requirements, and supporting data.
+
+## D037 — Make SeekCover a direct AI-owned navigation action
+
+SeekCover is executed through ActionExecutionContext. The YaPB adapter selects a cover waypoint using the existing cover-node search, reuses the existing navigation machinery to move there, and exposes completion/cancellation to the AI executor. Legacy task execution is suppressed while the direct action is active.
+
+Reason: cover selection is an AI decision that should own its lifecycle without duplicating YaPB pathfinding. Reusing the established navigation primitive preserves movement behavior while removing the transitional task-stack acknowledgement from the AI action path.

@@ -65,7 +65,7 @@ bool BotActionExecutor::isActionStillOwned(const Action &action) const {
 }
 
 bool BotActionExecutor::suppressesLegacyTaskExecution() const {
-  return m_directAttackTargetActive;
+  return m_directAttackTargetActive || m_directHuntTargetActive || m_directSeekCoverActive;
 }
 
 void BotActionExecutor::cancel() {

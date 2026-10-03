@@ -32,10 +32,13 @@ public:
   int cancelAttackTargetCalls {};
   int huntTargetCalls {};
   int cancelHuntTargetCalls {};
+  int seekCoverCalls {};
+  int cancelSeekCoverCalls {};
   int lastNode { -1 };
   int lastAttackTarget { -1 };
   int lastHuntTarget { -1 };
   bool huntTargetReached {};
+  bool seekCoverReached {};
   ai::Vec3 lastPosition {};
 
   bool isAlive() const override {
@@ -93,6 +96,19 @@ public:
   void cancelHuntTarget(int targetPlayer) override {
     ++cancelHuntTargetCalls;
     lastHuntTarget = targetPlayer;
+  }
+
+  bool seekCover() override {
+    ++seekCoverCalls;
+    return true;
+  }
+
+  bool isSeekCoverReached() const override {
+    return seekCoverReached;
+  }
+
+  void cancelSeekCover() override {
+    ++cancelSeekCoverCalls;
   }
 };
 
@@ -277,6 +293,49 @@ AI_TEST(testBotActionExecutorDirectlyExecutesHuntTarget) {
   expect(result.type == ai::ActionResultType::Accepted, "remembered enemy hunt is accepted");
   expect(context.huntTargetCalls == 1, "hunt target is delegated");
   expect(context.lastHuntTarget == 9, "hunt target is preserved");
+}
+
+AI_TEST(testBotActionExecutorDirectlyExecutesSeekCover) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  auto action = ai::Action {};
+  action.type = ai::ActionType::SeekCover;
+
+  const auto result = executor.execute(action, aliveObservation());
+
+  expect(result.type == ai::ActionResultType::Accepted, "seek cover is accepted");
+  expect(context.seekCoverCalls == 1, "seek cover is delegated");
+}
+
+AI_TEST(testBotActionExecutorCompletesSeekCoverWhenReached) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  auto action = ai::Action {};
+  action.type = ai::ActionType::SeekCover;
+
+  auto result = executor.execute(action, aliveObservation());
+  expect(result.type == ai::ActionResultType::Accepted, "seek cover starts before completion");
+
+  context.seekCoverReached = true;
+  result = executor.execute(action, aliveObservation());
+
+  expect(result.type == ai::ActionResultType::Completed, "reached cover completes the active action");
+  expect(context.cancelSeekCoverCalls == 1, "completion releases the active cover action");
+}
+
+AI_TEST(testBotActionExecutorCancelsSeekCover) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  auto action = ai::Action {};
+  action.type = ai::ActionType::SeekCover;
+
+  executor.execute(action, aliveObservation());
+  executor.cancel();
+
+  expect(context.cancelSeekCoverCalls == 1, "cancel releases direct seek cover");
 }
 
 AI_TEST(testBotActionExecutorCompletesHuntWhenTargetPositionIsReached) {

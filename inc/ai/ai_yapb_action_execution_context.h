@@ -22,6 +22,9 @@ private:
   int m_huntTargetPlayer { -1 };
   Vec3 m_huntTargetOrigin {};
   bool m_huntNavigationTaskCreated {};
+  bool m_seekCoverActive {};
+  int m_seekCoverNode { -1 };
+  bool m_seekCoverNavigationTaskCreated {};
 
 public:
   explicit YaPBActionExecutionContext(Bot &bot);
@@ -41,6 +44,10 @@ public:
   bool huntTarget(int targetPlayer) override;
   bool isHuntTargetReached(int targetPlayer) const override;
   void cancelHuntTarget(int targetPlayer) override;
+
+  bool seekCover() override;
+  bool isSeekCoverReached() const override;
+  void cancelSeekCover() override;
 };
 
 } // namespace ai

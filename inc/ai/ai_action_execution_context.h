@@ -32,6 +32,10 @@ public:
   virtual bool huntTarget(int targetPlayer) = 0;
   virtual bool isHuntTargetReached(int targetPlayer) const = 0;
   virtual void cancelHuntTarget(int targetPlayer) = 0;
+
+  virtual bool seekCover() = 0;
+  virtual bool isSeekCoverReached() const = 0;
+  virtual void cancelSeekCover() = 0;
 };
 
 } // namespace ai

@@ -26,12 +26,14 @@ private:
   bool m_directAttackTargetActive {};
   Action m_directHuntAction {};
   bool m_directHuntTargetActive {};
+  bool m_directSeekCoverActive {};
 
 private:
   ActionResult executeMoveToNode(const Action &action);
   ActionResult executeMoveToPosition(const Action &action);
   ActionResult executeAttackTarget(const Action &action, const Observation &observation);
   ActionResult executeHuntTarget(const Action &action, const Observation &observation);
+  ActionResult executeSeekCover(const Action &action);
   ActionResult executeObservedTaskAction(const Action &action, const Observation &observation);
 
 public:
