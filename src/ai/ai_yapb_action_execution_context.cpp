@@ -168,7 +168,7 @@ bool YaPBActionExecutionContext::huntTarget(int targetPlayer) {
   }
 
   m_bot->getTask()->data = node;
-  m_bot->m_position = m_huntTargetOrigin;
+  m_bot->m_position = targetOrigin;
   m_bot->m_prevGoalIndex = node;
   m_bot->m_chosenGoalIndex = node;
   m_bot->m_aimFlags |= AimFlags::Nav;
@@ -180,7 +180,8 @@ bool YaPBActionExecutionContext::isHuntTargetReached(int targetPlayer) const {
     return false;
   }
 
-  const int node = graph.getNearest(m_huntTargetOrigin);
+  const auto targetOrigin = Vector { m_huntTargetOrigin.x, m_huntTargetOrigin.y, m_huntTargetOrigin.z };
+  const int node = graph.getNearest(targetOrigin);
   if (!graph.exists(node)) {
     return false;
   }
