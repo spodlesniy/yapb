@@ -265,3 +265,10 @@ Reason: fragmented history makes CI diagnosis, review, rollback, and architectur
 PlantBomb is executed through ActionExecutionContext. The YaPB adapter validates the C4, bomb-zone, and bomb-state prerequisites and reuses the existing PlantBomb task as the engine-side interaction primitive. The AI executor owns the action lifecycle and cancellation, while legacy task execution remains enabled so the established planting mechanics continue.
 
 Reason: C4 planting already contains established weapon selection, input, zone, enemy, and completion behavior in YaPB. Reusing that task avoids duplicating game mechanics while making the policy's PlantBomb decision explicit and independently testable.
+
+
+## D042 — Make DefuseBomb a direct AI-owned objective action
+
+DefuseBomb is executed through ActionExecutionContext. The YaPB adapter validates that a bomb is planted and reuses the existing DefuseBomb task as the engine-side interaction primitive. The AI executor owns the action lifecycle and cancellation, while legacy task execution remains enabled so the established defusing mechanics continue. The action completes when the planted-bomb state disappears.
+
+Reason: the existing YaPB defusing task already contains the game-specific use-input, progress, timing, weapon, crouch, and interruption behavior. Reusing it avoids duplicating those mechanics while making the policy's DefuseBomb decision explicit and independently testable.

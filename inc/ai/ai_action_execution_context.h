@@ -43,6 +43,9 @@ public:
 
   virtual bool plantBomb() = 0;
   virtual void cancelPlantBomb() = 0;
+
+  virtual bool defuseBomb() = 0;
+  virtual void cancelDefuseBomb() = 0;
 };
 
 } // namespace ai

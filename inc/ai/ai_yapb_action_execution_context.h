@@ -58,6 +58,9 @@ public:
 
   bool plantBomb() override;
   void cancelPlantBomb() override;
+
+  bool defuseBomb() override;
+  void cancelDefuseBomb() override;
 };
 
 } // namespace ai

@@ -88,6 +88,9 @@ void BotActionExecutor::cancel() {
   if (m_directPlantBombActive && m_context != nullptr) {
     m_context->cancelPlantBomb();
   }
+  if (m_directDefuseBombActive && m_context != nullptr) {
+    m_context->cancelDefuseBomb();
+  }
   m_directAttackTargetActive = false;
   m_directAttackAction = {};
   m_directHuntTargetActive = false;
@@ -95,6 +98,7 @@ void BotActionExecutor::cancel() {
   m_directSeekCoverActive = false;
   m_directEscapeFromBombActive = false;
   m_directPlantBombActive = false;
+  m_directDefuseBombActive = false;
   m_observedTaskActive = false;
   m_observedTaskAction = {};
 }
@@ -177,6 +181,17 @@ ActionResult BotActionExecutor::execute(const Action &action, const Observation 
     return executePlantBomb(action, observation);
 
   case ActionType::DefuseBomb:
+    m_directAttackTargetActive = false;
+    m_directAttackAction = {};
+    m_directHuntTargetActive = false;
+    m_directHuntAction = {};
+    m_directSeekCoverActive = false;
+    m_directEscapeFromBombActive = false;
+    m_directPlantBombActive = false;
+    m_observedTaskActive = false;
+    m_observedTaskAction = {};
+    return executeDefuseBomb(action, observation);
+
   case ActionType::PickupItem:
   case ActionType::Fire:
     return executeObservedTaskAction(action, observation);
@@ -305,6 +320,31 @@ ActionResult BotActionExecutor::executePlantBomb(const Action &action, const Obs
   }
 
   m_directPlantBombActive = true;
+  return { action.type, ActionResultType::Accepted, 0.0f };
+}
+
+ActionResult BotActionExecutor::executeDefuseBomb(const Action &action, const Observation &observation) {
+  const bool bombPlanted = observation.bot.objectiveFlags & ObjectiveFlag::BombPlanted;
+
+  if (!bombPlanted) {
+    if (!m_directDefuseBombActive) {
+      return { action.type, ActionResultType::Rejected, 0.0f };
+    }
+
+    cancel();
+    return { action.type, ActionResultType::Completed, 0.0f };
+  }
+
+  if (!m_context->defuseBomb()) {
+    if (!m_directDefuseBombActive) {
+      return { action.type, ActionResultType::Rejected, 0.0f };
+    }
+
+    cancel();
+    return { action.type, ActionResultType::Completed, 0.0f };
+  }
+
+  m_directDefuseBombActive = true;
   return { action.type, ActionResultType::Accepted, 0.0f };
 }
 

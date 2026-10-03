@@ -44,6 +44,8 @@ public:
   bool escapeFromBombReached {};
   int plantBombCalls {};
   int cancelPlantBombCalls {};
+  int defuseBombCalls {};
+  int cancelDefuseBombCalls {};
   ai::Vec3 lastPosition {};
 
   bool isAlive() const override {
@@ -136,6 +138,15 @@ public:
 
   void cancelPlantBomb() override {
     ++cancelPlantBombCalls;
+  }
+
+  bool defuseBomb() override {
+    ++defuseBombCalls;
+    return true;
+  }
+
+  void cancelDefuseBomb() override {
+    ++cancelDefuseBombCalls;
   }
 };
 
@@ -627,6 +638,72 @@ AI_TEST(testBotActionExecutorCancelsDirectPlantBomb) {
   executor.cancel();
 
   expect(context.cancelPlantBombCalls == 1, "cancel releases direct plant bomb");
+}
+
+AI_TEST(testBotActionExecutorDirectlyExecutesDefuseBomb) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  auto observation = aliveObservation();
+  observation.bot.objectiveFlags = ai::ObjectiveFlag::BombPlanted;
+
+  auto action = ai::Action {};
+  action.type = ai::ActionType::DefuseBomb;
+
+  const auto result = executor.execute(action, observation);
+
+  expect(result.type == ai::ActionResultType::Accepted, "defuse bomb is accepted while bomb is planted");
+  expect(context.defuseBombCalls == 1, "defuse bomb is delegated");
+  expect(!executor.suppressesLegacyTaskExecution(), "defuse bomb keeps legacy task execution enabled");
+}
+
+AI_TEST(testBotActionExecutorCompletesDefuseBombWhenBombIsGone) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  auto observation = aliveObservation();
+  observation.bot.objectiveFlags = ai::ObjectiveFlag::BombPlanted;
+
+  auto action = ai::Action {};
+  action.type = ai::ActionType::DefuseBomb;
+
+  auto result = executor.execute(action, observation);
+  expect(result.type == ai::ActionResultType::Accepted, "defuse bomb starts while bomb is planted");
+
+  observation.bot.objectiveFlags = 0;
+  result = executor.execute(action, observation);
+
+  expect(result.type == ai::ActionResultType::Completed, "defused bomb completes the action");
+  expect(context.cancelDefuseBombCalls == 1, "completion releases direct defuse bomb");
+}
+
+AI_TEST(testBotActionExecutorRejectsDefuseBombWithoutBomb) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  auto action = ai::Action {};
+  action.type = ai::ActionType::DefuseBomb;
+
+  const auto result = executor.execute(action, aliveObservation());
+
+  expect(result.type == ai::ActionResultType::Rejected, "defuse bomb without planted bomb is rejected");
+  expect(context.defuseBombCalls == 0, "defuse bomb is not delegated without a bomb");
+}
+
+AI_TEST(testBotActionExecutorCancelsDirectDefuseBomb) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  auto observation = aliveObservation();
+  observation.bot.objectiveFlags = ai::ObjectiveFlag::BombPlanted;
+
+  auto action = ai::Action {};
+  action.type = ai::ActionType::DefuseBomb;
+
+  executor.execute(action, observation);
+  executor.cancel();
+
+  expect(context.cancelDefuseBombCalls == 1, "cancel releases direct defuse bomb");
 }
 
 AI_TEST(testBotActionExecutorCompletesObservedTaskLifecycle) {
