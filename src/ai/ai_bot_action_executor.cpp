@@ -35,6 +35,24 @@ bool hasObservedEnemyTarget(const Action &action, const Observation &observation
   return false;
 }
 
+
+bool hasObservedLastEnemyTarget(const Action &action, const Observation &observation) {
+  if (action.targetType != TargetType::Player || observation.combat.lastEnemyEntity != action.targetPlayer) {
+    return false;
+  }
+
+  const auto count = observation.playerCount > kMaxObservedPlayers ? kMaxObservedPlayers : observation.playerCount;
+
+  for (size_t i = 0; i < count; ++i) {
+    const auto &player = observation.players[i];
+
+    if (player.valid && player.alive && player.enemy && player.entityIndex == action.targetPlayer) {
+      return true;
+    }
+  }
+
+  return false;
+}
 } // namespace
 
 BotActionExecutor::BotActionExecutor(ActionExecutionContext &context) : m_context(&context) {
