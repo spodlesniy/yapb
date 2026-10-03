@@ -20,7 +20,7 @@ private:
   Bot *m_bot {};
   bool m_huntTargetActive {};
   int m_huntTargetPlayer { -1 };
-  Vector m_huntTargetOrigin {};
+  Vec3 m_huntTargetOrigin {};
   bool m_huntNavigationTaskCreated {};
 
 public:
