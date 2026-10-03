@@ -5,10 +5,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from dataset import TrainingBatch, TrainingSample
+from .dataset import TrainingBatch, TrainingSample
+from .model_contract import MODEL_ACTION_TENSOR_SIZE, MODEL_FEATURE_COUNT, ModelOutputIndex
 
 
-ACTION_TENSOR_SIZE = 10
+ACTION_TENSOR_SIZE = MODEL_ACTION_TENSOR_SIZE
 
 
 @dataclass(frozen=True)
@@ -32,18 +33,18 @@ class PolicyTrainingBatch:
 def encode_action_target(sample: TrainingSample) -> tuple[float, ...]:
     """Encode an action using the exact order of the inference output tensor."""
     action = sample.action
-    return (
-        float(action.action_id),
-        float(action.target_node),
-        float(action.target_player),
-        float(action.target_position[0]),
-        float(action.target_position[1]),
-        float(action.target_position[2]),
-        float(action.weapon_type),
-        float(action.grenade_type),
-        float(action.duration),
-        float(action.confidence),
-    )
+    target = [0.0] * ACTION_TENSOR_SIZE
+    target[ModelOutputIndex.ACTION_ID] = float(action.action_id)
+    target[ModelOutputIndex.TARGET_NODE] = float(action.target_node)
+    target[ModelOutputIndex.TARGET_PLAYER] = float(action.target_player)
+    target[ModelOutputIndex.TARGET_POSITION_X] = float(action.target_position[0])
+    target[ModelOutputIndex.TARGET_POSITION_Y] = float(action.target_position[1])
+    target[ModelOutputIndex.TARGET_POSITION_Z] = float(action.target_position[2])
+    target[ModelOutputIndex.WEAPON_TYPE] = float(action.weapon_type)
+    target[ModelOutputIndex.GRENADE_TYPE] = float(action.grenade_type)
+    target[ModelOutputIndex.DURATION] = float(action.duration)
+    target[ModelOutputIndex.CONFIDENCE] = float(action.confidence)
+    return tuple(target)
 
 
 def encode_policy_batch(batch: TrainingBatch) -> PolicyTrainingBatch:
@@ -51,15 +52,14 @@ def encode_policy_batch(batch: TrainingBatch) -> PolicyTrainingBatch:
     if not batch.samples:
         return PolicyTrainingBatch((), ())
 
-    feature_count = len(batch.samples[0].observation.values)
     observations: list[tuple[float, ...]] = []
     action_targets: list[tuple[float, ...]] = []
 
     for index, sample in enumerate(batch.samples):
         current_feature_count = len(sample.observation.values)
-        if current_feature_count != feature_count:
+        if current_feature_count != MODEL_FEATURE_COUNT:
             raise ValueError(
-                f"sample {index} has {current_feature_count} features; expected {feature_count}"
+                f"sample {index} has {current_feature_count} features; expected {MODEL_FEATURE_COUNT}"
             )
 
         target = encode_action_target(sample)

@@ -7,7 +7,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterator
 
-from validate_dataset import (
+from .model_contract import MODEL_FEATURE_COUNT
+from .validate_dataset import (
     EXPECTED_ACTION_SCHEMA_VERSION,
     EXPECTED_DATASET_VERSION,
     EXPECTED_FEATURE_SCHEMA_VERSION,
@@ -72,29 +73,37 @@ def _metadata() -> TrainingDatasetMetadata:
 
 
 def _to_sample(value: dict) -> TrainingSample:
-    observation = TrainingObservation(tuple(float(item) for item in value["observation"]["values"]))
-    next_observation = TrainingObservation(
-        tuple(float(item) for item in value["next_observation"]["values"])
-    )
+    observation_values = tuple(float(item) for item in value["observation"]["values"])
+    next_observation_values = tuple(float(item) for item in value["next_observation"]["values"])
+
+    if len(observation_values) != MODEL_FEATURE_COUNT:
+        raise ValueError(
+            f"dataset observation has {len(observation_values)} features; "
+            f"expected {MODEL_FEATURE_COUNT}"
+        )
+
+    if len(next_observation_values) != MODEL_FEATURE_COUNT:
+        raise ValueError(
+            f"dataset next_observation has {len(next_observation_values)} features; "
+            f"expected {MODEL_FEATURE_COUNT}"
+        )
 
     action_value = value["action"]
-    action = TrainingAction(
-        action_id=int(action_value["action_id"]),
-        target_node=int(action_value["target_node"]),
-        target_player=int(action_value["target_player"]),
-        target_position=tuple(float(item) for item in action_value["target_position"]),  # type: ignore[arg-type]
-        weapon_type=int(action_value["weapon_type"]),
-        grenade_type=int(action_value["grenade_type"]),
-        duration=float(action_value["duration"]),
-        confidence=float(action_value["confidence"]),
-    )
-
     return TrainingSample(
         episode_id=int(value["episode_id"]),
-        observation=observation,
-        action=action,
+        observation=TrainingObservation(observation_values),
+        action=TrainingAction(
+            action_id=int(action_value["action_id"]),
+            target_node=int(action_value["target_node"]),
+            target_player=int(action_value["target_player"]),
+            target_position=tuple(float(item) for item in action_value["target_position"]),  # type: ignore[arg-type]
+            weapon_type=int(action_value["weapon_type"]),
+            grenade_type=int(action_value["grenade_type"]),
+            duration=float(action_value["duration"]),
+            confidence=float(action_value["confidence"]),
+        ),
         reward=float(value["reward"]),
-        next_observation=next_observation,
+        next_observation=TrainingObservation(next_observation_values),
         result=int(value["result"]),
         elapsed_time=float(value["elapsed_time"]),
         terminal=bool(value["terminal"]),

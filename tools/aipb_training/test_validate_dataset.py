@@ -8,7 +8,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from validate_dataset import DatasetValidationError, validate_dataset
+from .validate_dataset import DatasetValidationError, validate_dataset
 
 
 METADATA = {

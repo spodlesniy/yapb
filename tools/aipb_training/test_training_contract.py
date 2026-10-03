@@ -5,18 +5,20 @@ from __future__ import annotations
 
 import unittest
 
-from dataset import TrainingAction, TrainingBatch, TrainingObservation, TrainingSample
-from training_contract import ACTION_TENSOR_SIZE, encode_action_target, encode_policy_batch
+from .dataset import TrainingAction, TrainingBatch, TrainingObservation, TrainingSample
+from .model_contract import MODEL_FEATURE_COUNT
+from .training_contract import ACTION_TENSOR_SIZE, encode_action_target, encode_policy_batch
 
 
 def make_sample(
     episode_id: int,
-    feature_values: tuple[float, ...] = (0.1, 0.2),
+    feature_values: tuple[float, ...] | None = None,
     action_id: int = 3,
 ) -> TrainingSample:
+    values = feature_values if feature_values is not None else (0.1,) * MODEL_FEATURE_COUNT
     return TrainingSample(
         episode_id=episode_id,
-        observation=TrainingObservation(feature_values),
+        observation=TrainingObservation(values),
         action=TrainingAction(
             action_id=action_id,
             target_node=42,
@@ -28,7 +30,7 @@ def make_sample(
             confidence=0.8,
         ),
         reward=1.0,
-        next_observation=TrainingObservation(feature_values),
+        next_observation=TrainingObservation(values),
         result=1,
         elapsed_time=0.25,
         terminal=False,
@@ -51,16 +53,16 @@ class TrainingContractTests(unittest.TestCase):
         encoded = encode_policy_batch(batch)
 
         self.assertEqual(encoded.size, 2)
-        self.assertEqual(encoded.feature_count, 2)
-        self.assertEqual(encoded.observations, ((0.1, 0.2), (0.1, 0.2)))
+        self.assertEqual(encoded.feature_count, MODEL_FEATURE_COUNT)
+        self.assertEqual(len(encoded.observations[0]), MODEL_FEATURE_COUNT)
         self.assertEqual(encoded.action_targets[0][0], 3.0)
         self.assertEqual(encoded.action_targets[1][0], 9.0)
 
     def test_policy_batch_rejects_mismatched_feature_counts(self) -> None:
         batch = TrainingBatch(
             (
-                make_sample(1, feature_values=(0.1, 0.2)),
-                make_sample(2, feature_values=(0.1, 0.2, 0.3)),
+                make_sample(1),
+                make_sample(2, feature_values=(0.1,) * (MODEL_FEATURE_COUNT - 1)),
             )
         )
 

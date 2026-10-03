@@ -8,7 +8,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from dataset import (
+from .dataset import (
     TrainingAction,
     TrainingBatch,
     TrainingObservation,
@@ -17,6 +17,7 @@ from dataset import (
     iter_training_samples,
     load_training_dataset,
 )
+from .model_contract import MODEL_FEATURE_COUNT
 
 
 METADATA = {
@@ -28,10 +29,10 @@ METADATA = {
 }
 
 
-def make_sample(episode_id: int, feature_count: int = 2) -> dict:
+def make_sample(episode_id: int) -> dict:
     return {
         "episode_id": episode_id,
-        "observation": {"schema_version": 1, "values": [0.1] * feature_count},
+        "observation": {"schema_version": 1, "values": [0.1] * MODEL_FEATURE_COUNT},
         "action": {
             "schema_version": 1,
             "action_id": 1,
@@ -44,7 +45,7 @@ def make_sample(episode_id: int, feature_count: int = 2) -> dict:
             "confidence": 0.8,
         },
         "reward": 1.0,
-        "next_observation": {"schema_version": 1, "values": [0.2] * feature_count},
+        "next_observation": {"schema_version": 1, "values": [0.2] * MODEL_FEATURE_COUNT},
         "result": 1,
         "elapsed_time": 0.5,
         "terminal": True,
@@ -52,9 +53,10 @@ def make_sample(episode_id: int, feature_count: int = 2) -> dict:
 
 
 def make_training_sample(episode_id: int) -> TrainingSample:
+    values = (0.0,) * MODEL_FEATURE_COUNT
     return TrainingSample(
         episode_id=episode_id,
-        observation=TrainingObservation((0.0,)),
+        observation=TrainingObservation(values),
         action=TrainingAction(
             action_id=1,
             target_node=-1,
@@ -66,7 +68,7 @@ def make_training_sample(episode_id: int) -> TrainingSample:
             confidence=1.0,
         ),
         reward=0.0,
-        next_observation=TrainingObservation((0.0,)),
+        next_observation=TrainingObservation(values),
         result=1,
         elapsed_time=0.0,
         terminal=True,
@@ -88,16 +90,17 @@ class TrainingDatasetLoaderTests(unittest.TestCase):
         return Path(handle.name)
 
     def test_iter_training_samples_preserves_file_order_and_types(self) -> None:
-        path = self.write_dataset([METADATA, make_sample(7, 3), make_sample(8, 3)])
+        path = self.write_dataset([METADATA, make_sample(7), make_sample(8)])
 
         samples = list(iter_training_samples(path))
 
         self.assertEqual([sample.episode_id for sample in samples], [7, 8])
+        self.assertEqual(len(samples[0].observation.values), MODEL_FEATURE_COUNT)
+        self.assertEqual(samples[0].observation.values[:3], (0.1, 0.1, 0.1))
         self.assertIsInstance(samples[0].observation, TrainingObservation)
-        self.assertEqual(samples[0].observation.values, (0.1, 0.1, 0.1))
         self.assertIsInstance(samples[0].action, TrainingAction)
         self.assertEqual(samples[0].action.target_position, (1.0, 2.0, 3.0))
-        self.assertEqual(samples[0].next_observation.values, (0.2, 0.2, 0.2))
+        self.assertEqual(samples[0].next_observation.values[:3], (0.2, 0.2, 0.2))
         self.assertIsInstance(samples[0].terminal, bool)
 
     def test_load_training_dataset_returns_metadata_and_immutable_samples(self) -> None:
