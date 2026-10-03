@@ -76,6 +76,8 @@ class EvaluationTests(unittest.TestCase):
             self.assertEqual(len(metrics.field_mean_absolute_error), len(OUTPUT_FIELD_NAMES))
             self.assertGreaterEqual(metrics.loss, 0.0)
             self.assertGreaterEqual(metrics.mean_absolute_error, 0.0)
+        self.assertGreaterEqual(metrics.action_id_accuracy, 0.0)
+        self.assertLessEqual(metrics.action_id_accuracy, 1.0)
 
     def test_invalid_split_is_rejected(self) -> None:
         with self.assertRaises(ValueError):
@@ -88,3 +90,24 @@ class EvaluationTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+    def test_action_id_metric_matches_runtime_truncation(self) -> None:
+        samples = make_samples()
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            result = run_training(
+                samples,
+                TrainingConfig(epochs=1, batch_size=2, validation_split=0.25, seed=7),
+                root,
+            )
+
+            metrics = evaluate_checkpoint(
+                samples,
+                result.last_checkpoint_path,
+                split="validation",
+                batch_size=2,
+            )
+
+            self.assertGreaterEqual(metrics.action_id_accuracy, 0.0)
+            self.assertLessEqual(metrics.action_id_accuracy, 1.0)

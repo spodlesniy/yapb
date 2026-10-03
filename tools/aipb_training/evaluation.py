@@ -36,6 +36,7 @@ class EvaluationMetrics:
     loss: float
     samples: int
     mean_absolute_error: float
+    action_id_accuracy: float
     field_mean_absolute_error: tuple[float, ...]
 
 
@@ -89,12 +90,13 @@ def evaluate_checkpoint(
     selected_samples = train_samples if split == "train" else validation_samples
 
     if not selected_samples:
-        return EvaluationMetrics(0.0, 0, 0.0, (0.0,) * len(OUTPUT_FIELD_NAMES))
+        return EvaluationMetrics(0.0, 0, 0.0, 0.0, (0.0,) * len(OUTPUT_FIELD_NAMES))
 
     model.eval()
     total_loss = 0.0
     total_absolute_error = 0.0
     field_error_totals = [0.0] * len(OUTPUT_FIELD_NAMES)
+    action_id_correct = 0
     sample_count = 0
 
     with torch.no_grad():
@@ -105,6 +107,12 @@ def evaluate_checkpoint(
             loss = torch.nn.functional.smooth_l1_loss(predictions, targets)
 
             errors = torch.abs(predictions - targets)
+            predicted_action_ids = predictions[:, int(ModelOutputIndex.ACTION_ID)]
+            valid_action_ids = (predicted_action_ids >= 0.0) & (predicted_action_ids < 25.0)
+            decoded_action_ids = predicted_action_ids.to(torch.int64)
+            expected_action_ids = targets[:, int(ModelOutputIndex.ACTION_ID)].to(torch.int64)
+            action_id_correct += int(((decoded_action_ids == expected_action_ids) & valid_action_ids).sum().item())
+
             count = batch.size
             total_loss += float(loss.item()) * count
             total_absolute_error += float(errors.sum().item())
@@ -117,6 +125,7 @@ def evaluate_checkpoint(
         loss=total_loss / sample_count,
         samples=sample_count,
         mean_absolute_error=total_absolute_error / (sample_count * len(OUTPUT_FIELD_NAMES)),
+        action_id_accuracy=action_id_correct / sample_count,
         field_mean_absolute_error=tuple(value / sample_count for value in field_error_totals),
     )
 
@@ -156,6 +165,7 @@ def main() -> int:
     print(f"samples={metrics.samples}")
     print(f"loss={metrics.loss:.6f}")
     print(f"mean_absolute_error={metrics.mean_absolute_error:.6f}")
+    print(f"action_id_accuracy={metrics.action_id_accuracy:.6f}")
 
     for name, error in zip(OUTPUT_FIELD_NAMES, metrics.field_mean_absolute_error):
         print(f"mae.{name}={error:.6f}")

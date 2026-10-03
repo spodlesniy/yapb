@@ -136,7 +136,7 @@ Evaluate a trained checkpoint on the same deterministic episode split used by it
 
     python -m tools.aipb_training.evaluation dataset.jsonl checkpoints/best.pt
 
-The default split is validation. The report includes SmoothL1 loss, overall mean absolute error, and mean absolute error for each of the ten model outputs. The `--split train` option is available for comparing training-set and held-out behavior.
+The default split is validation. The report includes SmoothL1 loss, overall mean absolute error, action ID accuracy using the runtime's float-to-integer truncation behavior, and mean absolute error for each of the ten model outputs. The `--split train` option is available for comparing training-set and held-out behavior.
 
 ## Deployment
 

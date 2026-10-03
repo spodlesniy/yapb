@@ -136,16 +136,33 @@ The current Python package structure is:
 tools/aipb_training/
 ├── __init__.py
 ├── README.md
+├── requirements.txt
 ├── validate_dataset.py
 ├── dataset.py
 ├── model_contract.py
+├── policy_model.py
 ├── training_contract.py
+├── trainer.py
+├── training_run.py
+├── train.py
+├── onnx_export.py
+├── export.py
+├── deploy.py
+├── evaluation.py
 └── tests/
     ├── __init__.py
     ├── test_validate_dataset.py
     ├── test_dataset.py
     ├── test_model_contract.py
-    └── test_training_contract.py
+    ├── test_policy_model.py
+    ├── test_training_contract.py
+    ├── test_trainer.py
+    ├── test_training_run.py
+    ├── test_onnx_export.py
+    ├── test_export.py
+    ├── test_deploy.py
+    ├── test_evaluation.py
+    └── test_pipeline.py
 ```
 
 The first policy model is a framework-backed feed-forward baseline:
@@ -164,7 +181,7 @@ ONNX export is implemented as a separate deployment step. It consumes a compatib
 
 ## Offline checkpoint evaluation
 
-Checkpoint evaluation is a separate offline step from training. It reuses the checkpoint's `validation_split` and `seed` so the validation boundary remains deterministic and consistent with the training run. The default validation report contains overall SmoothL1 loss, overall mean absolute error, and per-output mean absolute error for the ten-value action tensor.
+Checkpoint evaluation is a separate offline step from training. It reuses the checkpoint's `validation_split` and `seed` so the validation boundary remains deterministic and consistent with the training run. The default validation report contains overall SmoothL1 loss, overall mean absolute error, runtime-style action ID accuracy, and per-output mean absolute error for the ten-value action tensor.
 
 ## Runtime integration
 

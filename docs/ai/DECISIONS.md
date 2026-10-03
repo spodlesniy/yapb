@@ -137,3 +137,10 @@ Reason: after deployment, a packaged model should be discoverable by the existin
 The evaluation tool reuses the checkpoint's stored validation split and seed to reconstruct the same train/validation boundary used during training. Evaluation defaults to the validation split and reports loss plus per-output mean absolute error.
 
 Reason: evaluation must measure the model on the intended held-out episodes without silently changing the boundary or leaking training samples into the validation report.
+
+
+## D023 — Measure action ID accuracy using runtime decoding semantics
+
+Checkpoint evaluation reports action ID accuracy after applying the same non-negative float-to-integer truncation semantics used by the C++ inference decoder, while treating action IDs outside the supported model range as incorrect.
+
+Reason: the policy output is a float tensor, but `action_id` is decoded as an integer at runtime. Reporting raw regression error alone does not show how often the model selects the intended discrete action.
