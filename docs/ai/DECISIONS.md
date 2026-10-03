@@ -237,7 +237,7 @@ Reason: the offline Python package has no runtime dependency on the C++ implemen
 
 ## D037 — Make SeekCover a direct AI-owned navigation action
 
-SeekCover is executed through ActionExecutionContext. The YaPB adapter selects a cover waypoint using the existing cover-node search, reuses the existing navigation machinery to move there, and exposes completion/cancellation to the AI executor. Legacy task execution is suppressed while the direct action is active.
+SeekCover is executed through ActionExecutionContext. The YaPB adapter selects a cover waypoint using the existing cover-node search, reuses the existing MoveToPosition navigation primitive to move there, and exposes completion/cancellation to the AI executor. Legacy task execution remains enabled so the existing path progression can continue.
 
 Reason: cover selection is an AI decision that should own its lifecycle without duplicating YaPB pathfinding. Reusing the established navigation primitive preserves movement behavior while removing the transitional task-stack acknowledgement from the AI action path.
 

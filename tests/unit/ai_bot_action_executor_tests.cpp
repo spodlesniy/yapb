@@ -34,11 +34,14 @@ public:
   int cancelHuntTargetCalls {};
   int seekCoverCalls {};
   int cancelSeekCoverCalls {};
+  int escapeFromBombCalls {};
+  int cancelEscapeFromBombCalls {};
   int lastNode { -1 };
   int lastAttackTarget { -1 };
   int lastHuntTarget { -1 };
   bool huntTargetReached {};
   bool seekCoverReached {};
+  bool escapeFromBombReached {};
   ai::Vec3 lastPosition {};
 
   bool isAlive() const override {
@@ -109,6 +112,19 @@ public:
 
   void cancelSeekCover() override {
     ++cancelSeekCoverCalls;
+  }
+
+  bool escapeFromBomb() override {
+    ++escapeFromBombCalls;
+    return true;
+  }
+
+  bool isEscapeFromBombReached() const override {
+    return escapeFromBombReached;
+  }
+
+  void cancelEscapeFromBomb() override {
+    ++cancelEscapeFromBombCalls;
   }
 };
 
@@ -293,6 +309,7 @@ AI_TEST(testBotActionExecutorDirectlyExecutesHuntTarget) {
   expect(result.type == ai::ActionResultType::Accepted, "remembered enemy hunt is accepted");
   expect(context.huntTargetCalls == 1, "hunt target is delegated");
   expect(context.lastHuntTarget == 9, "hunt target is preserved");
+  expect(!executor.suppressesLegacyTaskExecution(), "hunt keeps legacy task execution enabled");
 }
 
 AI_TEST(testBotActionExecutorDirectlyExecutesSeekCover) {
@@ -306,6 +323,7 @@ AI_TEST(testBotActionExecutorDirectlyExecutesSeekCover) {
 
   expect(result.type == ai::ActionResultType::Accepted, "seek cover is accepted");
   expect(context.seekCoverCalls == 1, "seek cover is delegated");
+  expect(!executor.suppressesLegacyTaskExecution(), "seek cover keeps legacy task execution enabled");
 }
 
 AI_TEST(testBotActionExecutorCompletesSeekCoverWhenReached) {
@@ -385,6 +403,94 @@ AI_TEST(testBotActionExecutorCancelReleasesDirectAttack) {
   executor.cancel();
   expect(context.cancelAttackTargetCalls == 1, "cancel releases direct attack");
   expect(!executor.suppressesLegacyTaskExecution(), "cancel releases ownership");
+}
+
+
+AI_TEST(testBotActionExecutorDirectlyExecutesEscapeFromBomb) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  auto observation = aliveObservation();
+  observation.bot.objectiveFlags |= ai::ObjectiveFlag::BombPlanted;
+
+  auto action = ai::Action {};
+  action.type = ai::ActionType::EscapeFromBomb;
+
+  const auto result = executor.execute(action, observation);
+
+  expect(result.type == ai::ActionResultType::Accepted, "planted bomb escape is accepted");
+  expect(context.escapeFromBombCalls == 1, "escape from bomb is delegated");
+  expect(!executor.suppressesLegacyTaskExecution(), "escape keeps legacy task execution enabled");
+}
+
+AI_TEST(testBotActionExecutorCompletesEscapeFromBombWhenReached) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  auto observation = aliveObservation();
+  observation.bot.objectiveFlags |= ai::ObjectiveFlag::BombPlanted;
+
+  auto action = ai::Action {};
+  action.type = ai::ActionType::EscapeFromBomb;
+
+  auto result = executor.execute(action, observation);
+  expect(result.type == ai::ActionResultType::Accepted, "escape starts before reaching safety");
+  expect(context.escapeFromBombCalls == 1, "escape is delegated before completion");
+
+  context.escapeFromBombReached = true;
+  result = executor.execute(action, observation);
+
+  expect(result.type == ai::ActionResultType::Completed, "reached safety completes escape");
+  expect(context.cancelEscapeFromBombCalls == 1, "completion releases direct escape");
+}
+
+AI_TEST(testBotActionExecutorCompletesEscapeFromBombWhenBombEnds) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  auto observation = aliveObservation();
+  observation.bot.objectiveFlags |= ai::ObjectiveFlag::BombPlanted;
+
+  auto action = ai::Action {};
+  action.type = ai::ActionType::EscapeFromBomb;
+
+  auto result = executor.execute(action, observation);
+  expect(result.type == ai::ActionResultType::Accepted, "escape starts while bomb is planted");
+
+  observation.bot.objectiveFlags &= ~ai::ObjectiveFlag::BombPlanted;
+  result = executor.execute(action, observation);
+
+  expect(result.type == ai::ActionResultType::Completed, "bomb ending completes escape");
+  expect(context.cancelEscapeFromBombCalls == 1, "bomb ending releases direct escape");
+}
+
+AI_TEST(testBotActionExecutorRejectsEscapeFromBombWithoutBomb) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  auto action = ai::Action {};
+  action.type = ai::ActionType::EscapeFromBomb;
+
+  const auto result = executor.execute(action, aliveObservation());
+
+  expect(result.type == ai::ActionResultType::Rejected, "escape without planted bomb is rejected");
+  expect(context.escapeFromBombCalls == 0, "escape is not delegated without a bomb");
+}
+
+AI_TEST(testBotActionExecutorCancelsDirectEscapeFromBomb) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  auto observation = aliveObservation();
+  observation.bot.objectiveFlags |= ai::ObjectiveFlag::BombPlanted;
+
+  auto action = ai::Action {};
+  action.type = ai::ActionType::EscapeFromBomb;
+
+  executor.execute(action, observation);
+  executor.cancel();
+
+  expect(context.cancelEscapeFromBombCalls == 1, "cancel releases direct escape");
 }
 
 AI_TEST(testBotActionExecutorCompletesObservedTaskLifecycle) {
