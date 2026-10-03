@@ -106,11 +106,15 @@ Action GoalNavigationPolicy::decide(const Observation &observation) const {
     return action;
   }
 
-  case TaskType::Attack:
-    return makeTargetPlayerAction(ActionType::AttackTarget, observation);
+  case TaskType::Attack: {
+    const Action action = makeTargetPlayerAction(ActionType::AttackTarget, observation);
+    return action.type != ActionType::None ? action : makeGoalNavigationAction(observation);
+  }
 
-  case TaskType::Hunt:
-    return makeTargetPlayerAction(ActionType::HuntTarget, observation);
+  case TaskType::Hunt: {
+    const Action action = makeTargetPlayerAction(ActionType::HuntTarget, observation);
+    return action.type != ActionType::None ? action : makeGoalNavigationAction(observation);
+  }
 
   case TaskType::ShootBreakable: {
     Action action {};

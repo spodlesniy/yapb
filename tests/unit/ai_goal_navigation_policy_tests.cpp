@@ -106,6 +106,17 @@ AI_TEST(testGoalNavigationPolicyMapsTaskActions) {
   expect(policy.decide(observation).type == ai::ActionType::HoldPosition, "hide task maps to hold position");
 }
 
+AI_TEST(testGoalNavigationPolicyFallsBackForHuntWhenCombatTargetIsUnavailable) {
+  auto observation = makeObservation();
+  observation.bot.currentTask = ai::TaskType::Hunt;
+  ai::GoalNavigationPolicy policy {};
+
+  const auto action = policy.decide(observation);
+
+  expect(action.type == ai::ActionType::MoveToNode, "hunt without observed target falls back to goal");
+  expect(action.targetNode == 20, "hunt fallback preserves navigation goal");
+}
+
 AI_TEST(testGoalNavigationPolicyFallsBackWhenCombatTargetIsUnavailable) {
   auto observation = makeObservation();
   observation.bot.currentTask = ai::TaskType::Attack;
