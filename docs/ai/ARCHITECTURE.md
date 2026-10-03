@@ -160,7 +160,7 @@ The training orchestration layer performs deterministic episode-level train/vali
 
 Checkpoints contain model/optimizer state, configuration, architecture, metrics, and epoch history. Training can resume from a compatible checkpoint; the target epochs may increase while training-affecting parameters remain fixed. The compute device may change when resuming.
 
-ONNX export remains a separate deployment step.
+ONNX export is implemented as a separate deployment step. It consumes a compatible PyTorch checkpoint, emits the static [1,230] -> [1,10] contract at ONNX opset 18, validates the graph, and verifies numerical parity against the PyTorch model with ONNX Runtime.
 
 ## Runtime integration
 

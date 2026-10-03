@@ -1,1 +1,5 @@
-torch>=2.14.1,<2.15
+# Runtime and deployment dependencies for the offline training backend.
+torch==2.14.1
+onnx==1.23.1
+onnxscript==0.7.2
+onnxruntime==1.30.0

@@ -72,7 +72,7 @@ The first policy model is a small feed-forward network intended as a baseline fo
 
 The model has no dropout, recurrent state, or other inference-time state. Its output remains the raw AiPB action tensor.
 
-PyTorch is the training backend. It is imported lazily by the model builder so dataset validation and lightweight package tests do not require PyTorch.
+PyTorch is the training backend. The deployment toolchain additionally uses ONNX, ONNX Script, and ONNX Runtime. Dependencies are pinned in requirements.txt.
 
 ## Policy model input
 
@@ -118,6 +118,8 @@ The ten output positions are fixed:
 Discrete fields are represented as float32 in the neural-network tensor because this is the existing C++ inference contract. The C++ action decoder/validator remains responsible for interpreting and validating the raw output.
 
 ## Export requirement
+
+The ONNX exporter uses the PyTorch dynamo exporter with explicit opset 18, saves a static model, checks the ONNX graph, and verifies output parity with ONNX Runtime.
 
 Training may use batches with arbitrary N, but the deployed ONNX model must satisfy the runtime contract exactly: one input [1,230] float32 and one output [1,10] float32.
 

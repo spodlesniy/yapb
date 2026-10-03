@@ -95,3 +95,10 @@ Reason: transitions from the same gameplay episode are correlated. Splitting ind
 A resumed run keeps the checkpoint's batch size, validation split, seed, learning rate, and weight decay unchanged. The requested epoch count may increase, and the compute device may change.
 
 Reason: preserving these training-affecting settings keeps the data split, epoch shuffling, optimizer behavior, and continuation reproducible while allowing a run to move between compute devices.
+
+
+## D017 — Export the first policy with a static ONNX contract
+
+The deployment exporter uses the PyTorch dynamo-based ONNX exporter with an explicit opset version of 18. The exported model must expose one float32 input [1, 230] named input and one float32 output [1, 10] named output.
+
+Reason: the C++ runtime validates a singleton batch and fixed tensor widths. Keeping the deployed shape static prevents accidental runtime incompatibility and makes the exported artifact directly consumable by the existing ONNX runner.
