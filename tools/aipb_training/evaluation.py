@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Sequence
 
 from .dataset import TrainingSample
-from .model_contract import ModelOutputIndex
+from .model_contract import MODEL_ACTION_ID_COUNT, ModelOutputIndex
 from .policy_model import build_policy_model
 from .trainer import create_optimizer
 from .training_contract import encode_policy_batch
@@ -108,7 +108,7 @@ def evaluate_checkpoint(
 
             errors = torch.abs(predictions - targets)
             predicted_action_ids = predictions[:, int(ModelOutputIndex.ACTION_ID)]
-            valid_action_ids = (predicted_action_ids >= 0.0) & (predicted_action_ids < 25.0)
+            valid_action_ids = (predicted_action_ids >= 0.0) & (predicted_action_ids < MODEL_ACTION_ID_COUNT)
             decoded_action_ids = predicted_action_ids.to(torch.int64)
             expected_action_ids = targets[:, int(ModelOutputIndex.ACTION_ID)].to(torch.int64)
             action_id_correct += int(((decoded_action_ids == expected_action_ids) & valid_action_ids).sum().item())

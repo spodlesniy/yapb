@@ -74,6 +74,14 @@ class TrainingDatasetValidatorTests(unittest.TestCase):
         with self.assertRaises(DatasetValidationError):
             validate_dataset(path)
 
+    def test_rejects_action_id_outside_model_contract(self) -> None:
+        sample = make_sample()
+        sample["action"]["action_id"] = 25
+        path = self.write_dataset([METADATA, sample])
+
+        with self.assertRaises(DatasetValidationError):
+            validate_dataset(path)
+
     def test_rejects_invalid_confidence(self) -> None:
         sample = make_sample()
         sample["action"]["confidence"] = 1.1

@@ -9,6 +9,8 @@ import math
 from pathlib import Path
 from typing import Any
 
+from .model_contract import MODEL_ACTION_ID_COUNT
+
 
 EXPECTED_FORMAT = "aipb-training-jsonl"
 EXPECTED_DATASET_VERSION = 1
@@ -76,7 +78,7 @@ def _validate_action(value: Any) -> None:
         _require(isinstance(value_field, int) and not isinstance(value_field, bool),
                  f"action.{field_name} must be an integer")
 
-    _require(0 <= value["action_id"] <= 255, "action.action_id must fit in uint8")
+    _require(0 <= value["action_id"] < MODEL_ACTION_ID_COUNT, "action.action_id is outside the supported inference action range")
     _validate_vec3(value["target_position"], "action.target_position")
 
     for field_name in ("duration", "confidence"):

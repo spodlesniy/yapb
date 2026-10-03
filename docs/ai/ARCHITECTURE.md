@@ -113,7 +113,7 @@ The deployed ONNX runtime contract remains single-sample:
 
 ## Model output contract
 
-The ten output values are fixed and shared by the Python training side and the C++ inference side:
+The ten output values are fixed and shared by the Python training side and the C++ inference side. The supported action IDs are 0 through 24; ID 25 is the contract sentinel and is not a valid action.
 
 | Index | Field |
 | ---: | --- |

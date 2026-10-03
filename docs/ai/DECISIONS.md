@@ -172,3 +172,10 @@ Reason: the first multi-action training dataset should reflect real YaPB behavio
 When code is intentionally temporary, transitional, or already known to require a future redesign, it must carry a specific English `// TODO: ...` comment describing the intended replacement or next implementation. Generic TODO markers without actionable context are not sufficient.
 
 Reason: incremental development should preserve the roadmap directly in the code so that temporary compatibility layers and transitional implementations are not mistaken for final architecture.
+
+
+## D028 — Keep the supported action-ID range in one Python contract constant
+
+The Python training package derives the valid action-ID range from `MODEL_ACTION_ID_COUNT = 25`, matching the C++ `InferenceActionId::Count` contract. Dataset validation and evaluation use this constant instead of duplicating the numeric upper bound.
+
+Reason: action IDs are part of the stable model contract. Duplicated numeric ranges can silently diverge between dataset validation, evaluation, and the C++ runtime.
