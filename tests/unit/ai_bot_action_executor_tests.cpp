@@ -46,6 +46,9 @@ public:
   int cancelPlantBombCalls {};
   int defuseBombCalls {};
   int cancelDefuseBombCalls {};
+  int pickupItemCalls {};
+  int cancelPickupItemCalls {};
+  bool pickupItemAvailable {};
   ai::Vec3 lastPosition {};
 
   bool isAlive() const override {
@@ -147,6 +150,15 @@ public:
 
   void cancelDefuseBomb() override {
     ++cancelDefuseBombCalls;
+  }
+
+  bool pickupItem() override {
+    ++pickupItemCalls;
+    return pickupItemAvailable;
+  }
+
+  void cancelPickupItem() override {
+    ++cancelPickupItemCalls;
   }
 };
 
@@ -704,6 +716,67 @@ AI_TEST(testBotActionExecutorCancelsDirectDefuseBomb) {
   executor.cancel();
 
   expect(context.cancelDefuseBombCalls == 1, "cancel releases direct defuse bomb");
+}
+
+AI_TEST(testBotActionExecutorDirectlyExecutesPickupItem) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  context.pickupItemAvailable = true;
+
+  auto action = ai::Action {};
+  action.type = ai::ActionType::PickupItem;
+
+  const auto result = executor.execute(action, aliveObservation());
+
+  expect(result.type == ai::ActionResultType::Accepted, "available pickup item is accepted");
+  expect(context.pickupItemCalls == 1, "pickup item is delegated");
+  expect(!executor.suppressesLegacyTaskExecution(), "pickup item keeps legacy task execution enabled");
+}
+
+AI_TEST(testBotActionExecutorCompletesPickupItemWhenTargetDisappears) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  auto action = ai::Action {};
+  action.type = ai::ActionType::PickupItem;
+
+  context.pickupItemAvailable = true;
+  auto result = executor.execute(action, aliveObservation());
+  expect(result.type == ai::ActionResultType::Accepted, "pickup starts while target is available");
+
+  context.pickupItemAvailable = false;
+  result = executor.execute(action, aliveObservation());
+
+  expect(result.type == ai::ActionResultType::Completed, "pickup completes when target is no longer available");
+  expect(context.cancelPickupItemCalls == 1, "completion releases direct pickup");
+}
+
+AI_TEST(testBotActionExecutorRejectsPickupItemWithoutTarget) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  auto action = ai::Action {};
+  action.type = ai::ActionType::PickupItem;
+
+  const auto result = executor.execute(action, aliveObservation());
+
+  expect(result.type == ai::ActionResultType::Rejected, "pickup without an available target is rejected");
+  expect(context.pickupItemCalls == 1, "pickup availability is checked");
+}
+
+AI_TEST(testBotActionExecutorCancelsDirectPickupItem) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  auto action = ai::Action {};
+  action.type = ai::ActionType::PickupItem;
+
+  context.pickupItemAvailable = true;
+  executor.execute(action, aliveObservation());
+  executor.cancel();
+
+  expect(context.cancelPickupItemCalls == 1, "cancel releases direct pickup");
 }
 
 AI_TEST(testBotActionExecutorCompletesObservedTaskLifecycle) {

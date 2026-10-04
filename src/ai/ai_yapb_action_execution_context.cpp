@@ -291,6 +291,22 @@ void YaPBActionExecutionContext::cancelSeekCover() {
   m_seekCoverNavigationTaskCreated = false;
 }
 
+bool YaPBActionExecutionContext::pickupItem() {
+  if (m_bot == nullptr || m_bot->pev == nullptr || game.isNullEntity(m_bot->m_pickupItem)) {
+    return false;
+  }
+
+  return m_bot->getCurrentTaskId() == Task::PickupItem;
+}
+
+void YaPBActionExecutionContext::cancelPickupItem() {
+  if (m_bot == nullptr) {
+    return;
+  }
+
+  m_bot->ensurePickupEntitiesClear();
+}
+
 bool YaPBActionExecutionContext::defuseBomb() {
   if (m_bot == nullptr || m_bot->pev == nullptr || !gameState.isBombPlanted()) {
     return false;

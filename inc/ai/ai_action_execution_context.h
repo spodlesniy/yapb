@@ -46,6 +46,9 @@ public:
 
   virtual bool defuseBomb() = 0;
   virtual void cancelDefuseBomb() = 0;
+
+  virtual bool pickupItem() = 0;
+  virtual void cancelPickupItem() = 0;
 };
 
 } // namespace ai

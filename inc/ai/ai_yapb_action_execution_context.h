@@ -61,6 +61,9 @@ public:
 
   bool defuseBomb() override;
   void cancelDefuseBomb() override;
+
+  bool pickupItem() override;
+  void cancelPickupItem() override;
 };
 
 } // namespace ai

@@ -91,6 +91,9 @@ void BotActionExecutor::cancel() {
   if (m_directDefuseBombActive && m_context != nullptr) {
     m_context->cancelDefuseBomb();
   }
+  if (m_directPickupItemActive && m_context != nullptr) {
+    m_context->cancelPickupItem();
+  }
   m_directAttackTargetActive = false;
   m_directAttackAction = {};
   m_directHuntTargetActive = false;
@@ -99,6 +102,7 @@ void BotActionExecutor::cancel() {
   m_directEscapeFromBombActive = false;
   m_directPlantBombActive = false;
   m_directDefuseBombActive = false;
+  m_directPickupItemActive = false;
   m_observedTaskActive = false;
   m_observedTaskAction = {};
 }
@@ -193,6 +197,18 @@ ActionResult BotActionExecutor::execute(const Action &action, const Observation 
     return executeDefuseBomb(action, observation);
 
   case ActionType::PickupItem:
+    m_directAttackTargetActive = false;
+    m_directAttackAction = {};
+    m_directHuntTargetActive = false;
+    m_directHuntAction = {};
+    m_directSeekCoverActive = false;
+    m_directEscapeFromBombActive = false;
+    m_directPlantBombActive = false;
+    m_directDefuseBombActive = false;
+    m_observedTaskActive = false;
+    m_observedTaskAction = {};
+    return executePickupItem(action);
+
   case ActionType::Fire:
     return executeObservedTaskAction(action, observation);
 
@@ -345,6 +361,20 @@ ActionResult BotActionExecutor::executeDefuseBomb(const Action &action, const Ob
   }
 
   m_directDefuseBombActive = true;
+  return { action.type, ActionResultType::Accepted, 0.0f };
+}
+
+ActionResult BotActionExecutor::executePickupItem(const Action &action) {
+  if (!m_context->pickupItem()) {
+    if (!m_directPickupItemActive) {
+      return { action.type, ActionResultType::Rejected, 0.0f };
+    }
+
+    cancel();
+    return { action.type, ActionResultType::Completed, 0.0f };
+  }
+
+  m_directPickupItemActive = true;
   return { action.type, ActionResultType::Accepted, 0.0f };
 }
 

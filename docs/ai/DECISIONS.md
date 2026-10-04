@@ -272,3 +272,10 @@ Reason: C4 planting already contains established weapon selection, input, zone, 
 DefuseBomb is executed through ActionExecutionContext. The YaPB adapter validates that a bomb is planted and reuses the existing DefuseBomb task as the engine-side interaction primitive. The AI executor owns the action lifecycle and cancellation, while legacy task execution remains enabled so the established defusing mechanics continue. The action completes when the planted-bomb state disappears.
 
 Reason: the existing YaPB defusing task already contains the game-specific use-input, progress, timing, weapon, crouch, and interruption behavior. Reusing it avoids duplicating those mechanics while making the policy's DefuseBomb decision explicit and independently testable.
+
+
+## D043 — Make PickupItem a direct AI-owned action over the existing pickup target
+
+PickupItem is executed through ActionExecutionContext and no longer uses observed-task acknowledgement in BotActionExecutor. The YaPB adapter accepts the action only when YaPB already has a valid pickup entity and PickupItem task, and cancellation routes through the existing pickup cleanup path. The existing YaPB pickup discovery and item-selection semantics remain authoritative; the AI action owns the lifecycle of executing an already selected pickup target.
+
+Reason: the current observation contract does not expose pickup entity identity or pickup type. Reusing YaPB's existing target discovery avoids inventing an incomplete target model or duplicating item-selection mechanics while still separating pickup execution lifecycle from generic observed-task acknowledgement.
