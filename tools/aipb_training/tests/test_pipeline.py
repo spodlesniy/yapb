@@ -53,7 +53,7 @@ def _make_sample(episode_id: int, index: int) -> dict:
         },
         "result": 2,
         "elapsed_time": 0.1,
-        "terminal": index == 1,
+        "terminal": True,
     }
 
 

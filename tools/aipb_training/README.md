@@ -64,7 +64,7 @@ The current dataset record contains:
 - elapsed_time
 - terminal
 
-The current policy training contract uses only observation and action as supervised input/target data. Reward and transition fields remain in the dataset because they are part of the runtime training record and can support later training methods.
+The current policy training contract uses only observation and action as supervised input/target data. Every exported sample is terminal because the runtime recorder stores only terminal action results; the validator enforces this invariant. Reward and transition fields remain in the dataset because they are part of the runtime training record and can support later training methods.
 
 ## Policy model
 

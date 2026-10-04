@@ -67,7 +67,7 @@ Ending an episode clears the recorder's pending action and episode identifier bu
 
 ## Dataset and offline training pipeline
 
-The C++ runtime exports the collected transitions as `aipb-training-jsonl`. The in-memory buffer is bounded; when it is full, a completed transition is retained as pending but cannot be stored. The cumulative drop count is reported by `ai_save_training`.
+The C++ runtime exports the collected transitions as `aipb-training-jsonl`. Stored samples are terminal action transitions; the Python validator enforces this runtime invariant. The in-memory buffer is bounded; when it is full, a completed transition is retained as pending but cannot be stored. The cumulative drop count is reported by `ai_save_training`.
 
 Each record contains:
 

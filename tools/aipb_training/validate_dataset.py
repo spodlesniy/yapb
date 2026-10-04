@@ -119,7 +119,7 @@ def _validate_sample(value: Any, line_number: int) -> int:
     _require(isinstance(value["result"], int) and not isinstance(value["result"], bool),
              f"line {line_number}: result must be an integer")
     _require(0 <= value["result"] <= 255, f"line {line_number}: result must fit in uint8")
-    _require(isinstance(value["terminal"], bool), f"line {line_number}: terminal must be boolean")
+    _require(value["terminal"] is True, f"line {line_number}: terminal must be true for recorded transitions")
     _require(value["elapsed_time"] >= 0.0, f"line {line_number}: elapsed_time must be non-negative")
 
     return observation_size

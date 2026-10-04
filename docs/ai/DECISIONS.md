@@ -351,3 +351,9 @@ Reason: Training collection may run longer than an in-memory buffer. A bounded b
 The strict dataset validator checks the JSONL contract. Dataset statistics remain descriptive. A separate quality gate applies caller-selected minimum sample/episode counts and an optional maximum dominant-action share. It does not require complete coverage of all 26 model actions because the current deterministic teacher intentionally does not produce every action yet.
 
 Reason: structural validity and experimental readiness are different properties. Hard-coded readiness thresholds would reject legitimate early collection phases, while having no quality gate would allow undersized or badly imbalanced datasets to be mistaken for useful training data.
+
+## D056 — Treat stored training samples as terminal transitions
+
+`TrainingRecorder` records a transition only after the action result is terminal. The JSONL validator therefore requires `terminal=true` for every sample instead of accepting non-terminal records that the current runtime cannot produce.
+
+Reason: allowing a second transition semantic into the dataset would make the current supervised training/evaluation pipeline ambiguous and could mask exporter or recording regressions.

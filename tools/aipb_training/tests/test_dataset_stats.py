@@ -60,16 +60,16 @@ class DatasetStatsTests(unittest.TestCase):
     def test_summarizes_action_distribution_and_episode_count(self) -> None:
         path = self.write_dataset([
             METADATA,
-            sample(1, 10, False),
             sample(1, 10, True),
-            sample(8, 20, False),
+            sample(1, 10, True),
+            sample(8, 20, True),
         ])
 
         stats = summarize_dataset(path)
 
         self.assertEqual(stats.samples, 3)
         self.assertEqual(stats.episodes, 2)
-        self.assertEqual(stats.terminal_samples, 1)
+        self.assertEqual(stats.terminal_samples, 3)
         self.assertEqual(stats.action_counts[1], 2)
         self.assertEqual(stats.action_counts[8], 1)
         self.assertEqual(stats.action_coverage, 2)
