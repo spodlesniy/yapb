@@ -14,8 +14,29 @@ from .model_contract import (
     MODEL_ACTION_SCHEMA_VERSION,
     MODEL_FEATURE_COUNT,
     MODEL_FEATURE_SCHEMA_VERSION,
+    MODEL_ACTION_ID_NAMES,
 )
 
+
+_ACTION_IDS = {name: index for index, name in enumerate(MODEL_ACTION_ID_NAMES)}
+
+_PLAYER_TARGET_ACTIONS = frozenset(
+    _ACTION_IDS[name] for name in ("FollowPlayer", "AttackTarget", "HuntTarget", "AimAtTarget")
+)
+_NODE_TARGET_ACTIONS = frozenset({_ACTION_IDS["MoveToNode"]})
+_POSITION_TARGET_ACTIONS = frozenset(
+    _ACTION_IDS[name] for name in ("MoveToPosition", "ThrowGrenade", "ThrowFlashbang", "ThrowSmoke")
+)
+_DURATION_OPTIONAL_ACTIONS = frozenset(
+    _ACTION_IDS[name] for name in ("HoldPosition", "Wait", "Camp", "Hide")
+)
+_WEAPON_OPTIONAL_ACTIONS = frozenset({_ACTION_IDS["Reload"]})
+_WEAPON_REQUIRED_ACTIONS = frozenset({_ACTION_IDS["ChangeWeapon"]})
+_GRENADE_TYPES = {
+    _ACTION_IDS["ThrowGrenade"]: 1,
+    _ACTION_IDS["ThrowFlashbang"]: 2,
+    _ACTION_IDS["ThrowSmoke"]: 3,
+}
 
 EXPECTED_FORMAT = "aipb-training-jsonl"
 EXPECTED_DATASET_VERSION = 1
@@ -74,6 +95,64 @@ def _validate_observation(value: Any, field_name: str) -> int:
     return len(values)
 
 
+def _validate_action_semantics(value: dict[str, Any]) -> None:
+    action_id = value["action_id"]
+    target_node = value["target_node"]
+    target_player = value["target_player"]
+    target_position = value["target_position"]
+
+    if action_id in _PLAYER_TARGET_ACTIONS:
+        _require(target_player >= 0, "action.target_player is required for this action")
+        _require(target_node == -1, "action.target_node must be -1 for player-target actions")
+        _require(
+            target_position == [0.0, 0.0, 0.0],
+            "action.target_position must be zero for player-target actions",
+        )
+    elif action_id in _NODE_TARGET_ACTIONS:
+        _require(target_node >= 0, "action.target_node is required for node-target actions")
+        _require(target_player == -1, "action.target_player must be -1 for node-target actions")
+        _require(
+            target_position == [0.0, 0.0, 0.0],
+            "action.target_position must be zero for node-target actions",
+        )
+    elif action_id in _POSITION_TARGET_ACTIONS:
+        _require(target_node == -1, "action.target_node must be -1 for position-target actions")
+        _require(target_player == -1, "action.target_player must be -1 for position-target actions")
+    else:
+        _require(target_node == -1, "action.target_node must be -1 for actions without an explicit target")
+        _require(target_player == -1, "action.target_player must be -1 for actions without an explicit target")
+        _require(
+            target_position == [0.0, 0.0, 0.0],
+            "action.target_position must be zero for actions without an explicit position target",
+        )
+
+    if action_id not in _DURATION_OPTIONAL_ACTIONS:
+        _require(float(value["duration"]) == 0.0, "action.duration must be zero for actions without duration semantics")
+
+    weapon_type = value["weapon_type"]
+    if action_id in _WEAPON_REQUIRED_ACTIONS:
+        _require(2 <= weapon_type <= 9, "action.weapon_type must be a concrete weapon type")
+    elif action_id in _WEAPON_OPTIONAL_ACTIONS:
+        _require(
+            weapon_type == 0 or 2 <= weapon_type <= 9,
+            "action.weapon_type must be Unknown or a concrete weapon type",
+        )
+    else:
+        _require(weapon_type == 0, "action.weapon_type must be Unknown for actions without weapon semantics")
+
+    if action_id in _GRENADE_TYPES:
+        expected = _GRENADE_TYPES[action_id]
+        _require(
+            value["grenade_type"] == expected,
+            f"action.grenade_type does not match {MODEL_ACTION_ID_NAMES[action_id]}",
+        )
+    else:
+        _require(
+            value["grenade_type"] == 0,
+            "action.grenade_type must be None for actions without grenade semantics",
+        )
+
+
 def _validate_action(value: Any) -> None:
     _require(isinstance(value, dict), "action must be an object")
     _require(set(value) == REQUIRED_ACTION_KEYS, "action keys do not match the schema")
@@ -86,6 +165,7 @@ def _validate_action(value: Any) -> None:
 
     _require(0 <= value["action_id"] < MODEL_ACTION_ID_COUNT, "action.action_id is outside the supported inference action range")
     _validate_vec3(value["target_position"], "action.target_position")
+    _validate_action_semantics(value)
 
     for field_name in ("duration", "confidence"):
         _require(_is_number(value[field_name]), f"action.{field_name} must be a finite number")
