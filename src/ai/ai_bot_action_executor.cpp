@@ -77,6 +77,7 @@ void BotActionExecutor::cancel() {
     m_context->cancelAttackTarget(m_directAttackAction.targetPlayer);
   }
   if (m_directFollowPlayerActive && m_context != nullptr) m_context->cancelFollowPlayer(m_directFollowPlayerAction.targetPlayer);
+  if (m_directChangeWeaponActive && m_context != nullptr) m_context->cancelChangeWeapon();
   if (m_directThrowGrenadeActive && m_context != nullptr) m_context->cancelThrowGrenade();
   if (m_directThrowFlashbangActive && m_context != nullptr) m_context->cancelThrowFlashbang();
   if (m_directHuntTargetActive && m_context != nullptr) {
@@ -115,7 +116,8 @@ void BotActionExecutor::cancel() {
   m_directAttackTargetActive = false;
   m_directAttackAction = {};
   m_directFollowPlayerActive = false;
-  m_directFollowPlayerAction = {};
+  m_directChangeWeaponActive = false;
+  m_directChangeWeaponAction = {};
   m_directThrowGrenadeActive = false;
   m_directThrowGrenadeAction = {};
   m_directThrowFlashbangActive = false;
@@ -175,6 +177,11 @@ ActionResult BotActionExecutor::execute(const Action &action, const Observation 
     m_observedTaskActive = false;
     m_observedTaskAction = {};
     return executeFollowPlayer(action, observation);
+
+  case ActionType::ChangeWeapon:
+    m_observedTaskActive = false;
+    m_observedTaskAction = {};
+    return executeChangeWeapon(action, observation);
 
   case ActionType::ThrowGrenade:
     if (m_directThrowFlashbangActive && m_context != nullptr) {
@@ -328,6 +335,26 @@ ActionResult BotActionExecutor::executeFollowPlayer(const Action &action, const 
 
   m_directFollowPlayerAction = action;
   m_directFollowPlayerActive = true;
+  return { action.type, ActionResultType::Accepted, 0.0f };
+}
+
+ActionResult BotActionExecutor::executeChangeWeapon(const Action &action, const Observation &observation) {
+  if (action.weaponType == WeaponType::Unknown || action.weaponType == WeaponType::None) return { action.type, ActionResultType::Invalid, 0.0f };
+  if (observation.combat.weaponType == action.weaponType) {
+    if (m_directChangeWeaponActive) cancel();
+    return { action.type, ActionResultType::Completed, 0.0f };
+  }
+  if (m_directChangeWeaponActive && m_directChangeWeaponAction.weaponType == action.weaponType) return { action.type, ActionResultType::Accepted, 0.0f };
+  if (!m_context->changeWeapon(action.weaponType)) {
+    if (m_directChangeWeaponActive) {
+      cancel();
+      return { action.type, ActionResultType::Failed, 0.0f };
+    }
+    return { action.type, ActionResultType::Rejected, 0.0f };
+  }
+  if (m_directChangeWeaponActive) m_context->cancelChangeWeapon();
+  m_directChangeWeaponAction = action;
+  m_directChangeWeaponActive = true;
   return { action.type, ActionResultType::Accepted, 0.0f };
 }
 

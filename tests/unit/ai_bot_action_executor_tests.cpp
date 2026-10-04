@@ -39,6 +39,10 @@ public:
   ai::Vec3 lastThrowPosition {};
   ai::Vec3 lastFlashbangPosition {};
   int lastFollowPlayer { -1 };
+  int changeWeaponCalls {};
+  int cancelChangeWeaponCalls {};
+  ai::WeaponType lastChangeWeapon { ai::WeaponType::Unknown };
+  bool changeWeaponAvailable { true };
   int huntTargetCalls {};
   int cancelHuntTargetCalls {};
   int seekCoverCalls {};
@@ -120,6 +124,8 @@ public:
 
   bool followPlayer(int targetPlayer) override { ++followPlayerCalls; lastFollowPlayer = targetPlayer; return followPlayerAvailable; }
   void cancelFollowPlayer(int targetPlayer) override { ++cancelFollowPlayerCalls; lastFollowPlayer = targetPlayer; }
+  bool changeWeapon(ai::WeaponType weaponType) override { ++changeWeaponCalls; lastChangeWeapon = weaponType; return changeWeaponAvailable; }
+  void cancelChangeWeapon() override { ++cancelChangeWeaponCalls; }
   bool throwGrenade(const ai::Vec3 &position) override { ++throwGrenadeCalls; lastThrowPosition = position; return true; }
   void cancelThrowGrenade() override { ++cancelThrowGrenadeCalls; }
   bool throwFlashbang(const ai::Vec3 &position) override { ++throwFlashbangCalls; lastFlashbangPosition = position; return true; }
@@ -339,6 +345,46 @@ AI_TEST(testBotActionExecutorCompletesThrowFlashbangWhenTaskEnds) {
   observation.bot.currentTask = ai::TaskType::Normal;
   expect(executor.execute(action, observation).type == ai::ActionResultType::Completed, "flashbang action completes");
   expect(context.cancelThrowFlashbangCalls == 1, "flashbang cancellation is delegated");
+}
+
+AI_TEST(testBotActionExecutorDirectlyExecutesChangeWeapon) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+  auto observation = aliveObservation();
+  observation.combat.weaponType = ai::WeaponType::Pistol;
+  ai::Action action {};
+  action.type = ai::ActionType::ChangeWeapon;
+  action.weaponType = ai::WeaponType::Rifle;
+  const auto result = executor.execute(action, observation);
+  expect(result.type == ai::ActionResultType::Accepted, "change weapon action is accepted");
+  expect(context.changeWeaponCalls == 1, "change weapon action invokes context");
+  expect(context.lastChangeWeapon == ai::WeaponType::Rifle, "requested weapon type is preserved");
+}
+
+AI_TEST(testBotActionExecutorCompletesChangeWeaponWhenTargetIsEquipped) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+  auto observation = aliveObservation();
+  observation.combat.weaponType = ai::WeaponType::Pistol;
+  ai::Action action {};
+  action.type = ai::ActionType::ChangeWeapon;
+  action.weaponType = ai::WeaponType::Rifle;
+  expect(executor.execute(action, observation).type == ai::ActionResultType::Accepted, "change weapon action starts");
+  observation.combat.weaponType = ai::WeaponType::Rifle;
+  expect(executor.execute(action, observation).type == ai::ActionResultType::Completed, "change weapon action completes");
+  expect(context.cancelChangeWeaponCalls == 1, "change weapon cancellation is delegated");
+}
+
+AI_TEST(testBotActionExecutorRejectsUnavailableChangeWeapon) {
+  MockActionExecutionContext context {};
+  context.changeWeaponAvailable = false;
+  ai::BotActionExecutor executor(context);
+  auto observation = aliveObservation();
+  observation.combat.weaponType = ai::WeaponType::Pistol;
+  ai::Action action {};
+  action.type = ai::ActionType::ChangeWeapon;
+  action.weaponType = ai::WeaponType::Rifle;
+  expect(executor.execute(action, observation).type == ai::ActionResultType::Rejected, "unavailable weapon is rejected");
 }
 
 AI_TEST(testBotActionExecutorMovesToNodeThroughContext) {

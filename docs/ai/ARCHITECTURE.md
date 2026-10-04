@@ -99,14 +99,14 @@ The package keeps dataset contracts framework-neutral, while the actual policy m
 
 Python training batches use:
 
-- input: `[N, 232]` float32;
+- input: `[N, 243]` float32;
 - target: `[N, 10]` float32.
 
 The deployed ONNX runtime contract remains single-sample:
 
 - input name: `input`;
 - input type: float32;
-- input shape: `[1, 232]`;
+- input shape: `[1, 243]`;
 - output name: `output`;
 - output type: float32;
 - output shape: `[1, 10]`.
@@ -169,7 +169,7 @@ tools/aipb_training/
 
 The first policy model is a framework-backed feed-forward baseline:
 
-`LayerNorm(232) -> Linear(232,256) -> ReLU -> Linear(256,256) -> ReLU -> Linear(256,128) -> ReLU -> Linear(128,10)`
+`LayerNorm(243) -> Linear(243,256) -> ReLU -> Linear(256,256) -> ReLU -> Linear(256,128) -> ReLU -> Linear(128,10)`
 
 Training uses PyTorch. The model has no recurrent state or dropout, so evaluation/inference is deterministic for a fixed model state and input.
 
@@ -179,7 +179,7 @@ The training orchestration layer performs deterministic episode-level train/vali
 
 Checkpoints contain model/optimizer state, configuration, architecture, metrics, and epoch history. Training can resume from a compatible checkpoint; the target epochs may increase while training-affecting parameters remain fixed. The compute device may change when resuming.
 
-ONNX export is implemented as a separate deployment step. It consumes a compatible PyTorch checkpoint, emits the static [1,232] -> [1,10] contract at ONNX opset 18, validates the graph, and verifies numerical parity against the PyTorch model with ONNX Runtime. The `export.py` command-line entry point exposes this step without requiring callers to write Python code. The `deploy.py` command then validates the exported model again and places it in the standard package tree at `cfg/addons/yapb/data/models/aipb_policy.onnx`.
+ONNX export is implemented as a separate deployment step. It consumes a compatible PyTorch checkpoint, emits the static [1,243] -> [1,10] contract at ONNX opset 18, validates the graph, and verifies numerical parity against the PyTorch model with ONNX Runtime. The `export.py` command-line entry point exposes this step without requiring callers to write Python code. The `deploy.py` command then validates the exported model again and places it in the standard package tree at `cfg/addons/yapb/data/models/aipb_policy.onnx`.
 
 ## Offline checkpoint evaluation
 
@@ -197,7 +197,7 @@ The dependency direction is:
 
 This boundary must remain semantic: the AI executor should not expose `Bot`, `BotTask`, `Task`, `Vector`, `pev`, or other YaPB internals through its contract. Future direct AI-owned combat and objective execution should extend the context with explicit capabilities rather than reintroducing a concrete `Bot` dependency.
 
-FollowPlayer, AttackTarget, HuntTarget, SeekCover, EscapeFromBomb, PlantBomb, DefuseBomb, PickupItem, Fire, Camp, Wait, and Hide are direct AI-owned actions. `HoldPosition` is a direct AI-owned action over the existing YaPB Pause primitive. `Hide` is a distinct direct action that reuses the existing YaPB Hide task as its engine-side mechanic; its setup is shared with the `SeekCover -> Hide` transition so direct execution does not introduce a second Hide behavior. AttackTarget requires the observed current live enemy and reuses YaPB combat aiming and attack-movement helpers with legacy task changes disabled; only this direct combat action suppresses legacy task execution while active. HuntTarget uses the last observed enemy position as a navigation target, SeekCover resolves a cover node from the last enemy position, and EscapeFromBomb selects a safe waypoint relative to the planted bomb. These navigation actions reuse YaPB's MoveToPosition/pathfinding machinery through the semantic execution context. PlantBomb reuses the existing YaPB PlantBomb task as the engine-side interaction primitive and requires the bot to carry C4 in a bomb zone. DefuseBomb reuses the existing YaPB DefuseBomb task as the engine-side interaction primitive and requires a planted bomb. PickupItem reuses the existing YaPB PickupItem task as the engine-side interaction primitive; item selection and target identity remain owned by the existing YaPB pickup discovery path until the observation contract exposes pickup-target semantics. In all cases, the AI executor owns the action lifecycle and cancellation; legacy task execution remains enabled for these primitive-backed actions, including Fire over a selected breakable and Camp over the existing camping task. FollowPlayer reuses the existing YaPB FollowUser task through an explicit execution-context capability; the AI executor owns target validation, lifecycle, and cancellation while YaPB remains authoritative for follow movement and timeout behavior. ThrowGrenade reuses YaPB's ThrowExplosive mechanic for an explicit target position; the AI executor owns action validation and lifecycle while YaPB remains authoritative for trajectory and weapon input. ThrowFlashbang reuses YaPB's ThrowFlashbang mechanic with the same target-position contract and a separate AI-owned lifecycle. Other task-backed actions remain transitional until their direct execution semantics are implemented.
+FollowPlayer, AttackTarget, HuntTarget, SeekCover, EscapeFromBomb, PlantBomb, DefuseBomb, PickupItem, Fire, Camp, Wait, Hide, and ChangeWeapon are direct AI-owned actions. `HoldPosition` is a direct AI-owned action over the existing YaPB Pause primitive. `Hide` is a distinct direct action that reuses the existing YaPB Hide task as its engine-side mechanic; its setup is shared with the `SeekCover -> Hide` transition so direct execution does not introduce a second Hide behavior. AttackTarget requires the observed current live enemy and reuses YaPB combat aiming and attack-movement helpers with legacy task changes disabled; only this direct combat action suppresses legacy task execution while active. HuntTarget uses the last observed enemy position as a navigation target, SeekCover resolves a cover node from the last enemy position, and EscapeFromBomb selects a safe waypoint relative to the planted bomb. These navigation actions reuse YaPB's MoveToPosition/pathfinding machinery through the semantic execution context. PlantBomb reuses the existing YaPB PlantBomb task as the engine-side interaction primitive and requires the bot to carry C4 in a bomb zone. DefuseBomb reuses the existing YaPB DefuseBomb task as the engine-side interaction primitive and requires a planted bomb. PickupItem reuses the existing YaPB PickupItem task as the engine-side interaction primitive; item selection and target identity remain owned by the existing YaPB pickup discovery path until the observation contract exposes pickup-target semantics. In all cases, the AI executor owns the action lifecycle and cancellation; legacy task execution remains enabled for these primitive-backed actions, including Fire over a selected breakable and Camp over the existing camping task. FollowPlayer reuses the existing YaPB FollowUser task through an explicit execution-context capability; the AI executor owns target validation, lifecycle, and cancellation while YaPB remains authoritative for follow movement and timeout behavior. ThrowGrenade reuses YaPB's ThrowExplosive mechanic for an explicit target position; the AI executor owns action validation and lifecycle while YaPB remains authoritative for trajectory and weapon input. ThrowFlashbang reuses YaPB's ThrowFlashbang mechanic with the same target-position contract and a separate AI-owned lifecycle. ChangeWeapon owns only the semantic weapon-category intent; the YaPB adapter resolves it to an owned concrete weapon and uses `selectWeaponById()`. Completion is observed from the current weapon category. Cancellation does not attempt to undo an already-issued GoldSrc weapon-selection command. Reload remains YaPB-owned because its automatic reload state machine spans `checkReload()` and shared combat/task state. Other task-backed actions remain transitional until their direct execution semantics are implemented.
 
 ## Runtime integration
 
@@ -221,7 +221,7 @@ Avoid creating multiple independent sources of truth for episode and pending-act
 
 Waypoint information is part of the navigation/observation pipeline. It should be exposed to the AI through model-facing contracts rather than forcing inference code to know engine internals.
 
-The inference feature contract must use fixed-size C arrays where a fixed-size feature vector is required. Do not introduce `std::array` into the AI contract or feature encoder. The Python feature contract mirrors the current ordered 232-value layout for tooling and analysis. The current C++ task one-hot block covers all 21 task values, including `Spraypaint`. The feature schema is version 3 and the model input width is 232. The feature vector also includes normalized task_time_remaining, which lets the teacher and learned policy distinguish short internal Pause states from the long Pause used for HoldThisPosition.
+The inference feature contract must use fixed-size C arrays where a fixed-size feature vector is required. Do not introduce `std::array` into the AI contract or feature encoder. The Python feature contract mirrors the current ordered 243-value layout for tooling and analysis. The current C++ task one-hot block covers all 21 task values, including `Spraypaint`. The feature schema is version 5 and the model input width is 243. The feature vector also includes normalized task_time_remaining, which lets the teacher and learned policy distinguish short internal Pause states from the long Pause used for HoldThisPosition.
 
 ## Design principles
 

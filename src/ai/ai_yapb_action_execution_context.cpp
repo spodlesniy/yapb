@@ -180,6 +180,23 @@ void YaPBActionExecutionContext::cancelThrowFlashbang() {
   m_bot->m_throw.clear();
 }
 
+bool YaPBActionExecutionContext::changeWeapon(WeaponType weaponType) {
+  if (m_bot == nullptr || m_bot->pev == nullptr) return false;
+  const auto requestedType = static_cast<int>(weaponType);
+  if (requestedType <= static_cast<int>(WeaponType::Unknown) || requestedType > static_cast<int>(WeaponType::Heavy)) return false;
+  if (m_bot->m_weaponType == requestedType) return true;
+  const int weapons = m_bot->pev->weapons;
+  for (int weaponId = 1; weaponId < kMaxWeapons; ++weaponId) {
+    if (!(weapons & cr::bit(weaponId)) || conf.getWeaponType(weaponId) != requestedType) continue;
+    m_bot->selectWeaponById(weaponId);
+    return true;
+  }
+  return false;
+}
+
+void YaPBActionExecutionContext::cancelChangeWeapon() {
+}
+
 void YaPBActionExecutionContext::cancelFollowPlayer(int targetPlayer) {
   if (m_bot == nullptr) return;
   if (targetPlayer > 0 && !game.isNullEntity(m_bot->m_targetEntity) && game.indexOfEntity(m_bot->m_targetEntity) == targetPlayer) {

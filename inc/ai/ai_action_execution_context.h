@@ -31,6 +31,8 @@ public:
 
   virtual bool followPlayer(int targetPlayer) = 0;
   virtual void cancelFollowPlayer(int targetPlayer) = 0;
+  virtual bool changeWeapon(WeaponType weaponType) = 0;
+  virtual void cancelChangeWeapon() = 0;
 
   virtual bool throwGrenade(const Vec3 &position) = 0;
   virtual void cancelThrowGrenade() = 0;
