@@ -38,6 +38,7 @@ private:
   bool m_directHuntTargetActive {};
   bool m_directSeekCoverActive {};
   bool m_directEscapeFromBombActive {};
+  bool m_directRescueHostageActive {};
   bool m_directPlantBombActive {};
   bool m_directDefuseBombActive {};
   bool m_directPickupItemActive {};
@@ -59,6 +60,7 @@ private:
   ActionResult executeHuntTarget(const Action &action, const Observation &observation);
   ActionResult executeSeekCover(const Action &action);
   ActionResult executeEscapeFromBomb(const Action &action, const Observation &observation);
+  ActionResult executeRescueHostage(const Action &action, const Observation &observation);
   ActionResult executePlantBomb(const Action &action, const Observation &observation);
   ActionResult executeDefuseBomb(const Action &action, const Observation &observation);
   ActionResult executePickupItem(const Action &action);

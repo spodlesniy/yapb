@@ -403,3 +403,9 @@ Reason: weapon selection has a clean intent boundary, while Reload remains YaPB-
 `ActionType::AimAtTarget` owns the semantic intent to aim at an observed live enemy without requesting firing. The execution context reuses YaPB's enemy targeting and aiming primitive while explicitly clearing the fire request, and the AI executor owns target validation, lifecycle, and cancellation.
 
 Reason: aiming is a distinct model action with an existing player-target contract and can reuse the established combat targeting state without introducing a new engine-facing input abstraction.
+
+## D065 — Make RescueHostage a direct AI-owned action
+
+`ActionType::RescueHostage` owns the intent to deliver already attached hostages to a hostage rescue point. The YaPB adapter selects a rescue waypoint through the existing goal-selection logic and reuses `MoveToPosition` for path progression. The AI executor owns the action lifecycle and cancellation; hostage attachment and actual rescue completion remain authoritative in the game state.
+
+Reason: hostage rescue has a concrete objective target and a stable observable completion signal, unlike Retreat and the current ThrowSmoke/Reload cases, which do not yet expose an isolated execution boundary.

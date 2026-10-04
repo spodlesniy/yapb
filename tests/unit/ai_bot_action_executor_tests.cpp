@@ -51,6 +51,8 @@ public:
   int cancelSeekCoverCalls {};
   int escapeFromBombCalls {};
   int cancelEscapeFromBombCalls {};
+  int rescueHostageCalls {};
+  int cancelRescueHostageCalls {};
   int lastNode { -1 };
   int lastAttackTarget { -1 };
   int lastAimTarget { -1 };
@@ -59,6 +61,7 @@ public:
   bool huntTargetReached {};
   bool seekCoverReached {};
   bool escapeFromBombReached {};
+  bool rescueHostageAvailable { true };
   int plantBombCalls {};
   int cancelPlantBombCalls {};
   int defuseBombCalls {};
@@ -184,6 +187,15 @@ public:
 
   void cancelEscapeFromBomb() override {
     ++cancelEscapeFromBombCalls;
+  }
+
+  bool rescueHostage() override {
+    ++rescueHostageCalls;
+    return rescueHostageAvailable;
+  }
+
+  void cancelRescueHostage() override {
+    ++cancelRescueHostageCalls;
   }
 
   bool plantBomb() override {
@@ -805,6 +817,46 @@ AI_TEST(testBotActionExecutorCancelsDirectEscapeFromBomb) {
   executor.cancel();
 
   expect(context.cancelEscapeFromBombCalls == 1, "cancel releases direct escape");
+}
+
+AI_TEST(testBotActionExecutorDirectlyExecutesRescueHostage) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+  auto observation = aliveObservation();
+  observation.bot.hasHostage = true;
+  ai::Action action {};
+  action.type = ai::ActionType::RescueHostage;
+
+  const auto result = executor.execute(action, observation);
+
+  expect(result.type == ai::ActionResultType::Accepted, "rescue action is accepted");
+  expect(context.rescueHostageCalls == 1, "rescue action invokes context");
+}
+
+AI_TEST(testBotActionExecutorCompletesRescueHostageWhenHostageIsRescued) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+  auto observation = aliveObservation();
+  observation.bot.hasHostage = true;
+  ai::Action action {};
+  action.type = ai::ActionType::RescueHostage;
+
+  expect(executor.execute(action, observation).type == ai::ActionResultType::Accepted, "rescue action starts");
+  observation.bot.hasHostage = false;
+  expect(executor.execute(action, observation).type == ai::ActionResultType::Completed, "rescue action completes after hostage state clears");
+  expect(context.cancelRescueHostageCalls == 1, "rescue cancellation is delegated");
+}
+
+AI_TEST(testBotActionExecutorRejectsUnavailableRescue) {
+  MockActionExecutionContext context {};
+  context.rescueHostageAvailable = false;
+  ai::BotActionExecutor executor(context);
+  auto observation = aliveObservation();
+  observation.bot.hasHostage = true;
+  ai::Action action {};
+  action.type = ai::ActionType::RescueHostage;
+
+  expect(executor.execute(action, observation).type == ai::ActionResultType::Rejected, "unavailable rescue is rejected");
 }
 
 AI_TEST(testBotActionExecutorDirectlyExecutesPlantBomb) {

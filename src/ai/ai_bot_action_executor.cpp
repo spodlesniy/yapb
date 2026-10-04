@@ -92,6 +92,9 @@ void BotActionExecutor::cancel() {
   if (m_directEscapeFromBombActive && m_context != nullptr) {
     m_context->cancelEscapeFromBomb();
   }
+  if (m_directRescueHostageActive && m_context != nullptr) {
+    m_context->cancelRescueHostage();
+  }
   if (m_directPlantBombActive && m_context != nullptr) {
     m_context->cancelPlantBomb();
   }
@@ -131,6 +134,7 @@ void BotActionExecutor::cancel() {
   m_directHuntAction = {};
   m_directSeekCoverActive = false;
   m_directEscapeFromBombActive = false;
+  m_directRescueHostageActive = false;
   m_directPlantBombActive = false;
   m_directDefuseBombActive = false;
   m_directPickupItemActive = false;
@@ -279,6 +283,17 @@ ActionResult BotActionExecutor::execute(const Action &action, const Observation 
     m_observedTaskActive = false;
     m_observedTaskAction = {};
     return executePlantBomb(action, observation);
+
+  case ActionType::RescueHostage:
+    m_directAttackTargetActive = false;
+    m_directAttackAction = {};
+    m_directHuntTargetActive = false;
+    m_directHuntAction = {};
+    m_directSeekCoverActive = false;
+    m_directEscapeFromBombActive = false;
+    m_observedTaskActive = false;
+    m_observedTaskAction = {};
+    return executeRescueHostage(action, observation);
 
   case ActionType::DefuseBomb:
     m_directAttackTargetActive = false;
@@ -505,6 +520,30 @@ ActionResult BotActionExecutor::executeEscapeFromBomb(const Action &action, cons
   }
 
   m_directEscapeFromBombActive = true;
+  return { action.type, ActionResultType::Accepted, 0.0f };
+}
+
+ActionResult BotActionExecutor::executeRescueHostage(const Action &action, const Observation &observation) {
+  const bool hasHostage = observation.bot.hasHostage;
+  if (!hasHostage) {
+    if (!m_directRescueHostageActive) {
+      return { action.type, ActionResultType::Rejected, 0.0f };
+    }
+
+    cancel();
+    return { action.type, ActionResultType::Completed, 0.0f };
+  }
+
+  if (!m_context->rescueHostage()) {
+    if (!m_directRescueHostageActive) {
+      return { action.type, ActionResultType::Rejected, 0.0f };
+    }
+
+    cancel();
+    return { action.type, ActionResultType::Failed, 0.0f };
+  }
+
+  m_directRescueHostageActive = true;
   return { action.type, ActionResultType::Accepted, 0.0f };
 }
 

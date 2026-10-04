@@ -28,6 +28,9 @@ private:
   bool m_escapeFromBombActive {};
   int m_escapeFromBombNode { -1 };
   bool m_escapeFromBombNavigationTaskCreated {};
+  bool m_rescueHostageActive {};
+  int m_rescueHostageNode { -1 };
+  bool m_rescueHostageNavigationTaskCreated {};
 
 public:
   explicit YaPBActionExecutionContext(Bot &bot);
@@ -67,6 +70,9 @@ public:
   bool escapeFromBomb() override;
   bool isEscapeFromBombReached() const override;
   void cancelEscapeFromBomb() override;
+
+  bool rescueHostage() override;
+  void cancelRescueHostage() override;
 
   bool plantBomb() override;
   void cancelPlantBomb() override;

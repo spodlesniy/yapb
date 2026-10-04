@@ -705,6 +705,77 @@ void YaPBActionExecutionContext::cancelEscapeFromBomb() {
   m_escapeFromBombNavigationTaskCreated = false;
 }
 
+bool YaPBActionExecutionContext::rescueHostage() {
+  if (m_bot == nullptr || m_bot->pev == nullptr || !m_bot->m_hasHostage
+      || !game.mapIs(MapFlags::HostageRescue) || graph.m_rescuePoints.empty()) {
+    return false;
+  }
+
+  if (!m_rescueHostageActive) {
+    const auto currentTask = m_bot->getCurrentTaskId();
+
+    if (currentTask != Task::Normal && currentTask != Task::MoveToPosition) {
+      return false;
+    }
+
+    m_bot->ensureCurrentNodeIndex();
+    const int node = m_bot->findGoalPost(GoalTactic::RescueHostage, nullptr, nullptr);
+
+    if (!graph.exists(node) || !(graph[node].flags & NodeFlag::Rescue)) {
+      return false;
+    }
+
+    m_rescueHostageActive = true;
+    m_rescueHostageNode = node;
+    m_rescueHostageNavigationTaskCreated = false;
+
+    if (currentTask == Task::MoveToPosition) {
+      m_bot->clearTask(Task::MoveToPosition);
+    }
+
+    m_bot->startTask(Task::MoveToPosition, TaskPri::MoveToPosition, node, 0.0f, true);
+    m_rescueHostageNavigationTaskCreated = true;
+  }
+
+  if (m_bot->getCurrentTaskId() != Task::MoveToPosition) {
+    if (m_bot->getCurrentTaskId() != Task::Normal) {
+      return false;
+    }
+
+    m_bot->startTask(Task::MoveToPosition, TaskPri::MoveToPosition, m_rescueHostageNode, 0.0f, true);
+  }
+
+  m_bot->getTask()->data = m_rescueHostageNode;
+  m_bot->m_position.clear();
+  m_bot->m_prevGoalIndex = m_rescueHostageNode;
+  m_bot->m_chosenGoalIndex = m_rescueHostageNode;
+  m_bot->m_aimFlags |= AimFlags::Nav;
+  return true;
+}
+
+void YaPBActionExecutionContext::cancelRescueHostage() {
+  if (m_bot == nullptr) {
+    return;
+  }
+
+  if (m_rescueHostageActive && m_rescueHostageNavigationTaskCreated
+      && m_bot->getCurrentTaskId() == Task::MoveToPosition) {
+    m_bot->clearTask(Task::MoveToPosition);
+  }
+
+  if (m_rescueHostageActive) {
+    m_bot->clearSearchNodes();
+    m_bot->m_prevGoalIndex = kInvalidNodeIndex;
+    m_bot->m_chosenGoalIndex = kInvalidNodeIndex;
+    m_bot->m_position.clear();
+    m_bot->m_aimFlags &= ~AimFlags::Nav;
+  }
+
+  m_rescueHostageActive = false;
+  m_rescueHostageNode = kInvalidNodeIndex;
+  m_rescueHostageNavigationTaskCreated = false;
+}
+
 
 
 } // namespace ai
