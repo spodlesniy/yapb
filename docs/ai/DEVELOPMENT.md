@@ -113,6 +113,22 @@ Never modify or push to:
 
 The repository fork is the only intended development target for AiPB changes.
 
+### Tool-operation budgets and substep planning
+
+Tool and connector operation budgets are an execution constraint separate from Git history. Plans must account for the available operation budget before starting a large edit.
+
+For each iteration:
+
+- Batch related repository reads before editing and reuse the returned contents instead of re-fetching unchanged files.
+- Prepare the complete logical change before publishing it, so the publication phase does not consume operations on repeated discovery or corrective micro-edits.
+- Prefer atomic Git Data publication for a multi-file logical change: build from the verified current parent tree, create the required objects, create one commit, and move the target branch once.
+- Keep each implementation substep small enough to fit the currently available tool-operation budget, including the reads, edits, tests, documentation, and verification needed for that substep.
+- When a larger logical task would exceed the available operation budget, split it at a real semantic or testable boundary into multiple complete iterations. Each substep must leave the repository in a coherent state and may have its own single commit; do not split solely to create micro-commits or to repeat the same work.
+- Do not begin a publication sequence that is already likely to exceed the remaining operation budget. Reduce the number of files/operations through batching or move the next coherent substep to a new iteration.
+- After publication, perform only the verification needed for that commit: confirm the branch head and inspect the resulting diff/status instead of repeating full discovery.
+
+The exact operation budget can vary by tool/runtime and should not be assumed from a previous turn. The development plan should therefore optimize for low operation count and bounded batches rather than depend on a fixed numeric limit.
+
 ## GitHub interaction and commit discipline
 
 Current GitHub interaction limits are treated as an execution constraint, not as a reason to fragment the repository history. Before editing, batch the required reads and avoid re-fetching unchanged files. For a completed logical iteration, prepare the full implementation, focused tests, and required documentation together, then publish them as exactly one commit. Intermediate corrective changes are folded into the same iteration whenever they are discovered before publication; they must not become separate micro-commits merely to reduce the size of an individual API operation.
