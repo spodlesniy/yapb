@@ -59,6 +59,25 @@ AI_TEST(testTrainingRecorderEndsEpisode) {
   expect(buffer.empty(), "endEpisode preserves the completed transition buffer");
 }
 
+AI_TEST(testTrainingBufferCountsBufferedEpisodes) {
+  ai::TrainingBuffer buffer {};
+  const auto firstEpisode = buffer.beginEpisode();
+  const auto secondEpisode = buffer.beginEpisode();
+  const auto action = makeMoveAction(41);
+
+  expect(buffer.append(firstEpisode, makeObservation(1.0f, 40), action, 1.0f,
+                       makeObservation(1.5f, 41), makeCompletedResult(action.type)),
+         "episode count test appends the first transition");
+  expect(buffer.append(secondEpisode, makeObservation(2.0f, 41), action, 1.0f,
+                       makeObservation(2.5f, 42), makeCompletedResult(action.type)),
+         "episode count test appends the second transition");
+  expect(buffer.append(firstEpisode, makeObservation(3.0f, 42), action, 1.0f,
+                       makeObservation(3.5f, 43), makeCompletedResult(action.type)),
+         "episode count test appends another transition from the first episode");
+
+  expect(buffer.episodeCount() == 2, "training buffer counts unique buffered episode ids");
+}
+
 AI_TEST(testTrainingBufferExposesReadOnlyData) {
   ai::TrainingBuffer buffer {};
   ai::TrainingRecorder recorder { buffer };

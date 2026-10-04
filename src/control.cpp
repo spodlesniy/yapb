@@ -381,6 +381,17 @@ int BotControl::cmdSaveTraining () {
    return BotCommandResult::Handled;
 }
 
+int BotControl::cmdTrainingStatus () {
+   const auto &buffer = ai::getTrainingBuffer ();
+
+   msg ("AI training buffer: %d/%d transitions, %d episodes, %d dropped.",
+      static_cast <int> (buffer.size ()),
+      static_cast <int> (ai::kTrainingTransitionCapacity),
+      static_cast <int> (buffer.episodeCount ()),
+      static_cast <int> (buffer.droppedTransitions ()));
+   return BotCommandResult::Handled;
+}
+
 int BotControl::cmdClearTraining () {
    ai::getTrainingBuffer ().clear ();
    msg ("AI training dataset has been cleared.");
@@ -2341,6 +2352,13 @@ BotControl::BotControl () {
          "Saves the collected AI training dataset to a JSONL file.",
 
          &BotControl::cmdSaveTraining
+      },
+      {
+         "ai_training_status",
+         "ai_training_status [no arguments]",
+         "Displays the current AI training buffer status.",
+
+         &BotControl::cmdTrainingStatus
       },
       {
          "ai_clear_training",

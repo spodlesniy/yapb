@@ -133,6 +133,14 @@ Export a trained checkpoint to a deployment model:
 
 The command validates the ONNX graph and runtime contract and verifies output parity with ONNX Runtime before returning successfully.
 
+## In-game collection status
+
+During a Training session, inspect the bounded in-memory collector from the server console:
+
+    ai_training_status
+
+The command reports buffered transitions, unique buffered episode IDs, total buffer capacity, and transitions dropped after the buffer became full. It does not save or clear data.
+
 ## Dataset statistics
 
 Inspect dataset composition before training:

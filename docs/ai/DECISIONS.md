@@ -369,3 +369,9 @@ Reason: action coverage is a key prerequisite for supervised policy training, bu
 The dataset quality tool supports per-action minimum sample counts and per-action minimum episode counts. Episode coverage is separate because the training/validation split keeps complete episodes together.
 
 Reason: a large sample count concentrated in one episode can still leave an action absent from the held-out split. Requiring episode coverage gives experiments a way to request diversity without requiring complete action coverage.
+
+## D059 — Expose in-game training buffer status
+
+The server command `ai_training_status` reports buffered transitions, unique buffered episode IDs, capacity, and dropped transitions without mutating the training buffer.
+
+Reason: long Training sessions need a low-cost operational check before saving data. The status command makes buffer pressure and collection progress visible directly in the game server console while leaving save/clear operations explicit.

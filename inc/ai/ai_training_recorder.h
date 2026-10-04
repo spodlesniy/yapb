@@ -101,6 +101,27 @@ public:
     return m_size == 0;
   }
 
+  size_t episodeCount() const {
+    size_t count = 0;
+
+    for (size_t i = 0; i < m_size; ++i) {
+      bool seen = false;
+
+      for (size_t j = 0; j < i; ++j) {
+        if (m_transitions[j].episodeId == m_transitions[i].episodeId) {
+          seen = true;
+          break;
+        }
+      }
+
+      if (!seen) {
+        ++count;
+      }
+    }
+
+    return count;
+  }
+
   const TrainingTransition &at(size_t index) const {
     return m_transitions[index];
   }

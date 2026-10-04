@@ -104,6 +104,7 @@ private:
    int cmdShowCustom ();
    int cmdExec ();
    int cmdSaveTraining ();
+   int cmdTrainingStatus ();
    int cmdClearTraining ();
    int cmdNode ();
    int cmdNodeOn ();
