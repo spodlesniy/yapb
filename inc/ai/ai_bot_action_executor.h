@@ -20,8 +20,6 @@ class ActionExecutionContext;
 class BotActionExecutor final : public ActionExecutor {
 private:
   ActionExecutionContext *m_context {};
-  Action m_observedTaskAction {};
-  bool m_observedTaskActive {};
   Action m_directAttackAction {};
   bool m_directAttackTargetActive {};
   Action m_directAimAction {};
@@ -72,7 +70,6 @@ private:
   ActionResult executeWait(const Action &action);
   ActionResult executeHoldPosition(const Action &action);
   ActionResult executeHide(const Action &action);
-  ActionResult executeObservedTaskAction(const Action &action, const Observation &observation);
 
 public:
   explicit BotActionExecutor(ActionExecutionContext &context);

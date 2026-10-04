@@ -1462,3 +1462,16 @@ AI_TEST(testBotActionExecutorCancelsDirectHide) {
   expect(context.cancelHideCalls == 1, "cancel releases direct hide");
 }
 
+
+AI_TEST(testBotActionExecutorRejectsUnsupportedAction) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor { context };
+  auto observation = aliveObservation();
+
+  ai::Action action {};
+  action.type = ai::ActionType::Reload;
+
+  expect(executor.execute(action, observation).type == ai::ActionResultType::Rejected,
+      "unsupported reload action is rejected");
+}
+

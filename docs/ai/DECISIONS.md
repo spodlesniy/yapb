@@ -450,3 +450,10 @@ Reason: stale dimensional documentation can produce incorrectly shaped training 
 The legacy ThrowSmoke task retains its original target calculation from the last observed enemy position, bot velocity, and current enemy velocity. AI-owned ThrowSmoke actions use an explicit target stored by the AI execution context and keep that target stable for the action lifecycle. The explicit AI target state is cleared whenever the smoke task is cancelled or completed.
 
 Reason: converting legacy smoke throwing to a stored target changed the timing semantics of existing YaPB behavior. Separating the legacy calculation from the AI-owned target preserves backward compatibility while still giving the model a precise target-position contract.
+
+
+## D072 — Remove the obsolete observed-task acknowledgement layer
+
+The BotActionExecutor no longer uses a generic observed-YaPB-task acknowledgement path. Actions with explicit execution semantics are dispatched only through their dedicated executor and ActionExecutionContext capabilities; actions without such a capability are rejected. The obsolete ai_action_task_mapping header and unit test are removed.
+
+Reason: every action previously recognized by the observed-task mapper already has a dedicated executor branch and semantic execution capability. Keeping the mapper duplicated action semantics and could make an action appear accepted without an explicit AI-owned execution boundary.

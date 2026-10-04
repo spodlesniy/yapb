@@ -9,7 +9,6 @@
 #include <cmath>
 
 #include <ai/ai_action_execution_context.h>
-#include <ai/ai_action_task_mapping.h>
 #include <ai/ai_bot_action_executor.h>
 
 namespace ai {
@@ -146,8 +145,6 @@ void BotActionExecutor::cancel() {
   m_directWaitActive = false;
   m_directHoldPositionActive = false;
   m_directHideActive = false;
-  m_observedTaskActive = false;
-  m_observedTaskAction = {};
 }
 
 ActionResult BotActionExecutor::execute(const Action &action, const Observation &observation) {
@@ -165,15 +162,11 @@ ActionResult BotActionExecutor::execute(const Action &action, const Observation 
   case ActionType::MoveToNode:
     m_directAttackTargetActive = false;
     m_directAttackAction = {};
-    m_observedTaskActive = false;
-    m_observedTaskAction = {};
     return executeMoveToNode(action);
 
   case ActionType::MoveToPosition:
     m_directAttackTargetActive = false;
     m_directAttackAction = {};
-    m_observedTaskActive = false;
-    m_observedTaskAction = {};
     return executeMoveToPosition(action);
 
   case ActionType::AttackTarget:
@@ -184,8 +177,6 @@ ActionResult BotActionExecutor::execute(const Action &action, const Observation 
     }
     m_directHuntTargetActive = false;
     m_directHuntAction = {};
-    m_observedTaskActive = false;
-    m_observedTaskAction = {};
     return executeAttackTarget(action, observation);
 
   case ActionType::AimAtTarget:
@@ -196,20 +187,14 @@ ActionResult BotActionExecutor::execute(const Action &action, const Observation 
     }
     m_directHuntTargetActive = false;
     m_directHuntAction = {};
-    m_observedTaskActive = false;
-    m_observedTaskAction = {};
     return executeAimAtTarget(action, observation);
 
   case ActionType::FollowPlayer:
     m_directAttackTargetActive = false;
     m_directAttackAction = {};
-    m_observedTaskActive = false;
-    m_observedTaskAction = {};
     return executeFollowPlayer(action, observation);
 
   case ActionType::ChangeWeapon:
-    m_observedTaskActive = false;
-    m_observedTaskAction = {};
     return executeChangeWeapon(action, observation);
 
   case ActionType::ThrowGrenade:
@@ -255,8 +240,6 @@ ActionResult BotActionExecutor::execute(const Action &action, const Observation 
     m_directAttackTargetActive = false;
     m_directAttackAction = {};
     m_directSeekCoverActive = false;
-    m_observedTaskActive = false;
-    m_observedTaskAction = {};
     return executeHuntTarget(action, observation);
 
   case ActionType::SeekCover:
@@ -265,8 +248,6 @@ ActionResult BotActionExecutor::execute(const Action &action, const Observation 
     m_directHuntTargetActive = false;
     m_directHuntAction = {};
     m_directEscapeFromBombActive = false;
-    m_observedTaskActive = false;
-    m_observedTaskAction = {};
     return executeSeekCover(action);
 
   case ActionType::EscapeFromBomb:
@@ -275,28 +256,18 @@ ActionResult BotActionExecutor::execute(const Action &action, const Observation 
     m_directHuntTargetActive = false;
     m_directHuntAction = {};
     m_directSeekCoverActive = false;
-    m_observedTaskActive = false;
-    m_observedTaskAction = {};
     return executeEscapeFromBomb(action, observation);
 
   case ActionType::Camp:
-    m_observedTaskActive = false;
-    m_observedTaskAction = {};
     return executeCamp(action);
 
   case ActionType::Wait:
-    m_observedTaskActive = false;
-    m_observedTaskAction = {};
     return executeWait(action);
 
   case ActionType::HoldPosition:
-    m_observedTaskActive = false;
-    m_observedTaskAction = {};
     return executeHoldPosition(action);
 
   case ActionType::Hide:
-    m_observedTaskActive = false;
-    m_observedTaskAction = {};
     return executeHide(action);
 
   case ActionType::PlantBomb:
@@ -306,8 +277,6 @@ ActionResult BotActionExecutor::execute(const Action &action, const Observation 
     m_directHuntAction = {};
     m_directSeekCoverActive = false;
     m_directEscapeFromBombActive = false;
-    m_observedTaskActive = false;
-    m_observedTaskAction = {};
     return executePlantBomb(action, observation);
 
   case ActionType::RescueHostage:
@@ -317,8 +286,6 @@ ActionResult BotActionExecutor::execute(const Action &action, const Observation 
     m_directHuntAction = {};
     m_directSeekCoverActive = false;
     m_directEscapeFromBombActive = false;
-    m_observedTaskActive = false;
-    m_observedTaskAction = {};
     return executeRescueHostage(action, observation);
 
   case ActionType::DefuseBomb:
@@ -329,8 +296,6 @@ ActionResult BotActionExecutor::execute(const Action &action, const Observation 
     m_directSeekCoverActive = false;
     m_directEscapeFromBombActive = false;
     m_directPlantBombActive = false;
-    m_observedTaskActive = false;
-    m_observedTaskAction = {};
     return executeDefuseBomb(action, observation);
 
   case ActionType::PickupItem:
@@ -342,8 +307,6 @@ ActionResult BotActionExecutor::execute(const Action &action, const Observation 
     m_directEscapeFromBombActive = false;
     m_directPlantBombActive = false;
     m_directDefuseBombActive = false;
-    m_observedTaskActive = false;
-    m_observedTaskAction = {};
     return executePickupItem(action);
 
   case ActionType::Fire:
@@ -356,13 +319,9 @@ ActionResult BotActionExecutor::execute(const Action &action, const Observation 
     m_directPlantBombActive = false;
     m_directDefuseBombActive = false;
     m_directPickupItemActive = false;
-    m_observedTaskActive = false;
-    m_observedTaskAction = {};
     return executeFireBreakable(action);
 
   default:
-    m_observedTaskActive = false;
-    m_observedTaskAction = {};
     return { action.type, ActionResultType::Rejected, 0.0f };
   }
 }
@@ -728,28 +687,6 @@ ActionResult BotActionExecutor::executeHide(const Action &action) {
 
   m_directHideActive = true;
   return { action.type, ActionResultType::Accepted, 0.0f };
-}
-
-ActionResult BotActionExecutor::executeObservedTaskAction(const Action &action, const Observation &observation) {
-  if (!m_observedTaskActive || !sameObservedTaskAction(action, m_observedTaskAction)) {
-    m_observedTaskActive = false;
-
-    if (!actionMatchesObservedTask(action, observation)) {
-      return { action.type, ActionResultType::Rejected, 0.0f };
-    }
-
-    m_observedTaskAction = action;
-    m_observedTaskActive = true;
-    return { action.type, ActionResultType::Accepted, 0.0f };
-  }
-
-  if (actionMatchesObservedTask(action, observation)) {
-    return { action.type, ActionResultType::Accepted, 0.0f };
-  }
-
-  m_observedTaskActive = false;
-  m_observedTaskAction = {};
-  return { action.type, ActionResultType::Completed, 0.0f };
 }
 
 ActionResult BotActionExecutor::executeMoveToNode(const Action &action) {
