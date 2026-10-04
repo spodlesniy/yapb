@@ -103,6 +103,9 @@ void BotActionExecutor::cancel() {
   if (m_directWaitActive && m_context != nullptr) {
     m_context->cancelWait();
   }
+  if (m_directHoldPositionActive && m_context != nullptr) {
+    m_context->cancelHoldPosition();
+  }
   if (m_directHideActive && m_context != nullptr) {
     m_context->cancelHide();
   }
@@ -118,6 +121,7 @@ void BotActionExecutor::cancel() {
   m_directFireBreakableActive = false;
   m_directCampActive = false;
   m_directWaitActive = false;
+  m_directHoldPositionActive = false;
   m_directHideActive = false;
   m_observedTaskActive = false;
   m_observedTaskAction = {};
@@ -195,7 +199,9 @@ ActionResult BotActionExecutor::execute(const Action &action, const Observation 
     return executeWait(action);
 
   case ActionType::HoldPosition:
-    return executeObservedTaskAction(action, observation);
+    m_observedTaskActive = false;
+    m_observedTaskAction = {};
+    return executeHoldPosition(action);
 
   case ActionType::Hide:
     m_observedTaskActive = false;
@@ -453,6 +459,20 @@ ActionResult BotActionExecutor::executeWait(const Action &action) {
   }
 
   m_directWaitActive = true;
+  return { action.type, ActionResultType::Accepted, 0.0f };
+}
+
+ActionResult BotActionExecutor::executeHoldPosition(const Action &action) {
+  if (!m_context->holdPosition()) {
+    if (!m_directHoldPositionActive) {
+      return { action.type, ActionResultType::Rejected, 0.0f };
+    }
+
+    cancel();
+    return { action.type, ActionResultType::Completed, 0.0f };
+  }
+
+  m_directHoldPositionActive = true;
   return { action.type, ActionResultType::Accepted, 0.0f };
 }
 

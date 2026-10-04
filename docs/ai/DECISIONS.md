@@ -304,7 +304,7 @@ Reason: Wait has unambiguous Pause semantics and can be made directly executable
 
 ## D047 — Keep Pause, HoldPosition, and Hide semantically distinct
 
-`Task::Pause` is the legacy wait/hold-position primitive used by behaviors such as the `HoldThisPosition` radio order. `Task::Hide` is a separate tactical behavior entered after `SeekCover` and contains enemy-aware concealment logic. The AI action taxonomy therefore keeps `Wait` mapped to Pause, `HoldPosition` mapped to Pause for legacy compatibility, and `Hide` as a distinct action label. `Hide` is appended to the model action-ID contract so existing IDs 0–24 remain stable; the action schema version increments to 2.
+`Task::Pause` is the legacy wait/hold-position primitive used by behaviors such as the `HoldThisPosition` radio order. `Task::Hide` is a separate tactical behavior entered after `SeekCover` and contains enemy-aware concealment logic. The AI action taxonomy therefore keeps `Wait` and `HoldPosition` as distinct semantic actions that both use the Pause primitive, and `Hide` as a distinct action label. `Hide` is appended to the model action-ID contract so existing IDs 0–24 remain stable; the action schema version increments to 2.
 
 Reason: combining Pause and Hide would teach the policy that a temporary wait/hold behavior and an enemy-concealment behavior are interchangeable, which would corrupt teacher labels and reduce the semantic usefulness of the trained policy.
 
@@ -313,6 +313,12 @@ Reason: combining Pause and Hide would teach the policy that a temporary wait/ho
 Development communication should be concise and technical. Avoid repeating established project state, architecture, or decisions; include only information needed to understand the current implementation step, its validation, failures, and decisions. Batch repository reads and use the resulting analysis to minimize redundant tool calls and repeated discussion.
 
 Reason: the conversation context has a finite size, so unnecessary output reduces the amount of project state that can remain available for subsequent development. Concise communication preserves context for code, tests, documentation, and unresolved engineering decisions without reducing the completeness of the repository itself.
+
+## D050 — Make HoldPosition a direct AI-owned action over the Pause primitive
+
+`ActionType::HoldPosition` is executed through `ActionExecutionContext`. The YaPB adapter accepts it from the normal task state and starts the existing `Task::Pause` mechanic with the established short hold duration range. The AI executor owns the action lifecycle and cancellation; legacy task execution remains enabled. `Wait` and `HoldPosition` remain distinct AI semantics even though they share the same engine primitive.
+
+Reason: HoldPosition is an explicit tactical intent already represented by the AI action contract and teacher mapping. Giving it its own execution lifecycle removes the final Pause-backed AI action from the generic observed-task compatibility path without duplicating YaPB's waiting/holding mechanics.
 
 ## D049 — Make Hide a direct AI-owned action over the existing Hide mechanic
 

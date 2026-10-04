@@ -74,6 +74,9 @@ public:
   bool wait() override;
   void cancelWait() override;
 
+  bool holdPosition() override;
+  void cancelHoldPosition() override;
+
   bool hide() override;
   void cancelHide() override;
 };

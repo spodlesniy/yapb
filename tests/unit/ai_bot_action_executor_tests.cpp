@@ -56,6 +56,9 @@ public:
   int cancelCampCalls {};
   int waitCalls {};
   int cancelWaitCalls {};
+  bool holdPositionAvailable {};
+  int holdPositionCalls {};
+  int cancelHoldPositionCalls {};
   bool hideAvailable {};
   int hideCalls {};
   int cancelHideCalls {};
@@ -198,6 +201,15 @@ public:
 
   void cancelWait() override {
     ++cancelWaitCalls;
+  }
+
+  bool holdPosition() override {
+    ++holdPositionCalls;
+    return holdPositionAvailable;
+  }
+
+  void cancelHoldPosition() override {
+    ++cancelHoldPositionCalls;
   }
 
   bool hide() override {
@@ -1008,6 +1020,65 @@ AI_TEST(testBotActionExecutorCancelsDirectWait) {
   expect(context.cancelWaitCalls == 1, "cancel releases direct wait");
 }
 
+AI_TEST(testBotActionExecutorDirectlyExecutesHoldPosition) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  context.holdPositionAvailable = true;
+  auto action = ai::Action {};
+  action.type = ai::ActionType::HoldPosition;
+
+  const auto result = executor.execute(action, aliveObservation());
+
+  expect(result.type == ai::ActionResultType::Accepted, "hold position is accepted when the runtime can start it");
+  expect(context.holdPositionCalls == 1, "hold position is delegated");
+  expect(!executor.suppressesLegacyTaskExecution(), "hold position keeps legacy task execution enabled");
+}
+
+AI_TEST(testBotActionExecutorCompletesHoldPositionWhenRuntimeStopsIt) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  context.holdPositionAvailable = true;
+  auto action = ai::Action {};
+  action.type = ai::ActionType::HoldPosition;
+
+  auto result = executor.execute(action, aliveObservation());
+  expect(result.type == ai::ActionResultType::Accepted, "hold position starts while available");
+
+  context.holdPositionAvailable = false;
+  result = executor.execute(action, aliveObservation());
+
+  expect(result.type == ai::ActionResultType::Completed, "hold position completes when the runtime stops it");
+  expect(context.cancelHoldPositionCalls == 1, "completion releases direct hold position");
+}
+
+AI_TEST(testBotActionExecutorRejectsHoldPositionWhenRuntimeCannotStartIt) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  auto action = ai::Action {};
+  action.type = ai::ActionType::HoldPosition;
+
+  const auto result = executor.execute(action, aliveObservation());
+
+  expect(result.type == ai::ActionResultType::Rejected, "hold position is rejected when the runtime cannot start it");
+}
+
+AI_TEST(testBotActionExecutorCancelsDirectHoldPosition) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  context.holdPositionAvailable = true;
+  auto action = ai::Action {};
+  action.type = ai::ActionType::HoldPosition;
+
+  executor.execute(action, aliveObservation());
+  executor.cancel();
+
+  expect(context.cancelHoldPositionCalls == 1, "cancel releases direct hold position");
+}
+
 AI_TEST(testBotActionExecutorDirectlyExecutesHide) {
   MockActionExecutionContext context {};
   ai::BotActionExecutor executor(context);
@@ -1079,23 +1150,3 @@ AI_TEST(testBotActionExecutorCancelsDirectHide) {
   expect(context.cancelHideCalls == 1, "cancel releases direct hide");
 }
 
-AI_TEST(testBotActionExecutorCompletesObservedTaskLifecycle) {
-  MockActionExecutionContext context {};
-  ai::BotActionExecutor executor(context);
-
-  ai::Observation observation = aliveObservation();
-  observation.bot.currentTask = ai::TaskType::Pause;
-
-  auto action = ai::Action {};
-  action.type = ai::ActionType::HoldPosition;
-
-  auto result = executor.execute(action, observation);
-  expect(result.type == ai::ActionResultType::Accepted, "matching task starts the action");
-
-  result = executor.execute(action, observation);
-  expect(result.type == ai::ActionResultType::Accepted, "matching task keeps the action active");
-
-  observation.bot.currentTask = ai::TaskType::Normal;
-  result = executor.execute(action, observation);
-  expect(result.type == ai::ActionResultType::Completed, "leaving the observed task completes the action");
-}

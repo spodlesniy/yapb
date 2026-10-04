@@ -34,6 +34,7 @@ private:
   bool m_directFireBreakableActive {};
   bool m_directCampActive {};
   bool m_directWaitActive {};
+  bool m_directHoldPositionActive {};
   bool m_directHideActive {};
 
 private:
@@ -49,6 +50,7 @@ private:
   ActionResult executeFireBreakable(const Action &action);
   ActionResult executeCamp(const Action &action);
   ActionResult executeWait(const Action &action);
+  ActionResult executeHoldPosition(const Action &action);
   ActionResult executeHide(const Action &action);
   ActionResult executeObservedTaskAction(const Action &action, const Observation &observation);
 

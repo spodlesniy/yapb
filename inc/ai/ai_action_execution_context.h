@@ -59,6 +59,9 @@ public:
   virtual bool wait() = 0;
   virtual void cancelWait() = 0;
 
+  virtual bool holdPosition() = 0;
+  virtual void cancelHoldPosition() = 0;
+
   virtual bool hide() = 0;
   virtual void cancelHide() = 0;
 };

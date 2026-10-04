@@ -317,6 +317,32 @@ void YaPBActionExecutionContext::cancelWait() {
   }
 }
 
+bool YaPBActionExecutionContext::holdPosition() {
+  if (m_bot == nullptr || m_bot->pev == nullptr) {
+    return false;
+  }
+
+  const auto currentTask = m_bot->getCurrentTaskId();
+
+  if (currentTask == Task::Pause) {
+    return true;
+  }
+
+  if (currentTask != Task::Normal) {
+    return false;
+  }
+
+  const auto duration = m_bot->rg(30.0f, 60.0f);
+  m_bot->startTask(Task::Pause, TaskPri::Pause, kInvalidNodeIndex, game.time() + duration, false);
+  return true;
+}
+
+void YaPBActionExecutionContext::cancelHoldPosition() {
+  if (m_bot != nullptr && m_bot->getCurrentTaskId() == Task::Pause) {
+    m_bot->clearTask(Task::Pause);
+  }
+}
+
 bool YaPBActionExecutionContext::hide() {
   if (m_bot == nullptr || m_bot->pev == nullptr) {
     return false;
