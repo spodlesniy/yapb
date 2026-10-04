@@ -6,7 +6,7 @@ from __future__ import annotations
 import argparse
 
 from .dataset import load_training_dataset
-from .dataset_quality import check_quality
+from .dataset_quality import check_quality, parse_action_requirement
 from .dataset_stats import summarize_dataset
 from .training_run import TrainingConfig, run_training
 
@@ -25,6 +25,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--min-samples", type=int, default=0)
     parser.add_argument("--min-episodes", type=int, default=0)
     parser.add_argument("--max-dominant-action-share", type=float, default=None)
+    parser.add_argument("--min-action-samples", action="append", default=[], metavar="ID:COUNT",
+                        help="Require at least COUNT samples for action ID. May be repeated.")
     parser.add_argument(
         "--resume",
         default=None,
@@ -36,11 +38,18 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     _, samples = load_training_dataset(args.dataset)
+    try:
+        min_action_samples = tuple(parse_action_requirement(value) for value in args.min_action_samples)
+    except ValueError as exc:
+        print(f"quality_failure={exc}")
+        return 1
+
     quality = check_quality(
         summarize_dataset(args.dataset),
         min_samples=args.min_samples,
         min_episodes=args.min_episodes,
         max_dominant_action_share=args.max_dominant_action_share,
+        min_action_samples=min_action_samples,
     )
     for failure in quality.failures:
         print(f"quality_failure={failure}")

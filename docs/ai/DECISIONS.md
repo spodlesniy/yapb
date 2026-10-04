@@ -357,3 +357,9 @@ Reason: structural validity and experimental readiness are different properties.
 `TrainingRecorder` records a transition only after the action result is terminal. The JSONL validator therefore requires `terminal=true` for every sample instead of accepting non-terminal records that the current runtime cannot produce.
 
 Reason: allowing a second transition semantic into the dataset would make the current supervised training/evaluation pipeline ambiguous and could mask exporter or recording regressions.
+
+## D057 — Allow explicit minimum coverage for selected actions
+
+The dataset quality gate supports repeated `--min-action-samples ID:COUNT` requirements. It does not require all action IDs; callers select the actions that must have sufficient examples for a given experiment.
+
+Reason: action coverage is a key prerequisite for supervised policy training, but some model actions are currently rare or not produced by the deterministic teacher. Explicit per-action requirements provide a precise coverage contract without blocking legitimate early datasets.

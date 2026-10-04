@@ -16,11 +16,14 @@ class TrainCommandTests(unittest.TestCase):
             "--min-samples", "10000",
             "--min-episodes", "100",
             "--max-dominant-action-share", "0.8",
+            "--min-action-samples", "1:50",
+            "--min-action-samples", "8:25",
         ])
 
         self.assertEqual(args.min_samples, 10000)
         self.assertEqual(args.min_episodes, 100)
         self.assertEqual(args.max_dominant_action_share, 0.8)
+        self.assertEqual(args.min_action_samples, ["1:50", "8:25"])
 
     @patch("tools.aipb_training.train.run_training")
     @patch("tools.aipb_training.train.load_training_dataset")
@@ -38,7 +41,7 @@ class TrainCommandTests(unittest.TestCase):
         load_training_dataset.return_value = (None, ())
         summarize_dataset.return_value = None
 
-        self.assertEqual(main(["dataset.jsonl", "--min-samples", "100"]), 1)
+        self.assertEqual(main(["dataset.jsonl", "--min-samples", "100", "--min-action-samples", "1:50"]), 1)
         run_training.assert_not_called()
         check_quality.assert_called_once()
 
@@ -60,7 +63,7 @@ class TrainCommandTests(unittest.TestCase):
         run_training.side_effect = RuntimeError("training reached")
 
         with self.assertRaisesRegex(RuntimeError, "training reached"):
-            main(["dataset.jsonl"])
+            main(["dataset.jsonl", "--min-action-samples", "1:0"])
 
         run_training.assert_called_once()
 
