@@ -73,7 +73,7 @@ constexpr ActionSpec getActionSpec(ActionType type) {
     return { TargetType::Position, actionParameter(ActionParameter::TargetPosition) | actionParameter(ActionParameter::GrenadeType), 0 };
   case ActionType::ThrowFlashbang:
   case ActionType::ThrowSmoke:
-    return { TargetType::Position, actionParameter(ActionParameter::TargetPosition), 0 };
+    return { TargetType::Position, actionParameter(ActionParameter::TargetPosition) | actionParameter(ActionParameter::GrenadeType), 0 };
   case ActionType::Count:
     break;
   }

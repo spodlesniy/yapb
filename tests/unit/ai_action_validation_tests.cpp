@@ -85,6 +85,28 @@ AI_TEST(testActionValidation) {
   expect(ai::ActionValidator::validate(grenade, observation).error == ai::ActionValidationError::InvalidGrenadeType,
          "missing grenade type is rejected");
 
+  ai::Action flash {};
+  flash.type = ai::ActionType::ThrowFlashbang;
+  flash.targetType = ai::TargetType::Position;
+  flash.targetPosition = { 1.0f, 2.0f, 3.0f };
+  flash.grenadeType = ai::GrenadeType::Flashbang;
+  expect(ai::ActionValidator::validate(flash, observation).isValid(), "valid flashbang action is accepted");
+
+  flash.grenadeType = ai::GrenadeType::None;
+  expect(ai::ActionValidator::validate(flash, observation).error == ai::ActionValidationError::InvalidGrenadeType,
+         "missing flashbang type is rejected");
+
+  ai::Action smoke {};
+  smoke.type = ai::ActionType::ThrowSmoke;
+  smoke.targetType = ai::TargetType::Position;
+  smoke.targetPosition = { 1.0f, 2.0f, 3.0f };
+  smoke.grenadeType = ai::GrenadeType::Smoke;
+  expect(ai::ActionValidator::validate(smoke, observation).isValid(), "valid smoke action is accepted");
+
+  smoke.grenadeType = ai::GrenadeType::None;
+  expect(ai::ActionValidator::validate(smoke, observation).error == ai::ActionValidationError::InvalidGrenadeType,
+         "missing smoke type is rejected");
+
   ai::Action wait {};
   wait.type = ai::ActionType::Wait;
   wait.duration = 2.0f;

@@ -42,10 +42,10 @@ def make_sample(episode_id: int) -> dict:
             "action_id": 1,
             "target_node": 42,
             "target_player": -1,
-            "target_position": [1.0, 2.0, 3.0],
+            "target_position": [0.0, 0.0, 0.0],
             "weapon_type": 0,
             "grenade_type": 0,
-            "duration": 0.5,
+            "duration": 0.0,
             "confidence": 0.8,
         },
         "reward": 1.0,
@@ -103,7 +103,7 @@ class TrainingDatasetLoaderTests(unittest.TestCase):
         self.assertEqual(samples[0].observation.values[:3], (0.1, 0.1, 0.1))
         self.assertIsInstance(samples[0].observation, TrainingObservation)
         self.assertIsInstance(samples[0].action, TrainingAction)
-        self.assertEqual(samples[0].action.target_position, (1.0, 2.0, 3.0))
+        self.assertEqual(samples[0].action.target_position, (0.0, 0.0, 0.0))
         self.assertEqual(samples[0].next_observation.values[:3], (0.2, 0.2, 0.2))
         self.assertIsInstance(samples[0].terminal, bool)
 

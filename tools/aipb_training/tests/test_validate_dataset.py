@@ -35,10 +35,10 @@ def make_sample(feature_count: int = MODEL_FEATURE_COUNT) -> dict:
             "action_id": 1,
             "target_node": 42,
             "target_player": -1,
-            "target_position": [1.0, 2.0, 3.0],
+            "target_position": [0.0, 0.0, 0.0],
             "weapon_type": 0,
             "grenade_type": 0,
-            "duration": 0.5,
+            "duration": 0.0,
             "confidence": 0.8,
         },
         "reward": 1.0,
@@ -91,6 +91,49 @@ class TrainingDatasetValidatorTests(unittest.TestCase):
         sample["action"]["action_id"] = MODEL_ACTION_ID_COUNT
         path = self.write_dataset([METADATA, sample])
 
+        with self.assertRaises(DatasetValidationError):
+            validate_dataset(path)
+
+    def test_rejects_action_parameter_mismatch(self) -> None:
+        sample = make_sample()
+        sample["action"]["action_id"] = 8
+        path = self.write_dataset([METADATA, sample])
+        with self.assertRaises(DatasetValidationError):
+            validate_dataset(path)
+
+    def test_accepts_valid_grenade_semantics(self) -> None:
+        sample = make_sample()
+        sample["action"].update(
+            action_id=24,
+            target_node=-1,
+            target_player=-1,
+            target_position=[100.0, 200.0, 300.0],
+            weapon_type=0,
+            grenade_type=3,
+            duration=0.0,
+        )
+        path = self.write_dataset([METADATA, sample])
+        self.assertEqual(validate_dataset(path), 1)
+
+    def test_rejects_wrong_grenade_for_action(self) -> None:
+        sample = make_sample()
+        sample["action"].update(
+            action_id=23,
+            target_node=-1,
+            target_player=-1,
+            target_position=[100.0, 200.0, 300.0],
+            grenade_type=3,
+            duration=0.0,
+        )
+        path = self.write_dataset([METADATA, sample])
+        with self.assertRaises(DatasetValidationError):
+            validate_dataset(path)
+
+    def test_rejects_non_default_parameter_for_targetless_action(self) -> None:
+        sample = make_sample()
+        sample["action"]["action_id"] = 18
+        sample["action"]["target_node"] = 42
+        path = self.write_dataset([METADATA, sample])
         with self.assertRaises(DatasetValidationError):
             validate_dataset(path)
 

@@ -417,6 +417,12 @@ Reason: hostage rescue has a concrete objective target and a stable observable c
 Reason: Smoke now has the same explicit target-position boundary as HE and flashbang throws without introducing a new engine-facing grenade abstraction.
 
 
+## D067 — Require explicit grenade type for dedicated grenade actions
+
+`ThrowGrenade`, `ThrowFlashbang`, and `ThrowSmoke` all carry an explicit `GrenadeType` contract. Their action specifications therefore require both the target position and the concrete grenade type; the validator rejects missing or incompatible grenade values before execution.
+
+Reason: the executor and teacher already distinguish these grenade actions semantically. The validation contract must enforce the same distinction so invalid cross-grenade actions cannot enter the runtime pipeline.
+
 ## D064 — Make AimAtTarget a direct AI-owned action
 
 `ActionType::AimAtTarget` owns the semantic intent to aim at an observed live enemy without requesting firing. The execution context reuses YaPB's enemy targeting and aiming primitive while explicitly clearing the fire request, and the AI executor owns target validation, lifecycle, and cancellation.

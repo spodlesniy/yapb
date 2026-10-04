@@ -116,8 +116,16 @@ AI_TEST(testActionSpecifications) {
 
   const auto throwFlashbang = ai::getActionSpec(ai::ActionType::ThrowFlashbang);
   expect(throwFlashbang.targetType == ai::TargetType::Position, "throw-flashbang requires position target");
-  expect(throwFlashbang.requiredParameters == static_cast<uint32_t>(ai::ActionParameter::TargetPosition),
-         "throw-flashbang requires target position");
+  expect(throwFlashbang.requiredParameters ==
+             (static_cast<uint32_t>(ai::ActionParameter::TargetPosition) | static_cast<uint32_t>(ai::ActionParameter::GrenadeType)),
+         "throw-flashbang requires position and grenade type");
+
+  const auto throwSmoke = ai::getActionSpec(ai::ActionType::ThrowSmoke);
+  expect(throwSmoke.targetType == ai::TargetType::Position, "throw-smoke requires position target");
+  expect(throwSmoke.requiredParameters ==
+             (static_cast<uint32_t>(ai::ActionParameter::TargetPosition) | static_cast<uint32_t>(ai::ActionParameter::GrenadeType)),
+         "throw-smoke requires position and grenade type");
+
 
   const auto objective = ai::getActionSpec(ai::ActionType::PlantBomb);
   expect(objective.targetType == ai::TargetType::None, "plant-bomb has no explicit target");

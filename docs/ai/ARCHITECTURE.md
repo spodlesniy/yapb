@@ -102,6 +102,8 @@ Python training batches use:
 - input: `[N, 243]` float32;
 - target: `[N, 10]` float32.
 
+The action specification requires an explicit concrete grenade type for ThrowGrenade, ThrowFlashbang, and ThrowSmoke in addition to their target-position semantics. The validator enforces this before runtime execution.
+
 The deployed ONNX runtime contract remains single-sample:
 
 - input name: `input`;

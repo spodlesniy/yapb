@@ -129,11 +129,13 @@ ActionValidationResult ActionValidator::validate(const Action &action, const Obs
     return invalid(ActionValidationError::UnexpectedParameter);
   }
 
-  if (spec.optionalParameters & actionParameter(ActionParameter::GrenadeType)) {
+  if (spec.requiredParameters & actionParameter(ActionParameter::GrenadeType)) {
+    // Required grenade parameters were validated above.
+  } else if (spec.optionalParameters & actionParameter(ActionParameter::GrenadeType)) {
     if (action.grenadeType != GrenadeType::None && !isConcreteGrenadeType(action.grenadeType)) {
       return invalid(ActionValidationError::InvalidGrenadeType);
     }
-  } else if (action.type != ActionType::ThrowGrenade && action.grenadeType != GrenadeType::None) {
+  } else if (action.grenadeType != GrenadeType::None) {
     return invalid(ActionValidationError::UnexpectedParameter);
   }
 
