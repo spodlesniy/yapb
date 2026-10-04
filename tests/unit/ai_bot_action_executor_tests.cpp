@@ -34,7 +34,10 @@ public:
   int cancelFollowPlayerCalls {};
   int throwGrenadeCalls {};
   int cancelThrowGrenadeCalls {};
+  int throwFlashbangCalls {};
+  int cancelThrowFlashbangCalls {};
   ai::Vec3 lastThrowPosition {};
+  ai::Vec3 lastFlashbangPosition {};
   int lastFollowPlayer { -1 };
   int huntTargetCalls {};
   int cancelHuntTargetCalls {};
@@ -119,6 +122,8 @@ public:
   void cancelFollowPlayer(int targetPlayer) override { ++cancelFollowPlayerCalls; lastFollowPlayer = targetPlayer; }
   bool throwGrenade(const ai::Vec3 &position) override { ++throwGrenadeCalls; lastThrowPosition = position; return true; }
   void cancelThrowGrenade() override { ++cancelThrowGrenadeCalls; }
+  bool throwFlashbang(const ai::Vec3 &position) override { ++throwFlashbangCalls; lastFlashbangPosition = position; return true; }
+  void cancelThrowFlashbang() override { ++cancelThrowFlashbangCalls; }
 
   bool huntTarget(int targetPlayer) override {
     ++huntTargetCalls;
@@ -302,6 +307,38 @@ AI_TEST(testBotActionExecutorCompletesThrowGrenadeWhenTaskEnds) {
   observation.bot.currentTask = ai::TaskType::Normal;
   expect(executor.execute(action, observation).type == ai::ActionResultType::Completed, "grenade action completes");
   expect(context.cancelThrowGrenadeCalls == 1, "grenade cancellation is delegated");
+}
+
+AI_TEST(testBotActionExecutorDirectlyExecutesThrowFlashbang) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+  auto observation = aliveObservation();
+  observation.bot.currentTask = ai::TaskType::ThrowFlashbang;
+  ai::Action action {};
+  action.type = ai::ActionType::ThrowFlashbang;
+  action.targetType = ai::TargetType::Position;
+  action.targetPosition = { 150.0f, 250.0f, 350.0f };
+  action.grenadeType = ai::GrenadeType::Flashbang;
+  const auto result = executor.execute(action, observation);
+  expect(result.type == ai::ActionResultType::Accepted, "flashbang action is accepted");
+  expect(context.throwFlashbangCalls == 1, "flashbang action invokes context");
+  expectNear(context.lastFlashbangPosition.y, 250.0f, 0.001f, "flashbang target y is preserved");
+}
+
+AI_TEST(testBotActionExecutorCompletesThrowFlashbangWhenTaskEnds) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+  auto observation = aliveObservation();
+  observation.bot.currentTask = ai::TaskType::ThrowFlashbang;
+  ai::Action action {};
+  action.type = ai::ActionType::ThrowFlashbang;
+  action.targetType = ai::TargetType::Position;
+  action.targetPosition = { 150.0f, 250.0f, 350.0f };
+  action.grenadeType = ai::GrenadeType::Flashbang;
+  expect(executor.execute(action, observation).type == ai::ActionResultType::Accepted, "flashbang action starts");
+  observation.bot.currentTask = ai::TaskType::Normal;
+  expect(executor.execute(action, observation).type == ai::ActionResultType::Completed, "flashbang action completes");
+  expect(context.cancelThrowFlashbangCalls == 1, "flashbang cancellation is delegated");
 }
 
 AI_TEST(testBotActionExecutorMovesToNodeThroughContext) {

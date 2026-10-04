@@ -78,6 +78,7 @@ void BotActionExecutor::cancel() {
   }
   if (m_directFollowPlayerActive && m_context != nullptr) m_context->cancelFollowPlayer(m_directFollowPlayerAction.targetPlayer);
   if (m_directThrowGrenadeActive && m_context != nullptr) m_context->cancelThrowGrenade();
+  if (m_directThrowFlashbangActive && m_context != nullptr) m_context->cancelThrowFlashbang();
   if (m_directHuntTargetActive && m_context != nullptr) {
     m_context->cancelHuntTarget(m_directHuntAction.targetPlayer);
   }
@@ -117,6 +118,8 @@ void BotActionExecutor::cancel() {
   m_directFollowPlayerAction = {};
   m_directThrowGrenadeActive = false;
   m_directThrowGrenadeAction = {};
+  m_directThrowFlashbangActive = false;
+  m_directThrowFlashbangAction = {};
   m_directHuntTargetActive = false;
   m_directHuntAction = {};
   m_directSeekCoverActive = false;
@@ -174,7 +177,20 @@ ActionResult BotActionExecutor::execute(const Action &action, const Observation 
     return executeFollowPlayer(action, observation);
 
   case ActionType::ThrowGrenade:
+    if (m_directThrowFlashbangActive && m_context != nullptr) {
+      m_context->cancelThrowFlashbang();
+      m_directThrowFlashbangActive = false;
+      m_directThrowFlashbangAction = {};
+    }
     return executeThrowGrenade(action, observation);
+
+  case ActionType::ThrowFlashbang:
+    if (m_directThrowGrenadeActive && m_context != nullptr) {
+      m_context->cancelThrowGrenade();
+      m_directThrowGrenadeActive = false;
+      m_directThrowGrenadeAction = {};
+    }
+    return executeThrowFlashbang(action, observation);
 
   case ActionType::HuntTarget:
     m_directAttackTargetActive = false;
@@ -328,6 +344,24 @@ ActionResult BotActionExecutor::executeThrowGrenade(const Action &action, const 
   }
   m_directThrowGrenadeAction = action;
   m_directThrowGrenadeActive = true;
+  return { action.type, ActionResultType::Accepted, 0.0f };
+}
+
+ActionResult BotActionExecutor::executeThrowFlashbang(const Action &action, const Observation &observation) {
+  if (action.grenadeType != GrenadeType::Flashbang || action.targetType != TargetType::Position || !isFinitePosition(action.targetPosition)) {
+    return { action.type, ActionResultType::Invalid, 0.0f };
+  }
+  if (m_directThrowFlashbangActive && observation.bot.currentTask != TaskType::ThrowFlashbang) {
+    cancel();
+    return { action.type, ActionResultType::Completed, 0.0f };
+  }
+  if (!m_context->throwFlashbang(action.targetPosition)) {
+    if (!m_directThrowFlashbangActive) return { action.type, ActionResultType::Rejected, 0.0f };
+    cancel();
+    return { action.type, ActionResultType::Completed, 0.0f };
+  }
+  m_directThrowFlashbangAction = action;
+  m_directThrowFlashbangActive = true;
   return { action.type, ActionResultType::Accepted, 0.0f };
 }
 

@@ -91,6 +91,17 @@ AI_TEST(testGoalNavigationPolicyMapsFollowUser) {
   expect(action.targetPlayer == 7, "follow player preserves target entity");
 }
 
+AI_TEST(testGoalNavigationPolicyMapsThrowFlashbang) {
+  auto observation = makeObservation();
+  observation.bot.currentTask = ai::TaskType::ThrowFlashbang;
+  observation.bot.throwTarget = { 100.0f, 200.0f, 300.0f };
+  const auto action = ai::GoalNavigationPolicy {}.decide(observation);
+  expect(action.type == ai::ActionType::ThrowFlashbang, "flashbang task maps to flashbang action");
+  expect(action.targetType == ai::TargetType::Position, "flashbang action targets a position");
+  expect(action.targetPosition.x == 100.0f, "flashbang target position is preserved");
+  expect(action.grenadeType == ai::GrenadeType::Flashbang, "flashbang action preserves grenade type");
+}
+
 AI_TEST(testGoalNavigationPolicyFallsBackForFollowUserWithoutTarget) {
   auto observation = makeObservation();
   observation.bot.currentTask = ai::TaskType::FollowUser;
@@ -150,7 +161,7 @@ AI_TEST(testGoalNavigationPolicyDefinesOutcomeForEveryTaskType) {
     ai::ActionType::MoveToNode,
     ai::ActionType::SeekCover,
     ai::ActionType::ThrowGrenade,
-    ai::ActionType::MoveToNode,
+    ai::ActionType::ThrowFlashbang,
     ai::ActionType::MoveToNode,
     ai::ActionType::MoveToNode,
     ai::ActionType::EscapeFromBomb,
@@ -172,7 +183,7 @@ AI_TEST(testGoalNavigationPolicyDefinesOutcomeForEveryTaskType) {
     if (observation.bot.currentTask == ai::TaskType::FollowUser) {
       addFollowTarget(observation, 7);
     }
-    if (observation.bot.currentTask == ai::TaskType::ThrowExplosive) {
+    if (observation.bot.currentTask == ai::TaskType::ThrowExplosive || observation.bot.currentTask == ai::TaskType::ThrowFlashbang) {
       observation.bot.throwTarget = { 100.0f, 200.0f, 300.0f };
     }
     const auto action = policy.decide(observation);

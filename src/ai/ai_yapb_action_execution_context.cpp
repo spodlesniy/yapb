@@ -164,6 +164,22 @@ void YaPBActionExecutionContext::cancelThrowGrenade() {
   m_bot->m_throw.clear();
 }
 
+bool YaPBActionExecutionContext::throwFlashbang(const Vec3 &position) {
+  if (m_bot == nullptr || m_bot->pev == nullptr || !std::isfinite(position.x) || !std::isfinite(position.y) || !std::isfinite(position.z)) return false;
+  if (m_bot->getCurrentTaskId() != Task::Normal && m_bot->getCurrentTaskId() != Task::ThrowFlashbang) return false;
+  m_bot->m_throw = { position.x, position.y, position.z };
+  if (m_bot->getCurrentTaskId() == Task::Normal) m_bot->startTask(Task::ThrowFlashbang, TaskPri::Throw, kInvalidNodeIndex, 0.0f, false);
+  return true;
+}
+
+void YaPBActionExecutionContext::cancelThrowFlashbang() {
+  if (m_bot == nullptr) return;
+  if (m_bot->getCurrentTaskId() == Task::ThrowFlashbang) m_bot->clearTask(Task::ThrowFlashbang);
+  m_bot->m_isUsingGrenade = false;
+  m_bot->m_aimFlags &= ~AimFlags::Grenade;
+  m_bot->m_throw.clear();
+}
+
 void YaPBActionExecutionContext::cancelFollowPlayer(int targetPlayer) {
   if (m_bot == nullptr) return;
   if (targetPlayer > 0 && !game.isNullEntity(m_bot->m_targetEntity) && game.indexOfEntity(m_bot->m_targetEntity) == targetPlayer) {

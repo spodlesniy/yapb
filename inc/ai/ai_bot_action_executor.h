@@ -28,6 +28,8 @@ private:
   bool m_directFollowPlayerActive {};
   Action m_directThrowGrenadeAction {};
   bool m_directThrowGrenadeActive {};
+  Action m_directThrowFlashbangAction {};
+  bool m_directThrowFlashbangActive {};
   Action m_directHuntAction {};
   bool m_directHuntTargetActive {};
   bool m_directSeekCoverActive {};
@@ -47,6 +49,7 @@ private:
   ActionResult executeAttackTarget(const Action &action, const Observation &observation);
   ActionResult executeFollowPlayer(const Action &action, const Observation &observation);
   ActionResult executeThrowGrenade(const Action &action, const Observation &observation);
+  ActionResult executeThrowFlashbang(const Action &action, const Observation &observation);
   ActionResult executeHuntTarget(const Action &action, const Observation &observation);
   ActionResult executeSeekCover(const Action &action);
   ActionResult executeEscapeFromBomb(const Action &action, const Observation &observation);
