@@ -157,6 +157,7 @@ ObservationInput buildObservationInput(const Bot &bot) {
   input.bot.currentNode = bot.m_currentNodeIndex;
   input.bot.currentGoalNode = bot.m_chosenGoalIndex;
   input.bot.currentTask = mapTask(bot.getCurrentTaskId());
+  input.bot.taskTimeRemaining = bot.getCurrentTaskTimeRemaining(input.gameTime);
   input.bot.alive = bot.m_isAlive;
   input.bot.hasC4 = bot.m_hasC4;
   input.bot.hasHostage = bot.m_hasHostage;

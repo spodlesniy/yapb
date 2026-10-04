@@ -16,7 +16,7 @@ using ai::test::expect;
 using ai::test::expectNear;
 
 AI_TEST(testInferenceFeatureSchema) {
-  expect(ai::kInferenceFeatureSchemaVersion == 2, "inference feature schema uses the current version");
+  expect(ai::kInferenceFeatureSchemaVersion == 3, "inference feature schema uses the current version");
   expect(ai::kInferenceFeatureCount > 0, "inference feature vector is non-empty");
 
   const ai::InferenceFeatures features {};
@@ -35,6 +35,7 @@ AI_TEST(testInferenceFeatureEncoding) {
   observation.bot.currentNode = 10;
   observation.bot.currentGoalNode = 20;
   observation.bot.currentTask = ai::TaskType::MoveToPosition;
+  observation.bot.taskTimeRemaining = 30.0f;
   observation.personality.aggression = 0.8f;
   observation.combat.ammoInClip = 30;
   observation.combat.weaponType = ai::WeaponType::Rifle;
@@ -75,6 +76,7 @@ AI_TEST(testInferenceFeatureEncoding) {
     return ai::kCoreFeatureCount + ai::kInferencePlayerSlots * ai::kPlayerFeatureCount + slot * ai::kWaypointFeatureCount;
   };
 
+  expectNear(features.at(core(ai::InferenceFeature::Core::TaskTimeRemaining)), 0.5f, 0.0001f, "task time remaining is normalized");
   expectNear(features.at(core(ai::InferenceFeature::Core::Health)), 0.5f, 0.0001f, "health is normalized");
   expectNear(features.at(core(ai::InferenceFeature::Core::DestinationRelativeX)), 0.25f, 0.0001f,
              "destination is encoded relative to bot origin");

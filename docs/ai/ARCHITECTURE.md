@@ -99,14 +99,14 @@ The package keeps dataset contracts framework-neutral, while the actual policy m
 
 Python training batches use:
 
-- input: `[N, 231]` float32;
+- input: `[N, 232]` float32;
 - target: `[N, 10]` float32.
 
 The deployed ONNX runtime contract remains single-sample:
 
 - input name: `input`;
 - input type: float32;
-- input shape: `[1, 231]`;
+- input shape: `[1, 232]`;
 - output name: `output`;
 - output type: float32;
 - output shape: `[1, 10]`.
@@ -221,7 +221,7 @@ Avoid creating multiple independent sources of truth for episode and pending-act
 
 Waypoint information is part of the navigation/observation pipeline. It should be exposed to the AI through model-facing contracts rather than forcing inference code to know engine internals.
 
-The inference feature contract must use fixed-size C arrays where a fixed-size feature vector is required. Do not introduce `std::array` into the AI contract or feature encoder. The Python feature contract mirrors the current ordered 231-value layout for tooling and analysis. The current C++ task one-hot block covers all 21 task values, including `Spraypaint`. The feature schema is version 2 and the model input width is 231.
+The inference feature contract must use fixed-size C arrays where a fixed-size feature vector is required. Do not introduce `std::array` into the AI contract or feature encoder. The Python feature contract mirrors the current ordered 232-value layout for tooling and analysis. The current C++ task one-hot block covers all 21 task values, including `Spraypaint`. The feature schema is version 3 and the model input width is 232. The feature vector also includes normalized task_time_remaining, which lets the teacher and learned policy distinguish short internal Pause states from the long Pause used for HoldThisPosition.
 
 ## Design principles
 

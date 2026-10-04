@@ -325,3 +325,11 @@ Reason: HoldPosition is an explicit tactical intent already represented by the A
 `ActionType::Hide` is executed through `ActionExecutionContext`. The YaPB adapter accepts it only from the normal task state when the last observed enemy is still valid and the bot has a valid navigation node, then starts the existing `Task::Hide` mechanic using the same initialization path used by `SeekCover`. The AI executor owns the Hide lifecycle and cancellation; legacy task execution remains enabled so YaPB's established concealment, crouch/shield, reload, damage, enemy, bomb-zone, and timeout behavior remains authoritative.
 
 Reason: Hide is a distinct tactical AI intent and should be executable directly without duplicating the existing Hide gameplay state machine. Sharing its initialization with SeekCover preserves YaPB semantics while removing Hide from the generic observed-task compatibility path.
+
+## D051 — Add task time remaining to the feature contract
+
+The Observation and model feature vector expose the remaining time of the current YaPB task. The value is normalized against a 60-second scale. This increments the feature schema from v2 to v3 and the model input width from 231 to 232.
+
+The deterministic teacher uses a 10-second threshold for TaskType::Pause: shorter pauses are labelled Wait, while longer pauses are labelled HoldPosition. This separates frequent internal navigation/door/ladder pauses from the explicit 30–60 second HoldThisPosition behavior.
+
+Reason: Task::Pause is overloaded by YaPB and its task ID alone is insufficient to produce reliable training labels. The additional temporal state is also available to the learned policy, so the dataset no longer requires the model to infer an unobservable distinction between these Pause sources.

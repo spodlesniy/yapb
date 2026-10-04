@@ -887,6 +887,13 @@ public:
       return m_currentNodeIndex;
    }
 
+   float getCurrentTaskTimeRemaining (float currentTime) const {
+      if (m_tasks.empty ()) {
+         return 0.0f;
+      }
+      return cr::max (0.0f, m_tasks.last ().time - currentTime);
+   }
+
    // is low on ammo on index?
    bool isLowOnAmmo (const int index, const float factor) const;
 

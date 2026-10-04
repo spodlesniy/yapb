@@ -124,8 +124,12 @@ Action GoalNavigationPolicy::decide(const Observation &observation) const {
   }
 
   case TaskType::Pause: {
+    constexpr float kHoldPositionMinimumTaskTime = 10.0f;
+
     Action action {};
-    action.type = ActionType::HoldPosition;
+    action.type = observation.bot.taskTimeRemaining >= kHoldPositionMinimumTaskTime
+                    ? ActionType::HoldPosition
+                    : ActionType::Wait;
     action.confidence = 1.0f;
     return action;
   }

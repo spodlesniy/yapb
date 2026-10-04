@@ -69,7 +69,7 @@ The current policy training contract uses only observation and action as supervi
 
 The first policy model is a small feed-forward network intended as a baseline for supervised behavior cloning:
 
-    input [N, 231]
+    input [N, 232]
         -> LayerNorm(231)
         -> Linear(231, 256) + ReLU
         -> Linear(256, 256) + ReLU
@@ -90,7 +90,7 @@ The exported policy model has exactly one input:
 | Name | input |
 | Element type | float32 |
 | Rank | 2 |
-| Runtime shape | [1, 231] |
+| Runtime shape | [1, 232] |
 | Meaning | AiPB inference feature vector |
 
 During Python training, a batch has shape [N, 231], where N is the training batch size.

@@ -8,6 +8,7 @@ from .model_contract import MODEL_FEATURE_COUNT
 
 CORE_FEATURE_NAMES = (
     "round_time_remaining",
+    "task_time_remaining",
     "health",
     "armor",
     "max_speed",

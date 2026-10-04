@@ -16,6 +16,7 @@ namespace ai {
 namespace {
 
 constexpr float kRoundTimeScale = 600.0f;
+constexpr float kTaskTimeScale = 60.0f;
 constexpr float kPositionScale = 4096.0f;
 constexpr float kHealthScale = 100.0f;
 constexpr float kSpeedScale = 320.0f;
@@ -89,6 +90,7 @@ InferenceFeatures encodeInferenceFeatures(const Observation &observation) {
   const auto set = [&](InferenceFeature::Core feature, float value) { values[enumValue(feature)] = value; };
 
   set(InferenceFeature::Core::RoundTimeRemaining, normalizeNonNegative(observation.roundTimeRemaining, kRoundTimeScale));
+  set(InferenceFeature::Core::TaskTimeRemaining, normalizeNonNegative(observation.bot.taskTimeRemaining, kTaskTimeScale));
   set(InferenceFeature::Core::Health, normalizeNonNegative(observation.bot.health, kHealthScale));
   set(InferenceFeature::Core::Armor, normalizeNonNegative(observation.bot.armor, kHealthScale));
   set(InferenceFeature::Core::MaxSpeed, normalizeNonNegative(observation.bot.maxSpeed, kSpeedScale));

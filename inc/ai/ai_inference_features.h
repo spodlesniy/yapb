@@ -15,7 +15,7 @@
 
 namespace ai {
 
-constexpr uint32_t kInferenceFeatureSchemaVersion = 2;
+constexpr uint32_t kInferenceFeatureSchemaVersion = 3;
 constexpr size_t kInferencePlayerSlots = 8;
 constexpr size_t kInferenceWaypointSlots = 8;
 
@@ -23,6 +23,7 @@ namespace InferenceFeature {
 
 enum class Core : size_t {
   RoundTimeRemaining = 0,
+  TaskTimeRemaining,
   Health,
   Armor,
   MaxSpeed,

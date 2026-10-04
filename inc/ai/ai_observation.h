@@ -161,6 +161,7 @@ struct BotState {
   int32_t currentNode { -1 };
   int32_t currentGoalNode { -1 };
   TaskType currentTask { TaskType::Unknown };
+  float taskTimeRemaining {};
 
   uint32_t objectiveFlags {};
   uint32_t navigationFlags {};

@@ -62,6 +62,7 @@ Observation buildObservation(const ObservationInput &input) {
   observation.bot.currentNode = input.bot.currentNode;
   observation.bot.currentGoalNode = input.bot.currentGoalNode;
   observation.bot.currentTask = input.bot.currentTask;
+  observation.bot.taskTimeRemaining = finiteOrZero(input.bot.taskTimeRemaining);
   observation.bot.objectiveFlags = input.bot.objectiveFlags;
   observation.bot.navigationFlags = input.bot.navigationFlags;
   observation.bot.alive = input.bot.alive;

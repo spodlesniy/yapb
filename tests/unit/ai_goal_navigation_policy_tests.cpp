@@ -100,7 +100,11 @@ AI_TEST(testGoalNavigationPolicyMapsTaskActions) {
   expect(policy.decide(observation).type == ai::ActionType::Fire, "breakable task maps to fire action");
 
   observation.bot.currentTask = ai::TaskType::Pause;
-  expect(policy.decide(observation).type == ai::ActionType::HoldPosition, "pause task maps to hold position");
+  observation.bot.taskTimeRemaining = 2.0f;
+  expect(policy.decide(observation).type == ai::ActionType::Wait, "short pause maps to wait");
+
+  observation.bot.taskTimeRemaining = 30.0f;
+  expect(policy.decide(observation).type == ai::ActionType::HoldPosition, "long pause maps to hold position");
 
   observation.bot.currentTask = ai::TaskType::Hide;
   expect(policy.decide(observation).type == ai::ActionType::Hide, "hide task maps to hide action");

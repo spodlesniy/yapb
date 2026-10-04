@@ -10,6 +10,7 @@ from pathlib import Path
 
 from tools.aipb_training.model_contract import (
     MODEL_ACTION_ID_COUNT,
+    MODEL_FEATURE_COUNT,
     MODEL_ACTION_SCHEMA_VERSION,
     MODEL_FEATURE_SCHEMA_VERSION,
 )
@@ -25,7 +26,7 @@ METADATA = {
 }
 
 
-def make_sample(feature_count: int = 231) -> dict:
+def make_sample(feature_count: int = MODEL_FEATURE_COUNT) -> dict:
     return {
         "episode_id": 1,
         "observation": {"schema_version": MODEL_FEATURE_SCHEMA_VERSION, "values": [0.1] * feature_count},
