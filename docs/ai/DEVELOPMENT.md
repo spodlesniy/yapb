@@ -21,6 +21,10 @@ For temporary or task-specific Git branches, delete the branch from the fork imm
 
 Do not accumulate multiple unrelated fixes before committing.
 
+## Verification failure handling
+
+When a test or CI job fails, inspect the actual failing test or workflow logs first. Treat the log output as the primary source for the failure diagnosis; do not speculate about the cause or modify code until the concrete failure is identified. After identifying the failure, make the smallest correction that restores the current logical iteration and re-run the relevant validation.
+
 ## Pre-commit checks
 
 For every touched source file, verify:
