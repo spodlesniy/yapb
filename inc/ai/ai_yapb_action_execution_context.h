@@ -70,6 +70,9 @@ public:
 
   bool camp() override;
   void cancelCamp() override;
+
+  bool wait() override;
+  void cancelWait() override;
 };
 
 } // namespace ai

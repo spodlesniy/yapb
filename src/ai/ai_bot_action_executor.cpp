@@ -100,6 +100,9 @@ void BotActionExecutor::cancel() {
   if (m_directCampActive && m_context != nullptr) {
     m_context->cancelCamp();
   }
+  if (m_directWaitActive && m_context != nullptr) {
+    m_context->cancelWait();
+  }
   m_directAttackTargetActive = false;
   m_directAttackAction = {};
   m_directHuntTargetActive = false;
@@ -111,6 +114,7 @@ void BotActionExecutor::cancel() {
   m_directPickupItemActive = false;
   m_directFireBreakableActive = false;
   m_directCampActive = false;
+  m_directWaitActive = false;
   m_observedTaskActive = false;
   m_observedTaskAction = {};
 }
@@ -182,6 +186,10 @@ ActionResult BotActionExecutor::execute(const Action &action, const Observation 
     return executeCamp(action);
 
   case ActionType::Wait:
+    m_observedTaskActive = false;
+    m_observedTaskAction = {};
+    return executeWait(action);
+
   case ActionType::HoldPosition:
     return executeObservedTaskAction(action, observation);
 
@@ -422,6 +430,20 @@ ActionResult BotActionExecutor::executeCamp(const Action &action) {
     return { action.type, ActionResultType::Completed, 0.0f };
   }
   m_directCampActive = true;
+  return { action.type, ActionResultType::Accepted, 0.0f };
+}
+
+ActionResult BotActionExecutor::executeWait(const Action &action) {
+  if (!m_context->wait()) {
+    if (!m_directWaitActive) {
+      return { action.type, ActionResultType::Rejected, 0.0f };
+    }
+
+    cancel();
+    return { action.type, ActionResultType::Completed, 0.0f };
+  }
+
+  m_directWaitActive = true;
   return { action.type, ActionResultType::Accepted, 0.0f };
 }
 

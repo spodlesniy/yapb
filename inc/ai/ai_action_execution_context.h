@@ -55,6 +55,9 @@ public:
 
   virtual bool camp() = 0;
   virtual void cancelCamp() = 0;
+
+  virtual bool wait() = 0;
+  virtual void cancelWait() = 0;
 };
 
 } // namespace ai

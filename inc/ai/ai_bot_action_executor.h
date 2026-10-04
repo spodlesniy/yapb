@@ -33,6 +33,7 @@ private:
   bool m_directPickupItemActive {};
   bool m_directFireBreakableActive {};
   bool m_directCampActive {};
+  bool m_directWaitActive {};
 
 private:
   ActionResult executeMoveToNode(const Action &action);
@@ -46,6 +47,7 @@ private:
   ActionResult executePickupItem(const Action &action);
   ActionResult executeFireBreakable(const Action &action);
   ActionResult executeCamp(const Action &action);
+  ActionResult executeWait(const Action &action);
   ActionResult executeObservedTaskAction(const Action &action, const Observation &observation);
 
 public:

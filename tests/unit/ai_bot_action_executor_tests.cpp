@@ -54,7 +54,10 @@ public:
   bool fireBreakableAvailable {};
   int campCalls {};
   int cancelCampCalls {};
+  int waitCalls {};
+  int cancelWaitCalls {};
   bool campAvailable {};
+  bool waitAvailable {};
   ai::Vec3 lastPosition {};
 
   bool isAlive() const override {
@@ -183,6 +186,15 @@ public:
 
   void cancelCamp() override {
     ++cancelCampCalls;
+  }
+
+  bool wait() override {
+    ++waitCalls;
+    return waitAvailable;
+  }
+
+  void cancelWait() override {
+    ++cancelWaitCalls;
   }
 };
 
@@ -924,6 +936,66 @@ AI_TEST(testBotActionExecutorCancelsDirectCamp) {
   expect(context.cancelCampCalls == 1, "cancel releases direct camp");
 }
 
+AI_TEST(testBotActionExecutorDirectlyExecutesWait) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  context.waitAvailable = true;
+
+  auto action = ai::Action {};
+  action.type = ai::ActionType::Wait;
+
+  const auto result = executor.execute(action, aliveObservation());
+
+  expect(result.type == ai::ActionResultType::Accepted, "wait is accepted when the runtime can start it");
+  expect(context.waitCalls == 1, "wait is delegated");
+  expect(!executor.suppressesLegacyTaskExecution(), "wait keeps legacy task execution enabled");
+}
+
+AI_TEST(testBotActionExecutorCompletesWaitWhenPauseStops) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  auto action = ai::Action {};
+  action.type = ai::ActionType::Wait;
+
+  context.waitAvailable = true;
+  auto result = executor.execute(action, aliveObservation());
+  expect(result.type == ai::ActionResultType::Accepted, "wait starts while available");
+
+  context.waitAvailable = false;
+  result = executor.execute(action, aliveObservation());
+
+  expect(result.type == ai::ActionResultType::Completed, "wait completes when the runtime stops it");
+  expect(context.cancelWaitCalls == 1, "completion releases direct wait");
+}
+
+AI_TEST(testBotActionExecutorRejectsWaitWhenRuntimeCannotStartIt) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  auto action = ai::Action {};
+  action.type = ai::ActionType::Wait;
+
+  const auto result = executor.execute(action, aliveObservation());
+
+  expect(result.type == ai::ActionResultType::Rejected, "wait is rejected when runtime cannot start it");
+}
+
+AI_TEST(testBotActionExecutorCancelsDirectWait) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  auto action = ai::Action {};
+  action.type = ai::ActionType::Wait;
+
+  context.waitAvailable = true;
+  executor.execute(action, aliveObservation());
+  executor.cancel();
+
+  expect(context.cancelWaitCalls == 1, "cancel releases direct wait");
+}
+
 AI_TEST(testBotActionExecutorCompletesObservedTaskLifecycle) {
   MockActionExecutionContext context {};
   ai::BotActionExecutor executor(context);
@@ -932,7 +1004,7 @@ AI_TEST(testBotActionExecutorCompletesObservedTaskLifecycle) {
   observation.bot.currentTask = ai::TaskType::Pause;
 
   auto action = ai::Action {};
-  action.type = ai::ActionType::Wait;
+  action.type = ai::ActionType::HoldPosition;
 
   auto result = executor.execute(action, observation);
   expect(result.type == ai::ActionResultType::Accepted, "matching task starts the action");
