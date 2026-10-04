@@ -423,3 +423,16 @@ Reason: Smoke now has the same explicit target-position boundary as HE and flash
 
 Reason: the executor and teacher already distinguish these grenade actions semantically. The validation contract must enforce the same distinction so invalid cross-grenade actions cannot enter the runtime pipeline.
 
+
+
+## D068 — Require strict decision numbering and ordering
+
+Every new decision must use the next unused decision number. Before adding a decision, inspect the complete `DECISIONS.md` heading sequence and verify that the chosen number is not already present. Decision entries must remain ordered by their numeric D-number; do not create duplicate numbers, and do not insert a new decision in a position that breaks the numeric order.
+
+Reason: `DECISIONS.md` is the durable chronological decision record. Strict unique numbering prevents duplicate IDs and keeps the architectural history unambiguous for future development.
+
+## D069 — Validate training actions against action-specific semantics
+
+The Python dataset validator mirrors the stable action taxonomy and validates action-specific target, duration, weapon, and grenade semantics before records enter the offline training pipeline. This includes exact grenade types for dedicated grenade actions, concrete weapon values for ChangeWeapon, and zero/default payloads for parameters not defined by an action.
+
+Reason: JSON type and range validation alone can accept structurally valid but semantically impossible teacher records. Rejecting these records at the dataset boundary prevents invalid labels from contaminating training data and keeps Python training aligned with the C++ action contract.
