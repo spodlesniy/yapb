@@ -222,6 +222,7 @@ bool YaPBActionExecutionContext::throwSmoke(const Vec3 &position) {
   }
 
   m_bot->m_throw = { position.x, position.y, position.z };
+  m_bot->m_aiSmokeTargetActive = true;
   if (currentTask == Task::Normal) {
     m_bot->startTask(Task::ThrowSmoke, TaskPri::Throw, kInvalidNodeIndex, 0.0f, false);
   }
@@ -239,6 +240,7 @@ void YaPBActionExecutionContext::cancelThrowSmoke() {
 
   m_bot->m_isUsingGrenade = false;
   m_bot->m_aimFlags &= ~AimFlags::Grenade;
+  m_bot->m_aiSmokeTargetActive = false;
   m_bot->m_throw.clear();
 }
 

@@ -336,6 +336,7 @@ private:
    bool m_checkKnifeSwitch {}; // is time to check switch to knife action
    bool m_checkWeaponSwitch {}; // is time to check weapon switch
    bool m_isUsingGrenade {}; // bot currently using grenade??
+   bool m_aiSmokeTargetActive {}; // AI-owned smoke action has an explicit target
    bool m_bombSearchOverridden {}; // use normal node if applicable when near the bomb
    bool m_wantsToFire {}; // bot needs consider firing
    bool m_jumpFinished {}; // has bot finished jumping

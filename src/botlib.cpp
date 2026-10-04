@@ -2310,12 +2310,21 @@ void Bot::clearTask (Task id) {
       clearSearchNodes ();
       ignoreCollision ();
 
+      if (id == Task::ThrowSmoke) {
+         m_aiSmokeTargetActive = false;
+         m_throw.clear ();
+      }
+
       m_tasks.pop ();
       return;
    }
 
    for (auto &task : m_tasks) {
       if (task.id == id) {
+         if (id == Task::ThrowSmoke) {
+            m_aiSmokeTargetActive = false;
+            m_throw.clear ();
+         }
          m_tasks.remove (task);
       }
    }
@@ -2330,6 +2339,11 @@ void Bot::completeTask () {
 
    if (m_tasks.empty ()) {
       return;
+   }
+
+   if (getCurrentTaskId () == Task::ThrowSmoke) {
+      m_aiSmokeTargetActive = false;
+      m_throw.clear ();
    }
 
    do {

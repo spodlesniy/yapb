@@ -1292,7 +1292,18 @@ void Bot::throwSmoke_ () {
 
    ignoreCollision ();
 
-   m_grenade = (m_throw - getEyesPos ()).normalize_apx ();
+   // Legacy smoke behavior predicts the target from the current enemy state.
+   // AI-owned smoke actions use the explicit target captured by the AI runtime.
+   if (m_aiSmokeTargetActive) {
+      m_grenade = (m_throw - getEyesPos ()).normalize_apx ();
+   }
+   else {
+      Vector src = m_lastEnemyOrigin - pev->velocity;
+      if (!game.isNullEntity (m_enemy)) {
+         src += m_enemy->v.velocity;
+      }
+      m_grenade = (src - getEyesPos ()).normalize_apx ();
+   }
 
    if (getTask ()->time < game.time ()) {
       completeTask ();

@@ -443,3 +443,10 @@ Reason: JSON type and range validation alone can accept structurally valid but s
 The Python training package documentation must describe the same current model input width as the executable contract. The model input is schema version 5 with 243 features, so architecture examples, runtime-shape tables, batch-shape descriptions, and deployment requirements must use 243 consistently.
 
 Reason: stale dimensional documentation can produce incorrectly shaped training or deployment artifacts even when the executable contract and tests are already correct. Documentation is part of the durable model contract and must stay synchronized with it.
+
+
+## D071 — Preserve legacy smoke targeting while isolating AI-owned smoke targets
+
+The legacy ThrowSmoke task retains its original target calculation from the last observed enemy position, bot velocity, and current enemy velocity. AI-owned ThrowSmoke actions use an explicit target stored by the AI execution context and keep that target stable for the action lifecycle. The explicit AI target state is cleared whenever the smoke task is cancelled or completed.
+
+Reason: converting legacy smoke throwing to a stored target changed the timing semantics of existing YaPB behavior. Separating the legacy calculation from the AI-owned target preserves backward compatibility while still giving the model a precise target-position contract.
