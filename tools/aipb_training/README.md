@@ -70,9 +70,9 @@ The current policy training contract uses only observation and action as supervi
 
 The first policy model is a small feed-forward network intended as a baseline for supervised behavior cloning:
 
-    input [N, 232]
-        -> LayerNorm(232)
-        -> Linear(232, 256) + ReLU
+    input [N, 243]
+        -> LayerNorm(243)
+        -> Linear(243, 256) + ReLU
         -> Linear(256, 256) + ReLU
         -> Linear(256, 128) + ReLU
         -> Linear(128, 10)
@@ -91,10 +91,10 @@ The exported policy model has exactly one input:
 | Name | input |
 | Element type | float32 |
 | Rank | 2 |
-| Runtime shape | [1, 232] |
+| Runtime shape | [1, 243] |
 | Meaning | AiPB inference feature vector |
 
-During Python training, a batch has shape [N, 232], where N is the training batch size.
+During Python training, a batch has shape [N, 243], where N is the training batch size.
 
 ## Policy model output
 
@@ -187,6 +187,6 @@ Use `--output` to place the model at another path when preparing a custom packag
 
 The ONNX exporter uses the PyTorch dynamo exporter with explicit opset 18, saves a static model, checks the ONNX graph, and verifies output parity with ONNX Runtime.
 
-Training may use batches with arbitrary N, but the deployed ONNX model must satisfy the runtime contract exactly: one input [1,232] float32 and one output [1,10] float32.
+Training may use batches with arbitrary N, but the deployed ONNX model must satisfy the runtime contract exactly: one input [1,243] float32 and one output [1,10] float32.
 
 A model with a dynamic or non-singleton runtime batch dimension is not compatible with the current C++ ONNX runner.

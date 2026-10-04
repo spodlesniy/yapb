@@ -436,3 +436,10 @@ Reason: `DECISIONS.md` is the durable chronological decision record. Strict uniq
 The Python dataset validator mirrors the stable action taxonomy and validates action-specific target, duration, weapon, and grenade semantics before records enter the offline training pipeline. This includes exact grenade types for dedicated grenade actions, concrete weapon values for ChangeWeapon, and zero/default payloads for parameters not defined by an action.
 
 Reason: JSON type and range validation alone can accept structurally valid but semantically impossible teacher records. Rejecting these records at the dataset boundary prevents invalid labels from contaminating training data and keeps Python training aligned with the C++ action contract.
+
+
+## D070 — Keep Python training documentation synchronized with the runtime model contract
+
+The Python training package documentation must describe the same current model input width as the executable contract. The model input is schema version 5 with 243 features, so architecture examples, runtime-shape tables, batch-shape descriptions, and deployment requirements must use 243 consistently.
+
+Reason: stale dimensional documentation can produce incorrectly shaped training or deployment artifacts even when the executable contract and tests are already correct. Documentation is part of the durable model contract and must stay synchronized with it.
