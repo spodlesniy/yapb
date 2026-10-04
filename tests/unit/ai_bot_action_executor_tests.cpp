@@ -38,8 +38,11 @@ public:
   int cancelThrowGrenadeCalls {};
   int throwFlashbangCalls {};
   int cancelThrowFlashbangCalls {};
+  int throwSmokeCalls {};
+  int cancelThrowSmokeCalls {};
   ai::Vec3 lastThrowPosition {};
   ai::Vec3 lastFlashbangPosition {};
+  ai::Vec3 lastThrowSmokeTarget {};
   int lastFollowPlayer { -1 };
   int changeWeaponCalls {};
   int cancelChangeWeaponCalls {};
@@ -147,6 +150,8 @@ public:
   void cancelThrowGrenade() override { ++cancelThrowGrenadeCalls; }
   bool throwFlashbang(const ai::Vec3 &position) override { ++throwFlashbangCalls; lastFlashbangPosition = position; return true; }
   void cancelThrowFlashbang() override { ++cancelThrowFlashbangCalls; }
+  bool throwSmoke(const ai::Vec3 &position) override { ++throwSmokeCalls; lastThrowSmokeTarget = position; return true; }
+  void cancelThrowSmoke() override { ++cancelThrowSmokeCalls; }
 
   bool huntTarget(int targetPlayer) override {
     ++huntTargetCalls;
@@ -339,6 +344,41 @@ AI_TEST(testBotActionExecutorCompletesThrowGrenadeWhenTaskEnds) {
   observation.bot.currentTask = ai::TaskType::Normal;
   expect(executor.execute(action, observation).type == ai::ActionResultType::Completed, "grenade action completes");
   expect(context.cancelThrowGrenadeCalls == 1, "grenade cancellation is delegated");
+}
+
+AI_TEST(testBotActionExecutorDirectlyExecutesThrowSmoke) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+  auto observation = aliveObservation();
+  observation.bot.currentTask = ai::TaskType::ThrowSmoke;
+  ai::Action action {};
+  action.type = ai::ActionType::ThrowSmoke;
+  action.targetType = ai::TargetType::Position;
+  action.targetPosition = { 100.0f, 200.0f, 300.0f };
+  action.grenadeType = ai::GrenadeType::Smoke;
+
+  const auto result = executor.execute(action, observation);
+
+  expect(result.type == ai::ActionResultType::Accepted, "smoke action is accepted");
+  expect(context.throwSmokeCalls == 1, "smoke action invokes context");
+  expectNear(context.lastThrowSmokeTarget.x, 100.0f, 0.001f, "smoke target x is preserved");
+}
+
+AI_TEST(testBotActionExecutorCompletesThrowSmokeWhenTaskEnds) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+  auto observation = aliveObservation();
+  observation.bot.currentTask = ai::TaskType::ThrowSmoke;
+  ai::Action action {};
+  action.type = ai::ActionType::ThrowSmoke;
+  action.targetType = ai::TargetType::Position;
+  action.targetPosition = { 100.0f, 200.0f, 300.0f };
+  action.grenadeType = ai::GrenadeType::Smoke;
+
+  expect(executor.execute(action, observation).type == ai::ActionResultType::Accepted, "smoke action starts");
+  observation.bot.currentTask = ai::TaskType::Normal;
+  expect(executor.execute(action, observation).type == ai::ActionResultType::Completed, "smoke action completes");
+  expect(context.cancelThrowSmokeCalls == 1, "smoke cancellation is delegated");
 }
 
 AI_TEST(testBotActionExecutorDirectlyExecutesThrowFlashbang) {

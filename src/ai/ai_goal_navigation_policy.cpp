@@ -183,7 +183,6 @@ Action GoalNavigationPolicy::decide(const Observation &observation) const {
   case TaskType::Unknown:
   case TaskType::Normal:
   case TaskType::DoubleJump:
-  case TaskType::ThrowSmoke:
   case TaskType::Blind:
   case TaskType::Spraypaint:
     break;

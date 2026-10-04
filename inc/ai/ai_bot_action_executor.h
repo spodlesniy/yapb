@@ -34,6 +34,8 @@ private:
   bool m_directThrowGrenadeActive {};
   Action m_directThrowFlashbangAction {};
   bool m_directThrowFlashbangActive {};
+  Action m_directThrowSmokeAction {};
+  bool m_directThrowSmokeActive {};
   Action m_directHuntAction {};
   bool m_directHuntTargetActive {};
   bool m_directSeekCoverActive {};
@@ -57,6 +59,7 @@ private:
   ActionResult executeChangeWeapon(const Action &action, const Observation &observation);
   ActionResult executeThrowGrenade(const Action &action, const Observation &observation);
   ActionResult executeThrowFlashbang(const Action &action, const Observation &observation);
+  ActionResult executeThrowSmoke(const Action &action, const Observation &observation);
   ActionResult executeHuntTarget(const Action &action, const Observation &observation);
   ActionResult executeSeekCover(const Action &action);
   ActionResult executeEscapeFromBomb(const Action &action, const Observation &observation);

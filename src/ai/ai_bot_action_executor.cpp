@@ -83,6 +83,7 @@ void BotActionExecutor::cancel() {
   if (m_directChangeWeaponActive && m_context != nullptr) m_context->cancelChangeWeapon();
   if (m_directThrowGrenadeActive && m_context != nullptr) m_context->cancelThrowGrenade();
   if (m_directThrowFlashbangActive && m_context != nullptr) m_context->cancelThrowFlashbang();
+  if (m_directThrowSmokeActive && m_context != nullptr) m_context->cancelThrowSmoke();
   if (m_directHuntTargetActive && m_context != nullptr) {
     m_context->cancelHuntTarget(m_directHuntAction.targetPlayer);
   }
@@ -130,6 +131,8 @@ void BotActionExecutor::cancel() {
   m_directThrowGrenadeAction = {};
   m_directThrowFlashbangActive = false;
   m_directThrowFlashbangAction = {};
+  m_directThrowSmokeActive = false;
+  m_directThrowSmokeAction = {};
   m_directHuntTargetActive = false;
   m_directHuntAction = {};
   m_directSeekCoverActive = false;
@@ -215,6 +218,11 @@ ActionResult BotActionExecutor::execute(const Action &action, const Observation 
       m_directThrowFlashbangActive = false;
       m_directThrowFlashbangAction = {};
     }
+    if (m_directThrowSmokeActive && m_context != nullptr) {
+      m_context->cancelThrowSmoke();
+      m_directThrowSmokeActive = false;
+      m_directThrowSmokeAction = {};
+    }
     return executeThrowGrenade(action, observation);
 
   case ActionType::ThrowFlashbang:
@@ -223,7 +231,25 @@ ActionResult BotActionExecutor::execute(const Action &action, const Observation 
       m_directThrowGrenadeActive = false;
       m_directThrowGrenadeAction = {};
     }
+    if (m_directThrowSmokeActive && m_context != nullptr) {
+      m_context->cancelThrowSmoke();
+      m_directThrowSmokeActive = false;
+      m_directThrowSmokeAction = {};
+    }
     return executeThrowFlashbang(action, observation);
+
+  case ActionType::ThrowSmoke:
+    if (m_directThrowGrenadeActive && m_context != nullptr) {
+      m_context->cancelThrowGrenade();
+      m_directThrowGrenadeActive = false;
+      m_directThrowGrenadeAction = {};
+    }
+    if (m_directThrowFlashbangActive && m_context != nullptr) {
+      m_context->cancelThrowFlashbang();
+      m_directThrowFlashbangActive = false;
+      m_directThrowFlashbangAction = {};
+    }
+    return executeThrowSmoke(action, observation);
 
   case ActionType::HuntTarget:
     m_directAttackTargetActive = false;
@@ -444,6 +470,30 @@ ActionResult BotActionExecutor::executeThrowFlashbang(const Action &action, cons
   }
   m_directThrowFlashbangAction = action;
   m_directThrowFlashbangActive = true;
+  return { action.type, ActionResultType::Accepted, 0.0f };
+}
+
+ActionResult BotActionExecutor::executeThrowSmoke(const Action &action, const Observation &observation) {
+  if (action.grenadeType != GrenadeType::Smoke || action.targetType != TargetType::Position || !isFinitePosition(action.targetPosition)) {
+    return { action.type, ActionResultType::Invalid, 0.0f };
+  }
+
+  if (m_directThrowSmokeActive && observation.bot.currentTask != TaskType::ThrowSmoke) {
+    cancel();
+    return { action.type, ActionResultType::Completed, 0.0f };
+  }
+
+  if (!m_context->throwSmoke(action.targetPosition)) {
+    if (!m_directThrowSmokeActive) {
+      return { action.type, ActionResultType::Rejected, 0.0f };
+    }
+
+    cancel();
+    return { action.type, ActionResultType::Failed, 0.0f };
+  }
+
+  m_directThrowSmokeAction = action;
+  m_directThrowSmokeActive = true;
   return { action.type, ActionResultType::Accepted, 0.0f };
 }
 

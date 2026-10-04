@@ -211,6 +211,37 @@ void YaPBActionExecutionContext::cancelThrowFlashbang() {
   m_bot->m_throw.clear();
 }
 
+bool YaPBActionExecutionContext::throwSmoke(const Vec3 &position) {
+  if (m_bot == nullptr || m_bot->pev == nullptr || !std::isfinite(position.x) || !std::isfinite(position.y) || !std::isfinite(position.z)) {
+    return false;
+  }
+
+  const auto currentTask = m_bot->getCurrentTaskId();
+  if (currentTask != Task::Normal && currentTask != Task::ThrowSmoke) {
+    return false;
+  }
+
+  m_bot->m_throw = { position.x, position.y, position.z };
+  if (currentTask == Task::Normal) {
+    m_bot->startTask(Task::ThrowSmoke, TaskPri::Throw, kInvalidNodeIndex, 0.0f, false);
+  }
+  return true;
+}
+
+void YaPBActionExecutionContext::cancelThrowSmoke() {
+  if (m_bot == nullptr) {
+    return;
+  }
+
+  if (m_bot->getCurrentTaskId() == Task::ThrowSmoke) {
+    m_bot->clearTask(Task::ThrowSmoke);
+  }
+
+  m_bot->m_isUsingGrenade = false;
+  m_bot->m_aimFlags &= ~AimFlags::Grenade;
+  m_bot->m_throw.clear();
+}
+
 bool YaPBActionExecutionContext::changeWeapon(WeaponType weaponType) {
   if (m_bot == nullptr || m_bot->pev == nullptr) return false;
   const auto requestedType = static_cast<int>(weaponType);

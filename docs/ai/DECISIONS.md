@@ -406,12 +406,18 @@ Reason: aiming is a distinct model action with an existing player-target contrac
 
 ## D065 — Make RescueHostage a direct AI-owned action
 
-## D066 — Establish an explicit ThrowSmoke target-position contract
-
-The existing legacy smoke behavior already derives a predicted target from the last/current enemy state. This substep stores that computed target in the existing `m_throw` state and makes `Task::ThrowSmoke` consume that explicit target. The teacher maps `ThrowSmoke` to `ActionType::ThrowSmoke` with `TargetType::Position` and `GrenadeType::Smoke`.
-
-Reason: establish a stable, model-visible target contract before transferring ThrowSmoke lifecycle ownership to `ActionExecutionContext`; the legacy target computation remains unchanged.
-
 `ActionType::RescueHostage` owns the intent to deliver already attached hostages to a hostage rescue point. The YaPB adapter selects a rescue waypoint through the existing goal-selection logic and reuses `MoveToPosition` for path progression. The AI executor owns the action lifecycle and cancellation; hostage attachment and actual rescue completion remain authoritative in the game state.
 
 Reason: hostage rescue has a concrete objective target and a stable observable completion signal, unlike Retreat and the current ThrowSmoke/Reload cases, which do not yet expose an isolated execution boundary.
+
+## D066 — Make ThrowSmoke a direct AI-owned action
+
+`ActionType::ThrowSmoke` owns a smoke-grenade throw with an explicit target position. Legacy grenade selection stores the existing predicted smoke target in the shared throw-target state, while the smoke task consumes that target instead of recomputing it. The AI executor owns the action lifecycle and delegates the target-position throw to a dedicated execution-context capability backed by YaPB's existing smoke task.
+
+Reason: Smoke now has the same explicit target-position boundary as HE and flashbang throws without introducing a new engine-facing grenade abstraction.
+
+## D066 — Make ThrowSmoke a direct AI-owned action
+
+`ActionType::ThrowSmoke` owns a smoke-grenade throw with an explicit target position. Legacy grenade selection stores the existing predicted smoke target in the shared throw-target state, while the smoke task consumes that target instead of recomputing it. The AI executor owns the action lifecycle and delegates the target-position throw to a dedicated execution-context capability backed by YaPB's existing smoke task.
+
+Reason: Smoke now has the same explicit target-position boundary as HE and flashbang throws without introducing a new engine-facing grenade abstraction.

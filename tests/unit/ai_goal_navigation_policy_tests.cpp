@@ -96,13 +96,13 @@ AI_TEST(testGoalNavigationPolicyMapsThrowSmoke) {
   observation.bot.currentTask = ai::TaskType::ThrowSmoke;
   observation.bot.throwTarget = { 100.0f, 200.0f, 300.0f };
 
-  const action = ai::GoalNavigationPolicy {}.decide(observation);
+  const auto action = ai::GoalNavigationPolicy {}.decide(observation);
 
   expect(action.type == ai::ActionType::ThrowSmoke, "smoke task maps to smoke action");
   expect(action.targetType == ai::TargetType::Position, "smoke action targets a position");
-  expectNear(action.targetPosition.x, 100.0f, 0.001f, "smoke target x is preserved");
-  expectNear(action.targetPosition.y, 200.0f, 0.001f, "smoke target y is preserved");
-  expectNear(action.targetPosition.z, 300.0f, 0.001f, "smoke target z is preserved");
+  expect(action.targetPosition.x == 100.0f, "smoke target x is preserved");
+  expect(action.targetPosition.y == 200.0f, "smoke target y is preserved");
+  expect(action.targetPosition.z == 300.0f, "smoke target z is preserved");
   expect(action.grenadeType == ai::GrenadeType::Smoke, "smoke grenade type is preserved");
 }
 
@@ -178,7 +178,6 @@ AI_TEST(testGoalNavigationPolicyDefinesOutcomeForEveryTaskType) {
     ai::ActionType::ThrowGrenade,
     ai::ActionType::ThrowFlashbang,
     ai::ActionType::ThrowSmoke,
-    ai::ActionType::MoveToNode,
     ai::ActionType::MoveToNode,
     ai::ActionType::EscapeFromBomb,
     ai::ActionType::Fire,
