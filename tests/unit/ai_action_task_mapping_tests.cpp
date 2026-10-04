@@ -24,7 +24,13 @@ AI_TEST(testObservedTaskActionMapping) {
   expect(ai::actionMatchesObservedTask(action, observation), "hold position maps to pause task");
 
   observation.bot.currentTask = ai::TaskType::Hide;
-  expect(ai::actionMatchesObservedTask(action, observation), "hold position maps to hide task");
+  expect(!ai::actionMatchesObservedTask(action, observation), "hold position does not claim hide task");
+
+  action.type = ai::ActionType::Hide;
+  expect(ai::actionMatchesObservedTask(action, observation), "hide action maps to hide task");
+
+  observation.bot.currentTask = ai::TaskType::Pause;
+  expect(!ai::actionMatchesObservedTask(action, observation), "hide action does not claim pause task");
 
   observation.bot.currentTask = ai::TaskType::Camp;
   action.type = ai::ActionType::Camp;

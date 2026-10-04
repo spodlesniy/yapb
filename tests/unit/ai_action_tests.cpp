@@ -25,7 +25,9 @@ AI_TEST(testActionTaxonomy) {
          "objective actions have distinct values");
   expect(static_cast<uint8_t>(ai::ActionType::Wait) != static_cast<uint8_t>(ai::ActionType::ThrowSmoke),
          "utility actions have distinct values");
-  expect(static_cast<uint8_t>(ai::ActionType::Count) == static_cast<uint8_t>(ai::ActionType::ThrowSmoke) + 1u,
+  expect(static_cast<uint8_t>(ai::ActionType::Hide) != static_cast<uint8_t>(ai::ActionType::HoldPosition),
+         "hide and hold-position actions have distinct values");
+  expect(static_cast<uint8_t>(ai::ActionType::Count) == static_cast<uint8_t>(ai::ActionType::Hide) + 1u,
          "action taxonomy count follows the final action");
 }
 
@@ -92,6 +94,11 @@ AI_TEST(testActionSpecifications) {
   expect(hold.targetType == ai::TargetType::None, "hold-position has no explicit target");
   expect(hold.requiredParameters == 0, "hold-position has no required parameters");
   expect(hold.optionalParameters == static_cast<uint32_t>(ai::ActionParameter::Duration), "hold-position accepts optional duration");
+
+  const auto hide = ai::getActionSpec(ai::ActionType::Hide);
+  expect(hide.targetType == ai::TargetType::None, "hide has no explicit target");
+  expect(hide.requiredParameters == 0, "hide has no required parameters");
+  expect(hide.optionalParameters == static_cast<uint32_t>(ai::ActionParameter::Duration), "hide accepts optional duration");
 
   const auto reload = ai::getActionSpec(ai::ActionType::Reload);
   expect(reload.requiredParameters == 0, "reload has no required parameters");

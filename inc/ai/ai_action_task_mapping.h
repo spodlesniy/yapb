@@ -18,7 +18,10 @@ constexpr bool actionMatchesObservedTask(const Action &action, const Observation
     return observation.bot.currentTask == TaskType::Pause;
 
   case ActionType::HoldPosition:
-    return observation.bot.currentTask == TaskType::Pause || observation.bot.currentTask == TaskType::Hide;
+    return observation.bot.currentTask == TaskType::Pause;
+
+  case ActionType::Hide:
+    return observation.bot.currentTask == TaskType::Hide;
 
   case ActionType::Camp:
     return observation.bot.currentTask == TaskType::Camp;

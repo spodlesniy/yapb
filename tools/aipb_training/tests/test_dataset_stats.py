@@ -9,14 +9,14 @@ import unittest
 from pathlib import Path
 
 from ..dataset_stats import MODEL_ACTION_ID_COUNT, build_parser, summarize_dataset
-from ..model_contract import MODEL_FEATURE_SCHEMA_VERSION
+from ..model_contract import MODEL_ACTION_SCHEMA_VERSION, MODEL_FEATURE_SCHEMA_VERSION
 
 
 METADATA = {
     "format": "aipb-training-jsonl",
     "version": 1,
     "feature_schema_version": MODEL_FEATURE_SCHEMA_VERSION,
-    "action_schema_version": 1,
+    "action_schema_version": MODEL_ACTION_SCHEMA_VERSION,
     "type": "metadata",
 }
 
@@ -27,7 +27,7 @@ def sample(action_id: int, episode_id: int, terminal: bool) -> dict:
         "episode_id": episode_id,
         "observation": {"schema_version": MODEL_FEATURE_SCHEMA_VERSION, "values": values},
         "action": {
-            "schema_version": 1,
+            "schema_version": MODEL_ACTION_SCHEMA_VERSION,
             "action_id": action_id,
             "target_node": 42,
             "target_player": -1,

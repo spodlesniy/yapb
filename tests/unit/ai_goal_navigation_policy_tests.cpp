@@ -103,7 +103,7 @@ AI_TEST(testGoalNavigationPolicyMapsTaskActions) {
   expect(policy.decide(observation).type == ai::ActionType::HoldPosition, "pause task maps to hold position");
 
   observation.bot.currentTask = ai::TaskType::Hide;
-  expect(policy.decide(observation).type == ai::ActionType::HoldPosition, "hide task maps to hold position");
+  expect(policy.decide(observation).type == ai::ActionType::Hide, "hide task maps to hide action");
 }
 
 AI_TEST(testGoalNavigationPolicyFallsBackForHuntWhenCombatTargetIsUnavailable) {

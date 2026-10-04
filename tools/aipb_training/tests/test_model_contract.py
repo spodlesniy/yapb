@@ -8,6 +8,8 @@ import unittest
 from tools.aipb_training.model_contract import (
     MODEL_ACTION_TENSOR_SIZE,
     MODEL_FEATURE_COUNT,
+    MODEL_ACTION_ID_COUNT,
+    MODEL_ACTION_SCHEMA_VERSION,
     MODEL_FEATURE_SCHEMA_VERSION,
     MODEL_INPUT_DTYPE,
     MODEL_INPUT_NAME,
@@ -27,6 +29,8 @@ class ModelContractTests(unittest.TestCase):
         self.assertEqual(MODEL_RUNTIME_INPUT_SHAPE, (1, 231))
         self.assertEqual(MODEL_FEATURE_COUNT, 231)
         self.assertEqual(MODEL_FEATURE_SCHEMA_VERSION, 2)
+        self.assertEqual(MODEL_ACTION_ID_COUNT, 26)
+        self.assertEqual(MODEL_ACTION_SCHEMA_VERSION, 2)
 
     def test_runtime_output_contract(self) -> None:
         self.assertEqual(MODEL_OUTPUT_NAME, "output")

@@ -123,10 +123,16 @@ Action GoalNavigationPolicy::decide(const Observation &observation) const {
     return action;
   }
 
-  case TaskType::Pause:
-  case TaskType::Hide: {
+  case TaskType::Pause: {
     Action action {};
     action.type = ActionType::HoldPosition;
+    action.confidence = 1.0f;
+    return action;
+  }
+
+  case TaskType::Hide: {
+    Action action {};
+    action.type = ActionType::Hide;
     action.confidence = 1.0f;
     return action;
   }

@@ -96,7 +96,8 @@ AI_TEST(testInferenceActionIdsRemainStable) {
   expect(value(ai::InferenceActionId::MoveToNode) == 1, "MoveToNode action id remains stable");
   expect(value(ai::InferenceActionId::AttackTarget) == 8, "AttackTarget action id remains stable");
   expect(value(ai::InferenceActionId::ThrowSmoke) == 24, "ThrowSmoke action id remains stable");
-  expect(value(ai::InferenceActionId::Count) == 25, "action id count remains stable");
+  expect(value(ai::InferenceActionId::Hide) == 25, "Hide action id is appended without renumbering existing ids");
+  expect(value(ai::InferenceActionId::Count) == 26, "action id count includes the appended Hide action");
 }
 
 AI_TEST(testInferenceActionEncode) {
@@ -137,6 +138,23 @@ AI_TEST(testInferenceActionEncodePreservesTerminalActionParameters) {
   expect(encoded.output.targetPosition.x == 10.0f, "target position X is preserved");
   expect(encoded.output.targetPosition.y == -20.0f, "target position Y is preserved");
   expect(encoded.output.targetPosition.z == 30.0f, "target position Z is preserved");
+}
+
+AI_TEST(testInferenceActionHideRoundTrip) {
+  ai::Action action {};
+  action.type = ai::ActionType::Hide;
+  action.duration = 8.0f;
+  action.confidence = 1.0f;
+
+  const auto encoded = ai::encodeInferenceAction(action);
+  expect(encoded.isValid(), "hide action encodes successfully");
+  expect(encoded.output.schemaVersion == 2, "hide action uses the new action schema");
+  expect(encoded.output.actionId == static_cast<uint8_t>(ai::InferenceActionId::Hide), "hide action uses the appended model id");
+
+  const auto decoded = ai::decodeInferenceAction(encoded.output, {});
+  expect(decoded.isValid(), "hide action decodes successfully");
+  expect(decoded.action.type == ai::ActionType::Hide, "hide action round-trips to the distinct action type");
+  expect(decoded.action.duration == 8.0f, "hide duration is preserved");
 }
 
 AI_TEST(testInferenceActionEncodeRejectsUnsupportedAction) {

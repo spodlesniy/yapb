@@ -138,7 +138,7 @@ Inspect dataset composition before training:
 
     python -m tools.aipb_training.dataset_stats dataset.jsonl
 
-The report shows sample and episode counts, terminal transition count, and how many of the 25 supported action IDs are actually represented, including per-action counts and percentages.
+The report shows sample and episode counts, terminal transition count, and how many of the 26 supported action IDs are actually represented, including per-action counts and percentages. `Hide` is the appended action ID 25; existing IDs 0–24 remain stable.
 
 ## Evaluation
 

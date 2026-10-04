@@ -88,6 +88,9 @@ bool encodeActionId(ActionType type, uint8_t &actionId) {
   case ActionType::ThrowSmoke:
     actionId = static_cast<uint8_t>(InferenceActionId::ThrowSmoke);
     return true;
+  case ActionType::Hide:
+    actionId = static_cast<uint8_t>(InferenceActionId::Hide);
+    return true;
   case ActionType::Count:
     break;
   }

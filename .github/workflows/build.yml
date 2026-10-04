@@ -67,7 +67,13 @@ jobs:
             exit 0
           fi
 
-          if git diff --name-only "${{ github.event.before }}" "${{ github.sha }}" | grep -q '^tools/aipb_training/'; then
+          if git cat-file -e "${{ github.event.before }}^{commit}" 2>/dev/null; then
+            changed_files="$(git diff --name-only "${{ github.event.before }}" "${{ github.sha }}")"
+          else
+            changed_files="$(git diff-tree --root --no-commit-id --name-only -r "${{ github.sha }}")"
+          fi
+
+          if grep -q '^tools/aipb_training/' <<< "$changed_files"; then
             echo "training-tools=true" >> "$GITHUB_OUTPUT"
           else
             echo "training-tools=false" >> "$GITHUB_OUTPUT"

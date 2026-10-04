@@ -11,7 +11,11 @@ from pathlib import Path
 
 from ..dataset import load_training_dataset
 from ..deploy import deploy_model
-from ..model_contract import MODEL_FEATURE_COUNT, MODEL_FEATURE_SCHEMA_VERSION
+from ..model_contract import (
+    MODEL_ACTION_SCHEMA_VERSION,
+    MODEL_FEATURE_COUNT,
+    MODEL_FEATURE_SCHEMA_VERSION,
+)
 from ..onnx_export import validate_onnx_model
 from ..training_run import TrainingConfig, run_training
 
@@ -32,7 +36,7 @@ def _make_sample(episode_id: int, index: int) -> dict:
             "values": observation,
         },
         "action": {
-            "schema_version": 1,
+            "schema_version": MODEL_ACTION_SCHEMA_VERSION,
             "action_id": 1,
             "target_node": 42,
             "target_player": -1,
@@ -58,7 +62,7 @@ def _write_dataset(path: Path) -> None:
         "format": "aipb-training-jsonl",
         "version": 1,
         "feature_schema_version": MODEL_FEATURE_SCHEMA_VERSION,
-        "action_schema_version": 1,
+        "action_schema_version": MODEL_ACTION_SCHEMA_VERSION,
         "type": "metadata",
     }
 

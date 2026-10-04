@@ -88,6 +88,9 @@ bool decodeActionType(uint8_t actionId, ActionType &type) {
   case InferenceActionId::ThrowSmoke:
     type = ActionType::ThrowSmoke;
     return true;
+  case InferenceActionId::Hide:
+    type = ActionType::Hide;
+    return true;
   case InferenceActionId::Count:
     break;
   }

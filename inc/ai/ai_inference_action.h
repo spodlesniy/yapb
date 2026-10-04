@@ -16,7 +16,7 @@
 
 namespace ai {
 
-constexpr uint32_t kInferenceActionSchemaVersion = 1;
+constexpr uint32_t kInferenceActionSchemaVersion = 2;
 constexpr size_t kInferenceActionTensorSize = 10;
 
 // Stable positions in the single-output ONNX tensor.
@@ -65,7 +65,8 @@ enum class InferenceActionId : uint8_t {
   ThrowGrenade = 22,
   ThrowFlashbang = 23,
   ThrowSmoke = 24,
-  Count = 25,
+  Hide = 25,
+  Count = 26,
 };
 
 // Raw, backend-neutral model output.

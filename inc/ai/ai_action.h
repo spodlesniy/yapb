@@ -62,6 +62,7 @@ enum class ActionType : uint8_t {
   ThrowGrenade,
   ThrowFlashbang,
   ThrowSmoke,
+  Hide,
 
   Count,
 };

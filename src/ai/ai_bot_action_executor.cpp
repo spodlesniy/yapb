@@ -191,6 +191,7 @@ ActionResult BotActionExecutor::execute(const Action &action, const Observation 
     return executeWait(action);
 
   case ActionType::HoldPosition:
+  case ActionType::Hide:
     return executeObservedTaskAction(action, observation);
 
   case ActionType::PlantBomb:

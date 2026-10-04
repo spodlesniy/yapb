@@ -162,7 +162,7 @@ Reason: a training dataset containing only `MoveToNode` transitions cannot teach
 
 ## D026 — Keep not-yet-direct teacher actions under the YaPB task stack
 
-When a policy output corresponds to a task that does not yet have direct AI-owned execution semantics, `BotActionExecutor` may acknowledge that action against the observed YaPB task while the legacy task continues. AttackTarget, HuntTarget, SeekCover, EscapeFromBomb, PlantBomb, DefuseBomb, PickupItem, Fire, Camp, and Wait are direct actions and are no longer part of this transitional set.
+When a policy output corresponds to a task that does not yet have direct AI-owned execution semantics, `BotActionExecutor` may acknowledge that action against the observed YaPB task while the legacy task continues. AttackTarget, HuntTarget, SeekCover, EscapeFromBomb, PlantBomb, DefuseBomb, PickupItem, Fire, Camp, and Wait are direct actions and are no longer part of this transitional set. `Hide` remains task-backed but now has its own action label rather than being merged with `HoldPosition`.
 
 Reason: transitional task-backed actions preserve existing YaPB behavior while direct AI execution semantics are added incrementally. Each action leaves this compatibility path only after explicit execution semantics, ownership, cancellation, and tests are in place.
 
@@ -300,3 +300,10 @@ Reason: Camp is a high-level behavior choice that the AI must be able to initiat
 Wait is executed through ActionExecutionContext and maps directly to the existing YaPB Pause task. The adapter starts Pause from the normal task state using the established 30–60 second duration range; the Pause task remains responsible for movement lock, aim behavior, blind reaction, damage interruption, and timeout completion. The AI executor owns the action lifecycle and cancellation, while legacy task execution remains enabled.
 
 Reason: Wait has unambiguous Pause semantics and can be made directly executable without introducing a new target model or duplicating YaPB's established waiting behavior.
+
+
+## D047 — Keep Pause, HoldPosition, and Hide semantically distinct
+
+`Task::Pause` is the legacy wait/hold-position primitive used by behaviors such as the `HoldThisPosition` radio order. `Task::Hide` is a separate tactical behavior entered after `SeekCover` and contains enemy-aware concealment logic. The AI action taxonomy therefore keeps `Wait` mapped to Pause, `HoldPosition` mapped to Pause for legacy compatibility, and `Hide` as a distinct action label. `Hide` is appended to the model action-ID contract so existing IDs 0–24 remain stable; the action schema version increments to 2.
+
+Reason: combining Pause and Hide would teach the policy that a temporary wait/hold behavior and an enemy-concealment behavior are interchangeable, which would corrupt teacher labels and reduce the semantic usefulness of the trained policy.

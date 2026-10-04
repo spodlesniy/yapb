@@ -8,7 +8,11 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tools.aipb_training.model_contract import MODEL_FEATURE_SCHEMA_VERSION
+from tools.aipb_training.model_contract import (
+    MODEL_ACTION_ID_COUNT,
+    MODEL_ACTION_SCHEMA_VERSION,
+    MODEL_FEATURE_SCHEMA_VERSION,
+)
 from tools.aipb_training.validate_dataset import DatasetValidationError, validate_dataset
 
 
@@ -16,7 +20,7 @@ METADATA = {
     "format": "aipb-training-jsonl",
     "version": 1,
     "feature_schema_version": MODEL_FEATURE_SCHEMA_VERSION,
-    "action_schema_version": 1,
+    "action_schema_version": MODEL_ACTION_SCHEMA_VERSION,
     "type": "metadata",
 }
 
@@ -26,7 +30,7 @@ def make_sample(feature_count: int = 231) -> dict:
         "episode_id": 1,
         "observation": {"schema_version": MODEL_FEATURE_SCHEMA_VERSION, "values": [0.1] * feature_count},
         "action": {
-            "schema_version": 1,
+            "schema_version": MODEL_ACTION_SCHEMA_VERSION,
             "action_id": 1,
             "target_node": 42,
             "target_player": -1,
@@ -83,7 +87,7 @@ class TrainingDatasetValidatorTests(unittest.TestCase):
 
     def test_rejects_action_id_outside_model_contract(self) -> None:
         sample = make_sample()
-        sample["action"]["action_id"] = 25
+        sample["action"]["action_id"] = MODEL_ACTION_ID_COUNT
         path = self.write_dataset([METADATA, sample])
 
         with self.assertRaises(DatasetValidationError):

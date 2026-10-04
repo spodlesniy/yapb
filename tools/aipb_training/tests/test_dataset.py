@@ -17,14 +17,18 @@ from tools.aipb_training.dataset import (
     iter_training_samples,
     load_training_dataset,
 )
-from tools.aipb_training.model_contract import MODEL_FEATURE_COUNT, MODEL_FEATURE_SCHEMA_VERSION
+from tools.aipb_training.model_contract import (
+    MODEL_ACTION_SCHEMA_VERSION,
+    MODEL_FEATURE_COUNT,
+    MODEL_FEATURE_SCHEMA_VERSION,
+)
 
 
 METADATA = {
     "format": "aipb-training-jsonl",
     "version": 1,
     "feature_schema_version": MODEL_FEATURE_SCHEMA_VERSION,
-    "action_schema_version": 1,
+    "action_schema_version": MODEL_ACTION_SCHEMA_VERSION,
     "type": "metadata",
 }
 
@@ -34,7 +38,7 @@ def make_sample(episode_id: int) -> dict:
         "episode_id": episode_id,
         "observation": {"schema_version": MODEL_FEATURE_SCHEMA_VERSION, "values": [0.1] * MODEL_FEATURE_COUNT},
         "action": {
-            "schema_version": 1,
+            "schema_version": MODEL_ACTION_SCHEMA_VERSION,
             "action_id": 1,
             "target_node": 42,
             "target_player": -1,
@@ -111,7 +115,7 @@ class TrainingDatasetLoaderTests(unittest.TestCase):
         self.assertEqual(metadata.format, "aipb-training-jsonl")
         self.assertEqual(metadata.version, 1)
         self.assertEqual(metadata.feature_schema_version, MODEL_FEATURE_SCHEMA_VERSION)
-        self.assertEqual(metadata.action_schema_version, 1)
+        self.assertEqual(metadata.action_schema_version, MODEL_ACTION_SCHEMA_VERSION)
         self.assertEqual(len(samples), 1)
         self.assertIsInstance(samples, tuple)
 

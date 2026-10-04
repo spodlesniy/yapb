@@ -50,6 +50,7 @@ constexpr ActionSpec getActionSpec(ActionType type) {
   case ActionType::HoldPosition:
   case ActionType::Wait:
   case ActionType::Camp:
+  case ActionType::Hide:
     return { TargetType::None, 0, actionParameter(ActionParameter::Duration) };
   case ActionType::AttackTarget:
   case ActionType::HuntTarget:
