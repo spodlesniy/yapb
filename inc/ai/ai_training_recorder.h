@@ -15,7 +15,7 @@
 
 namespace ai {
 
-constexpr size_t kTrainingTransitionCapacity = 256;
+constexpr size_t kTrainingTransitionCapacity = 1024;
 
 enum class TrainingRecordResult : uint8_t {
   Recorded,
@@ -38,6 +38,7 @@ class TrainingBuffer final {
 private:
   TrainingTransition m_transitions[kTrainingTransitionCapacity] {};
   size_t m_size {};
+  size_t m_droppedTransitions {};
   uint64_t m_nextEpisodeId { 1 };
 
 public:
@@ -53,6 +54,7 @@ public:
   bool append(uint64_t episodeId, const Observation &observation, const Action &action, float reward,
               const Observation &nextObservation, const ActionResult &result) {
     if (m_size >= kTrainingTransitionCapacity) {
+      ++m_droppedTransitions;
       return false;
     }
 
@@ -71,6 +73,11 @@ public:
       m_transitions[i] = {};
     }
     m_size = 0;
+    m_droppedTransitions = 0;
+  }
+
+  size_t droppedTransitions() const {
+    return m_droppedTransitions;
   }
 
   void reset() {
@@ -152,10 +159,6 @@ public:
 
     if (!result.isTerminal()) {
       return TrainingRecordResult::NonTerminalResult;
-    }
-
-    if (!m_buffer->hasCapacity()) {
-      return TrainingRecordResult::BufferFull;
     }
 
     const bool appended =

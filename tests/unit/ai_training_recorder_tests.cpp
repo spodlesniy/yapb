@@ -262,10 +262,12 @@ AI_TEST(testTrainingBufferReportsFullCapacity) {
 
   expect(recorder.buffer().isFull(), "recorder reports a full transition buffer");
   expect(recorder.buffer().size() == ai::kTrainingTransitionCapacity, "recorder reaches its configured transition capacity");
+  expect(recorder.buffer().droppedTransitions() == 0, "full capacity has not dropped a transition yet");
 
   expect(recorder.startAction(makeObservation(999.0f, 999), action), "recorder can keep a pending action after the buffer fills");
   expect(recorder.finishAction(makeObservation(999.5f, 1000), completed, 0.0f) == ai::TrainingRecordResult::BufferFull,
          "full buffer refuses to silently drop a transition");
+  expect(recorder.buffer().droppedTransitions() == 1, "full buffer records the dropped transition count");
   expect(recorder.hasPendingAction(), "full buffer keeps the pending transition available for a future flush");
 }
 

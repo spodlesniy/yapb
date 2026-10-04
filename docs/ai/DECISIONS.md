@@ -339,3 +339,9 @@ Reason: Task::Pause is overloaded by YaPB and its task ID alone is insufficient 
 The `GoalNavigationPolicy` unit-test contract covers every current `TaskType` value with an explicit expected outcome. `TaskType::Pause` is covered separately for short and long task durations because it intentionally maps to `Wait` or `HoldPosition` depending on the remaining task time.
 
 Reason: the teacher defines the initial supervised labels for Training mode. An untested task branch can silently fall back to navigation or produce an unintended action, creating systematic dataset coverage gaps that are difficult to detect after collection.
+
+## D053 — Bound training buffer loss explicitly
+
+The process-wide training buffer holds up to 1024 completed transitions. A completed transition that reaches a full buffer is not silently discarded: the pending recorder state remains intact, the buffer increments a dropped-transition counter when a write is refused, and `ai_save_training` reports the count so collection gaps are visible.
+
+Reason: Training collection may run longer than an in-memory buffer. A bounded buffer keeps memory predictable, while explicit overflow reporting prevents an incomplete dataset from being mistaken for the full collected experience.

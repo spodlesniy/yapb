@@ -60,14 +60,14 @@ The main responsibilities are split as follows:
 - `ActionOutcomeRewardProvider` provides the baseline action-result reward policy used by `BotRuntime` training by default; completed actions are rewarded positively, rejected/invalid/failed actions negatively, and interruptions neutrally.
 - `BotRuntime` uses `ActionOutcomeRewardProvider` by default and can be configured with another `RewardProvider`; passing `nullptr` explicitly restores `ZeroRewardProvider`.
 - A configured reward provider must outlive the `BotRuntime` that uses it.
-- `TrainingBuffer` owns fixed-capacity transition storage, exposes read-only contiguous data access, and separates sample clearing from full state reset.
+- `TrainingBuffer` owns fixed-capacity transition storage, exposes read-only contiguous data access, counts completed transitions rejected by a full buffer, and separates sample clearing from full state reset. The current capacity is 1024 transitions.
 - `TrainingBuffer::clear()` removes collected transitions without resetting the episode ID sequence; `reset()` performs a full state reset.
 
 Ending an episode clears the recorder's pending action and episode identifier but does not erase the already collected buffer.
 
 ## Dataset and offline training pipeline
 
-The C++ runtime exports the collected transitions as `aipb-training-jsonl`.
+The C++ runtime exports the collected transitions as `aipb-training-jsonl`. The in-memory buffer is bounded; when it is full, a completed transition is retained as pending but cannot be stored. The cumulative drop count is reported by `ai_save_training`.
 
 Each record contains:
 
