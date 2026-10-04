@@ -236,6 +236,7 @@ AI_TEST(testTrainingBufferCanBeClearedWithoutResettingEpisodeIds) {
   buffer.clear();
 
   expect(buffer.empty(), "clear removes completed transitions");
+  expect(buffer.episodeCount() == 0, "clear resets the buffered episode count");
   const auto secondEpisode = buffer.beginEpisode();
   expect(secondEpisode == 2, "clear preserves the episode id sequence");
 }
@@ -257,6 +258,7 @@ AI_TEST(testTrainingBufferCanBeResetIndependently) {
   buffer.reset();
 
   expect(buffer.empty(), "buffer reset clears completed samples");
+  expect(buffer.episodeCount() == 0, "buffer reset clears the buffered episode count");
   expect(first.episodeId() != 0, "buffer reset does not mutate first recorder state");
   expect(second.episodeId() != 0, "buffer reset does not mutate second recorder state");
 }

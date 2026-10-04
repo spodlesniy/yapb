@@ -39,7 +39,18 @@ private:
   TrainingTransition m_transitions[kTrainingTransitionCapacity] {};
   size_t m_size {};
   size_t m_droppedTransitions {};
+  size_t m_episodeCount {};
   uint64_t m_nextEpisodeId { 1 };
+
+  bool containsEpisode(uint64_t episodeId) const {
+    for (size_t i = 0; i < m_size; ++i) {
+      if (m_transitions[i].episodeId == episodeId) {
+        return true;
+      }
+    }
+
+    return false;
+  }
 
 public:
   uint64_t beginEpisode() {
@@ -58,6 +69,10 @@ public:
       return false;
     }
 
+    if (!containsEpisode(episodeId)) {
+      ++m_episodeCount;
+    }
+
     auto &transition = m_transitions[m_size++];
     transition.episodeId = episodeId;
     transition.observation = observation;
@@ -74,6 +89,7 @@ public:
     }
     m_size = 0;
     m_droppedTransitions = 0;
+    m_episodeCount = 0;
   }
 
   size_t droppedTransitions() const {
@@ -102,24 +118,7 @@ public:
   }
 
   size_t episodeCount() const {
-    size_t count = 0;
-
-    for (size_t i = 0; i < m_size; ++i) {
-      bool seen = false;
-
-      for (size_t j = 0; j < i; ++j) {
-        if (m_transitions[j].episodeId == m_transitions[i].episodeId) {
-          seen = true;
-          break;
-        }
-      }
-
-      if (!seen) {
-        ++count;
-      }
-    }
-
-    return count;
+    return m_episodeCount;
   }
 
   const TrainingTransition &at(size_t index) const {
