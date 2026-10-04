@@ -48,7 +48,10 @@ public:
   int cancelDefuseBombCalls {};
   int pickupItemCalls {};
   int cancelPickupItemCalls {};
+  int fireBreakableCalls {};
+  int cancelFireBreakableCalls {};
   bool pickupItemAvailable {};
+  bool fireBreakableAvailable {};
   ai::Vec3 lastPosition {};
 
   bool isAlive() const override {
@@ -159,6 +162,15 @@ public:
 
   void cancelPickupItem() override {
     ++cancelPickupItemCalls;
+  }
+
+  bool fireBreakable() override {
+    ++fireBreakableCalls;
+    return fireBreakableAvailable;
+  }
+
+  void cancelFireBreakable() override {
+    ++cancelFireBreakableCalls;
   }
 };
 
@@ -777,6 +789,67 @@ AI_TEST(testBotActionExecutorCancelsDirectPickupItem) {
   executor.cancel();
 
   expect(context.cancelPickupItemCalls == 1, "cancel releases direct pickup");
+}
+
+AI_TEST(testBotActionExecutorDirectlyExecutesFireBreakable) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  context.fireBreakableAvailable = true;
+
+  auto action = ai::Action {};
+  action.type = ai::ActionType::Fire;
+
+  const auto result = executor.execute(action, aliveObservation());
+
+  expect(result.type == ai::ActionResultType::Accepted, "available breakable fire is accepted");
+  expect(context.fireBreakableCalls == 1, "fire breakable is delegated");
+  expect(!executor.suppressesLegacyTaskExecution(), "fire breakable keeps legacy task execution enabled");
+}
+
+AI_TEST(testBotActionExecutorCompletesFireBreakableWhenTargetDisappears) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  auto action = ai::Action {};
+  action.type = ai::ActionType::Fire;
+
+  context.fireBreakableAvailable = true;
+  auto result = executor.execute(action, aliveObservation());
+  expect(result.type == ai::ActionResultType::Accepted, "fire breakable starts while target is available");
+
+  context.fireBreakableAvailable = false;
+  result = executor.execute(action, aliveObservation());
+
+  expect(result.type == ai::ActionResultType::Completed, "fire breakable completes when target disappears");
+  expect(context.cancelFireBreakableCalls == 1, "completion releases direct fire breakable");
+}
+
+AI_TEST(testBotActionExecutorRejectsFireWithoutBreakable) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  auto action = ai::Action {};
+  action.type = ai::ActionType::Fire;
+
+  const auto result = executor.execute(action, aliveObservation());
+
+  expect(result.type == ai::ActionResultType::Rejected, "fire without breakable target is rejected");
+  expect(context.fireBreakableCalls == 1, "breakable availability is checked");
+}
+
+AI_TEST(testBotActionExecutorCancelsDirectFireBreakable) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  auto action = ai::Action {};
+  action.type = ai::ActionType::Fire;
+
+  context.fireBreakableAvailable = true;
+  executor.execute(action, aliveObservation());
+  executor.cancel();
+
+  expect(context.cancelFireBreakableCalls == 1, "cancel releases direct fire breakable");
 }
 
 AI_TEST(testBotActionExecutorCompletesObservedTaskLifecycle) {

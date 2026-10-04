@@ -291,6 +291,28 @@ void YaPBActionExecutionContext::cancelSeekCover() {
   m_seekCoverNavigationTaskCreated = false;
 }
 
+bool YaPBActionExecutionContext::fireBreakable() {
+  if (m_bot == nullptr || m_bot->pev == nullptr || !game.isBreakableEntity(m_bot->m_breakableEntity)
+      || !m_bot->m_breakableOrigin.empty() == false || !game.isNullEntity(m_bot->m_enemy)) {
+    return false;
+  }
+
+  return m_bot->getCurrentTaskId() == Task::ShootBreakable;
+}
+
+void YaPBActionExecutionContext::cancelFireBreakable() {
+  if (m_bot == nullptr) {
+    return;
+  }
+
+  if (m_bot->getCurrentTaskId() == Task::ShootBreakable) {
+    m_bot->clearTask(Task::ShootBreakable);
+  }
+
+  m_bot->m_breakableEntity = nullptr;
+  m_bot->m_breakableOrigin.clear();
+}
+
 bool YaPBActionExecutionContext::pickupItem() {
   if (m_bot == nullptr || m_bot->pev == nullptr || game.isNullEntity(m_bot->m_pickupItem)) {
     return false;

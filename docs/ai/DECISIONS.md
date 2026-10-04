@@ -162,7 +162,7 @@ Reason: a training dataset containing only `MoveToNode` transitions cannot teach
 
 ## D026 — Keep not-yet-direct teacher actions under the YaPB task stack
 
-When a policy output corresponds to a task that does not yet have direct AI-owned execution semantics, `BotActionExecutor` may acknowledge that action against the observed YaPB task while the legacy task continues. AttackTarget, HuntTarget, SeekCover, EscapeFromBomb, and PlantBomb are direct actions and are no longer part of this transitional set.
+When a policy output corresponds to a task that does not yet have direct AI-owned execution semantics, `BotActionExecutor` may acknowledge that action against the observed YaPB task while the legacy task continues. AttackTarget, HuntTarget, SeekCover, EscapeFromBomb, PlantBomb, DefuseBomb, PickupItem, and Fire are direct actions and are no longer part of this transitional set.
 
 Reason: transitional task-backed actions preserve existing YaPB behavior while direct AI execution semantics are added incrementally. Each action leaves this compatibility path only after explicit execution semantics, ownership, cancellation, and tests are in place.
 
@@ -279,3 +279,10 @@ Reason: the existing YaPB defusing task already contains the game-specific use-i
 PickupItem is executed through ActionExecutionContext and no longer uses observed-task acknowledgement in BotActionExecutor. The YaPB adapter accepts the action only when YaPB already has a valid pickup entity and PickupItem task, and cancellation routes through the existing pickup cleanup path. The existing YaPB pickup discovery and item-selection semantics remain authoritative; the AI action owns the lifecycle of executing an already selected pickup target.
 
 Reason: the current observation contract does not expose pickup entity identity or pickup type. Reusing YaPB's existing target discovery avoids inventing an incomplete target model or duplicating item-selection mechanics while still separating pickup execution lifecycle from generic observed-task acknowledgement.
+
+## D044 — Make Fire a direct AI-owned breakable action
+
+Fire is executed through ActionExecutionContext over YaPB's already selected breakable entity. The YaPB adapter accepts the action only while the breakable target is valid and the existing ShootBreakable task is active; cancellation clears that task and selected breakable state. Legacy task execution remains enabled because the existing ShootBreakable task performs the actual aiming, firing input, and obstruction checks.
+
+Reason: the current observation contract does not expose breakable entity identity. Reusing YaPB's existing breakable discovery and ShootBreakable mechanics avoids inventing a partial target model while moving Fire out of generic observed-task acknowledgement.
+

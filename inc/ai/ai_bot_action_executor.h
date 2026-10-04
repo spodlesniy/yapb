@@ -31,6 +31,7 @@ private:
   bool m_directPlantBombActive {};
   bool m_directDefuseBombActive {};
   bool m_directPickupItemActive {};
+  bool m_directFireBreakableActive {};
 
 private:
   ActionResult executeMoveToNode(const Action &action);
@@ -42,6 +43,7 @@ private:
   ActionResult executePlantBomb(const Action &action, const Observation &observation);
   ActionResult executeDefuseBomb(const Action &action, const Observation &observation);
   ActionResult executePickupItem(const Action &action);
+  ActionResult executeFireBreakable(const Action &action);
   ActionResult executeObservedTaskAction(const Action &action, const Observation &observation);
 
 public:

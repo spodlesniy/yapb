@@ -64,6 +64,9 @@ public:
 
   bool pickupItem() override;
   void cancelPickupItem() override;
+
+  bool fireBreakable() override;
+  void cancelFireBreakable() override;
 };
 
 } // namespace ai

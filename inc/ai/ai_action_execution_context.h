@@ -49,6 +49,9 @@ public:
 
   virtual bool pickupItem() = 0;
   virtual void cancelPickupItem() = 0;
+
+  virtual bool fireBreakable() = 0;
+  virtual void cancelFireBreakable() = 0;
 };
 
 } // namespace ai
