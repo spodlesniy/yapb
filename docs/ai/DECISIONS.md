@@ -376,19 +376,18 @@ The server command `ai_training_status` reports buffered transitions, unique buf
 
 Reason: long Training sessions need a low-cost operational check before saving data. The status command makes buffer pressure and collection progress visible directly in the game server console while leaving save/clear operations explicit.
 
-## D062 — Make ThrowFlashbang a direct AI-owned action
-
-`ActionType::ThrowFlashbang` maps the existing YaPB `Task::ThrowFlashbang` mechanic. It uses the existing target-position observation contract and a dedicated execution lifecycle so flashbang state cannot be confused with HE grenade state.
-
-Reason: the engine already provides a dedicated flashbang task with distinct weapon handling, so the AI layer should own that lifecycle explicitly.
-
-## D061 — Make ThrowGrenade a direct AI-owned action
-
-`ActionType::ThrowGrenade` maps HE grenade throws to YaPB's existing `Task::ThrowExplosive`. The throw target is exposed as semantic observation data and the execution context provides start/cancel operations without exposing YaPB types to the AI layer.
-
 ## D060 — Make FollowPlayer a direct AI-owned action
 
 `ActionType::FollowPlayer` maps the existing YaPB `Task::FollowUser` mechanic. The observation identifies the active follow target and marks that player in the player feature slots, allowing the policy to associate the action target with an observed teammate. The adapter prioritizes the active follow target when populating the bounded player observation.
 
 Reason: following is an existing deterministic YaPB behavior with clear target semantics. Reusing its task mechanics avoids duplicating movement logic while giving the AI executor explicit ownership of the action lifecycle and cancellation.
 
+## D061 — Make ThrowGrenade a direct AI-owned action
+
+`ActionType::ThrowGrenade` maps HE grenade throws to YaPB's existing `Task::ThrowExplosive`. The throw target is exposed as semantic observation data and the execution context provides start/cancel operations without exposing YaPB types to the AI layer.
+
+## D062 — Make ThrowFlashbang a direct AI-owned action
+
+`ActionType::ThrowFlashbang` maps the existing YaPB `Task::ThrowFlashbang` mechanic. It uses the existing target-position observation contract and a dedicated execution lifecycle so flashbang state cannot be confused with HE grenade state.
+
+Reason: the engine already provides a dedicated flashbang task with distinct weapon handling, so the AI layer should own that lifecycle explicitly.
