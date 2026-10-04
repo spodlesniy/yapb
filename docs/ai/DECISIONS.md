@@ -307,3 +307,9 @@ Reason: Wait has unambiguous Pause semantics and can be made directly executable
 `Task::Pause` is the legacy wait/hold-position primitive used by behaviors such as the `HoldThisPosition` radio order. `Task::Hide` is a separate tactical behavior entered after `SeekCover` and contains enemy-aware concealment logic. The AI action taxonomy therefore keeps `Wait` mapped to Pause, `HoldPosition` mapped to Pause for legacy compatibility, and `Hide` as a distinct action label. `Hide` is appended to the model action-ID contract so existing IDs 0–24 remain stable; the action schema version increments to 2.
 
 Reason: combining Pause and Hide would teach the policy that a temporary wait/hold behavior and an enemy-concealment behavior are interchangeable, which would corrupt teacher labels and reduce the semantic usefulness of the trained policy.
+
+## D048 — Treat chat context as a limited engineering resource
+
+Development communication should be concise and technical. Avoid repeating established project state, architecture, or decisions; include only information needed to understand the current implementation step, its validation, failures, and decisions. Batch repository reads and use the resulting analysis to minimize redundant tool calls and repeated discussion.
+
+Reason: the conversation context has a finite size, so unnecessary output reduces the amount of project state that can remain available for subsequent development. Concise communication preserves context for code, tests, documentation, and unresolved engineering decisions without reducing the completeness of the repository itself.
