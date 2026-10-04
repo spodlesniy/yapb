@@ -386,15 +386,14 @@ Reason: following is an existing deterministic YaPB behavior with clear target s
 
 `ActionType::ThrowGrenade` maps HE grenade throws to YaPB's existing `Task::ThrowExplosive`. The throw target is exposed as semantic observation data and the execution context provides start/cancel operations without exposing YaPB types to the AI layer.
 
+## D062 — Make ThrowFlashbang a direct AI-owned action
+
+`ActionType::ThrowFlashbang` maps the existing YaPB `Task::ThrowFlashbang` mechanic. It uses the existing target-position observation contract and a dedicated execution lifecycle so flashbang state cannot be confused with HE grenade state.
+
+Reason: the engine already provides a dedicated flashbang task with distinct weapon handling, so the AI layer should own that lifecycle explicitly.
+
 ## D063 — Make ChangeWeapon a direct AI-owned action
 
 `ActionType::ChangeWeapon` owns a semantic weapon-category selection request without taking ownership of YaPB's automatic reload or weapon-selection state machines. The execution context resolves the requested category to an owned weapon and uses YaPB's existing weapon-selection command. Completion is observed from the model-facing current weapon category.
 
 Reason: weapon selection has a clean intent boundary, while Reload remains YaPB-owned because its automatic reload state machine spans `checkReload()` and shared combat/task state.
-
-## D062 — Make ThrowFlashbang a direct AI-owned action
-
-
-`ActionType::ThrowFlashbang` maps the existing YaPB `Task::ThrowFlashbang` mechanic. It uses the existing target-position observation contract and a dedicated execution lifecycle so flashbang state cannot be confused with HE grenade state.
-
-Reason: the engine already provides a dedicated flashbang task with distinct weapon handling, so the AI layer should own that lifecycle explicitly.
