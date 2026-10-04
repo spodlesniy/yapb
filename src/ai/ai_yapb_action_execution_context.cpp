@@ -317,6 +317,45 @@ void YaPBActionExecutionContext::cancelWait() {
   }
 }
 
+bool YaPBActionExecutionContext::hide() {
+  if (m_bot == nullptr || m_bot->pev == nullptr) {
+    return false;
+  }
+
+  const auto currentTask = m_bot->getCurrentTaskId();
+
+  if (currentTask == Task::Hide) {
+    return true;
+  }
+
+  if (currentTask != Task::Normal || !game.isAliveEntity(m_bot->m_lastEnemy) || m_bot->m_lastEnemyOrigin.empty()) {
+    return false;
+  }
+
+  m_bot->findValidNode();
+
+  if (!graph.exists(m_bot->m_currentNodeIndex) || m_bot->m_path == nullptr) {
+    return false;
+  }
+
+  m_bot->startHideBehavior();
+  return true;
+}
+
+void YaPBActionExecutionContext::cancelHide() {
+  if (m_bot == nullptr) {
+    return;
+  }
+
+  if (m_bot->getCurrentTaskId() == Task::Hide) {
+    m_bot->clearTask(Task::Hide);
+  }
+
+  m_bot->m_campButtons = 0;
+  m_bot->m_prevGoalIndex = kInvalidNodeIndex;
+  m_bot->m_aimFlags &= ~AimFlags::Camp;
+}
+
 bool YaPBActionExecutionContext::camp() {
   if (m_bot == nullptr || m_bot->pev == nullptr) return false;
   const auto currentTask = m_bot->getCurrentTaskId();

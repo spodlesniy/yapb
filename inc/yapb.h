@@ -579,6 +579,7 @@ private:
    void blind_ ();
    void camp_ ();
    void hide_ ();
+   void startHideBehavior ();
    void moveToPos_ ();
    void plantBomb_ ();
    void defuseBomb_ ();

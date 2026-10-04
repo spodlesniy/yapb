@@ -73,6 +73,9 @@ public:
 
   bool wait() override;
   void cancelWait() override;
+
+  bool hide() override;
+  void cancelHide() override;
 };
 
 } // namespace ai

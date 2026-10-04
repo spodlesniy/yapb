@@ -313,3 +313,9 @@ Reason: combining Pause and Hide would teach the policy that a temporary wait/ho
 Development communication should be concise and technical. Avoid repeating established project state, architecture, or decisions; include only information needed to understand the current implementation step, its validation, failures, and decisions. Batch repository reads and use the resulting analysis to minimize redundant tool calls and repeated discussion.
 
 Reason: the conversation context has a finite size, so unnecessary output reduces the amount of project state that can remain available for subsequent development. Concise communication preserves context for code, tests, documentation, and unresolved engineering decisions without reducing the completeness of the repository itself.
+
+## D049 — Make Hide a direct AI-owned action over the existing Hide mechanic
+
+`ActionType::Hide` is executed through `ActionExecutionContext`. The YaPB adapter accepts it only from the normal task state when the last observed enemy is still valid and the bot has a valid navigation node, then starts the existing `Task::Hide` mechanic using the same initialization path used by `SeekCover`. The AI executor owns the Hide lifecycle and cancellation; legacy task execution remains enabled so YaPB's established concealment, crouch/shield, reload, damage, enemy, bomb-zone, and timeout behavior remains authoritative.
+
+Reason: Hide is a distinct tactical AI intent and should be executable directly without duplicating the existing Hide gameplay state machine. Sharing its initialization with SeekCover preserves YaPB semantics while removing Hide from the generic observed-task compatibility path.

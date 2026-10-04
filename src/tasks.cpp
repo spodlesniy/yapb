@@ -416,6 +416,53 @@ void Bot::huntEnemy_ () {
    }
 }
 
+void Bot::startHideBehavior () {
+   m_prevGoalIndex = kInvalidNodeIndex;
+
+   startTask (Task::Hide, TaskPri::Hide, kInvalidNodeIndex, game.time () + rg (3.0f, 12.0f), false);
+
+   // get a valid look direction
+   const auto &dest = getCampDirection (m_lastEnemyOrigin);
+
+   m_aimFlags |= AimFlags::Camp;
+   m_lookAtSafe = dest;
+   m_campDirection = 0;
+
+   // chosen node is a camp node?
+   if (m_pathFlags & NodeFlag::Camp) {
+      // use the existing camp node prefs
+      if (m_pathFlags & NodeFlag::Crouch) {
+         m_campButtons = IN_DUCK;
+      }
+      else {
+         m_campButtons = 0;
+      }
+   }
+   else {
+      // choose a crouch or stand pos
+      if (m_path->vis.crouch <= m_path->vis.stand) {
+         m_campButtons = IN_DUCK;
+      }
+      else {
+         m_campButtons = 0;
+      }
+
+      // enter look direction from previously calculated positions
+      if (!dest.empty ()) {
+         m_lookAtSafe = dest;
+      }
+   }
+
+   if (m_reloadState == Reload::None && getAmmoInClip () < 5 && getAmmo () != 0) {
+      m_reloadState = Reload::Primary;
+   }
+   m_moveSpeed = 0.0f;
+   m_strafeSpeed = 0.0f;
+
+   m_moveToGoal = false;
+   m_checkTerrain = false;
+}
+
 void Bot::seekCover_ () {
    m_aimFlags |= AimFlags::Nav;
 
@@ -430,49 +477,7 @@ void Bot::seekCover_ () {
       completeTask ();
       m_prevGoalIndex = kInvalidNodeIndex;
 
-      // start hide task
-      startTask (Task::Hide, TaskPri::Hide, kInvalidNodeIndex, game.time () + rg (3.0f, 12.0f), false);
-
-      // get a valid look direction
-      const auto &dest = getCampDirection (m_lastEnemyOrigin);
-
-      m_aimFlags |= AimFlags::Camp;
-      m_lookAtSafe = dest;
-      m_campDirection = 0;
-
-      // chosen node is a camp node?
-      if (m_pathFlags & NodeFlag::Camp) {
-         // use the existing camp node prefs
-         if (m_pathFlags & NodeFlag::Crouch) {
-            m_campButtons = IN_DUCK;
-         }
-         else {
-            m_campButtons = 0;
-         }
-      }
-      else {
-         // choose a crouch or stand pos
-         if (m_path->vis.crouch <= m_path->vis.stand) {
-            m_campButtons = IN_DUCK;
-         }
-         else {
-            m_campButtons = 0;
-         }
-
-         // enter look direction from previously calculated positions
-         if (!dest.empty ()) {
-            m_lookAtSafe = dest;
-         }
-      }
-
-      if (m_reloadState == Reload::None && getAmmoInClip () < 5 && getAmmo () != 0) {
-         m_reloadState = Reload::Primary;
-      }
-      m_moveSpeed = 0.0f;
-      m_strafeSpeed = 0.0f;
-
-      m_moveToGoal = false;
-      m_checkTerrain = false;
+      startHideBehavior ();
    }
    else if (!hasActiveGoal ()) {
       int destIndex = kInvalidNodeIndex;

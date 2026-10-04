@@ -56,6 +56,9 @@ public:
   int cancelCampCalls {};
   int waitCalls {};
   int cancelWaitCalls {};
+  bool hideAvailable {};
+  int hideCalls {};
+  int cancelHideCalls {};
   bool campAvailable {};
   bool waitAvailable {};
   ai::Vec3 lastPosition {};
@@ -195,6 +198,15 @@ public:
 
   void cancelWait() override {
     ++cancelWaitCalls;
+  }
+
+  bool hide() override {
+    ++hideCalls;
+    return hideAvailable;
+  }
+
+  void cancelHide() override {
+    ++cancelHideCalls;
   }
 };
 
@@ -994,6 +1006,77 @@ AI_TEST(testBotActionExecutorCancelsDirectWait) {
   executor.cancel();
 
   expect(context.cancelWaitCalls == 1, "cancel releases direct wait");
+}
+
+AI_TEST(testBotActionExecutorDirectlyExecutesHide) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  context.hideAvailable = true;
+  auto observation = aliveObservation();
+  observation.bot.currentTask = ai::TaskType::Normal;
+
+  auto action = ai::Action {};
+  action.type = ai::ActionType::Hide;
+
+  const auto result = executor.execute(action, observation);
+
+  expect(result.type == ai::ActionResultType::Accepted, "hide is accepted when the runtime can start it");
+  expect(context.hideCalls == 1, "hide is delegated");
+  expect(!executor.suppressesLegacyTaskExecution(), "hide keeps legacy task execution enabled");
+}
+
+AI_TEST(testBotActionExecutorCompletesHideWhenRuntimeStopsIt) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  context.hideAvailable = true;
+  auto observation = aliveObservation();
+  observation.bot.currentTask = ai::TaskType::Normal;
+
+  auto action = ai::Action {};
+  action.type = ai::ActionType::Hide;
+
+  auto result = executor.execute(action, observation);
+  expect(result.type == ai::ActionResultType::Accepted, "hide starts while available");
+
+  context.hideAvailable = false;
+  result = executor.execute(action, observation);
+
+  expect(result.type == ai::ActionResultType::Completed, "hide completes when the runtime stops it");
+  expect(context.cancelHideCalls == 1, "completion releases direct hide");
+}
+
+AI_TEST(testBotActionExecutorRejectsHideWhenRuntimeCannotStartIt) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  auto observation = aliveObservation();
+  observation.bot.currentTask = ai::TaskType::Normal;
+
+  auto action = ai::Action {};
+  action.type = ai::ActionType::Hide;
+
+  const auto result = executor.execute(action, observation);
+
+  expect(result.type == ai::ActionResultType::Rejected, "hide is rejected when the runtime cannot start it");
+}
+
+AI_TEST(testBotActionExecutorCancelsDirectHide) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  context.hideAvailable = true;
+  auto observation = aliveObservation();
+  observation.bot.currentTask = ai::TaskType::Normal;
+
+  auto action = ai::Action {};
+  action.type = ai::ActionType::Hide;
+
+  executor.execute(action, observation);
+  executor.cancel();
+
+  expect(context.cancelHideCalls == 1, "cancel releases direct hide");
 }
 
 AI_TEST(testBotActionExecutorCompletesObservedTaskLifecycle) {
