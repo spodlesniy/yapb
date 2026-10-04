@@ -434,9 +434,3 @@ Reason: hostage rescue has a concrete objective target and a stable observable c
 `ActionType::ThrowSmoke` owns a smoke-grenade throw with an explicit target position. Legacy grenade selection stores the existing predicted smoke target in the shared throw-target state, while the smoke task consumes that target instead of recomputing it. The AI executor owns the action lifecycle and delegates the target-position throw to a dedicated execution-context capability backed by YaPB's existing smoke task.
 
 Reason: Smoke now has the same explicit target-position boundary as HE and flashbang throws without introducing a new engine-facing grenade abstraction.
-
-## D066 — Make ThrowSmoke a direct AI-owned action
-
-`ActionType::ThrowSmoke` owns a smoke-grenade throw with an explicit target position. Legacy grenade selection stores the existing predicted smoke target in the shared throw-target state, while the smoke task consumes that target instead of recomputing it. The AI executor owns the action lifecycle and delegates the target-position throw to a dedicated execution-context capability backed by YaPB's existing smoke task.
-
-Reason: Smoke now has the same explicit target-position boundary as HE and flashbang throws without introducing a new engine-facing grenade abstraction.
