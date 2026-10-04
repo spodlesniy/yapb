@@ -16,8 +16,11 @@ using ai::test::expect;
 using ai::test::expectNear;
 
 AI_TEST(testInferenceFeatureSchema) {
-  expect(ai::kInferenceFeatureSchemaVersion == 4, "inference feature schema uses the current version");
-  expect(ai::kInferenceFeatureCount > 0, "inference feature vector is non-empty");
+  expect(ai::kInferenceFeatureSchemaVersion == 5, "inference feature schema uses the current version");
+  expect(ai::kInferenceFeatureCount == 243, "inference feature vector uses the current width");
+  expect(static_cast<size_t>(ai::InferenceFeature::Core::ThrowTargetRelativeX) == 80, "throw target x keeps the next core index");
+  expect(static_cast<size_t>(ai::InferenceFeature::Core::ThrowTargetRelativeY) == 81, "throw target y follows x");
+  expect(static_cast<size_t>(ai::InferenceFeature::Core::ThrowTargetRelativeZ) == 82, "throw target z follows y");
 
   const ai::InferenceFeatures features {};
   expect(features.schemaVersion == ai::kInferenceFeatureSchemaVersion, "feature vector defaults to current schema");
@@ -28,6 +31,7 @@ AI_TEST(testInferenceFeatureEncoding) {
   ai::Observation observation {};
   observation.bot.origin = { 100.0f, 200.0f, 300.0f };
   observation.bot.destination = { 1124.0f, 200.0f, 300.0f };
+  observation.bot.throwTarget = { 1324.0f, 300.0f, 300.0f };
   observation.bot.health = 50.0f;
   observation.bot.armor = 25.0f;
   observation.bot.maxSpeed = 320.0f;
@@ -79,6 +83,12 @@ AI_TEST(testInferenceFeatureEncoding) {
 
   expectNear(features.at(core(ai::InferenceFeature::Core::TaskTimeRemaining)), 0.5f, 0.0001f, "task time remaining is normalized");
   expectNear(features.at(core(ai::InferenceFeature::Core::Health)), 0.5f, 0.0001f, "health is normalized");
+  expectNear(features.at(core(ai::InferenceFeature::Core::ThrowTargetRelativeX)), 1224.0f / 4096.0f, 0.0001f,
+             "throw target x is encoded");
+  expectNear(features.at(core(ai::InferenceFeature::Core::ThrowTargetRelativeY)), 100.0f / 4096.0f, 0.0001f,
+             "throw target y is encoded");
+  expectNear(features.at(core(ai::InferenceFeature::Core::ThrowTargetRelativeZ)), 0.0f, 0.0001f,
+             "throw target z is encoded");
   expectNear(features.at(core(ai::InferenceFeature::Core::DestinationRelativeX)), 0.25f, 0.0001f,
              "destination is encoded relative to bot origin");
   expectNear(features.at(core(ai::InferenceFeature::Core::Aggression)), 0.8f, 0.0001f, "personality is preserved");

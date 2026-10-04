@@ -21,6 +21,7 @@ struct BotInput {
   Vec3 velocity {};
   Vec3 destination {};
   Vec3 desiredVelocity {};
+  Vec3 throwTarget {};
 
   float health {};
   float armor {};

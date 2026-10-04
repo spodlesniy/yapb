@@ -106,6 +106,11 @@ InferenceFeatures encodeInferenceFeatures(const Observation &observation) {
   set(InferenceFeature::Core::DestinationRelativeY, normalizeSigned(destination.y, kPositionScale));
   set(InferenceFeature::Core::DestinationRelativeZ, normalizeSigned(destination.z, kPositionScale));
 
+  const auto throwTarget = relative(observation.bot.throwTarget, origin);
+  set(InferenceFeature::Core::ThrowTargetRelativeX, normalizeSigned(throwTarget.x, kPositionScale));
+  set(InferenceFeature::Core::ThrowTargetRelativeY, normalizeSigned(throwTarget.y, kPositionScale));
+  set(InferenceFeature::Core::ThrowTargetRelativeZ, normalizeSigned(throwTarget.z, kPositionScale));
+
   set(InferenceFeature::Core::Alive, booleanFeature(observation.bot.alive));
   set(InferenceFeature::Core::MovingToGoal, booleanFeature(observation.bot.movingToGoal));
   set(InferenceFeature::Core::Stuck, booleanFeature(observation.bot.stuck));

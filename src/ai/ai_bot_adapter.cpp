@@ -148,6 +148,7 @@ ObservationInput buildObservationInput(const Bot &bot) {
   input.bot.velocity = { bot.pev->velocity.x, bot.pev->velocity.y, bot.pev->velocity.z };
   input.bot.destination = { bot.m_destOrigin.x, bot.m_destOrigin.y, bot.m_destOrigin.z };
   input.bot.desiredVelocity = { bot.m_desiredVelocity.x, bot.m_desiredVelocity.y, bot.m_desiredVelocity.z };
+  input.bot.throwTarget = { bot.m_throw.x, bot.m_throw.y, bot.m_throw.z };
   input.bot.health = bot.m_healthValue;
   input.bot.armor = bot.pev->armorvalue;
   input.bot.maxSpeed = bot.pev->maxspeed;

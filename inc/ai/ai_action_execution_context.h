@@ -32,6 +32,9 @@ public:
   virtual bool followPlayer(int targetPlayer) = 0;
   virtual void cancelFollowPlayer(int targetPlayer) = 0;
 
+  virtual bool throwGrenade(const Vec3 &position) = 0;
+  virtual void cancelThrowGrenade() = 0;
+
   virtual bool huntTarget(int targetPlayer) = 0;
   virtual bool isHuntTargetReached(int targetPlayer) const = 0;
   virtual void cancelHuntTarget(int targetPlayer) = 0;

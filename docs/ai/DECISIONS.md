@@ -376,6 +376,10 @@ The server command `ai_training_status` reports buffered transitions, unique buf
 
 Reason: long Training sessions need a low-cost operational check before saving data. The status command makes buffer pressure and collection progress visible directly in the game server console while leaving save/clear operations explicit.
 
+## D061 — Make ThrowGrenade a direct AI-owned action
+
+`ActionType::ThrowGrenade` maps HE grenade throws to YaPB's existing `Task::ThrowExplosive`. The throw target is exposed as semantic observation data and the execution context provides start/cancel operations without exposing YaPB types to the AI layer.
+
 ## D060 — Make FollowPlayer a direct AI-owned action
 
 `ActionType::FollowPlayer` maps the existing YaPB `Task::FollowUser` mechanic. The observation identifies the active follow target and marks that player in the player feature slots, allowing the policy to associate the action target with an observed teammate. The adapter prioritizes the active follow target when populating the bounded player observation.

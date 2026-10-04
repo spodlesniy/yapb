@@ -15,7 +15,7 @@
 
 namespace ai {
 
-constexpr uint32_t kInferenceFeatureSchemaVersion = 4;
+constexpr uint32_t kInferenceFeatureSchemaVersion = 5;
 constexpr size_t kInferencePlayerSlots = 8;
 constexpr size_t kInferenceWaypointSlots = 8;
 
@@ -59,7 +59,10 @@ enum class Core : size_t {
   NavigationBase = ObjectiveBase + 7,
   PerceptionBase = NavigationBase + 4,
   TaskBase = PerceptionBase + 4,
-  Count = TaskBase + 21,
+  ThrowTargetRelativeX = TaskBase + 22,
+  ThrowTargetRelativeY,
+  ThrowTargetRelativeZ,
+  Count = TaskBase + 25,
 };
 
 enum class Player : size_t {

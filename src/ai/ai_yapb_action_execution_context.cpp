@@ -8,6 +8,8 @@
 
 #include <yapb.h>
 
+#include <cmath>
+
 #include <ai/ai_navigation_task_guard.h>
 #include <ai/ai_yapb_action_execution_context.h>
 
@@ -144,6 +146,22 @@ bool YaPBActionExecutionContext::followPlayer(int targetPlayer) {
   m_bot->m_followWaitTime = 0.0f;
   m_bot->startTask(Task::FollowUser, TaskPri::FollowUser, kInvalidNodeIndex, 0.0f, true);
   return true;
+}
+
+bool YaPBActionExecutionContext::throwGrenade(const Vec3 &position) {
+  if (m_bot == nullptr || m_bot->pev == nullptr || !std::isfinite(position.x) || !std::isfinite(position.y) || !std::isfinite(position.z)) return false;
+  if (m_bot->getCurrentTaskId() != Task::Normal && m_bot->getCurrentTaskId() != Task::ThrowExplosive) return false;
+  m_bot->m_throw = { position.x, position.y, position.z };
+  if (m_bot->getCurrentTaskId() == Task::Normal) m_bot->startTask(Task::ThrowExplosive, TaskPri::Throw, kInvalidNodeIndex, 0.0f, false);
+  return true;
+}
+
+void YaPBActionExecutionContext::cancelThrowGrenade() {
+  if (m_bot == nullptr) return;
+  if (m_bot->getCurrentTaskId() == Task::ThrowExplosive) m_bot->clearTask(Task::ThrowExplosive);
+  m_bot->m_isUsingGrenade = false;
+  m_bot->m_aimFlags &= ~AimFlags::Grenade;
+  m_bot->m_throw.clear();
 }
 
 void YaPBActionExecutionContext::cancelFollowPlayer(int targetPlayer) {

@@ -32,6 +32,9 @@ public:
   int cancelAttackTargetCalls {};
   int followPlayerCalls {};
   int cancelFollowPlayerCalls {};
+  int throwGrenadeCalls {};
+  int cancelThrowGrenadeCalls {};
+  ai::Vec3 lastThrowPosition {};
   int lastFollowPlayer { -1 };
   int huntTargetCalls {};
   int cancelHuntTargetCalls {};
@@ -114,6 +117,8 @@ public:
 
   bool followPlayer(int targetPlayer) override { ++followPlayerCalls; lastFollowPlayer = targetPlayer; return followPlayerAvailable; }
   void cancelFollowPlayer(int targetPlayer) override { ++cancelFollowPlayerCalls; lastFollowPlayer = targetPlayer; }
+  bool throwGrenade(const ai::Vec3 &position) override { ++throwGrenadeCalls; lastThrowPosition = position; return true; }
+  void cancelThrowGrenade() override { ++cancelThrowGrenadeCalls; }
 
   bool huntTarget(int targetPlayer) override {
     ++huntTargetCalls;
@@ -266,6 +271,38 @@ AI_TEST(testBotActionExecutorCompletesFollowPlayerWhenTargetChanges) {
 
 
 } // namespace
+
+AI_TEST(testBotActionExecutorDirectlyExecutesThrowGrenade) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+  auto observation = aliveObservation();
+  observation.bot.currentTask = ai::TaskType::ThrowExplosive;
+  ai::Action action {};
+  action.type = ai::ActionType::ThrowGrenade;
+  action.targetType = ai::TargetType::Position;
+  action.targetPosition = { 100.0f, 200.0f, 300.0f };
+  action.grenadeType = ai::GrenadeType::HE;
+  const auto result = executor.execute(action, observation);
+  expect(result.type == ai::ActionResultType::Accepted, "grenade action is accepted");
+  expect(context.throwGrenadeCalls == 1, "grenade action invokes context");
+  expectNear(context.lastThrowPosition.x, 100.0f, 0.001f, "grenade target x is preserved");
+}
+
+AI_TEST(testBotActionExecutorCompletesThrowGrenadeWhenTaskEnds) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+  auto observation = aliveObservation();
+  observation.bot.currentTask = ai::TaskType::ThrowExplosive;
+  ai::Action action {};
+  action.type = ai::ActionType::ThrowGrenade;
+  action.targetType = ai::TargetType::Position;
+  action.targetPosition = { 100.0f, 200.0f, 300.0f };
+  action.grenadeType = ai::GrenadeType::HE;
+  expect(executor.execute(action, observation).type == ai::ActionResultType::Accepted, "grenade action starts");
+  observation.bot.currentTask = ai::TaskType::Normal;
+  expect(executor.execute(action, observation).type == ai::ActionResultType::Completed, "grenade action completes");
+  expect(context.cancelThrowGrenadeCalls == 1, "grenade cancellation is delegated");
+}
 
 AI_TEST(testBotActionExecutorMovesToNodeThroughContext) {
   MockActionExecutionContext context {};

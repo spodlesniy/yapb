@@ -26,9 +26,9 @@ class ModelContractTests(unittest.TestCase):
     def test_runtime_input_contract(self) -> None:
         self.assertEqual(MODEL_INPUT_NAME, "input")
         self.assertEqual(MODEL_INPUT_DTYPE, "float32")
-        self.assertEqual(MODEL_RUNTIME_INPUT_SHAPE, (1, 240))
-        self.assertEqual(MODEL_FEATURE_COUNT, 240)
-        self.assertEqual(MODEL_FEATURE_SCHEMA_VERSION, 4)
+        self.assertEqual(MODEL_RUNTIME_INPUT_SHAPE, (1, 243))
+        self.assertEqual(MODEL_FEATURE_COUNT, 243)
+        self.assertEqual(MODEL_FEATURE_SCHEMA_VERSION, 5)
         self.assertEqual(MODEL_ACTION_ID_COUNT, 26)
         self.assertEqual(MODEL_ACTION_SCHEMA_VERSION, 2)
 
@@ -40,7 +40,7 @@ class ModelContractTests(unittest.TestCase):
         self.assertEqual(ModelOutputIndex.CONFIDENCE, 9)
 
     def test_feature_count_validation(self) -> None:
-        validate_feature_count(240)
+        validate_feature_count(243)
         with self.assertRaises(ValueError):
             validate_feature_count(231)
 

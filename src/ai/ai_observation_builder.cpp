@@ -53,6 +53,7 @@ Observation buildObservation(const ObservationInput &input) {
   observation.bot.velocity = finiteOrZero(input.bot.velocity);
   observation.bot.destination = finiteOrZero(input.bot.destination);
   observation.bot.desiredVelocity = finiteOrZero(input.bot.desiredVelocity);
+  observation.bot.throwTarget = finiteOrZero(input.bot.throwTarget);
   observation.bot.health = finiteOrZero(input.bot.health);
   observation.bot.armor = finiteOrZero(input.bot.armor);
   observation.bot.maxSpeed = finiteOrZero(input.bot.maxSpeed);

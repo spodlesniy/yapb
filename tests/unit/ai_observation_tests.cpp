@@ -37,6 +37,7 @@ AI_TEST(testObservationBuilder) {
   input.bot.velocity = { 10.0f, -20.0f, 0.0f };
   input.bot.destination = { 150.0f, 250.0f, 300.0f };
   input.bot.desiredVelocity = { 20.0f, 0.0f, 0.0f };
+  input.bot.throwTarget = { 500.0f, 600.0f, 300.0f };
   input.bot.health = 87.0f;
   input.bot.team = 1;
   input.bot.currentNode = 7;
@@ -100,6 +101,7 @@ AI_TEST(testObservationBuilder) {
   expect(observation.bot.origin.x == 100.0f, "builder preserves bot origin");
   expect(observation.bot.destination.x == 150.0f, "builder preserves navigation destination");
   expect(observation.bot.desiredVelocity.x == 20.0f, "builder preserves desired velocity");
+  expect(observation.bot.throwTarget.x == 500.0f, "builder preserves grenade throw target");
   expect(observation.bot.navigationFlags ==
              (static_cast<uint32_t>(ai::NavigationFlag::Jump) | static_cast<uint32_t>(ai::NavigationFlag::Ladder)),
          "builder preserves navigation flags");

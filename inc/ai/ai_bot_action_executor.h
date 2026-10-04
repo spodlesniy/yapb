@@ -26,6 +26,8 @@ private:
   bool m_directAttackTargetActive {};
   Action m_directFollowPlayerAction {};
   bool m_directFollowPlayerActive {};
+  Action m_directThrowGrenadeAction {};
+  bool m_directThrowGrenadeActive {};
   Action m_directHuntAction {};
   bool m_directHuntTargetActive {};
   bool m_directSeekCoverActive {};
@@ -44,6 +46,7 @@ private:
   ActionResult executeMoveToPosition(const Action &action);
   ActionResult executeAttackTarget(const Action &action, const Observation &observation);
   ActionResult executeFollowPlayer(const Action &action, const Observation &observation);
+  ActionResult executeThrowGrenade(const Action &action, const Observation &observation);
   ActionResult executeHuntTarget(const Action &action, const Observation &observation);
   ActionResult executeSeekCover(const Action &action);
   ActionResult executeEscapeFromBomb(const Action &action, const Observation &observation);

@@ -23,7 +23,7 @@ class FeatureContractTests(unittest.TestCase):
         self.assertEqual(len(MODEL_FEATURE_INDEX), MODEL_FEATURE_COUNT)
 
     def test_feature_blocks_have_expected_sizes(self) -> None:
-        self.assertEqual(len(CORE_FEATURE_NAMES), 80)
+        self.assertEqual(len(CORE_FEATURE_NAMES), 83)
         self.assertEqual(len(PLAYER_FEATURE_NAMES), 12)
         self.assertEqual(len(WAYPOINT_FEATURE_NAMES), 8)
 
@@ -44,8 +44,12 @@ class FeatureContractTests(unittest.TestCase):
         waypoint_base = player_base + 8 * len(PLAYER_FEATURE_NAMES)
 
         self.assertEqual(MODEL_FEATURE_INDEX["player.0.valid"], player_base)
-        self.assertEqual(player_base, 80)
+        self.assertEqual(player_base, 83)
         self.assertEqual(MODEL_FEATURE_INDEX["player.7.armor"], waypoint_base - 1)
+        self.assertEqual(MODEL_FEATURE_INDEX["waypoint.0.present"], waypoint_base)
+        self.assertEqual(MODEL_FEATURE_INDEX["throw_target_relative_x"], 80)
+        self.assertEqual(MODEL_FEATURE_INDEX["throw_target_relative_y"], 81)
+        self.assertEqual(MODEL_FEATURE_INDEX["throw_target_relative_z"], 82)
         self.assertEqual(MODEL_FEATURE_INDEX["waypoint.0.present"], waypoint_base)
         self.assertEqual(MODEL_FEATURE_INDEX["waypoint.7.distance"], MODEL_FEATURE_COUNT - 1)
 

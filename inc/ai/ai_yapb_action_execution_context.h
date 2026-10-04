@@ -47,6 +47,9 @@ public:
   bool followPlayer(int targetPlayer) override;
   void cancelFollowPlayer(int targetPlayer) override;
 
+  bool throwGrenade(const Vec3 &position) override;
+  void cancelThrowGrenade() override;
+
   bool huntTarget(int targetPlayer) override;
   bool isHuntTargetReached(int targetPlayer) const override;
   void cancelHuntTarget(int targetPlayer) override;

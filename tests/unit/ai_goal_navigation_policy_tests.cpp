@@ -149,7 +149,7 @@ AI_TEST(testGoalNavigationPolicyDefinesOutcomeForEveryTaskType) {
     ai::ActionType::MoveToNode,
     ai::ActionType::MoveToNode,
     ai::ActionType::SeekCover,
-    ai::ActionType::MoveToNode,
+    ai::ActionType::ThrowGrenade,
     ai::ActionType::MoveToNode,
     ai::ActionType::MoveToNode,
     ai::ActionType::MoveToNode,
@@ -171,6 +171,9 @@ AI_TEST(testGoalNavigationPolicyDefinesOutcomeForEveryTaskType) {
     observation.bot.currentTask = static_cast<ai::TaskType>(index);
     if (observation.bot.currentTask == ai::TaskType::FollowUser) {
       addFollowTarget(observation, 7);
+    }
+    if (observation.bot.currentTask == ai::TaskType::ThrowExplosive) {
+      observation.bot.throwTarget = { 100.0f, 200.0f, 300.0f };
     }
     const auto action = policy.decide(observation);
 

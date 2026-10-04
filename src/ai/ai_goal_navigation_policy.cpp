@@ -77,6 +77,16 @@ Action GoalNavigationPolicy::decide(const Observation &observation) const {
     return action;
   }
 
+  case TaskType::ThrowExplosive: {
+    Action action {};
+    action.type = ActionType::ThrowGrenade;
+    action.targetType = TargetType::Position;
+    action.targetPosition = observation.bot.throwTarget;
+    action.grenadeType = GrenadeType::HE;
+    action.confidence = 1.0f;
+    return action;
+  }
+
   case TaskType::PickupItem: {
     Action action {};
     action.type = ActionType::PickupItem;
@@ -154,7 +164,6 @@ Action GoalNavigationPolicy::decide(const Observation &observation) const {
   case TaskType::Unknown:
   case TaskType::Normal:
   case TaskType::DoubleJump:
-  case TaskType::ThrowExplosive:
   case TaskType::ThrowFlashbang:
   case TaskType::ThrowSmoke:
   case TaskType::Blind:

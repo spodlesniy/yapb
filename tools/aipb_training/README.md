@@ -135,7 +135,7 @@ The command validates the ONNX graph and runtime contract and verifies output pa
 
 ## Model feature schema
 
-The current model input is schema version 4 with 240 ordered features. Each observed player slot includes an `is_follow_target` flag so FollowPlayer actions can identify their target without relying on unstable player-slot ordering.
+The current model input is schema version 5 with 243 ordered features. Each observed player slot includes an `is_follow_target` flag so FollowPlayer actions can identify their target without relying on unstable player-slot ordering.
 
 ## In-game collection status
 

@@ -87,6 +87,9 @@ CORE_FEATURE_NAMES = (
     "task.hide",
     "task.blind",
     "task.spraypaint",
+    "throw_target_relative_x",
+    "throw_target_relative_y",
+    "throw_target_relative_z",
 )
 
 PLAYER_FEATURE_NAMES = (
