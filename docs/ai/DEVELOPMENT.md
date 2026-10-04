@@ -2,7 +2,7 @@
 
 ## Iteration model
 
-Each logical development iteration is coherent and reviewable; it may include the implementation, tests, and documentation needed to complete that step.
+Each logical development action is a coherent, reviewable unit. One primary commit may include the implementation, focused tests, and documentation needed to complete that action.
 
 One iteration should:
 
@@ -12,8 +12,8 @@ One iteration should:
 4. Implement only that change.
 5. Run focused validation locally when available.
 6. Inspect the complete diff.
-7. Commit exactly that logical iteration.
-8. Push the commit and use the automatic unit-test CI result as the normal gate for the next iteration.
+7. Publish one primary commit for exactly that logical development action.
+8. Push the commit and use the automatic unit-test CI result as the normal gate for the next action. If the published action later needs a correction, make it in a new ordinary corrective commit.
 
 When an iteration changes a durable architecture, workflow, or engineering decision, update the corresponding `docs/ai` document in the same logical iteration.
 
@@ -23,7 +23,7 @@ Do not accumulate multiple unrelated fixes before committing.
 
 ## Verification failure handling
 
-When a test or CI job fails, inspect the actual failing test or workflow logs first. Treat the log output as the primary source for the failure diagnosis; do not speculate about the cause or modify code until the concrete failure is identified. After identifying the failure, make the smallest correction that restores the current logical iteration and re-run the relevant validation.
+When a test or CI job fails, inspect the actual failing test or workflow logs first. Treat the log output as the primary source for the failure diagnosis; do not speculate about the cause or modify code until the concrete failure is identified. After identifying the failure, make the smallest necessary correction in a new ordinary corrective commit and re-run the relevant validation. Do not rewrite or force-update the published commit to apply the correction.
 
 ## Pre-commit checks
 
@@ -135,7 +135,7 @@ The exact operation budget can vary by tool/runtime and should not be assumed fr
 
 ## GitHub interaction and commit discipline
 
-Current GitHub interaction limits are treated as an execution constraint, not as a reason to fragment the repository history. Before editing, batch the required reads and avoid re-fetching unchanged files. For a completed logical iteration, prepare the full implementation, focused tests, and required documentation together, then publish them as exactly one commit. Intermediate corrective changes are folded into the same iteration whenever they are discovered before publication; they must not become separate micro-commits merely to reduce the size of an individual API operation.
+Current GitHub interaction limits are treated as an execution constraint, not as a reason to fragment the repository history. Before editing, batch the required reads and avoid re-fetching unchanged files. For a completed logical development action, prepare the full implementation, focused tests, and required documentation together, then publish one primary commit. Do not split one action into multiple micro-commits merely to reduce the size of individual API operations. Corrective changes discovered after publication are separate ordinary commits; do not rewrite or force-update the earlier commit for routine fixes.
 
 When a larger validation checkpoint is required, use the resulting CI status to validate the single published commit rather than creating an extra checkpoint commit with no independent semantic change.
 

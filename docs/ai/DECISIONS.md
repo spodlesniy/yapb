@@ -8,11 +8,11 @@ All AiPB changes are made in `spodlesniy/yapb`. The upstream `yapb/yapb` reposit
 
 Reason: preserve a clean boundary between the user's fork and upstream.
 
-## D002 — One coherent logical iteration per commit
+## D002 — One primary commit per logical development action
 
-A completed logical iteration produces one commit. One iteration may include the implementation, focused tests, and documentation changes required to complete that coherent step.
+One logical development action produces one primary commit. That commit may include the implementation, focused tests, and documentation changes required to complete the action. One action should not be split into multiple micro-commits. If testing, review, or later discussion identifies a correction after publication, the correction is made in a new ordinary commit rather than by rewriting or force-updating the earlier commit.
 
-Reason: keeping one coherent change set in one commit makes review, rollback, CI diagnosis, and historical tracking precise without forcing unrelated work into the same history entry.
+Reason: this keeps each implementation unit coherent without hiding subsequent corrections from the project history or relying on history rewrites for routine fixes.
 
 ## D003 — Use fixed C arrays instead of std::array
 
@@ -254,11 +254,11 @@ EscapeFromBomb is executed through ActionExecutionContext using the planted bomb
 Reason: the high-level decision to escape is AI-owned, while waypoint selection and movement reuse the established objective/navigation mechanics without introducing a second pathfinding implementation.
 
 
-## D040 — Respect GitHub interaction limits without fragmenting logical work
+## D040 — Respect GitHub interaction limits without fragmenting work or rewriting history
 
-GitHub API and interaction limits are an operational constraint. A logical AiPB iteration must still be published as one coherent commit containing the implementation, focused tests, documentation updates, and corrective changes required to make that iteration complete. Tool-call minimization should come from batched inspection, reuse of unchanged repository state, and atomic tree/commit publication rather than from splitting one logical change into multiple micro-commits.
+GitHub API and interaction limits are an operational constraint, not a reason to fragment one logical development action into micro-commits. Prepare the complete action through batched inspection and atomic publication, then publish one primary commit for that action. If a problem is discovered after publication, make the correction in a new ordinary commit; do not force-update or otherwise rewrite the published history for routine fixes.
 
-Reason: fragmented history makes CI diagnosis, review, rollback, and architectural tracking harder while consuming additional GitHub operations. Interaction limits should shape how the work is prepared and validated, not redefine the semantic boundary of an iteration.
+Reason: operation limits should influence how efficiently a change is prepared and published, not force history fragmentation or encourage hidden history rewrites. The resulting history should show both the original action and any later correction.
 
 ## D041 — Make PlantBomb a direct AI-owned objective action
 
@@ -314,17 +314,17 @@ Development communication should be concise and technical. Avoid repeating estab
 
 Reason: the conversation context has a finite size, so unnecessary output reduces the amount of project state that can remain available for subsequent development. Concise communication preserves context for code, tests, documentation, and unresolved engineering decisions without reducing the completeness of the repository itself.
 
-## D050 — Make HoldPosition a direct AI-owned action over the Pause primitive
-
-`ActionType::HoldPosition` is executed through `ActionExecutionContext`. The YaPB adapter accepts it from the normal task state and starts the existing `Task::Pause` mechanic with the established short hold duration range. The AI executor owns the action lifecycle and cancellation; legacy task execution remains enabled. `Wait` and `HoldPosition` remain distinct AI semantics even though they share the same engine primitive.
-
-Reason: HoldPosition is an explicit tactical intent already represented by the AI action contract and teacher mapping. Giving it its own execution lifecycle removes the final Pause-backed AI action from the generic observed-task compatibility path without duplicating YaPB's waiting/holding mechanics.
-
 ## D049 — Make Hide a direct AI-owned action over the existing Hide mechanic
 
 `ActionType::Hide` is executed through `ActionExecutionContext`. The YaPB adapter accepts it only from the normal task state when the last observed enemy is still valid and the bot has a valid navigation node, then starts the existing `Task::Hide` mechanic using the same initialization path used by `SeekCover`. The AI executor owns the Hide lifecycle and cancellation; legacy task execution remains enabled so YaPB's established concealment, crouch/shield, reload, damage, enemy, bomb-zone, and timeout behavior remains authoritative.
 
 Reason: Hide is a distinct tactical AI intent and should be executable directly without duplicating the existing Hide gameplay state machine. Sharing its initialization with SeekCover preserves YaPB semantics while removing Hide from the generic observed-task compatibility path.
+
+## D050 — Make HoldPosition a direct AI-owned action over the Pause primitive
+
+`ActionType::HoldPosition` is executed through `ActionExecutionContext`. The YaPB adapter accepts it from the normal task state and starts the existing `Task::Pause` mechanic with the established short hold duration range. The AI executor owns the action lifecycle and cancellation; legacy task execution remains enabled. `Wait` and `HoldPosition` remain distinct AI semantics even though they share the same engine primitive.
+
+Reason: HoldPosition is an explicit tactical intent already represented by the AI action contract and teacher mapping. Giving it its own execution lifecycle removes the final Pause-backed AI action from the generic observed-task compatibility path without duplicating YaPB's waiting/holding mechanics.
 
 ## D051 — Add task time remaining to the feature contract
 
@@ -423,20 +423,3 @@ Reason: Smoke now has the same explicit target-position boundary as HE and flash
 
 Reason: the executor and teacher already distinguish these grenade actions semantically. The validation contract must enforce the same distinction so invalid cross-grenade actions cannot enter the runtime pipeline.
 
-## D064 — Make AimAtTarget a direct AI-owned action
-
-`ActionType::AimAtTarget` owns the semantic intent to aim at an observed live enemy without requesting firing. The execution context reuses YaPB's enemy targeting and aiming primitive while explicitly clearing the fire request, and the AI executor owns target validation, lifecycle, and cancellation.
-
-Reason: aiming is a distinct model action with an existing player-target contract and can reuse the established combat targeting state without introducing a new engine-facing input abstraction.
-
-## D065 — Make RescueHostage a direct AI-owned action
-
-`ActionType::RescueHostage` owns the intent to deliver already attached hostages to a hostage rescue point. The YaPB adapter selects a rescue waypoint through the existing goal-selection logic and reuses `MoveToPosition` for path progression. The AI executor owns the action lifecycle and cancellation; hostage attachment and actual rescue completion remain authoritative in the game state.
-
-Reason: hostage rescue has a concrete objective target and a stable observable completion signal, unlike Retreat and the current ThrowSmoke/Reload cases, which do not yet expose an isolated execution boundary.
-
-## D066 — Make ThrowSmoke a direct AI-owned action
-
-`ActionType::ThrowSmoke` owns a smoke-grenade throw with an explicit target position. Legacy grenade selection stores the existing predicted smoke target in the shared throw-target state, while the smoke task consumes that target instead of recomputing it. The AI executor owns the action lifecycle and delegates the target-position throw to a dedicated execution-context capability backed by YaPB's existing smoke task.
-
-Reason: Smoke now has the same explicit target-position boundary as HE and flashbang throws without introducing a new engine-facing grenade abstraction.
