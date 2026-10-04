@@ -169,7 +169,7 @@ tools/aipb_training/
 
 The first policy model is a framework-backed feed-forward baseline:
 
-`LayerNorm(231) -> Linear(231,256) -> ReLU -> Linear(256,256) -> ReLU -> Linear(256,128) -> ReLU -> Linear(128,10)`
+`LayerNorm(232) -> Linear(232,256) -> ReLU -> Linear(256,256) -> ReLU -> Linear(256,128) -> ReLU -> Linear(128,10)`
 
 Training uses PyTorch. The model has no recurrent state or dropout, so evaluation/inference is deterministic for a fixed model state and input.
 
@@ -179,7 +179,7 @@ The training orchestration layer performs deterministic episode-level train/vali
 
 Checkpoints contain model/optimizer state, configuration, architecture, metrics, and epoch history. Training can resume from a compatible checkpoint; the target epochs may increase while training-affecting parameters remain fixed. The compute device may change when resuming.
 
-ONNX export is implemented as a separate deployment step. It consumes a compatible PyTorch checkpoint, emits the static [1,231] -> [1,10] contract at ONNX opset 18, validates the graph, and verifies numerical parity against the PyTorch model with ONNX Runtime. The `export.py` command-line entry point exposes this step without requiring callers to write Python code. The `deploy.py` command then validates the exported model again and places it in the standard package tree at `cfg/addons/yapb/data/models/aipb_policy.onnx`.
+ONNX export is implemented as a separate deployment step. It consumes a compatible PyTorch checkpoint, emits the static [1,232] -> [1,10] contract at ONNX opset 18, validates the graph, and verifies numerical parity against the PyTorch model with ONNX Runtime. The `export.py` command-line entry point exposes this step without requiring callers to write Python code. The `deploy.py` command then validates the exported model again and places it in the standard package tree at `cfg/addons/yapb/data/models/aipb_policy.onnx`.
 
 ## Offline checkpoint evaluation
 

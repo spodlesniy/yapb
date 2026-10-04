@@ -333,3 +333,9 @@ The Observation and model feature vector expose the remaining time of the curren
 The deterministic teacher uses a 10-second threshold for TaskType::Pause: shorter pauses are labelled Wait, while longer pauses are labelled HoldPosition. This separates frequent internal navigation/door/ladder pauses from the explicit 30–60 second HoldThisPosition behavior.
 
 Reason: Task::Pause is overloaded by YaPB and its task ID alone is insufficient to produce reliable training labels. The additional temporal state is also available to the learned policy, so the dataset no longer requires the model to infer an unobservable distinction between these Pause sources.
+
+## D052 — Keep the deterministic teacher exhaustively tested
+
+The `GoalNavigationPolicy` unit-test contract covers every current `TaskType` value with an explicit expected outcome. `TaskType::Pause` is covered separately for short and long task durations because it intentionally maps to `Wait` or `HoldPosition` depending on the remaining task time.
+
+Reason: the teacher defines the initial supervised labels for Training mode. An untested task branch can silently fall back to navigation or produce an unintended action, creating systematic dataset coverage gaps that are difficult to detect after collection.

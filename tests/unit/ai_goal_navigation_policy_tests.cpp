@@ -110,6 +110,47 @@ AI_TEST(testGoalNavigationPolicyMapsTaskActions) {
   expect(policy.decide(observation).type == ai::ActionType::Hide, "hide task maps to hide action");
 }
 
+AI_TEST(testGoalNavigationPolicyDefinesOutcomeForEveryTaskType) {
+  constexpr size_t kTaskTypeCount = static_cast<size_t>(ai::TaskType::Spraypaint) + 1;
+  constexpr ai::ActionType expected[kTaskTypeCount] = {
+    ai::ActionType::MoveToNode,
+    ai::ActionType::MoveToNode,
+    ai::ActionType::None,
+    ai::ActionType::MoveToPosition,
+    ai::ActionType::MoveToNode,
+    ai::ActionType::PickupItem,
+    ai::ActionType::Camp,
+    ai::ActionType::PlantBomb,
+    ai::ActionType::DefuseBomb,
+    ai::ActionType::MoveToNode,
+    ai::ActionType::MoveToNode,
+    ai::ActionType::SeekCover,
+    ai::ActionType::MoveToNode,
+    ai::ActionType::MoveToNode,
+    ai::ActionType::MoveToNode,
+    ai::ActionType::MoveToNode,
+    ai::ActionType::EscapeFromBomb,
+    ai::ActionType::Fire,
+    ai::ActionType::Hide,
+    ai::ActionType::MoveToNode,
+    ai::ActionType::MoveToNode,
+  };
+
+  ai::GoalNavigationPolicy policy {};
+  auto observation = makeObservation();
+
+  for (size_t index = 0; index < kTaskTypeCount; ++index) {
+    if (index == static_cast<size_t>(ai::TaskType::Pause)) {
+      continue;
+    }
+
+    observation.bot.currentTask = static_cast<ai::TaskType>(index);
+    const auto action = policy.decide(observation);
+
+    expect(action.type == expected[index], "teacher defines a deterministic outcome for every non-Pause task");
+  }
+}
+
 AI_TEST(testGoalNavigationPolicyFallsBackForHuntWhenCombatTargetIsUnavailable) {
   auto observation = makeObservation();
   observation.bot.currentTask = ai::TaskType::Hunt;
