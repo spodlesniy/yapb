@@ -67,6 +67,9 @@ public:
 
   bool fireBreakable() override;
   void cancelFireBreakable() override;
+
+  bool camp() override;
+  void cancelCamp() override;
 };
 
 } // namespace ai

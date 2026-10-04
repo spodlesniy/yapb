@@ -52,6 +52,9 @@ public:
   int cancelFireBreakableCalls {};
   bool pickupItemAvailable {};
   bool fireBreakableAvailable {};
+  int campCalls {};
+  int cancelCampCalls {};
+  bool campAvailable {};
   ai::Vec3 lastPosition {};
 
   bool isAlive() const override {
@@ -171,6 +174,15 @@ public:
 
   void cancelFireBreakable() override {
     ++cancelFireBreakableCalls;
+  }
+
+  bool camp() override {
+    ++campCalls;
+    return campAvailable;
+  }
+
+  void cancelCamp() override {
+    ++cancelCampCalls;
   }
 };
 
@@ -852,15 +864,75 @@ AI_TEST(testBotActionExecutorCancelsDirectFireBreakable) {
   expect(context.cancelFireBreakableCalls == 1, "cancel releases direct fire breakable");
 }
 
+AI_TEST(testBotActionExecutorDirectlyExecutesCamp) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  context.campAvailable = true;
+
+  auto action = ai::Action {};
+  action.type = ai::ActionType::Camp;
+
+  const auto result = executor.execute(action, aliveObservation());
+
+  expect(result.type == ai::ActionResultType::Accepted, "camp is accepted when the runtime can start it");
+  expect(context.campCalls == 1, "camp is delegated");
+  expect(!executor.suppressesLegacyTaskExecution(), "camp keeps legacy task execution enabled");
+}
+
+AI_TEST(testBotActionExecutorCompletesCampWhenCampStops) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  auto action = ai::Action {};
+  action.type = ai::ActionType::Camp;
+
+  context.campAvailable = true;
+  auto result = executor.execute(action, aliveObservation());
+  expect(result.type == ai::ActionResultType::Accepted, "camp starts while available");
+
+  context.campAvailable = false;
+  result = executor.execute(action, aliveObservation());
+
+  expect(result.type == ai::ActionResultType::Completed, "camp completes when the runtime stops it");
+  expect(context.cancelCampCalls == 1, "completion releases direct camp");
+}
+
+AI_TEST(testBotActionExecutorRejectsCampWhenRuntimeCannotStartIt) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  auto action = ai::Action {};
+  action.type = ai::ActionType::Camp;
+
+  const auto result = executor.execute(action, aliveObservation());
+
+  expect(result.type == ai::ActionResultType::Rejected, "camp is rejected when runtime cannot start it");
+}
+
+AI_TEST(testBotActionExecutorCancelsDirectCamp) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  auto action = ai::Action {};
+  action.type = ai::ActionType::Camp;
+
+  context.campAvailable = true;
+  executor.execute(action, aliveObservation());
+  executor.cancel();
+
+  expect(context.cancelCampCalls == 1, "cancel releases direct camp");
+}
+
 AI_TEST(testBotActionExecutorCompletesObservedTaskLifecycle) {
   MockActionExecutionContext context {};
   ai::BotActionExecutor executor(context);
 
   ai::Observation observation = aliveObservation();
-  observation.bot.currentTask = ai::TaskType::Camp;
+  observation.bot.currentTask = ai::TaskType::Pause;
 
   auto action = ai::Action {};
-  action.type = ai::ActionType::Camp;
+  action.type = ai::ActionType::Wait;
 
   auto result = executor.execute(action, observation);
   expect(result.type == ai::ActionResultType::Accepted, "matching task starts the action");

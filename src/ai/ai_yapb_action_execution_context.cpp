@@ -291,6 +291,20 @@ void YaPBActionExecutionContext::cancelSeekCover() {
   m_seekCoverNavigationTaskCreated = false;
 }
 
+bool YaPBActionExecutionContext::camp() {
+  if (m_bot == nullptr || m_bot->pev == nullptr) return false;
+  const auto currentTask = m_bot->getCurrentTaskId();
+  if (currentTask == Task::Camp) return true;
+  if (currentTask != Task::Normal) return false;
+  const auto duration = m_bot->rg(cv_camping_time_min.as<float>(), cv_camping_time_max.as<float>());
+  m_bot->startTask(Task::Camp, TaskPri::Camp, kInvalidNodeIndex, game.time() + duration, true);
+  return true;
+}
+
+void YaPBActionExecutionContext::cancelCamp() {
+  if (m_bot != nullptr && m_bot->getCurrentTaskId() == Task::Camp) m_bot->clearTask(Task::Camp);
+}
+
 bool YaPBActionExecutionContext::fireBreakable() {
   if (m_bot == nullptr || m_bot->pev == nullptr || !game.isBreakableEntity(m_bot->m_breakableEntity)
       || !m_bot->m_breakableOrigin.empty() == false || !game.isNullEntity(m_bot->m_enemy)) {

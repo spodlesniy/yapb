@@ -97,6 +97,9 @@ void BotActionExecutor::cancel() {
   if (m_directFireBreakableActive && m_context != nullptr) {
     m_context->cancelFireBreakable();
   }
+  if (m_directCampActive && m_context != nullptr) {
+    m_context->cancelCamp();
+  }
   m_directAttackTargetActive = false;
   m_directAttackAction = {};
   m_directHuntTargetActive = false;
@@ -107,6 +110,7 @@ void BotActionExecutor::cancel() {
   m_directDefuseBombActive = false;
   m_directPickupItemActive = false;
   m_directFireBreakableActive = false;
+  m_directCampActive = false;
   m_observedTaskActive = false;
   m_observedTaskAction = {};
 }
@@ -172,9 +176,13 @@ ActionResult BotActionExecutor::execute(const Action &action, const Observation 
     m_observedTaskAction = {};
     return executeEscapeFromBomb(action, observation);
 
+  case ActionType::Camp:
+    m_observedTaskActive = false;
+    m_observedTaskAction = {};
+    return executeCamp(action);
+
   case ActionType::Wait:
   case ActionType::HoldPosition:
-  case ActionType::Camp:
     return executeObservedTaskAction(action, observation);
 
   case ActionType::PlantBomb:
@@ -404,6 +412,16 @@ ActionResult BotActionExecutor::executeFireBreakable(const Action &action) {
   }
 
   m_directFireBreakableActive = true;
+  return { action.type, ActionResultType::Accepted, 0.0f };
+}
+
+ActionResult BotActionExecutor::executeCamp(const Action &action) {
+  if (!m_context->camp()) {
+    if (!m_directCampActive) return { action.type, ActionResultType::Rejected, 0.0f };
+    cancel();
+    return { action.type, ActionResultType::Completed, 0.0f };
+  }
+  m_directCampActive = true;
   return { action.type, ActionResultType::Accepted, 0.0f };
 }
 

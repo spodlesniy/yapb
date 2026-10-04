@@ -162,7 +162,7 @@ Reason: a training dataset containing only `MoveToNode` transitions cannot teach
 
 ## D026 — Keep not-yet-direct teacher actions under the YaPB task stack
 
-When a policy output corresponds to a task that does not yet have direct AI-owned execution semantics, `BotActionExecutor` may acknowledge that action against the observed YaPB task while the legacy task continues. AttackTarget, HuntTarget, SeekCover, EscapeFromBomb, PlantBomb, DefuseBomb, PickupItem, and Fire are direct actions and are no longer part of this transitional set.
+When a policy output corresponds to a task that does not yet have direct AI-owned execution semantics, `BotActionExecutor` may acknowledge that action against the observed YaPB task while the legacy task continues. AttackTarget, HuntTarget, SeekCover, EscapeFromBomb, PlantBomb, DefuseBomb, PickupItem, Fire, and Camp are direct actions and are no longer part of this transitional set.
 
 Reason: transitional task-backed actions preserve existing YaPB behavior while direct AI execution semantics are added incrementally. Each action leaves this compatibility path only after explicit execution semantics, ownership, cancellation, and tests are in place.
 
@@ -286,3 +286,10 @@ Fire is executed through ActionExecutionContext over YaPB's already selected bre
 
 Reason: the current observation contract does not expose breakable entity identity. Reusing YaPB's existing breakable discovery and ShootBreakable mechanics avoids inventing a partial target model while moving Fire out of generic observed-task acknowledgement.
 
+
+
+## D045 — Make Camp a direct AI-owned action
+
+Camp is executed through ActionExecutionContext and can start the existing YaPB Camp task from the normal task state. The adapter uses the existing YaPB camping duration configuration and leaves the Camp task responsible for camping direction, reaction timing, aim behavior, and completion conditions. The AI executor owns the action lifecycle and cancellation, while legacy task execution remains enabled.
+
+Reason: Camp is a high-level behavior choice that the AI must be able to initiate directly, but its established movement, aiming, timing, and interruption mechanics should remain in YaPB rather than being duplicated in the AI layer.

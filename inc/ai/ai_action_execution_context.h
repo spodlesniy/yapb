@@ -52,6 +52,9 @@ public:
 
   virtual bool fireBreakable() = 0;
   virtual void cancelFireBreakable() = 0;
+
+  virtual bool camp() = 0;
+  virtual void cancelCamp() = 0;
 };
 
 } // namespace ai
