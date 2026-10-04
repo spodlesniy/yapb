@@ -740,7 +740,7 @@ void YaPBActionExecutionContext::cancelEscapeFromBomb() {
 
 bool YaPBActionExecutionContext::rescueHostage() {
   if (m_bot == nullptr || m_bot->pev == nullptr || !m_bot->m_hasHostage
-      || !game.mapIs(MapFlags::HostageRescue) || graph.m_rescuePoints.empty()) {
+      || !game.mapIs(MapFlags::HostageRescue)) {
     return false;
   }
 
