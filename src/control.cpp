@@ -367,11 +367,11 @@ int BotControl::cmdSaveTraining () {
       ai::getTrainingBuffer (), arg <StringRef> (file).chars ()
    );
    if (!result.isValid ()) {
-      msg ("Unable to save training dataset to "%s".", arg <StringRef> (file));
+      msg ("Unable to save training dataset to \"%s\".", arg <StringRef> (file));
       return BotCommandResult::Handled;
    }
 
-   msg ("Training dataset saved to "%s" (%d transitions).", arg <StringRef> (file), static_cast <int> (result.count));
+   msg ("Training dataset saved to \"%s\" (%d transitions).", arg <StringRef> (file), static_cast <int> (result.count));
 
    const auto dropped = ai::getTrainingBuffer ().droppedTransitions ();
    if (dropped != 0) {
