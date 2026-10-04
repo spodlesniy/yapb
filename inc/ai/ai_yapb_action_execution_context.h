@@ -43,6 +43,8 @@ public:
 
   bool attackTarget(int targetPlayer) override;
   void cancelAttackTarget(int targetPlayer) override;
+  bool aimAtTarget(int targetPlayer) override;
+  void cancelAimAtTarget(int targetPlayer) override;
 
   bool followPlayer(int targetPlayer) override;
   void cancelFollowPlayer(int targetPlayer) override;

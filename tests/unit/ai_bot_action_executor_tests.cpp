@@ -30,6 +30,8 @@ public:
   int moveToPositionCalls {};
   int attackTargetCalls {};
   int cancelAttackTargetCalls {};
+  int aimAtTargetCalls {};
+  int cancelAimAtTargetCalls {};
   int followPlayerCalls {};
   int cancelFollowPlayerCalls {};
   int throwGrenadeCalls {};
@@ -51,6 +53,7 @@ public:
   int cancelEscapeFromBombCalls {};
   int lastNode { -1 };
   int lastAttackTarget { -1 };
+  int lastAimTarget { -1 };
   int lastHuntTarget { -1 };
   bool followPlayerAvailable { true };
   bool huntTargetReached {};
@@ -120,6 +123,17 @@ public:
   void cancelAttackTarget(int targetPlayer) override {
     ++cancelAttackTargetCalls;
     lastAttackTarget = targetPlayer;
+  }
+
+  bool aimAtTarget(int targetPlayer) override {
+    ++aimAtTargetCalls;
+    lastAimTarget = targetPlayer;
+    return true;
+  }
+
+  void cancelAimAtTarget(int targetPlayer) override {
+    ++cancelAimAtTargetCalls;
+    lastAimTarget = targetPlayer;
   }
 
   bool followPlayer(int targetPlayer) override { ++followPlayerCalls; lastFollowPlayer = targetPlayer; return followPlayerAvailable; }
@@ -505,6 +519,55 @@ ai::Observation attackObservation(int targetPlayer) {
   observation.players[0].enemy = true;
   observation.players[0].visible = true;
   return observation;
+}
+
+AI_TEST(testBotActionExecutorDirectlyExecutesAimAtTarget) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+  ai::Action action {};
+  action.type = ai::ActionType::AimAtTarget;
+  action.targetType = ai::TargetType::Player;
+  action.targetPlayer = 9;
+
+  const auto result = executor.execute(action, attackObservation(9));
+
+  expect(result.type == ai::ActionResultType::Accepted, "aim action is accepted");
+  expect(context.aimAtTargetCalls == 1, "aim target is delegated");
+  expect(context.lastAimTarget == 9, "aim target is preserved");
+  expect(executor.suppressesLegacyTaskExecution(), "direct aim owns task execution");
+}
+
+AI_TEST(testBotActionExecutorCompletesAimWhenTargetChanges) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+  ai::Action action {};
+  action.type = ai::ActionType::AimAtTarget;
+  action.targetType = ai::TargetType::Player;
+  action.targetPlayer = 9;
+
+  expect(executor.execute(action, attackObservation(9)).type == ai::ActionResultType::Accepted, "aim action starts");
+  const auto result = executor.execute(action, attackObservation(10));
+
+  expect(result.type == ai::ActionResultType::Completed, "changed target completes active aim");
+  expect(context.cancelAimAtTargetCalls == 1, "completed aim releases target");
+  expect(!executor.suppressesLegacyTaskExecution(), "completed aim releases ownership");
+}
+
+AI_TEST(testBotActionExecutorRejectsAimWithoutVisibleTarget) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+  ai::Action action {};
+  action.type = ai::ActionType::AimAtTarget;
+  action.targetType = ai::TargetType::Player;
+  action.targetPlayer = 9;
+
+  auto observation = attackObservation(9);
+  observation.players[0].visible = false;
+
+  const auto result = executor.execute(action, observation);
+
+  expect(result.type == ai::ActionResultType::Rejected, "aim without visible target is rejected");
+  expect(context.aimAtTargetCalls == 0, "invalid aim target is not delegated");
 }
 
 AI_TEST(testBotActionExecutorDirectlyExecutesAttackTarget) {

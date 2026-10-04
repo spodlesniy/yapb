@@ -69,12 +69,15 @@ bool BotActionExecutor::isActionStillOwned(const Action &action) const {
 }
 
 bool BotActionExecutor::suppressesLegacyTaskExecution() const {
-  return m_directAttackTargetActive;
+  return m_directAttackTargetActive || m_directAimTargetActive;
 }
 
 void BotActionExecutor::cancel() {
   if (m_directAttackTargetActive && m_context != nullptr) {
     m_context->cancelAttackTarget(m_directAttackAction.targetPlayer);
+  }
+  if (m_directAimTargetActive && m_context != nullptr) {
+    m_context->cancelAimAtTarget(m_directAimAction.targetPlayer);
   }
   if (m_directFollowPlayerActive && m_context != nullptr) m_context->cancelFollowPlayer(m_directFollowPlayerAction.targetPlayer);
   if (m_directChangeWeaponActive && m_context != nullptr) m_context->cancelChangeWeapon();
@@ -115,6 +118,8 @@ void BotActionExecutor::cancel() {
   }
   m_directAttackTargetActive = false;
   m_directAttackAction = {};
+  m_directAimTargetActive = false;
+  m_directAimAction = {};
   m_directFollowPlayerActive = false;
   m_directChangeWeaponActive = false;
   m_directChangeWeaponAction = {};
@@ -165,11 +170,28 @@ ActionResult BotActionExecutor::execute(const Action &action, const Observation 
     return executeMoveToPosition(action);
 
   case ActionType::AttackTarget:
+    if (m_directAimTargetActive && m_context != nullptr) {
+      m_context->cancelAimAtTarget(m_directAimAction.targetPlayer);
+      m_directAimTargetActive = false;
+      m_directAimAction = {};
+    }
     m_directHuntTargetActive = false;
     m_directHuntAction = {};
     m_observedTaskActive = false;
     m_observedTaskAction = {};
     return executeAttackTarget(action, observation);
+
+  case ActionType::AimAtTarget:
+    if (m_directAttackTargetActive && m_context != nullptr) {
+      m_context->cancelAttackTarget(m_directAttackAction.targetPlayer);
+      m_directAttackTargetActive = false;
+      m_directAttackAction = {};
+    }
+    m_directHuntTargetActive = false;
+    m_directHuntAction = {};
+    m_observedTaskActive = false;
+    m_observedTaskAction = {};
+    return executeAimAtTarget(action, observation);
 
   case ActionType::FollowPlayer:
     m_directAttackTargetActive = false;
@@ -317,6 +339,24 @@ ActionResult BotActionExecutor::executeAttackTarget(const Action &action, const 
   }
   m_directAttackAction = action;
   m_directAttackTargetActive = true;
+  return { action.type, ActionResultType::Accepted, 0.0f };
+}
+
+ActionResult BotActionExecutor::executeAimAtTarget(const Action &action, const Observation &observation) {
+  if (!hasObservedEnemyTarget(action, observation)) {
+    if (!m_directAimTargetActive) return { action.type, ActionResultType::Rejected, 0.0f };
+    cancel();
+    return { action.type, ActionResultType::Completed, 0.0f };
+  }
+
+  if (!m_context->aimAtTarget(action.targetPlayer)) {
+    if (!m_directAimTargetActive) return { action.type, ActionResultType::Rejected, 0.0f };
+    cancel();
+    return { action.type, ActionResultType::Completed, 0.0f };
+  }
+
+  m_directAimAction = action;
+  m_directAimTargetActive = true;
   return { action.type, ActionResultType::Accepted, 0.0f };
 }
 

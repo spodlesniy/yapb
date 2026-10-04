@@ -28,6 +28,8 @@ public:
 
   virtual bool attackTarget(int targetPlayer) = 0;
   virtual void cancelAttackTarget(int targetPlayer) = 0;
+  virtual bool aimAtTarget(int targetPlayer) = 0;
+  virtual void cancelAimAtTarget(int targetPlayer) = 0;
 
   virtual bool followPlayer(int targetPlayer) = 0;
   virtual void cancelFollowPlayer(int targetPlayer) = 0;

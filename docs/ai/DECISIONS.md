@@ -397,3 +397,9 @@ Reason: the engine already provides a dedicated flashbang task with distinct wea
 `ActionType::ChangeWeapon` owns a semantic weapon-category selection request without taking ownership of YaPB's automatic reload or weapon-selection state machines. The execution context resolves the requested category to an owned weapon and uses YaPB's existing weapon-selection command. Completion is observed from the model-facing current weapon category.
 
 Reason: weapon selection has a clean intent boundary, while Reload remains YaPB-owned because its automatic reload state machine spans `checkReload()` and shared combat/task state.
+
+## D064 — Make AimAtTarget a direct AI-owned action
+
+`ActionType::AimAtTarget` owns the semantic intent to aim at an observed live enemy without requesting firing. The execution context reuses YaPB's enemy targeting and aiming primitive while explicitly clearing the fire request, and the AI executor owns target validation, lifecycle, and cancellation.
+
+Reason: aiming is a distinct model action with an existing player-target contract and can reuse the established combat targeting state without introducing a new engine-facing input abstraction.
