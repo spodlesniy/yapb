@@ -149,6 +149,10 @@ Use explicit thresholds for an experiment without changing schema validation:
 
 The gate does not require all 26 actions because the current deterministic teacher does not yet produce every model action.
 
+The training command accepts the same thresholds and refuses to start when they fail:
+
+    python -m tools.aipb_training.train dataset.jsonl --min-samples 10000 --min-episodes 100 --max-dominant-action-share 0.8
+
 ## Evaluation
 
 Evaluate a trained checkpoint on the same deterministic episode split used by its training configuration:

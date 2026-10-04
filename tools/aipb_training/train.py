@@ -6,6 +6,8 @@ from __future__ import annotations
 import argparse
 
 from .dataset import load_training_dataset
+from .dataset_quality import check_quality
+from .dataset_stats import summarize_dataset
 from .training_run import TrainingConfig, run_training
 
 
@@ -20,6 +22,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--learning-rate", type=float, default=1e-3)
     parser.add_argument("--weight-decay", type=float, default=1e-4)
     parser.add_argument("--device", default="cpu")
+    parser.add_argument("--min-samples", type=int, default=0)
+    parser.add_argument("--min-episodes", type=int, default=0)
+    parser.add_argument("--max-dominant-action-share", type=float, default=None)
     parser.add_argument(
         "--resume",
         default=None,
@@ -28,9 +33,19 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main() -> int:
-    args = build_parser().parse_args()
+def main(argv: list[str] | None = None) -> int:
+    args = build_parser().parse_args(argv)
     _, samples = load_training_dataset(args.dataset)
+    quality = check_quality(
+        summarize_dataset(args.dataset),
+        min_samples=args.min_samples,
+        min_episodes=args.min_episodes,
+        max_dominant_action_share=args.max_dominant_action_share,
+    )
+    for failure in quality.failures:
+        print(f"quality_failure={failure}")
+    if not quality.is_valid:
+        return 1
 
     result = run_training(
         samples,
