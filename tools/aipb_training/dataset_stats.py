@@ -17,6 +17,7 @@ class DatasetStats:
     episodes: int
     terminal_samples: int
     action_counts: tuple[int, ...]
+    action_episode_counts: tuple[int, ...]
 
     @property
     def action_coverage(self) -> int:
@@ -25,6 +26,7 @@ class DatasetStats:
 
 def summarize_dataset(path: str | Path) -> DatasetStats:
     action_counts = [0] * MODEL_ACTION_ID_COUNT
+    action_episode_ids: list[set[int]] = [set() for _ in range(MODEL_ACTION_ID_COUNT)]
     episode_ids: set[int] = set()
     samples = 0
     terminal_samples = 0
@@ -32,6 +34,7 @@ def summarize_dataset(path: str | Path) -> DatasetStats:
     for sample in iter_training_samples(path):
         action_id = sample.action.action_id
         action_counts[action_id] += 1
+        action_episode_ids[action_id].add(sample.episode_id)
         episode_ids.add(sample.episode_id)
         samples += 1
         if sample.terminal:
@@ -42,6 +45,7 @@ def summarize_dataset(path: str | Path) -> DatasetStats:
         episodes=len(episode_ids),
         terminal_samples=terminal_samples,
         action_counts=tuple(action_counts),
+        action_episode_counts=tuple(len(episodes) for episodes in action_episode_ids),
     )
 
 

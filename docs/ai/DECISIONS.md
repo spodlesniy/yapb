@@ -363,3 +363,9 @@ Reason: allowing a second transition semantic into the dataset would make the cu
 The dataset quality gate supports repeated `--min-action-samples ID:COUNT` requirements. It does not require all action IDs; callers select the actions that must have sufficient examples for a given experiment.
 
 Reason: action coverage is a key prerequisite for supervised policy training, but some model actions are currently rare or not produced by the deterministic teacher. Explicit per-action requirements provide a precise coverage contract without blocking legitimate early datasets.
+
+## D058 — Gate selected action coverage by both samples and episodes
+
+The dataset quality tool supports per-action minimum sample counts and per-action minimum episode counts. Episode coverage is separate because the training/validation split keeps complete episodes together.
+
+Reason: a large sample count concentrated in one episode can still leave an action absent from the held-out split. Requiring episode coverage gives experiments a way to request diversity without requiring complete action coverage.

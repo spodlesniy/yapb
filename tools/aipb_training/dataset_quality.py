@@ -38,7 +38,8 @@ def parse_action_requirement(value: str) -> tuple[int, int]:
 
 def check_quality(stats: DatasetStats, *, min_samples: int = 0, min_episodes: int = 0,
                   max_dominant_action_share: float | None = None,
-                  min_action_samples: tuple[tuple[int, int], ...] = ()) -> DatasetQuality:
+                  min_action_samples: tuple[tuple[int, int], ...] = (),
+                  min_action_episodes: tuple[tuple[int, int], ...] = ()) -> DatasetQuality:
     if min_samples < 0:
         raise ValueError("min_samples must be non-negative")
     if min_episodes < 0:
@@ -48,6 +49,7 @@ def check_quality(stats: DatasetStats, *, min_samples: int = 0, min_episodes: in
 
     seen_actions: set[int] = set()
     for action_id, minimum in min_action_samples:
+
         if not 0 <= action_id < MODEL_ACTION_ID_COUNT:
             raise ValueError(f"action ID must be within [0, {MODEL_ACTION_ID_COUNT})")
         if minimum < 0:
@@ -55,6 +57,16 @@ def check_quality(stats: DatasetStats, *, min_samples: int = 0, min_episodes: in
         if action_id in seen_actions:
             raise ValueError(f"duplicate action minimum for action {action_id}")
         seen_actions.add(action_id)
+
+    seen_episode_actions: set[int] = set()
+    for action_id, minimum in min_action_episodes:
+        if not 0 <= action_id < MODEL_ACTION_ID_COUNT:
+            raise ValueError(f"action ID must be within [0, {MODEL_ACTION_ID_COUNT})")
+        if minimum < 0:
+            raise ValueError("action episode minimum must be non-negative")
+        if action_id in seen_episode_actions:
+            raise ValueError(f"duplicate action episode minimum for action {action_id}")
+        seen_episode_actions.add(action_id)
 
     failures: list[str] = []
     if stats.samples < min_samples:
@@ -70,6 +82,11 @@ def check_quality(stats: DatasetStats, *, min_samples: int = 0, min_episodes: in
         actual = stats.action_counts[action_id]
         if actual < minimum:
             failures.append(f"action {action_id}.{MODEL_ACTION_ID_NAMES[action_id]} samples {actual} < minimum {minimum}")
+
+    for action_id, minimum in min_action_episodes:
+        actual = stats.action_episode_counts[action_id]
+        if actual < minimum:
+            failures.append(f"action {action_id}.{MODEL_ACTION_ID_NAMES[action_id]} episodes {actual} < minimum {minimum}")
 
     return DatasetQuality(stats=stats, failures=tuple(failures))
 
@@ -88,6 +105,13 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="ID:COUNT",
         help="Require at least COUNT samples for action ID. May be repeated.",
     )
+    parser.add_argument(
+        "--min-action-episodes",
+        action="append",
+        default=[],
+        metavar="ID:COUNT",
+        help="Require action ID to occur in at least COUNT episodes. May be repeated.",
+    )
     return parser
 
 
@@ -95,6 +119,7 @@ def main() -> int:
     args = build_parser().parse_args()
     try:
         min_action_samples = tuple(parse_action_requirement(value) for value in args.min_action_samples)
+        min_action_episodes = tuple(parse_action_requirement(value) for value in args.min_action_episodes)
     except ValueError as exc:
         parser.error(str(exc))
 
@@ -104,6 +129,7 @@ def main() -> int:
         min_episodes=args.min_episodes,
         max_dominant_action_share=args.max_dominant_action_share,
         min_action_samples=min_action_samples,
+        min_action_episodes=min_action_episodes,
     )
     stats = quality.stats
     print(f"samples={stats.samples}")

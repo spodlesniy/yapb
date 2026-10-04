@@ -147,11 +147,11 @@ Use explicit thresholds for an experiment without changing schema validation:
 
     python -m tools.aipb_training.dataset_quality dataset.jsonl --min-samples 10000 --min-episodes 100 --max-dominant-action-share 0.8
 
-The gate does not require all 26 actions because the current deterministic teacher does not yet produce every model action. Selected actions can be required explicitly with repeated `--min-action-samples ID:COUNT` options.
+The gate does not require all 26 actions because the current deterministic teacher does not yet produce every model action. Selected actions can be required explicitly with repeated `--min-action-samples ID:COUNT` and `--min-action-episodes ID:COUNT` options. Episode thresholds are useful because train/validation splitting is episode-level.
 
 The training command accepts the same thresholds and refuses to start when they fail:
 
-    python -m tools.aipb_training.train dataset.jsonl --min-samples 10000 --min-episodes 100 --max-dominant-action-share 0.8 --min-action-samples 1:500 --min-action-samples 8:250
+    python -m tools.aipb_training.train dataset.jsonl --min-samples 10000 --min-episodes 100 --max-dominant-action-share 0.8 --min-action-samples 1:500 --min-action-samples 8:250 --min-action-episodes 1:20 --min-action-episodes 8:10
 
 ## Evaluation
 

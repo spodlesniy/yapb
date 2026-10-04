@@ -73,6 +73,8 @@ class DatasetStatsTests(unittest.TestCase):
         self.assertEqual(stats.action_counts[1], 2)
         self.assertEqual(stats.action_counts[8], 1)
         self.assertEqual(stats.action_coverage, 2)
+        self.assertEqual(stats.action_episode_counts[1], 1)
+        self.assertEqual(stats.action_episode_counts[8], 1)
 
     def test_empty_dataset_has_zero_coverage(self) -> None:
         path = self.write_dataset([METADATA])
@@ -83,6 +85,7 @@ class DatasetStatsTests(unittest.TestCase):
         self.assertEqual(stats.episodes, 0)
         self.assertEqual(stats.action_coverage, 0)
         self.assertEqual(len(stats.action_counts), MODEL_ACTION_ID_COUNT)
+        self.assertEqual(len(stats.action_episode_counts), MODEL_ACTION_ID_COUNT)
 
     def test_parser_accepts_dataset_path(self) -> None:
         args = build_parser().parse_args(["dataset.jsonl"])

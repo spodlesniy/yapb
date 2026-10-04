@@ -9,8 +9,8 @@ from ..dataset_quality import build_parser, check_quality, parse_action_requirem
 from ..dataset_stats import DatasetStats
 
 
-def make_stats(samples: int, episodes: int, counts: tuple[int, ...]) -> DatasetStats:
-    return DatasetStats(samples, episodes, 0, counts)
+def make_stats(samples: int, episodes: int, counts: tuple[int, ...], action_episodes: tuple[int, ...] | None = None) -> DatasetStats:
+    return DatasetStats(samples, episodes, 0, counts, action_episodes or counts)
 
 
 class DatasetQualityTests(unittest.TestCase):
@@ -35,6 +35,17 @@ class DatasetQualityTests(unittest.TestCase):
     def test_action_minimum_equal_share_is_accepted(self) -> None:
         self.assertTrue(check_quality(make_stats(100, 10, (80, 20)), min_action_samples=((1, 20),)).is_valid)
 
+    def test_action_episode_minimum_is_enforced(self) -> None:
+        result = check_quality(make_stats(100, 10, (80, 20), (8, 2)), min_action_episodes=((1, 3),))
+        self.assertEqual(result.failures, ("action 1.MoveToNode episodes 2 < minimum 3",))
+
+    def test_action_episode_requirement_is_accepted_at_boundary(self) -> None:
+        self.assertTrue(check_quality(make_stats(100, 10, (80, 20), (8, 2)), min_action_episodes=((1, 2),)).is_valid)
+
+    def test_duplicate_action_episode_minimum_is_rejected(self) -> None:
+        with self.assertRaises(ValueError):
+            check_quality(make_stats(1, 1, (1,)), min_action_episodes=((0, 1), (0, 1)))
+
     def test_duplicate_action_minimum_is_rejected(self) -> None:
         with self.assertRaises(ValueError):
             check_quality(make_stats(1, 1, (1,)), min_action_samples=((0, 1), (0, 1)))
@@ -52,9 +63,10 @@ class DatasetQualityTests(unittest.TestCase):
         with self.assertRaises(ValueError): check_quality(make_stats(1, 1, (1,)), max_dominant_action_share=1.1)
 
     def test_parser_accepts_quality_thresholds(self) -> None:
-        args = build_parser().parse_args(["dataset.jsonl", "--min-samples", "1000", "--min-episodes", "20", "--max-dominant-action-share", "0.8", "--min-action-samples", "1:50", "--min-action-samples", "8:25"])
+        args = build_parser().parse_args(["dataset.jsonl", "--min-samples", "1000", "--min-episodes", "20", "--max-dominant-action-share", "0.8", "--min-action-samples", "1:50", "--min-action-samples", "8:25", "--min-action-episodes", "1:10", "--min-action-episodes", "8:5"])
         self.assertEqual((args.min_samples, args.min_episodes, args.max_dominant_action_share), (1000, 20, 0.8))
         self.assertEqual(args.min_action_samples, ["1:50", "8:25"])
+        self.assertEqual(args.min_action_episodes, ["1:10", "8:5"])
 
 
 if __name__ == "__main__":

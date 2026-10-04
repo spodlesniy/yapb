@@ -27,6 +27,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--max-dominant-action-share", type=float, default=None)
     parser.add_argument("--min-action-samples", action="append", default=[], metavar="ID:COUNT",
                         help="Require at least COUNT samples for action ID. May be repeated.")
+    parser.add_argument("--min-action-episodes", action="append", default=[], metavar="ID:COUNT",
+                        help="Require action ID to occur in at least COUNT episodes. May be repeated.")
     parser.add_argument(
         "--resume",
         default=None,
@@ -40,6 +42,7 @@ def main(argv: list[str] | None = None) -> int:
     _, samples = load_training_dataset(args.dataset)
     try:
         min_action_samples = tuple(parse_action_requirement(value) for value in args.min_action_samples)
+        min_action_episodes = tuple(parse_action_requirement(value) for value in args.min_action_episodes)
     except ValueError as exc:
         print(f"quality_failure={exc}")
         return 1
@@ -50,6 +53,7 @@ def main(argv: list[str] | None = None) -> int:
         min_episodes=args.min_episodes,
         max_dominant_action_share=args.max_dominant_action_share,
         min_action_samples=min_action_samples,
+        min_action_episodes=min_action_episodes,
     )
     for failure in quality.failures:
         print(f"quality_failure={failure}")
