@@ -345,3 +345,9 @@ Reason: the teacher defines the initial supervised labels for Training mode. An 
 The process-wide training buffer holds up to 1024 completed transitions. A completed transition that reaches a full buffer is not silently discarded: the pending recorder state remains intact, the buffer increments a dropped-transition counter when a write is refused, and `ai_save_training` reports the count so collection gaps are visible.
 
 Reason: Training collection may run longer than an in-memory buffer. A bounded buffer keeps memory predictable, while explicit overflow reporting prevents an incomplete dataset from being mistaken for the full collected experience.
+
+## D054 — Keep dataset quality gates separate from schema validation
+
+The strict dataset validator checks the JSONL contract. Dataset statistics remain descriptive. A separate quality gate applies caller-selected minimum sample/episode counts and an optional maximum dominant-action share. It does not require complete coverage of all 26 model actions because the current deterministic teacher intentionally does not produce every action yet.
+
+Reason: structural validity and experimental readiness are different properties. Hard-coded readiness thresholds would reject legitimate early collection phases, while having no quality gate would allow undersized or badly imbalanced datasets to be mistaken for useful training data.

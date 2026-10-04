@@ -183,7 +183,7 @@ ONNX export is implemented as a separate deployment step. It consumes a compatib
 
 ## Offline checkpoint evaluation
 
-Dataset statistics are a separate offline step from training. They stream the validated JSONL dataset and report samples, episodes, terminal transitions, and action-ID coverage.
+Dataset statistics are a separate offline step from training. Dataset quality is a separate gate with caller-defined readiness thresholds. They stream the validated JSONL dataset and report samples, episodes, terminal transitions, and action-ID coverage.
 
 Checkpoint evaluation is a separate offline step from training. It reuses the checkpoint's `validation_split` and `seed` so the validation boundary remains deterministic and consistent with the training run. The default validation report contains overall SmoothL1 loss, overall mean absolute error, runtime-style action ID accuracy, and per-output mean absolute error for the ten-value action tensor.
 

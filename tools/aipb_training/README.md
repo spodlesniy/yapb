@@ -30,6 +30,7 @@ C++ runtime -> JSONL -> Python training package -> ONNX -> C++ runtime
     ├── deploy.py                 # validated ONNX deployment into the package tree
     ├── evaluation.py             # checkpoint evaluation metrics
     ├── dataset_stats.py          # dataset composition and action coverage
+    ├── dataset_quality.py        # configurable dataset quality thresholds
     └── tests/
         ├── __init__.py
         ├── test_validate_dataset.py
@@ -139,6 +140,14 @@ Inspect dataset composition before training:
     python -m tools.aipb_training.dataset_stats dataset.jsonl
 
 The report shows sample and episode counts, terminal transition count, and how many of the 26 supported action IDs are actually represented, including per-action counts and percentages. `Hide` is the appended action ID 25; existing IDs 0–24 remain stable.
+
+## Dataset quality gate
+
+Use explicit thresholds for an experiment without changing schema validation:
+
+    python -m tools.aipb_training.dataset_quality dataset.jsonl --min-samples 10000 --min-episodes 100 --max-dominant-action-share 0.8
+
+The gate does not require all 26 actions because the current deterministic teacher does not yet produce every model action.
 
 ## Evaluation
 
