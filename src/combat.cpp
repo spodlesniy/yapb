@@ -2476,6 +2476,10 @@ void Bot::checkGrenadesThrow () {
          }
 
          if (allowThrowing) {
+            m_throw = m_lastEnemyOrigin - pev->velocity;
+            if (!game.isNullEntity (m_enemy)) {
+               m_throw += m_enemy->v.velocity;
+            }
             m_states |= Sense::ThrowSmoke;
          }
          else {

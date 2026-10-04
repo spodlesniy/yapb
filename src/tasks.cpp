@@ -1292,13 +1292,7 @@ void Bot::throwSmoke_ () {
 
    ignoreCollision ();
 
-   Vector src = m_lastEnemyOrigin - pev->velocity;
-
-   // predict where the enemy is in secs
-   if (!game.isNullEntity (m_enemy)) {
-      src = src + m_enemy->v.velocity;
-   }
-   m_grenade = (src - getEyesPos ()).normalize_apx ();
+   m_grenade = (m_throw - getEyesPos ()).normalize_apx ();
 
    if (getTask ()->time < game.time ()) {
       completeTask ();

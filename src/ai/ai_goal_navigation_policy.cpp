@@ -96,6 +96,15 @@ Action GoalNavigationPolicy::decide(const Observation &observation) const {
     action.confidence = 1.0f;
     return action;
   }
+  case TaskType::ThrowSmoke: {
+    Action action {};
+    action.type = ActionType::ThrowSmoke;
+    action.targetType = TargetType::Position;
+    action.targetPosition = observation.bot.throwTarget;
+    action.grenadeType = GrenadeType::Smoke;
+    action.confidence = 1.0f;
+    return action;
+  }
 
   case TaskType::PickupItem: {
     Action action {};
