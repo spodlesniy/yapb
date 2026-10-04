@@ -131,6 +131,29 @@ void YaPBActionExecutionContext::cancelAttackTarget(int targetPlayer) {
   m_bot->m_wantsToFire = false;
 }
 
+bool YaPBActionExecutionContext::followPlayer(int targetPlayer) {
+  if (m_bot == nullptr || m_bot->pev == nullptr || targetPlayer <= 0 || targetPlayer > game.maxClients()) return false;
+  auto *target = game.entityOfIndex(targetPlayer);
+  if (game.isNullEntity(target) || !game.isPlayerEntity(target) || !game.isAliveEntity(target) || target == m_bot->ent()) return false;
+  const auto targetTeam = game.is(GameFlags::FreeForAll) ? game.getRealPlayerTeam(target) : game.getPlayerTeam(target);
+  if (targetTeam == Team::Invalid || targetTeam != m_bot->m_team) return false;
+  const auto currentTask = m_bot->getCurrentTaskId();
+  if (currentTask == Task::FollowUser && m_bot->m_targetEntity == target) return true;
+  if (currentTask != Task::Normal) return false;
+  m_bot->m_targetEntity = target;
+  m_bot->m_followWaitTime = 0.0f;
+  m_bot->startTask(Task::FollowUser, TaskPri::FollowUser, kInvalidNodeIndex, 0.0f, true);
+  return true;
+}
+
+void YaPBActionExecutionContext::cancelFollowPlayer(int targetPlayer) {
+  if (m_bot == nullptr) return;
+  if (targetPlayer > 0 && !game.isNullEntity(m_bot->m_targetEntity) && game.indexOfEntity(m_bot->m_targetEntity) == targetPlayer) {
+    m_bot->m_targetEntity = nullptr;
+  }
+  if (m_bot->getCurrentTaskId() == Task::FollowUser) m_bot->clearTask(Task::FollowUser);
+}
+
 bool YaPBActionExecutionContext::huntTarget(int targetPlayer) {
   if (m_bot == nullptr || m_bot->pev == nullptr || targetPlayer <= 0 || targetPlayer > game.maxClients()) {
     return false;

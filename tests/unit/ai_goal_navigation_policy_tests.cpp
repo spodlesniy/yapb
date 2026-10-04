@@ -31,6 +31,14 @@ void addObservedEnemy(ai::Observation &observation, int32_t entityIndex) {
   observation.combat.enemyEntity = entityIndex;
 }
 
+void addFollowTarget(ai::Observation &observation, int32_t entityIndex) {
+  observation.bot.followTargetPlayer = entityIndex;
+  observation.playerCount = 1;
+  observation.players[0].entityIndex = entityIndex;
+  observation.players[0].valid = true;
+  observation.players[0].alive = true;
+}
+
 } // namespace
 
 AI_TEST(testGoalNavigationPolicyUsesGoalForNormalTask) {
@@ -72,6 +80,22 @@ AI_TEST(testGoalNavigationPolicyMapsCombatTasks) {
   action = policy.decide(observation);
   expect(action.type == ai::ActionType::HuntTarget, "hunt task maps to hunt target");
   expect(action.targetPlayer == 7, "hunt target preserves enemy entity");
+}
+
+AI_TEST(testGoalNavigationPolicyMapsFollowUser) {
+  auto observation = makeObservation();
+  addFollowTarget(observation, 7);
+  observation.bot.currentTask = ai::TaskType::FollowUser;
+  const auto action = ai::GoalNavigationPolicy {}.decide(observation);
+  expect(action.type == ai::ActionType::FollowPlayer, "follow task maps to follow player");
+  expect(action.targetPlayer == 7, "follow player preserves target entity");
+}
+
+AI_TEST(testGoalNavigationPolicyFallsBackForFollowUserWithoutTarget) {
+  auto observation = makeObservation();
+  observation.bot.currentTask = ai::TaskType::FollowUser;
+  const auto action = ai::GoalNavigationPolicy {}.decide(observation);
+  expect(action.type == ai::ActionType::MoveToNode, "follow without target falls back to goal");
 }
 
 AI_TEST(testGoalNavigationPolicyMapsTaskActions) {
@@ -117,7 +141,7 @@ AI_TEST(testGoalNavigationPolicyDefinesOutcomeForEveryTaskType) {
     ai::ActionType::MoveToNode,
     ai::ActionType::None,
     ai::ActionType::MoveToPosition,
-    ai::ActionType::MoveToNode,
+    ai::ActionType::FollowPlayer,
     ai::ActionType::PickupItem,
     ai::ActionType::Camp,
     ai::ActionType::PlantBomb,
@@ -145,6 +169,9 @@ AI_TEST(testGoalNavigationPolicyDefinesOutcomeForEveryTaskType) {
     }
 
     observation.bot.currentTask = static_cast<ai::TaskType>(index);
+    if (observation.bot.currentTask == ai::TaskType::FollowUser) {
+      addFollowTarget(observation, 7);
+    }
     const auto action = policy.decide(observation);
 
     expect(action.type == expected[index], "teacher defines a deterministic outcome for every non-Pause task");

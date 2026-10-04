@@ -375,3 +375,10 @@ Reason: a large sample count concentrated in one episode can still leave an acti
 The server command `ai_training_status` reports buffered transitions, unique buffered episode IDs, capacity, and dropped transitions without mutating the training buffer.
 
 Reason: long Training sessions need a low-cost operational check before saving data. The status command makes buffer pressure and collection progress visible directly in the game server console while leaving save/clear operations explicit.
+
+## D060 — Make FollowPlayer a direct AI-owned action
+
+`ActionType::FollowPlayer` maps the existing YaPB `Task::FollowUser` mechanic. The observation identifies the active follow target and marks that player in the player feature slots, allowing the policy to associate the action target with an observed teammate. The adapter prioritizes the active follow target when populating the bounded player observation.
+
+Reason: following is an existing deterministic YaPB behavior with clear target semantics. Reusing its task mechanics avoids duplicating movement logic while giving the AI executor explicit ownership of the action lifecycle and cancellation.
+

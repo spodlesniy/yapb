@@ -258,7 +258,7 @@ AI_TEST(testTrainingBufferCanBeResetIndependently) {
   buffer.reset();
 
   expect(buffer.empty(), "buffer reset clears completed samples");
-  expect(buffer.episodeCount() == 0, "buffer reset clears the buffered episode count");
+  expect(buffer.episodeCount() == 0, "reset clears the buffered episode count");
   expect(first.episodeId() != 0, "buffer reset does not mutate first recorder state");
   expect(second.episodeId() != 0, "buffer reset does not mutate second recorder state");
 }

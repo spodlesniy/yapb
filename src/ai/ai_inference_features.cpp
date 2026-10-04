@@ -187,6 +187,7 @@ InferenceFeatures encodeInferenceFeatures(const Observation &observation) {
     values[base + enumValue(InferenceFeature::Player::Enemy)] = booleanFeature(player.enemy);
     values[base + enumValue(InferenceFeature::Player::Visible)] = booleanFeature(player.visible);
     values[base + enumValue(InferenceFeature::Player::Heard)] = booleanFeature(player.heard);
+    values[base + enumValue(InferenceFeature::Player::IsFollowTarget)] = booleanFeature(player.isFollowTarget);
     values[base + enumValue(InferenceFeature::Player::RelativeX)] = normalizeSigned(player.relativeOrigin.x, kPositionScale);
     values[base + enumValue(InferenceFeature::Player::RelativeY)] = normalizeSigned(player.relativeOrigin.y, kPositionScale);
     values[base + enumValue(InferenceFeature::Player::RelativeZ)] = normalizeSigned(player.relativeOrigin.z, kPositionScale);

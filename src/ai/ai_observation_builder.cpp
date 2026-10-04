@@ -61,6 +61,7 @@ Observation buildObservation(const ObservationInput &input) {
   observation.bot.currentWeapon = input.bot.currentWeapon;
   observation.bot.currentNode = input.bot.currentNode;
   observation.bot.currentGoalNode = input.bot.currentGoalNode;
+  observation.bot.followTargetPlayer = input.bot.followTargetPlayer;
   observation.bot.currentTask = input.bot.currentTask;
   observation.bot.taskTimeRemaining = finiteOrZero(input.bot.taskTimeRemaining);
   observation.bot.objectiveFlags = input.bot.objectiveFlags;
@@ -108,6 +109,7 @@ Observation buildObservation(const ObservationInput &input) {
     target.enemy = source.enemy;
     target.visible = source.visible;
     target.heard = source.heard;
+    target.isFollowTarget = target.entityIndex == observation.bot.followTargetPlayer;
   }
 
   const auto waypointCount = std::min<size_t>(input.waypointCount, kMaxObservedWaypoints);

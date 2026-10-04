@@ -15,7 +15,7 @@
 
 namespace ai {
 
-constexpr uint32_t kInferenceFeatureSchemaVersion = 3;
+constexpr uint32_t kInferenceFeatureSchemaVersion = 4;
 constexpr size_t kInferencePlayerSlots = 8;
 constexpr size_t kInferenceWaypointSlots = 8;
 
@@ -68,6 +68,7 @@ enum class Player : size_t {
   Enemy,
   Visible,
   Heard,
+  IsFollowTarget,
   RelativeX,
   RelativeY,
   RelativeZ,

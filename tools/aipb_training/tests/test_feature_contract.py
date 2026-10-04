@@ -24,7 +24,7 @@ class FeatureContractTests(unittest.TestCase):
 
     def test_feature_blocks_have_expected_sizes(self) -> None:
         self.assertEqual(len(CORE_FEATURE_NAMES), 80)
-        self.assertEqual(len(PLAYER_FEATURE_NAMES), 11)
+        self.assertEqual(len(PLAYER_FEATURE_NAMES), 12)
         self.assertEqual(len(WAYPOINT_FEATURE_NAMES), 8)
 
     def test_core_feature_order_matches_runtime_contract(self) -> None:

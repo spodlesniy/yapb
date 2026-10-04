@@ -30,6 +30,9 @@ public:
   int moveToPositionCalls {};
   int attackTargetCalls {};
   int cancelAttackTargetCalls {};
+  int followPlayerCalls {};
+  int cancelFollowPlayerCalls {};
+  int lastFollowPlayer { -1 };
   int huntTargetCalls {};
   int cancelHuntTargetCalls {};
   int seekCoverCalls {};
@@ -39,6 +42,7 @@ public:
   int lastNode { -1 };
   int lastAttackTarget { -1 };
   int lastHuntTarget { -1 };
+  bool followPlayerAvailable { true };
   bool huntTargetReached {};
   bool seekCoverReached {};
   bool escapeFromBombReached {};
@@ -107,6 +111,9 @@ public:
     ++cancelAttackTargetCalls;
     lastAttackTarget = targetPlayer;
   }
+
+  bool followPlayer(int targetPlayer) override { ++followPlayerCalls; lastFollowPlayer = targetPlayer; return followPlayerAvailable; }
+  void cancelFollowPlayer(int targetPlayer) override { ++cancelFollowPlayerCalls; lastFollowPlayer = targetPlayer; }
 
   bool huntTarget(int targetPlayer) override {
     ++huntTargetCalls;
@@ -227,6 +234,36 @@ ai::Observation aliveObservation() {
   observation.bot.alive = true;
   return observation;
 }
+
+AI_TEST(testBotActionExecutorExecutesFollowPlayer) {
+  auto context = MockActionExecutionContext {};
+  auto observation = aliveObservation();
+  observation.bot.followTargetPlayer = 7;
+  ai::Action action {};
+  action.type = ai::ActionType::FollowPlayer;
+  action.targetType = ai::TargetType::Player;
+  action.targetPlayer = 7;
+  const auto result = ai::BotActionExecutor { context }.execute(action, observation);
+  expect(result.type == ai::ActionResultType::Accepted, "follow action is accepted");
+  expect(context.followPlayerCalls == 1, "follow action invokes context");
+}
+
+AI_TEST(testBotActionExecutorCompletesFollowPlayerWhenTargetChanges) {
+  auto context = MockActionExecutionContext {};
+  auto observation = aliveObservation();
+  observation.bot.followTargetPlayer = 7;
+  ai::Action action {};
+  action.type = ai::ActionType::FollowPlayer;
+  action.targetType = ai::TargetType::Player;
+  action.targetPlayer = 7;
+  ai::BotActionExecutor executor { context };
+  expect(executor.execute(action, observation).type == ai::ActionResultType::Accepted, "follow action starts");
+  observation.bot.followTargetPlayer = 8;
+  expect(executor.execute(action, observation).type == ai::ActionResultType::Completed, "follow action completes when target changes");
+  expect(context.cancelFollowPlayerCalls == 1, "follow action cancels target");
+}
+
+
 
 } // namespace
 

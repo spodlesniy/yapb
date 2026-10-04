@@ -67,6 +67,16 @@ Action GoalNavigationPolicy::decide(const Observation &observation) const {
     return action;
   }
 
+  case TaskType::FollowUser: {
+    if (observation.bot.followTargetPlayer < 0 || !hasObservedPlayer(observation, observation.bot.followTargetPlayer)) return makeGoalNavigationAction(observation);
+    Action action {};
+    action.type = ActionType::FollowPlayer;
+    action.targetType = TargetType::Player;
+    action.targetPlayer = observation.bot.followTargetPlayer;
+    action.confidence = 1.0f;
+    return action;
+  }
+
   case TaskType::PickupItem: {
     Action action {};
     action.type = ActionType::PickupItem;
@@ -143,7 +153,6 @@ Action GoalNavigationPolicy::decide(const Observation &observation) const {
 
   case TaskType::Unknown:
   case TaskType::Normal:
-  case TaskType::FollowUser:
   case TaskType::DoubleJump:
   case TaskType::ThrowExplosive:
   case TaskType::ThrowFlashbang:

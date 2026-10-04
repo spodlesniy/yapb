@@ -133,6 +133,10 @@ Export a trained checkpoint to a deployment model:
 
 The command validates the ONNX graph and runtime contract and verifies output parity with ONNX Runtime before returning successfully.
 
+## Model feature schema
+
+The current model input is schema version 4 with 240 ordered features. Each observed player slot includes an `is_follow_target` flag so FollowPlayer actions can identify their target without relying on unstable player-slot ordering.
+
 ## In-game collection status
 
 During a Training session, inspect the bounded in-memory collector from the server console:

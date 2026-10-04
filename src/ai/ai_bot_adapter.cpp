@@ -156,6 +156,9 @@ ObservationInput buildObservationInput(const Bot &bot) {
   input.bot.currentWeapon = bot.m_currentWeapon;
   input.bot.currentNode = bot.m_currentNodeIndex;
   input.bot.currentGoalNode = bot.m_chosenGoalIndex;
+  if (!game.isNullEntity(bot.m_targetEntity) && game.isPlayerEntity(bot.m_targetEntity)) {
+    input.bot.followTargetPlayer = game.indexOfEntity(bot.m_targetEntity);
+  }
   input.bot.currentTask = mapTask(bot.getCurrentTaskId());
   input.bot.taskTimeRemaining = bot.getCurrentTaskTimeRemaining(input.gameTime);
   input.bot.alive = bot.m_isAlive;
@@ -252,15 +255,7 @@ ObservationInput buildObservationInput(const Bot &bot) {
     }
   }
 
-  for (const auto &client : util.getClients()) {
-    if (input.playerCount >= kMaxObservedPlayers) {
-      break;
-    }
-
-    if (!(client.flags & ClientFlags::Used) || client.ent == nullptr || client.ent == entity) {
-      continue;
-    }
-
+  const auto appendPlayer = [&](const auto &client) {
     auto &player = input.players[input.playerCount++];
     const int playerTeam = game.is(GameFlags::FreeForAll) ? game.getRealPlayerTeam(client.ent) : game.getPlayerTeam(client.ent);
 
@@ -274,6 +269,21 @@ ObservationInput buildObservationInput(const Bot &bot) {
     player.enemy = (playerTeam == Team::Terrorist || playerTeam == Team::CT) && playerTeam != bot.m_team;
     player.visible = client.ent == bot.m_enemy && (bot.m_states & Sense::SeeingEnemy) && !(bot.m_states & Sense::SuspectEnemy);
     player.heard = client.ent == bot.m_hearedEnemy;
+  };
+
+  if (!game.isNullEntity(bot.m_targetEntity) && game.isPlayerEntity(bot.m_targetEntity)) {
+    for (const auto &client : util.getClients()) {
+      if (input.playerCount >= kMaxObservedPlayers) break;
+      if (!(client.flags & ClientFlags::Used) || client.ent == nullptr || client.ent == entity || client.ent != bot.m_targetEntity) continue;
+      appendPlayer(client);
+      break;
+    }
+  }
+
+  for (const auto &client : util.getClients()) {
+    if (input.playerCount >= kMaxObservedPlayers) break;
+    if (!(client.flags & ClientFlags::Used) || client.ent == nullptr || client.ent == entity || client.ent == bot.m_targetEntity) continue;
+    appendPlayer(client);
   }
 
   return input;

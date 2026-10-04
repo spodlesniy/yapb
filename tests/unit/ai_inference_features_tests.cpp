@@ -16,7 +16,7 @@ using ai::test::expect;
 using ai::test::expectNear;
 
 AI_TEST(testInferenceFeatureSchema) {
-  expect(ai::kInferenceFeatureSchemaVersion == 3, "inference feature schema uses the current version");
+  expect(ai::kInferenceFeatureSchemaVersion == 4, "inference feature schema uses the current version");
   expect(ai::kInferenceFeatureCount > 0, "inference feature vector is non-empty");
 
   const ai::InferenceFeatures features {};
@@ -58,6 +58,7 @@ AI_TEST(testInferenceFeatureEncoding) {
   observation.players[1].distance = 50.0f;
   observation.players[1].health = 75.0f;
   observation.players[1].armor = 25.0f;
+  observation.players[1].isFollowTarget = true;
 
   observation.waypointCount = 2;
   observation.waypoints[0].index = 20;
@@ -85,6 +86,7 @@ AI_TEST(testInferenceFeatureEncoding) {
   expectNear(features.at(core(ai::InferenceFeature::Core::WeaponBase) + static_cast<size_t>(ai::WeaponType::Rifle)), 1.0f, 0.0001f,
              "weapon type is one-hot encoded");
 
+  expectNear(features.at(playerBase(0) + static_cast<size_t>(ai::InferenceFeature::Player::IsFollowTarget)), 1.0f, 0.0001f, "follow target is encoded");
   expectNear(features.at(playerBase(0) + static_cast<size_t>(ai::InferenceFeature::Player::Distance)), 50.0f / 4096.0f, 0.0001f,
              "nearest player occupies the first player slot");
   expectNear(features.at(playerBase(0) + static_cast<size_t>(ai::InferenceFeature::Player::Enemy)), 0.0f, 0.0001f,

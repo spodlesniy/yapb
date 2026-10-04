@@ -121,6 +121,7 @@ struct PlayerState {
   bool enemy {};
   bool visible {};
   bool heard {};
+  bool isFollowTarget {};
 };
 
 struct WaypointState {
@@ -160,6 +161,7 @@ struct BotState {
   int32_t currentWeapon { -1 };
   int32_t currentNode { -1 };
   int32_t currentGoalNode { -1 };
+  int32_t followTargetPlayer { -1 };
   TaskType currentTask { TaskType::Unknown };
   float taskTimeRemaining {};
 

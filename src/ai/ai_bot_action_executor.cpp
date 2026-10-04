@@ -76,6 +76,7 @@ void BotActionExecutor::cancel() {
   if (m_directAttackTargetActive && m_context != nullptr) {
     m_context->cancelAttackTarget(m_directAttackAction.targetPlayer);
   }
+  if (m_directFollowPlayerActive && m_context != nullptr) m_context->cancelFollowPlayer(m_directFollowPlayerAction.targetPlayer);
   if (m_directHuntTargetActive && m_context != nullptr) {
     m_context->cancelHuntTarget(m_directHuntAction.targetPlayer);
   }
@@ -111,6 +112,8 @@ void BotActionExecutor::cancel() {
   }
   m_directAttackTargetActive = false;
   m_directAttackAction = {};
+  m_directFollowPlayerActive = false;
+  m_directFollowPlayerAction = {};
   m_directHuntTargetActive = false;
   m_directHuntAction = {};
   m_directSeekCoverActive = false;
@@ -159,6 +162,13 @@ ActionResult BotActionExecutor::execute(const Action &action, const Observation 
     m_observedTaskActive = false;
     m_observedTaskAction = {};
     return executeAttackTarget(action, observation);
+
+  case ActionType::FollowPlayer:
+    m_directAttackTargetActive = false;
+    m_directAttackAction = {};
+    m_observedTaskActive = false;
+    m_observedTaskAction = {};
+    return executeFollowPlayer(action, observation);
 
   case ActionType::HuntTarget:
     m_directAttackTargetActive = false;
@@ -278,6 +288,24 @@ ActionResult BotActionExecutor::executeAttackTarget(const Action &action, const 
   }
   m_directAttackAction = action;
   m_directAttackTargetActive = true;
+  return { action.type, ActionResultType::Accepted, 0.0f };
+}
+
+ActionResult BotActionExecutor::executeFollowPlayer(const Action &action, const Observation &observation) {
+  if (action.targetType != TargetType::Player || action.targetPlayer != observation.bot.followTargetPlayer) {
+    if (!m_directFollowPlayerActive) return { action.type, ActionResultType::Rejected, 0.0f };
+    cancel();
+    return { action.type, ActionResultType::Completed, 0.0f };
+  }
+
+  if (!m_context->followPlayer(action.targetPlayer)) {
+    if (!m_directFollowPlayerActive) return { action.type, ActionResultType::Rejected, 0.0f };
+    cancel();
+    return { action.type, ActionResultType::Completed, 0.0f };
+  }
+
+  m_directFollowPlayerAction = action;
+  m_directFollowPlayerActive = true;
   return { action.type, ActionResultType::Accepted, 0.0f };
 }
 

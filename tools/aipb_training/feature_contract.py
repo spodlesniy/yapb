@@ -95,6 +95,7 @@ PLAYER_FEATURE_NAMES = (
     "enemy",
     "visible",
     "heard",
+    "is_follow_target",
     "relative_x",
     "relative_y",
     "relative_z",

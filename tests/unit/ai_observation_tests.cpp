@@ -41,6 +41,7 @@ AI_TEST(testObservationBuilder) {
   input.bot.team = 1;
   input.bot.currentNode = 7;
   input.bot.currentGoalNode = 12;
+  input.bot.followTargetPlayer = 9;
   input.bot.currentTask = ai::TaskType::Attack;
   input.bot.alive = true;
   input.bot.objectiveFlags = ai::ObjectiveFlag::BombPlanted | ai::ObjectiveFlag::InBombZone;
@@ -78,6 +79,7 @@ AI_TEST(testObservationBuilder) {
 
   expect(observation.gameTime == 12.5f, "builder preserves game time");
   expect(observation.bot.currentNode == 7, "builder preserves current node");
+  expect(observation.bot.followTargetPlayer == 9, "builder preserves follow target");
   expect(observation.bot.currentTask == ai::TaskType::Attack, "builder preserves current task");
   expect(observation.bot.objectiveFlags == (ai::ObjectiveFlag::BombPlanted | ai::ObjectiveFlag::InBombZone),
          "builder preserves objective flags");
@@ -105,6 +107,7 @@ AI_TEST(testObservationBuilder) {
   expect(observation.bot.stuck, "builder preserves stuck state");
   expect(observation.playerCount == 1, "builder preserves player count");
   expect(observation.players[0].entityIndex == 9, "builder preserves player entity index");
+  expect(observation.players[0].isFollowTarget, "builder marks follow target player");
   expect(observation.players[0].relativeOrigin.x == 3.0f, "player x position is relative to bot");
   expect(observation.players[0].relativeOrigin.y == 4.0f, "player y position is relative to bot");
   expect(observation.players[0].relativeOrigin.z == 4.0f, "player z position is relative to bot");

@@ -29,6 +29,9 @@ public:
   virtual bool attackTarget(int targetPlayer) = 0;
   virtual void cancelAttackTarget(int targetPlayer) = 0;
 
+  virtual bool followPlayer(int targetPlayer) = 0;
+  virtual void cancelFollowPlayer(int targetPlayer) = 0;
+
   virtual bool huntTarget(int targetPlayer) = 0;
   virtual bool isHuntTargetReached(int targetPlayer) const = 0;
   virtual void cancelHuntTarget(int targetPlayer) = 0;
