@@ -56,7 +56,7 @@ class DeployTests(unittest.TestCase):
         deploy_model_mock.return_value = OnnxModelMetadata(
             input_name="input",
             input_dtype="float32",
-            input_shape=(1, 230),
+            input_shape=(1, 232),
             output_name="output",
             output_dtype="float32",
             output_shape=(1, 10),

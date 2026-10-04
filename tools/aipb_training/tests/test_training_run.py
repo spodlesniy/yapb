@@ -8,7 +8,7 @@ import unittest
 from pathlib import Path
 
 from ..dataset import TrainingAction, TrainingObservation, TrainingSample
-from ..model_contract import MODEL_FEATURE_COUNT
+from ..model_contract import MODEL_FEATURE_COUNT, MODEL_FEATURE_SCHEMA_VERSION
 from ..training_run import (
     TrainingConfig,
     load_checkpoint,
@@ -216,6 +216,8 @@ class TrainingRunTests(unittest.TestCase):
             self.assertEqual(checkpoint["format"], "aipb-policy-checkpoint")
             self.assertIn("model_state", checkpoint)
             self.assertIn("optimizer_state", checkpoint)
+            self.assertEqual(checkpoint["model"]["feature_count"], MODEL_FEATURE_COUNT)
+            self.assertEqual(checkpoint["model"]["feature_schema_version"], MODEL_FEATURE_SCHEMA_VERSION)
             self.assertTrue(all(torch.isfinite(p).all().item() for p in model.parameters()))
 
 

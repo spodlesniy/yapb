@@ -22,7 +22,9 @@ METADATA = {
 
 
 def sample(action_id: int, episode_id: int, terminal: bool) -> dict:
-    values = [0.0] * 231
+    from ..model_contract import MODEL_FEATURE_COUNT
+
+    values = [0.0] * MODEL_FEATURE_COUNT
     return {
         "episode_id": episode_id,
         "observation": {"schema_version": MODEL_FEATURE_SCHEMA_VERSION, "values": values},

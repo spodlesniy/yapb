@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Sequence
 
 from .dataset import TrainingSample, iter_training_batches
-from .model_contract import MODEL_ACTION_TENSOR_SIZE, MODEL_FEATURE_COUNT
+from .model_contract import MODEL_ACTION_TENSOR_SIZE, MODEL_FEATURE_COUNT, MODEL_FEATURE_SCHEMA_VERSION
 from .policy_model import POLICY_MODEL_ARCHITECTURE, build_policy_model
 from .trainer import TrainingMetrics, create_optimizer, evaluate, train_epoch
 from .training_contract import PolicyTrainingBatch, encode_policy_batch
@@ -189,7 +189,7 @@ def _checkpoint_payload(
         "config": asdict(config),
         "model": {
             "feature_count": MODEL_FEATURE_COUNT,
-            "feature_schema_version": 2,
+            "feature_schema_version": MODEL_FEATURE_SCHEMA_VERSION,
             "action_tensor_size": MODEL_ACTION_TENSOR_SIZE,
             "architecture": asdict(POLICY_MODEL_ARCHITECTURE),
         },
@@ -277,7 +277,7 @@ def load_checkpoint(
         raise ValueError("unsupported AiPB policy checkpoint format")
 
     model_contract = checkpoint.get("model", {})
-    if model_contract.get("feature_count") != MODEL_FEATURE_COUNT or model_contract.get("feature_schema_version") != 2:
+    if model_contract.get("feature_count") != MODEL_FEATURE_COUNT or model_contract.get("feature_schema_version") != MODEL_FEATURE_SCHEMA_VERSION:
         raise ValueError("checkpoint feature contract does not match the current model contract")
     if model_contract.get("action_tensor_size") != MODEL_ACTION_TENSOR_SIZE:
         raise ValueError("checkpoint action tensor size does not match the current model contract")
