@@ -37,6 +37,7 @@ def parse_action_requirement(value: str) -> tuple[int, int]:
 
 
 def check_quality(stats: DatasetStats, *, min_samples: int = 0, min_episodes: int = 0,
+                  min_action_coverage: int = 0,
                   max_dominant_action_share: float | None = None,
                   min_action_samples: tuple[tuple[int, int], ...] = (),
                   min_action_episodes: tuple[tuple[int, int], ...] = ()) -> DatasetQuality:
@@ -44,6 +45,8 @@ def check_quality(stats: DatasetStats, *, min_samples: int = 0, min_episodes: in
         raise ValueError("min_samples must be non-negative")
     if min_episodes < 0:
         raise ValueError("min_episodes must be non-negative")
+    if not 0 <= min_action_coverage <= MODEL_ACTION_ID_COUNT:
+        raise ValueError(f"min_action_coverage must be within [0, {MODEL_ACTION_ID_COUNT}]")
     if max_dominant_action_share is not None and not 0.0 < max_dominant_action_share <= 1.0:
         raise ValueError("max_dominant_action_share must be in (0, 1]")
 
@@ -73,6 +76,8 @@ def check_quality(stats: DatasetStats, *, min_samples: int = 0, min_episodes: in
         failures.append(f"samples {stats.samples} < minimum {min_samples}")
     if stats.episodes < min_episodes:
         failures.append(f"episodes {stats.episodes} < minimum {min_episodes}")
+    if stats.action_coverage < min_action_coverage:
+        failures.append(f"action coverage {stats.action_coverage} < minimum {min_action_coverage}")
     if max_dominant_action_share is not None:
         share = 0.0 if stats.samples == 0 else max(stats.action_counts) / stats.samples
         if share > max_dominant_action_share:
@@ -96,6 +101,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("dataset", type=Path, help="Path to an aipb-training-jsonl dataset.")
     parser.add_argument("--min-samples", type=int, default=0)
     parser.add_argument("--min-episodes", type=int, default=0)
+    parser.add_argument("--min-action-coverage", type=int, default=0,
+                        help="Require at least this many of the 26 action IDs to be represented.")
     parser.add_argument("--max-dominant-action-share", type=float, default=None,
                         help="Fail when one action exceeds this fraction of all samples.")
     parser.add_argument(
@@ -127,6 +134,7 @@ def main() -> int:
         summarize_dataset(args.dataset),
         min_samples=args.min_samples,
         min_episodes=args.min_episodes,
+        min_action_coverage=args.min_action_coverage,
         max_dominant_action_share=args.max_dominant_action_share,
         min_action_samples=min_action_samples,
         min_action_episodes=min_action_episodes,
