@@ -166,6 +166,7 @@ AI_TEST(testTrainingRecorderCompletesTransition) {
   expect(transition.reward == 1.5f, "transition stores the supplied reward");
   expect(transition.nextObservation.gameTime == 10.8f, "transition stores the terminal observation");
   expect(transition.result.type == ai::ActionResultType::Completed, "transition stores the terminal action result");
+  expect(transition.result.elapsedTime == 0.75f, "transition preserves explicit result elapsed time");
 }
 
 AI_TEST(testTrainingRecorderRejectsInvalidCompletion) {

@@ -194,6 +194,8 @@ AI_TEST(testTrainingCollectorRecordsTrainingCompletion) {
 
   expect(completed.type == ai::ActionResultType::Completed, "training mode forwards the terminal action result");
   expect(buffer.size() == 1, "training mode records one completed transition");
+  expectNear(buffer.at(0).result.elapsedTime, 1.0f, 0.0001f,
+             "training mode derives elapsed time from the action observations");
   expect(!recorder.hasPendingAction(), "recorded training transition clears pending state");
   expect(rewards.callCount == 1, "training mode computes reward exactly once");
 }
@@ -217,6 +219,8 @@ AI_TEST(testTrainingCollectorRecordsTrainingCancellation) {
   expect(runtime.result().type == ai::ActionResultType::Interrupted, "training cancellation exposes the interrupted result");
   expect(buffer.size() == 1, "training cancellation records one transition");
   expect(buffer.at(0).result.type == ai::ActionResultType::Interrupted, "training transition stores interruption result");
+  expectNear(buffer.at(0).result.elapsedTime, 0.5f, 0.0001f,
+             "training cancellation derives elapsed time from the action observations");
   expect(rewards.callCount == 1, "training cancellation computes one reward");
 }
 

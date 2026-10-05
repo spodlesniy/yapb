@@ -181,8 +181,15 @@ public:
       return TrainingRecordResult::NonTerminalResult;
     }
 
+    auto recordedResult = result;
+
+    if (recordedResult.elapsedTime <= 0.0f) {
+      const float elapsedTime = nextObservation.gameTime - m_pendingObservation.gameTime;
+      recordedResult.elapsedTime = elapsedTime > 0.0f ? elapsedTime : 0.0f;
+    }
+
     const bool appended =
-      m_buffer->append(m_episodeId, m_pendingObservation, m_pendingActionData, reward, nextObservation, result);
+      m_buffer->append(m_episodeId, m_pendingObservation, m_pendingActionData, reward, nextObservation, recordedResult);
 
     if (!appended) {
       return TrainingRecordResult::BufferFull;
