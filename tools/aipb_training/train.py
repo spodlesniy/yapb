@@ -24,6 +24,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--min-samples", type=int, default=0)
     parser.add_argument("--min-episodes", type=int, default=0)
+    parser.add_argument("--min-action-coverage", type=int, default=0,
+                        help="Require at least this many of the 26 action IDs to be represented.")
     parser.add_argument("--max-dominant-action-share", type=float, default=None)
     parser.add_argument("--min-action-samples", action="append", default=[], metavar="ID:COUNT",
                         help="Require at least COUNT samples for action ID. May be repeated.")
@@ -51,6 +53,7 @@ def main(argv: list[str] | None = None) -> int:
         summarize_dataset(args.dataset),
         min_samples=args.min_samples,
         min_episodes=args.min_episodes,
+        min_action_coverage=args.min_action_coverage,
         max_dominant_action_share=args.max_dominant_action_share,
         min_action_samples=min_action_samples,
         min_action_episodes=min_action_episodes,
