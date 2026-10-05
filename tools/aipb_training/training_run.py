@@ -16,7 +16,7 @@ from .training_contract import PolicyTrainingBatch, encode_policy_batch
 
 
 CHECKPOINT_FORMAT = "aipb-policy-checkpoint"
-CHECKPOINT_VERSION = 2
+CHECKPOINT_VERSION = 3
 
 
 @dataclass(frozen=True)
@@ -137,8 +137,10 @@ def _serialize_history(history: Sequence[EpochMetrics]) -> list[dict]:
             "epoch": metrics.epoch,
             "train_loss": metrics.train.loss,
             "train_samples": metrics.train.samples,
+            "train_action_accuracy": metrics.train.action_accuracy,
             "validation_loss": metrics.validation.loss,
             "validation_samples": metrics.validation.samples,
+            "validation_action_accuracy": metrics.validation.action_accuracy,
         }
         for metrics in history
     ]
@@ -160,10 +162,12 @@ def _deserialize_history(values: object) -> list[EpochMetrics]:
                 train=TrainingMetrics(
                     loss=float(value["train_loss"]),
                     samples=int(value["train_samples"]),
+                    action_accuracy=float(value["train_action_accuracy"]),
                 ),
                 validation=TrainingMetrics(
                     loss=float(value["validation_loss"]),
                     samples=int(value["validation_samples"]),
+                    action_accuracy=float(value["validation_action_accuracy"]),
                 ),
             )
         )
