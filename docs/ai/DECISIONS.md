@@ -457,3 +457,10 @@ Reason: converting legacy smoke throwing to a stored target changed the timing s
 The BotActionExecutor no longer uses a generic observed-YaPB-task acknowledgement path. Actions with explicit execution semantics are dispatched only through their dedicated executor and ActionExecutionContext capabilities; actions without such a capability are rejected. The obsolete ai_action_task_mapping header and unit test are removed.
 
 Reason: every action previously recognized by the observed-task mapper already has a dedicated executor branch and semantic execution capability. Keeping the mapper duplicated action semantics and could make an action appear accepted without an explicit AI-owned execution boundary.
+
+## D073 — Run real ONNX Runtime tests in CI
+
+A dedicated Linux CI job enables the optional C++ ONNX Runtime backend and executes the existing AI unit-test target, including the reference-model load and inference tests. The job uses a pinned ONNX Runtime release archive with a verified SHA-256 checksum instead of relying on an unpinned system package.
+
+Reason: the normal AI unit-test job intentionally omits the optional ONNX Runtime dependency, so it cannot validate the concrete model-loading and inference path. Separate coverage preserves the lightweight default test while continuously exercising the production backend and reference model together.
+

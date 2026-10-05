@@ -61,6 +61,8 @@ The normal cycle is:
 
 The C++ AI unit-test build links the production `src/ai/ai_bot_action_executor.cpp` directly into the standalone AI test executable. The executor depends only on the engine-independent `ActionExecutionContext`, so unit tests provide a mock context and exercise the production implementation without linking the game DLL. The YaPB-specific adapter remains production-only.
 
+A separate ONNX Runtime AI test job configures the same standalone test target with `-Donnxruntime=true` and executes the real `OnnxModelRunner` tests against the repository reference model. The job uses the pinned ONNX Runtime 1.30.0 Linux x64 release archive and verifies its SHA-256 before configuring a local pkg-config dependency. This keeps the normal unit-test job lightweight while ensuring the optional backend is continuously exercised in CI.
+
 The Python training-tool job runs all tests under:
 
 `tools/aipb_training/tests/`
