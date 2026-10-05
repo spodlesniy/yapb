@@ -25,6 +25,9 @@ private:
   bool m_seekCoverActive {};
   int m_seekCoverNode { -1 };
   bool m_seekCoverNavigationTaskCreated {};
+  bool m_retreatActive {};
+  int m_retreatNode { -1 };
+  bool m_retreatNavigationTaskCreated {};
   bool m_escapeFromBombActive {};
   int m_escapeFromBombNode { -1 };
   bool m_escapeFromBombNavigationTaskCreated {};
@@ -68,6 +71,10 @@ public:
   bool seekCover() override;
   bool isSeekCoverReached() const override;
   void cancelSeekCover() override;
+
+  bool retreat() override;
+  bool isRetreatReached() const override;
+  void cancelRetreat() override;
 
   bool escapeFromBomb() override;
   bool isEscapeFromBombReached() const override;

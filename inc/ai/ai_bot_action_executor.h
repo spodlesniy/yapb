@@ -37,6 +37,7 @@ private:
   Action m_directHuntAction {};
   bool m_directHuntTargetActive {};
   bool m_directSeekCoverActive {};
+  bool m_directRetreatActive {};
   bool m_directEscapeFromBombActive {};
   bool m_directRescueHostageActive {};
   bool m_directPlantBombActive {};
@@ -60,6 +61,7 @@ private:
   ActionResult executeThrowSmoke(const Action &action, const Observation &observation);
   ActionResult executeHuntTarget(const Action &action, const Observation &observation);
   ActionResult executeSeekCover(const Action &action);
+  ActionResult executeRetreat(const Action &action);
   ActionResult executeEscapeFromBomb(const Action &action, const Observation &observation);
   ActionResult executeRescueHostage(const Action &action, const Observation &observation);
   ActionResult executePlantBomb(const Action &action, const Observation &observation);

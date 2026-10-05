@@ -429,6 +429,58 @@ void YaPBActionExecutionContext::cancelSeekCover() {
   m_seekCoverNavigationTaskCreated = false;
 }
 
+bool YaPBActionExecutionContext::retreat() {
+  if (m_bot == nullptr || m_bot->pev == nullptr || game.isNullEntity(m_bot->m_lastEnemy)
+      || !game.isAliveEntity(m_bot->m_lastEnemy) || m_bot->m_lastEnemyOrigin.empty()) return false;
+  const auto currentTask = m_bot->getCurrentTaskId();
+  if (!m_retreatActive) {
+    if (currentTask != Task::Normal && currentTask != Task::MoveToPosition) return false;
+    m_bot->ensureCurrentNodeIndex();
+    const float maxDistance = m_bot->m_infectedEnemyTeam ? 2048.0f : 1024.0f;
+    const int node = m_bot->findCoverNode(maxDistance);
+    if (!graph.exists(node)) return false;
+    m_retreatActive = true;
+    m_retreatNode = node;
+    m_retreatNavigationTaskCreated = false;
+    if (currentTask == Task::MoveToPosition) m_bot->clearTask(Task::MoveToPosition);
+    m_bot->startTask(Task::MoveToPosition, TaskPri::MoveToPosition, node, 0.0f, true);
+    m_retreatNavigationTaskCreated = true;
+  }
+  else if (m_bot->getCurrentTaskId() != Task::MoveToPosition) {
+    if (m_bot->getCurrentTaskId() != Task::Normal) return false;
+    m_bot->startTask(Task::MoveToPosition, TaskPri::MoveToPosition, m_retreatNode, 0.0f, true);
+  }
+  m_bot->getTask()->data = m_retreatNode;
+  m_bot->m_prevGoalIndex = m_retreatNode;
+  m_bot->m_chosenGoalIndex = m_retreatNode;
+  m_bot->m_aimFlags |= AimFlags::Nav;
+  return true;
+}
+
+bool YaPBActionExecutionContext::isRetreatReached() const {
+  if (m_bot == nullptr || m_bot->pev == nullptr || !m_retreatActive || !graph.exists(m_retreatNode)) return false;
+  const auto &path = graph[m_retreatNode];
+  const float reachDistance = cr::max(kNavigationReachDistance, path.radius);
+  return m_bot->m_currentNodeIndex == m_retreatNode
+      && m_bot->pev->origin.distanceSq(path.origin) <= cr::sqrf(reachDistance);
+}
+
+void YaPBActionExecutionContext::cancelRetreat() {
+  if (m_bot == nullptr) return;
+  if (m_retreatActive && m_retreatNavigationTaskCreated && m_bot->getCurrentTaskId() == Task::MoveToPosition)
+    m_bot->clearTask(Task::MoveToPosition);
+  if (m_retreatActive) {
+    m_bot->clearSearchNodes();
+    m_bot->m_prevGoalIndex = kInvalidNodeIndex;
+    m_bot->m_chosenGoalIndex = kInvalidNodeIndex;
+    m_bot->m_position.clear();
+    m_bot->m_aimFlags &= ~AimFlags::Nav;
+  }
+  m_retreatActive = false;
+  m_retreatNode = kInvalidNodeIndex;
+  m_retreatNavigationTaskCreated = false;
+}
+
 bool YaPBActionExecutionContext::wait() {
   if (m_bot == nullptr || m_bot->pev == nullptr) {
     return false;

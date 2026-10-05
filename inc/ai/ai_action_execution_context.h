@@ -51,6 +51,10 @@ public:
   virtual bool isSeekCoverReached() const = 0;
   virtual void cancelSeekCover() = 0;
 
+  virtual bool retreat() = 0;
+  virtual bool isRetreatReached() const = 0;
+  virtual void cancelRetreat() = 0;
+
   virtual bool escapeFromBomb() = 0;
   virtual bool isEscapeFromBombReached() const = 0;
   virtual void cancelEscapeFromBomb() = 0;

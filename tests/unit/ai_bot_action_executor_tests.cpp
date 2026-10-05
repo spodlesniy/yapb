@@ -52,6 +52,10 @@ public:
   int cancelHuntTargetCalls {};
   int seekCoverCalls {};
   int cancelSeekCoverCalls {};
+  bool retreatAvailable { true };
+  bool retreatReached {};
+  int retreatCalls {};
+  int cancelRetreatCalls {};
   int escapeFromBombCalls {};
   int cancelEscapeFromBombCalls {};
   int rescueHostageCalls {};
@@ -179,6 +183,19 @@ public:
 
   void cancelSeekCover() override {
     ++cancelSeekCoverCalls;
+  }
+
+  bool retreat() override {
+    ++retreatCalls;
+    return retreatAvailable;
+  }
+
+  bool isRetreatReached() const override {
+    return retreatReached;
+  }
+
+  void cancelRetreat() override {
+    ++cancelRetreatCalls;
   }
 
   bool escapeFromBomb() override {
@@ -720,6 +737,64 @@ AI_TEST(testBotActionExecutorCancelsSeekCover) {
   executor.cancel();
 
   expect(context.cancelSeekCoverCalls == 1, "cancel releases direct seek cover");
+}
+
+AI_TEST(testBotActionExecutorDirectlyExecutesRetreat) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+  auto action = ai::Action {};
+  action.type = ai::ActionType::Retreat;
+  const auto result = executor.execute(action, aliveObservation());
+  expect(result.type == ai::ActionResultType::Accepted, "retreat is accepted");
+  expect(context.retreatCalls == 1, "retreat is delegated");
+  expect(!executor.suppressesLegacyTaskExecution(), "retreat keeps legacy task execution enabled");
+}
+
+AI_TEST(testBotActionExecutorCompletesRetreatWhenReached) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+  auto action = ai::Action {};
+  action.type = ai::ActionType::Retreat;
+  auto result = executor.execute(action, aliveObservation());
+  expect(result.type == ai::ActionResultType::Accepted, "retreat starts before reaching the retreat point");
+  context.retreatReached = true;
+  result = executor.execute(action, aliveObservation());
+  expect(result.type == ai::ActionResultType::Completed, "reaching the retreat point completes the action");
+  expect(context.cancelRetreatCalls == 1, "completion releases direct retreat");
+}
+
+AI_TEST(testBotActionExecutorCompletesRetreatWhenRuntimeStopsIt) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+  auto action = ai::Action {};
+  action.type = ai::ActionType::Retreat;
+  auto result = executor.execute(action, aliveObservation());
+  expect(result.type == ai::ActionResultType::Accepted, "retreat starts while available");
+  context.retreatAvailable = false;
+  result = executor.execute(action, aliveObservation());
+  expect(result.type == ai::ActionResultType::Completed, "retreat completes when the runtime stops it");
+  expect(context.cancelRetreatCalls == 1, "runtime stop releases direct retreat");
+}
+
+AI_TEST(testBotActionExecutorRejectsRetreatWhenRuntimeCannotStartIt) {
+  MockActionExecutionContext context {};
+  context.retreatAvailable = false;
+  ai::BotActionExecutor executor(context);
+  auto action = ai::Action {};
+  action.type = ai::ActionType::Retreat;
+  const auto result = executor.execute(action, aliveObservation());
+  expect(result.type == ai::ActionResultType::Rejected, "retreat is rejected when runtime cannot start it");
+  expect(context.retreatCalls == 1, "retreat availability is checked");
+}
+
+AI_TEST(testBotActionExecutorCancelsDirectRetreat) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+  auto action = ai::Action {};
+  action.type = ai::ActionType::Retreat;
+  executor.execute(action, aliveObservation());
+  executor.cancel();
+  expect(context.cancelRetreatCalls == 1, "cancel releases direct retreat");
 }
 
 AI_TEST(testBotActionExecutorCompletesHuntWhenTargetPositionIsReached) {

@@ -469,3 +469,9 @@ Reason: the normal AI unit-test job intentionally omits the optional ONNX Runtim
 The ONNX Runtime CI job caches the pinned Linux x64 release archive and its extracted directory under a cache key containing the exact runtime version and SHA-256. Cached artifacts are still checksum-verified before use.
 
 Reason: the optional ONNX Runtime dependency is a large immutable release asset that is reused across CI runs. Caching the exact verified artifact reduces repeated download and extraction work without weakening dependency integrity or allowing an unrelated runtime build to satisfy the test job.
+
+## D075 — Make Retreat a direct AI-owned navigation action
+
+Retreat is executed through ActionExecutionContext as a distinct AI-owned navigation intent. The YaPB adapter reuses the established `findCoverNode` selection and `MoveToPosition` path progression, but the AI executor owns the Retreat action lifecycle and cancellation.
+
+Reason: Retreat is semantically different from SeekCover even though both may use a safe cover point as their engine-side destination. Reusing the existing waypoint selection and navigation machinery avoids duplicating pathfinding while allowing the model to learn and execute an explicit disengagement intent.
