@@ -1,0 +1,72 @@
+name: cleanup-sccache-once
+
+on:
+  push:
+    branches:
+      - ai/phase-07-training
+    paths:
+      - '.github/workflows/cleanup-sccache-once.yml'
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Wait for build workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          build_seen=false
+
+          for attempt in $(seq 1 180); do
+            runs="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/build.yml/runs?head_sha=${GITHUB_SHA}&event=push&per_page=10")"
+            count="$(jq '.workflow_runs | length' <<< "${runs}")"
+            pending="$(jq '[.workflow_runs[] | select(.status != "completed")] | length' <<< "${runs}")"
+
+            if [[ "${count}" -gt 0 ]]; then
+              build_seen=true
+            fi
+
+            if [[ "${build_seen}" == true && "${pending}" -eq 0 ]]; then
+              exit 0
+            fi
+
+            sleep 5
+          done
+
+          echo "Timed out waiting for the build workflow on ${GITHUB_SHA}." >&2
+          exit 1
+
+      - name: Delete sccache entries
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mapfile -t cache_ids < <(
+            gh api --paginate "repos/${GITHUB_REPOSITORY}/actions/caches?per_page=100" \
+              --jq '.actions_caches[] | select(.key | startswith("sccache/")) | .id'
+          )
+
+          echo "Found ${#cache_ids[@]} sccache entries."
+
+          for cache_id in "${cache_ids[@]}"; do
+            gh api --method DELETE "repos/${GITHUB_REPOSITORY}/actions/caches/${cache_id}"
+          done
+
+          remaining="$(
+            gh api --paginate "repos/${GITHUB_REPOSITORY}/actions/caches?per_page=100" \
+              --jq '.actions_caches[] | select(.key | startswith("sccache/")) | .id' |
+              wc -l
+          )"
+
+          echo "Remaining sccache entries: ${remaining}"
+          test "${remaining}" -eq 0
