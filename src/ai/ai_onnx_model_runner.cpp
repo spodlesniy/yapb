@@ -252,7 +252,7 @@ bool OnnxModelRunner::load(const char *modelPath, const char *inputName, const c
   }
 
   const bool inputNameMatches = inferenceModelNameMatches(actualInputName, inputName);
-  m_impl->api->AllocatorFree(nameAllocator, actualInputName);
+  m_impl->check(m_impl->api->AllocatorFree(nameAllocator, actualInputName));
 
   if (!inputNameMatches) {
     m_impl->setError("ONNX model input name does not match the configured input name.");
@@ -267,7 +267,7 @@ bool OnnxModelRunner::load(const char *modelPath, const char *inputName, const c
   }
 
   const bool outputNameMatches = inferenceModelNameMatches(actualOutputName, outputName);
-  m_impl->api->AllocatorFree(nameAllocator, actualOutputName);
+  m_impl->check(m_impl->api->AllocatorFree(nameAllocator, actualOutputName));
 
   if (!outputNameMatches) {
     m_impl->setError("ONNX model output name does not match the configured output name.");
@@ -304,7 +304,7 @@ bool OnnxModelRunner::load(const char *modelPath, const char *inputName, const c
     return false;
   }
 
-  if (!m_impl->check(m_impl->api->CreateCpuMemoryInfo("Cpu", OrtArenaAllocator, &m_impl->memoryInfo))) {
+  if (!m_impl->check(m_impl->api->CreateCpuMemoryInfo("Cpu", OrtArenaAllocator, OrtMemTypeDefault, &m_impl->memoryInfo))) {
     unload();
     return false;
   }
@@ -358,8 +358,8 @@ InferenceResult OnnxModelRunner::run(const InferenceFeatures &features) const {
   OrtValue *input = nullptr;
   OrtValue *output = nullptr;
 
-  if (!m_impl->check(m_impl->api->CreateTensorWithDataAsOrtValue(m_impl->memoryInfo, const_cast<float *>(features.values.data()),
-                                                                 features.values.size() * sizeof(float), inputShape, 2,
+  if (!m_impl->check(m_impl->api->CreateTensorWithDataAsOrtValue(m_impl->memoryInfo, const_cast<float *>(features.values),
+                                                                 sizeof(features.values), inputShape, 2,
                                                                  ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT, &input))) {
     result.status = InferenceStatus::Error;
     return result;
@@ -379,8 +379,15 @@ InferenceResult OnnxModelRunner::run(const InferenceFeatures &features) const {
     return result;
   }
 
-  float *outputData = nullptr;
-  if (!m_impl->check(m_impl->api->GetTensorMutableData(output, &outputData))) {
+  void *rawOutputData {};
+  if (!m_impl->check(m_impl->api->GetTensorMutableData(output, &rawOutputData))) {
+    m_impl->api->ReleaseValue(output);
+    result.status = InferenceStatus::Error;
+    return result;
+  }
+
+  const auto *outputData = static_cast<const float *>(rawOutputData);
+  if (outputData == nullptr) {
     m_impl->api->ReleaseValue(output);
     result.status = InferenceStatus::Error;
     return result;
