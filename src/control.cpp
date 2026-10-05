@@ -7,6 +7,70 @@
 
 #include <yapb.h>
 
+#include <ctime>
+
+namespace {
+
+String buildTrainingDatasetDirectory () {
+   const auto dataPath = strings.joinPath (bstor.getRunningPath (), folders.data);
+
+   if (!plat.fileExists (dataPath.chars ()) && !plat.createDirectory (dataPath.chars ())) {
+      return {};
+   }
+
+   const auto trainingPath = strings.joinPath (dataPath, ai::kTrainingDatasetDirectory);
+
+   if (!plat.fileExists (trainingPath.chars ()) && !plat.createDirectory (trainingPath.chars ())) {
+      return {};
+   }
+
+   return trainingPath;
+}
+
+String buildTrainingDatasetPath () {
+   const auto directory = buildTrainingDatasetDirectory ();
+
+   if (directory.empty ()) {
+      return {};
+   }
+
+   time_t ticks = time (nullptr);
+   tm timeinfo {};
+   plat.loctime (&timeinfo, &ticks);
+
+   const auto baseName = strings.format (
+      "%04d_%02d_%02d__%02d_%02d_%02d__%s.jsonl",
+      timeinfo.tm_year + 1900,
+      timeinfo.tm_mon + 1,
+      timeinfo.tm_mday,
+      timeinfo.tm_hour,
+      timeinfo.tm_min,
+      timeinfo.tm_sec,
+      ai::kTrainingDatasetFilePrefix
+   );
+
+   auto path = strings.joinPath (directory, baseName);
+
+   for (int suffix = 1; plat.fileExists (path.chars ()) && suffix <= 9999; ++suffix) {
+      path = strings.joinPath (
+         directory,
+         strings.format (
+            "%s_%02d.jsonl",
+            baseName.substr (0, baseName.length () - 6),
+            suffix
+         )
+      );
+   }
+
+   if (plat.fileExists (path.chars ())) {
+      return {};
+   }
+
+   return path;
+}
+
+} // namespace
+
 ConVar cv_display_menu_text ("display_menu_text", "1", "Enables or disables display menu text, when players asks for menu. Useful only for Android.", true, 0.0f, 1.0f, Var::Xash3D);
 ConVar cv_password ("password", "", "The value (password) for the setinfo key. If the user sets the correct password, he gains access to bot commands and menus.", false, 0.0f, 0.0f, Var::Password);
 ConVar cv_password_key ("password_key", "_ybpw", "The name of the setinfo key used to store the password for bot commands and menus.", false);
@@ -357,21 +421,27 @@ int BotControl::cmdExec () {
 }
 
 int BotControl::cmdSaveTraining () {
-   enum args { alias = 1, file };
+   enum args { alias = 1 };
 
-   if (!hasArg (file)) {
+   if (hasArg (alias + 1)) {
       return BotCommandResult::BadFormat;
    }
 
-   const auto result = ai::writeTrainingDataset (
-      ai::getTrainingBuffer (), arg <StringRef> (file).chars ()
-   );
-   if (!result.isValid ()) {
-      msg ("Unable to save training dataset to \"%s\".", arg <StringRef> (file));
+   const auto outputPath = buildTrainingDatasetPath ();
+   if (outputPath.empty ()) {
+      msg ("Unable to prepare AI training dataset output path.");
       return BotCommandResult::Handled;
    }
 
-   msg ("Training dataset saved to \"%s\" (%d transitions).", arg <StringRef> (file), static_cast <int> (result.count));
+   const auto result = ai::writeTrainingDataset (
+      ai::getTrainingBuffer (), outputPath.chars ()
+   );
+   if (!result.isValid ()) {
+      msg ("Unable to save training dataset to \"%s\".", outputPath);
+      return BotCommandResult::Handled;
+   }
+
+   msg ("Training dataset saved to \"%s\" (%d transitions).", outputPath, static_cast <int> (result.count));
 
    const auto dropped = ai::getTrainingBuffer ().droppedTransitions ();
    if (dropped != 0) {
@@ -2348,8 +2418,8 @@ BotControl::BotControl () {
       },
       {
          "ai_save_training",
-         "ai_save_training [file]",
-         "Saves the collected AI training dataset to a JSONL file.",
+         "ai_save_training [no arguments]",
+         "Saves the collected AI training dataset as a new timestamped JSONL file under the YaPB data/training directory.",
 
          &BotControl::cmdSaveTraining
       },

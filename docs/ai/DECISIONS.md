@@ -686,3 +686,15 @@ This provides a simple readiness checkpoint for the first real training datasets
 
 Reason: action classification is now a first-class training objective after D082.
 A dataset with too few represented classes cannot meaningfully evaluate the categorical action head, even when total sample and episode counts look healthy.
+
+
+## D085 — Store training captures as timestamped YaPB-local JSONL files
+
+`yb ai_save_training` takes no filename argument and creates a new JSONL snapshot under the YaPB plugin `data/training/` directory.
+The filename uses local time in the form `YYYY_MM_DD__HH_MM_SS__ai_training.jsonl`.
+If a file with the same timestamp already exists, a numeric suffix is appended before `.jsonl`.
+Saving does not clear the in-memory training buffer; `yb ai_clear_training` remains the explicit buffer-clear operation.
+
+Reason: training collection is expected to produce multiple captures over time, while the bounded in-memory buffer must be flushed repeatedly.
+Timestamped independent files prevent accidental overwrites and make individual collection sessions easy to identify and archive.
+Keeping the files under the YaPB plugin directory also avoids placing training artifacts in the server root and matches the deployment-oriented package layout used by the ONNX model.

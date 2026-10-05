@@ -81,6 +81,7 @@ The C++ runtime exports the collected transitions as `aipb-training-jsonl`.
 Stored samples are terminal action transitions; the Python validator enforces this runtime invariant.
 The in-memory buffer is bounded; when it is full, a completed transition is retained as pending but cannot be stored.
 The cumulative drop count is reported by `ai_save_training`.
+Each save creates a new timestamped JSONL file under the YaPB plugin `data/training/` directory and does not clear the in-memory buffer.
 
 Each record contains:
 
