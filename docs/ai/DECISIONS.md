@@ -667,3 +667,13 @@ Other `SeekCover` observations retain the `SeekCover` label.
 
 Reason: `Retreat` and `SeekCover` are intentionally distinct AI semantics, but the current observation contract does not expose YaPB's internal retreat timer, enemy-count pressure, or view-cone state separately.
 Using the existing `SeekCover` task plus the observable portion of YaPB's combat trigger avoids inventing an independent health threshold while still producing a meaningful distinction for supervised training.
+## D082 — Train action selection as a categorical target
+
+The policy model keeps the external [N, 10] action tensor contract, but its internal training model uses a shared feature trunk with a 26-class action-ID head and a nine-value continuous parameter head.
+The exported action tensor takes the argmax class as the float32 action_id field and concatenates the nine continuous outputs.
+Training loss uses cross-entropy for action selection and SmoothL1 for the remaining action parameters.
+Training metrics persist action classification accuracy alongside total loss.
+Checkpoint version increments to 3 because checkpoints created by the previous regression-only model are not compatible with the new parameter layout.
+
+Reason: action IDs are categorical and have no meaningful ordinal distance, so treating them as a single continuous regression target teaches an artificial numeric relationship between unrelated actions.
+The categorical head provides a direct supervised signal for the 26 action classes while preserving the existing C++ and ONNX deployment contract.
