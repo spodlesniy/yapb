@@ -73,7 +73,10 @@ Action GoalNavigationPolicy::decide(const Observation &observation) const {
     return action;
   }
 
-  if (observation.bot.hasHostage && !observation.bot.inRescueZone) {
+  const bool canStartHostageRescue = observation.bot.currentTask == TaskType::Normal
+                                    || observation.bot.currentTask == TaskType::MoveToPosition;
+
+  if (canStartHostageRescue && observation.bot.hasHostage && !observation.bot.inRescueZone) {
     Action action {};
     action.type = ActionType::RescueHostage;
     action.confidence = 1.0f;

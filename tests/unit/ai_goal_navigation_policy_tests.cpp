@@ -151,12 +151,33 @@ AI_TEST(testGoalNavigationPolicyMapsBombDefenseToProtectObjective) {
 
 AI_TEST(testGoalNavigationPolicyMapsHostageRescue) {
   auto observation = makeObservation();
+  observation.bot.currentTask = ai::TaskType::Normal;
   observation.bot.hasHostage = true;
 
   const auto action = ai::GoalNavigationPolicy {}.decide(observation);
 
   expect(action.type == ai::ActionType::RescueHostage, "hostage carrying maps to rescue hostage");
   expect(action.targetType == ai::TargetType::None, "rescue hostage has no explicit target payload");
+}
+
+AI_TEST(testGoalNavigationPolicyMapsHostageRescueFromMoveToPosition) {
+  auto observation = makeObservation();
+  observation.bot.currentTask = ai::TaskType::MoveToPosition;
+  observation.bot.hasHostage = true;
+
+  const auto action = ai::GoalNavigationPolicy {}.decide(observation);
+
+  expect(action.type == ai::ActionType::RescueHostage, "hostage carrying during navigation maps to rescue hostage");
+}
+
+AI_TEST(testGoalNavigationPolicyDoesNotOverrideUnsupportedTaskForHostageRescue) {
+  auto observation = makeObservation();
+  observation.bot.currentTask = ai::TaskType::Attack;
+  observation.bot.hasHostage = true;
+
+  const auto action = ai::GoalNavigationPolicy {}.decide(observation);
+
+  expect(action.type == ai::ActionType::MoveToNode, "hostage rescue does not override an incompatible active task");
 }
 
 AI_TEST(testGoalNavigationPolicyFallsBackAfterHostageRescueZone) {
