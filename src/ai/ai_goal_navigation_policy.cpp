@@ -65,16 +65,16 @@ Action GoalNavigationPolicy::decide(const Observation &observation) const {
     return action;
   }
 
-  if (observation.bot.team == 0 && observation.bot.currentTask == TaskType::Camp
-      && (observation.bot.objectiveFlags & ObjectiveFlag::BombPlanted)) {
+  if (observation.bot.team == 0 && observation.bot.currentTask == TaskType::Camp &&
+      (observation.bot.objectiveFlags & ObjectiveFlag::BombPlanted)) {
     Action action {};
     action.type = ActionType::ProtectObjective;
     action.confidence = 1.0f;
     return action;
   }
 
-  const bool canStartHostageRescue = observation.bot.currentTask == TaskType::Normal
-                                    || observation.bot.currentTask == TaskType::MoveToPosition;
+  const bool canStartHostageRescue =
+      observation.bot.currentTask == TaskType::Normal || observation.bot.currentTask == TaskType::MoveToPosition;
 
   if (canStartHostageRescue && observation.bot.hasHostage && !observation.bot.inRescueZone) {
     Action action {};
@@ -94,7 +94,8 @@ Action GoalNavigationPolicy::decide(const Observation &observation) const {
   }
 
   case TaskType::FollowUser: {
-    if (observation.bot.followTargetPlayer < 0 || !hasObservedPlayer(observation, observation.bot.followTargetPlayer)) return makeGoalNavigationAction(observation);
+    if (observation.bot.followTargetPlayer < 0 || !hasObservedPlayer(observation, observation.bot.followTargetPlayer))
+      return makeGoalNavigationAction(observation);
     Action action {};
     action.type = ActionType::FollowPlayer;
     action.targetType = TargetType::Player;
@@ -172,10 +173,8 @@ Action GoalNavigationPolicy::decide(const Observation &observation) const {
   }
 
   case TaskType::Attack: {
-    const actionType = observation.combat.firePauseRemaining > 0.0f
-                         ? ActionType::AimAtTarget
-                         : ActionType::AttackTarget;
-    const action = makeTargetPlayerAction(actionType, observation);
+    const ActionType actionType = observation.combat.firePauseRemaining > 0.0f ? ActionType::AimAtTarget : ActionType::AttackTarget;
+    const Action action = makeTargetPlayerAction(actionType, observation);
     return action.type != ActionType::None ? action : makeGoalNavigationAction(observation);
   }
 
@@ -195,9 +194,7 @@ Action GoalNavigationPolicy::decide(const Observation &observation) const {
     constexpr float kHoldPositionMinimumTaskTime = 10.0f;
 
     Action action {};
-    action.type = observation.bot.taskTimeRemaining >= kHoldPositionMinimumTaskTime
-                    ? ActionType::HoldPosition
-                    : ActionType::Wait;
+    action.type = observation.bot.taskTimeRemaining >= kHoldPositionMinimumTaskTime ? ActionType::HoldPosition : ActionType::Wait;
     action.confidence = 1.0f;
     return action;
   }
