@@ -42,6 +42,9 @@ Runtime execution remains separate from the inference implementation.
 It maps observable YaPB tasks, combat timing, and explicit objective state to AI actions.
 A free `TaskType::Normal` state maps to `Explore`, allowing the AI execution context to choose a novelty-oriented waypoint instead of repeatedly copying the current legacy goal.
 A bomb carrier is the objective-aware exception: while carrying C4 in a free `Normal` state, the teacher yields navigation to YaPB's existing objective logic so it can select and traverse a bombsite goal; once inside a bomb zone the same legacy `Normal` path transitions to `PlantBomb`.
+The current navigation goal is included explicitly in the observed waypoint set.
+When the remaining round time falls below a conservative estimate of goal travel time plus a planting reserve, the teacher prioritizes that bombsite goal over non-objective actions.
+After the bomb is planted, a CT in free `Normal` state similarly yields to YaPB's existing planted-bomb search instead of starting `Explore`.
 Unsupported or underspecified task states still fall back to the observed navigation goal.
 For the active `SeekCover` task, the teacher distinguishes a low combat approach against a visible enemy as `Retreat`; other `SeekCover` states remain `SeekCover`.
 Direct AI-owned actions are executed through the semantic `ActionExecutionContext`; actions without an explicit execution capability remain unsupported and are rejected.

@@ -84,11 +84,48 @@ Action makeGoalNavigationAction(const Observation &observation) {
   return action;
 }
 
+constexpr float kBombPlantTravelTimeScale = 1.5f;
+constexpr float kBombPlantReserveTime = 10.0f;
+constexpr int kCounterTerroristTeam = 1;
+
+bool shouldPrioritizeBombPlant(const Observation &observation) {
+  if (!observation.bot.hasC4 || observation.bot.inBombZone || observation.bot.currentTask == TaskType::PlantBomb
+      || observation.bot.currentGoalNode < 0 || observation.bot.maxSpeed <= 0.0f || observation.roundTimeRemaining <= 0.0f) {
+    return false;
+  }
+
+  const auto count = observation.waypointCount > kMaxObservedWaypoints ? kMaxObservedWaypoints : observation.waypointCount;
+
+  for (size_t i = 0; i < count; ++i) {
+    const auto &waypoint = observation.waypoints[i];
+
+    if (waypoint.index != observation.bot.currentGoalNode) {
+      continue;
+    }
+
+    const float travelTime = waypoint.distance / observation.bot.maxSpeed;
+    return observation.roundTimeRemaining <= travelTime * kBombPlantTravelTimeScale + kBombPlantReserveTime;
+  }
+
+  return false;
+}
+
 } // namespace
 
 Action GoalNavigationPolicy::decide(const Observation &observation) const {
   if (!observation.bot.alive) {
     return {};
+  }
+
+  if (shouldPrioritizeBombPlant(observation)) {
+    if (observation.bot.currentTask == TaskType::Normal) {
+      return {};
+    }
+
+    const auto objectiveAction = makeGoalNavigationAction(observation);
+    if (objectiveAction.type != ActionType::None) {
+      return objectiveAction;
+    }
   }
 
   if (observation.combat.reloadState != ReloadState::None &&
@@ -249,7 +286,8 @@ Action GoalNavigationPolicy::decide(const Observation &observation) const {
   }
 
   case TaskType::Normal: {
-    if (observation.bot.hasC4) {
+    const bool bombPlanted = (observation.bot.objectiveFlags & ObjectiveFlag::BombPlanted) != 0;
+    if (observation.bot.hasC4 || (observation.bot.team == kCounterTerroristTeam && bombPlanted)) {
       return {};
     }
 

@@ -898,6 +898,17 @@ void Bot::defuseBomb_ () {
    const auto &bombPos = gameState.getBombOrigin ();
    bool defuseError = false;
 
+   const auto reportSectorClear = [&] () {
+      const float bombPlantTime = gameState.getTimeBombPlanted ();
+
+      if (cr::fequal (m_lastSectorClearBombTime, bombPlantTime)) {
+         return;
+      }
+
+      pushRadioMessage (Radio::SectorClear);
+      m_lastSectorClearBombTime = bombPlantTime;
+   };
+
    // exception: bomb has been defused
    if (bombPos.empty ()) {
       // fix for stupid behavior of CT's when bot is defused
@@ -917,11 +928,11 @@ void Bot::defuseBomb_ () {
                pushChatterMessage (Chatter::BarelyDefused);
             }
             else if (cv_radio_mode.as <int> () == 1) {
-               pushRadioMessage (Radio::SectorClear);
+               reportSectorClear ();
             }
          }
          else {
-            pushRadioMessage (Radio::SectorClear);
+            reportSectorClear ();
          }
       }
       return;

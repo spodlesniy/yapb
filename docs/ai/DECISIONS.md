@@ -738,3 +738,23 @@ The Windows resource file continues to include the generated version header dire
 Reason: generated commit hash, commit count, author, and commit timestamp changed on every commit and were embedded through `product.h` into most C++ translation units, causing valid sccache entries to miss even when the corresponding source file had not changed.
 Isolating that metadata limits normal cross-commit invalidation to the product metadata translation unit and source files that actually changed.
 
+## D090 — Make demolition objective navigation time-aware without changing the feature schema
+
+The bot adapter always includes the current navigation goal in the observed waypoint set before adding neighboring waypoints.
+For a C4 carrier, `GoalNavigationPolicy` estimates travel time from the observed goal distance and current maximum speed.
+When the remaining round time is no greater than 1.5 times that estimate plus a 10-second planting reserve, the teacher prioritizes the current bombsite goal over non-objective actions.
+The urgency calculation uses only values already represented in the model input: round time, maximum speed, and goal-waypoint distance.
+A CT in free `Normal` state while the bomb is planted yields to YaPB's existing planted-bomb search instead of starting `Explore`.
+
+Reason: the objective path now reaches and plants C4, but carriers can still spend too much of the remaining round on combat or secondary behavior.
+Keeping the urgency signal derivable from existing model-visible inputs avoids a hidden teacher-only feature and avoids an unnecessary feature-schema migration during gameplay validation.
+
+## D091 — Debounce Sector Clear per planted-bomb event
+
+The legacy `defuseBomb_()` fallback may request `Radio::SectorClear` when the planted-bomb position is empty.
+Each bot records the planted-bomb timestamp for which it last requested that message and does not enqueue another `SectorClear` for the same bomb event.
+Other radio and chatter behavior is unchanged.
+
+Reason: repeatedly re-entering the fallback could enqueue the same built-in radio command indefinitely while CT bots searched after a plant.
+A local per-event guard removes the immediate spam without expanding the scope into a general voice-command redesign, which remains suitable for a later phase.
+

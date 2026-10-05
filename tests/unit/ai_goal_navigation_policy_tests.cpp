@@ -39,6 +39,12 @@ void addFollowTarget(ai::Observation &observation, int32_t entityIndex) {
   observation.players[0].alive = true;
 }
 
+void addGoalWaypoint(ai::Observation &observation, float distance) {
+  observation.waypointCount = 1;
+  observation.waypoints[0].index = observation.bot.currentGoalNode;
+  observation.waypoints[0].distance = distance;
+}
+
 } // namespace
 
 AI_TEST(testGoalNavigationPolicyExploresForNormalTask) {
@@ -71,6 +77,36 @@ AI_TEST(testGoalNavigationPolicyYieldsBombZoneToPlantTaskSelection) {
   const auto action = ai::GoalNavigationPolicy {}.decide(observation);
 
   expect(action.type == ai::ActionType::None, "bomb carrier in a bomb zone yields to legacy plant-task selection");
+}
+
+AI_TEST(testGoalNavigationPolicyPrioritizesBombsiteWhenRoundTimeIsCritical) {
+  auto observation = makeObservation();
+  observation.bot.currentTask = ai::TaskType::Attack;
+  observation.bot.hasC4 = true;
+  observation.bot.maxSpeed = 250.0f;
+  observation.roundTimeRemaining = 20.0f;
+  addGoalWaypoint(observation, 2500.0f);
+  addObservedEnemy(observation, 7);
+
+  auto action = ai::GoalNavigationPolicy {}.decide(observation);
+
+  expect(action.type == ai::ActionType::MoveToNode, "urgent bomb carrier prioritizes the bombsite goal");
+  expect(action.targetNode == 20, "urgent bomb carrier preserves the current objective goal");
+
+  observation.roundTimeRemaining = 30.0f;
+  action = ai::GoalNavigationPolicy {}.decide(observation);
+  expect(action.type == ai::ActionType::AttackTarget, "bomb carrier keeps combat priority while enough round time remains");
+}
+
+AI_TEST(testGoalNavigationPolicyYieldsCtNormalNavigationAfterBombPlant) {
+  auto observation = makeObservation();
+  observation.bot.currentTask = ai::TaskType::Normal;
+  observation.bot.team = 1;
+  observation.bot.objectiveFlags |= ai::ObjectiveFlag::BombPlanted;
+
+  const auto action = ai::GoalNavigationPolicy {}.decide(observation);
+
+  expect(action.type == ai::ActionType::None, "CT normal navigation yields to legacy planted-bomb search");
 }
 
 AI_TEST(testGoalNavigationPolicyMovesToPosition) {

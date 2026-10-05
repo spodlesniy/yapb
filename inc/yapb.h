@@ -273,6 +273,7 @@ private:
    float m_timeDoorOpen {}; // time to next door open check
    float m_timeHitDoor {}; // specific time after hitting the door
    float m_lastChatTime {}; // time bot last chatted
+   float m_lastSectorClearBombTime { -1.0f }; // planted-bomb timestamp for the last Sector Clear report
    float m_timeLogoSpray {}; // time bot last spray logo
    float m_knifeAttackTime {}; // time to rush with knife (at the beginning of the round)
    float m_duckDefuseCheckTime {}; // time to check for ducking for defuse

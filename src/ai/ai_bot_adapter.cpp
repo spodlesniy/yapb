@@ -114,7 +114,17 @@ TaskType mapTask(Task task) {
 }
 
 void appendWaypoint(ObservationInput &input, int index, uint16_t connectionFlags) {
-  if (!graph.exists(index) || input.waypointCount >= kMaxObservedWaypoints) {
+  if (!graph.exists(index)) {
+    return;
+  }
+
+  for (size_t i = 0; i < input.waypointCount; ++i) {
+    if (input.waypoints[i].index == index) {
+      return;
+    }
+  }
+
+  if (input.waypointCount >= kMaxObservedWaypoints) {
     return;
   }
 
@@ -243,6 +253,7 @@ ObservationInput buildObservationInput(const Bot &bot) {
 
   const auto currentNode = bot.m_currentNodeIndex;
   appendWaypoint(input, currentNode, 0);
+  appendWaypoint(input, input.bot.currentGoalNode, 0);
 
   if (graph.exists(currentNode)) {
     const auto &path = graph[currentNode];
