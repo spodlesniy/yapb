@@ -721,10 +721,10 @@ These actions already have explicit semantic execution capabilities and must be 
 ## D088 — Preserve demolition objective navigation for the bomb carrier
 
 A bot carrying C4 is excluded from the free `Normal -> Explore` teacher behavior.
-While the carrier is outside a bomb zone, `GoalNavigationPolicy` follows the observed legacy objective goal with `MoveToNode`.
-If no objective goal has been selected yet, the teacher returns no action for that frame so legacy `Normal` execution can choose the bombsite goal.
-Once the carrier is inside a bomb zone, the teacher also returns no action while the task remains `Normal`, allowing YaPB's existing objective logic to transition the bot to `Task::PlantBomb`; the next teacher decision then maps that task to `PlantBomb`.
+While the carrier remains in a free `TaskType::Normal` state, `GoalNavigationPolicy` returns no action and leaves navigation to YaPB's existing `normal_()` objective logic.
+That legacy path selects and traverses the bombsite goal, then transitions to `Task::PlantBomb` after the carrier reaches a goal node inside a bomb zone; the next teacher decision maps that task to `PlantBomb`.
 
-Reason: generic exploration caused C4 carriers to select novelty waypoints instead of reaching demolition goal nodes, so the legacy bombsite transition never occurred and training captures contained bomb-carrier observations without any `PlantBomb` samples.
+Reason: generic exploration caused C4 carriers to select novelty waypoints instead of reaching demolition goal nodes, while wrapping the carrier's changing legacy goal as repeated AI `MoveToNode` actions reintroduced low-diversity back-and-forth movement.
+The existing YaPB `Normal` objective path already owns bombsite selection, traversal, and the transition into `PlantBomb`, so Training mode yields that specific navigation lifecycle instead of repackaging it.
 Free navigation for non-carriers remains `Explore`.
 
