@@ -7,16 +7,11 @@
 
 #pragma once
 
-#ifdef VERSION_GENERATED
-#  define VERSION_HEADER <version.build.h>
-#else
-#  define VERSION_HEADER <version.h>
-#endif
-
-#include VERSION_HEADER
-
-// compile time build string
+// Compile-time strings must remain independent of per-commit build metadata.
+// Commit-dependent values are defined out-of-line in src/product.cpp so they
+// do not invalidate every translation unit that includes product.h.
 #define CTS_BUILD_STR static inline constexpr StringRef
+#define RTS_BUILD_STR static const StringRef
 
 // simple class for bot internal information
 static constexpr class Product final {
@@ -26,18 +21,18 @@ public:
 
 public:
    static constexpr struct BuildInfo {
-      CTS_BUILD_STR hash { MODULE_COMMIT_HASH };
-      CTS_BUILD_STR count { MODULE_COMMIT_COUNT };
-      CTS_BUILD_STR author { MODULE_AUTHOR };
-      CTS_BUILD_STR machine { MODULE_MACHINE };
-      CTS_BUILD_STR compiler { MODULE_COMPILER };
-      CTS_BUILD_STR id { MODULE_BUILD_ID };
+      RTS_BUILD_STR hash;
+      RTS_BUILD_STR count;
+      RTS_BUILD_STR author;
+      RTS_BUILD_STR machine;
+      RTS_BUILD_STR compiler;
+      RTS_BUILD_STR id;
    } bi {};
 
 public:
    CTS_BUILD_STR name { "YaPB" };
    CTS_BUILD_STR nameLower { "yapb" };
-   CTS_BUILD_STR year { MODULE_BUILD_YEAR };
+   RTS_BUILD_STR year;
    CTS_BUILD_STR author { "YaPB Project" };
    CTS_BUILD_STR email { "yapb@jeefo.net" };
    CTS_BUILD_STR url { "https://yapb.jeefo.net/" };
@@ -45,9 +40,9 @@ public:
    CTS_BUILD_STR upload { "yapb.jeefo.net/upload" };
    CTS_BUILD_STR httpScheme { "http" };
    CTS_BUILD_STR logtag { "YB" };
-   CTS_BUILD_STR dtime { MODULE_BUILD_DATETIME };
-   CTS_BUILD_STR date { MODULE_BUILD_DATE };
-   CTS_BUILD_STR version { MODULE_VERSION "." MODULE_COMMIT_COUNT };
+   RTS_BUILD_STR dtime;
+   RTS_BUILD_STR date;
+   RTS_BUILD_STR version;
    CTS_BUILD_STR cmdPri { "yb" };
    CTS_BUILD_STR cmdSec { "yapb" };
 } product {};
@@ -70,4 +65,5 @@ public:
    CTS_BUILD_STR bin { "bin" };
 } folders {};
 
+#undef RTS_BUILD_STR
 #undef CTS_BUILD_STR

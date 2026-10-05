@@ -728,3 +728,13 @@ Reason: generic exploration caused C4 carriers to select novelty waypoints inste
 The existing YaPB `Normal` objective path already owns bombsite selection, traversal, and the transition into `PlantBomb`, so Training mode yields that specific navigation lifecycle instead of repackaging it.
 Free navigation for non-carriers remains `Explore`.
 
+## D089 — Isolate commit-dependent build metadata from shared C++ headers
+
+Commit-dependent version metadata is no longer materialized as string literals in the widely included `product.h`.
+The public `product.bi.*`, `product.version`, `product.date`, `product.dtime`, and `product.year` access pattern is preserved, but those values are defined out-of-line in a single `src/product.cpp` translation unit that includes the generated version header.
+Stable product constants remain inline compile-time values in `product.h`.
+The Windows resource file continues to include the generated version header directly because resource metadata must contain the per-build version information.
+
+Reason: generated commit hash, commit count, author, and commit timestamp changed on every commit and were embedded through `product.h` into most C++ translation units, causing valid sccache entries to miss even when the corresponding source file had not changed.
+Isolating that metadata limits normal cross-commit invalidation to the product metadata translation unit and source files that actually changed.
+

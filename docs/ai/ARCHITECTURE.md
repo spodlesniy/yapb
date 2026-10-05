@@ -270,6 +270,10 @@ Reload is AI-owned at the intent/lifecycle boundary while YaPB remains authorita
 All current model actions have explicit executor branches and semantic execution-context capabilities.
 The engine-side mechanic may still reuse a YaPB task, but task execution is a runtime primitive rather than a generic AI action acknowledgement path.
 
+Build metadata used by `product.bi.*`, `product.version`, and related runtime strings is defined in a single `src/product.cpp` translation unit.
+The widely included `product.h` contains only stable declarations and compile-time product constants, so a new Git commit does not invalidate unrelated C++ compiler-cache entries.
+Windows resource metadata continues to consume the generated version header independently.
+
 ## Runtime integration
 
 `BotRuntime` owns the high-level mode and AI components and routes stepping through the training collector.
