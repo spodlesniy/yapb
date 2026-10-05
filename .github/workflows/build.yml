@@ -10,6 +10,15 @@ on:
       - '**.md'
 
   workflow_dispatch:
+    inputs:
+      build_target:
+        description: 'Select build target'
+        required: true
+        default: 'full'
+        type: choice
+        options:
+          - full
+          - windows-x86
 
   release:
     types: [published]
@@ -233,7 +242,7 @@ jobs:
           path: python-test.log
 
   bot-build:
-    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master' || github.event_name == 'release'
+    if: github.event_name == 'workflow_dispatch' && inputs.build_target == 'full'
     needs: [unit-tests]
     runs-on: ubuntu-latest
     container:
@@ -283,7 +292,7 @@ jobs:
           path: ${{env.artifcat}}
 
   bot-msvc:
-    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master' || github.event_name == 'release'
+    if: github.event_name == 'workflow_dispatch' && inputs.build_target == 'full'
     needs: [unit-tests]
     env:
       name: windows-x86-msvc
@@ -327,8 +336,38 @@ jobs:
           path: |
             ${{matrix.arch}}/yapb.dll
 
+  bot-windows-x86:
+    name: bot-windows-x86
+    if: github.event_name == 'workflow_dispatch' && inputs.build_target == 'windows-x86'
+    needs: [unit-tests]
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+          submodules: true
+      - name: Setup msbuild
+        uses: TheMrMilchmann/setup-msvc-dev@v4.1.0
+        with:
+          arch: amd64_x86
+      - name: Install meson
+        run: |
+          python -m pip install --upgrade meson ninja
+      - name: Configure meson
+        shell: pwsh
+        run: meson setup windows-x86
+      - name: Build sources
+        run: meson compile -C windows-x86 -v
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: windows-x86
+          path: windows-x86/yapb.dll
+
   bot-apple:
-    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master' || github.event_name == 'release'
+    if: github.event_name == 'workflow_dispatch' && inputs.build_target == 'full'
     needs: [unit-tests]
     env:
       name: apple-arm64
