@@ -304,7 +304,7 @@ bool OnnxModelRunner::load(const char *modelPath, const char *inputName, const c
     return false;
   }
 
-  if (!m_impl->check(m_impl->api->CreateCpuMemoryInfo("Cpu", OrtArenaAllocator, OrtMemTypeDefault, &m_impl->memoryInfo))) {
+  if (!m_impl->check(m_impl->api->CreateCpuMemoryInfo(OrtArenaAllocator, OrtMemTypeDefault, &m_impl->memoryInfo))) {
     unload();
     return false;
   }
