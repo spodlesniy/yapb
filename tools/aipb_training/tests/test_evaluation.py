@@ -88,9 +88,6 @@ class EvaluationTests(unittest.TestCase):
             )
 
 
-if __name__ == "__main__":
-    unittest.main()
-
     def test_action_id_metric_matches_runtime_truncation(self) -> None:
         samples = make_samples()
 
@@ -111,3 +108,7 @@ if __name__ == "__main__":
 
             self.assertGreaterEqual(metrics.action_id_accuracy, 0.0)
             self.assertLessEqual(metrics.action_id_accuracy, 1.0)
+
+
+if __name__ == "__main__":
+    unittest.main()
