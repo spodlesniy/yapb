@@ -133,14 +133,80 @@ AI_TEST(testGoalNavigationPolicyFallsBackForFollowUserWithoutTarget) {
 AI_TEST(testGoalNavigationPolicyMapsReloadState) {
   auto observation = makeObservation();
   observation.combat.reloadState = ai::ReloadState::Primary;
+  observation.combat.weaponType = ai::WeaponType::Rifle;
 
-  const auto action = ai::GoalNavigationPolicy {}.decide(observation);
+  auto action = ai::GoalNavigationPolicy {}.decide(observation);
 
-  expect(action.type == ai::ActionType::Reload, "active primary reload maps to reload");
+  expect(action.type == ai::ActionType::Reload, "primary reload maps to reload for a rifle");
   expect(action.weaponType == ai::WeaponType::Unknown, "primary reload leaves automatic weapon selection");
+
   observation.combat.reloadState = ai::ReloadState::Secondary;
-  expect(ai::GoalNavigationPolicy {}.decide(observation).weaponType == ai::WeaponType::Pistol,
-         "secondary reload maps to pistol category");
+  observation.combat.weaponType = ai::WeaponType::Pistol;
+  action = ai::GoalNavigationPolicy {}.decide(observation);
+  expect(action.type == ai::ActionType::Reload, "secondary reload maps to reload for a pistol");
+  expect(action.weaponType == ai::WeaponType::Pistol, "secondary reload maps to pistol category");
+}
+
+AI_TEST(testGoalNavigationPolicyMapsPrimaryReloadForAllPrimaryWeaponCategories) {
+  constexpr ai::WeaponType weapons[] = {
+    ai::WeaponType::Shotgun,
+    ai::WeaponType::ZoomRifle,
+    ai::WeaponType::Rifle,
+    ai::WeaponType::SMG,
+    ai::WeaponType::Sniper,
+    ai::WeaponType::Heavy,
+  };
+
+  auto observation = makeObservation();
+  observation.combat.reloadState = ai::ReloadState::Primary;
+
+  for (const auto weaponType : weapons) {
+    observation.combat.weaponType = weaponType;
+    const auto action = ai::GoalNavigationPolicy {}.decide(observation);
+    expect(action.type == ai::ActionType::Reload, "primary reload is accepted for a reloadable primary weapon");
+    expect(action.weaponType == ai::WeaponType::Unknown, "primary reload keeps automatic weapon selection");
+  }
+}
+
+AI_TEST(testGoalNavigationPolicyRejectsIncompatiblePrimaryReload) {
+  constexpr ai::WeaponType weapons[] = {
+    ai::WeaponType::Unknown,
+    ai::WeaponType::None,
+    ai::WeaponType::Melee,
+    ai::WeaponType::Pistol,
+  };
+
+  auto observation = makeObservation();
+  observation.combat.reloadState = ai::ReloadState::Primary;
+
+  for (const auto weaponType : weapons) {
+    observation.combat.weaponType = weaponType;
+    const auto action = ai::GoalNavigationPolicy {}.decide(observation);
+    expect(action.type == ai::ActionType::MoveToNode, "incompatible primary reload falls back to goal navigation");
+  }
+}
+
+AI_TEST(testGoalNavigationPolicyRejectsIncompatibleSecondaryReload) {
+  constexpr ai::WeaponType weapons[] = {
+    ai::WeaponType::Unknown,
+    ai::WeaponType::None,
+    ai::WeaponType::Melee,
+    ai::WeaponType::Shotgun,
+    ai::WeaponType::ZoomRifle,
+    ai::WeaponType::Rifle,
+    ai::WeaponType::SMG,
+    ai::WeaponType::Sniper,
+    ai::WeaponType::Heavy,
+  };
+
+  auto observation = makeObservation();
+  observation.combat.reloadState = ai::ReloadState::Secondary;
+
+  for (const auto weaponType : weapons) {
+    observation.combat.weaponType = weaponType;
+    const auto action = ai::GoalNavigationPolicy {}.decide(observation);
+    expect(action.type == ai::ActionType::MoveToNode, "incompatible secondary reload falls back to goal navigation");
+  }
 }
 
 AI_TEST(testGoalNavigationPolicyMapsBombDefenseToProtectObjective) {
