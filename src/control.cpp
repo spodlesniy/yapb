@@ -39,7 +39,7 @@ String buildTrainingDatasetPath () {
    plat.loctime (&timeinfo, &ticks);
 
    const auto baseName = strings.format (
-      "%04d_%02d_%02d__%02d_%02d_%02d__%s.jsonl",
+      "%04d_%02d_%02d__%02d_%02d_%02d__%s",
       timeinfo.tm_year + 1900,
       timeinfo.tm_mon + 1,
       timeinfo.tm_mday,
@@ -49,16 +49,12 @@ String buildTrainingDatasetPath () {
       ai::kTrainingDatasetFilePrefix
    );
 
-   auto path = strings.joinPath (directory, baseName);
+   auto path = strings.joinPath (directory, strings.format ("%s.jsonl", baseName));
 
    for (int suffix = 1; plat.fileExists (path.chars ()) && suffix <= 9999; ++suffix) {
       path = strings.joinPath (
          directory,
-         strings.format (
-            "%s_%02d.jsonl",
-            baseName.substr (0, baseName.length () - 6),
-            suffix
-         )
+         strings.format ("%s_%02d.jsonl", baseName, suffix)
       );
    }
 
