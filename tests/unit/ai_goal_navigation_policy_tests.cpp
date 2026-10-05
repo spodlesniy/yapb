@@ -196,6 +196,41 @@ AI_TEST(testGoalNavigationPolicyFallsBackAfterHostageRescueZone) {
   expect(action.type == ai::ActionType::MoveToNode, "rescued hostage falls back to normal goal navigation");
 }
 
+AI_TEST(testGoalNavigationPolicyMapsRetreatFromActiveSeekCover) {
+  auto observation = makeObservation();
+  observation.bot.currentTask = ai::TaskType::SeekCover;
+  observation.bot.health = 50.0f;
+  observation.personality.aggression = 0.5f;
+  observation.combat.perceptionFlags |= static_cast<uint32_t>(ai::PerceptionFlag::SeeingEnemy);
+
+  const auto action = ai::GoalNavigationPolicy {}.decide(observation);
+
+  expect(action.type == ai::ActionType::Retreat, "visible enemy and low combat approach map seek cover to retreat");
+}
+
+AI_TEST(testGoalNavigationPolicyKeepsSeekCoverForNonRetreatState) {
+  auto observation = makeObservation();
+  observation.bot.currentTask = ai::TaskType::SeekCover;
+  observation.bot.health = 50.0f;
+  observation.personality.aggression = 0.8f;
+  observation.combat.perceptionFlags |= static_cast<uint32_t>(ai::PerceptionFlag::SeeingEnemy);
+
+  const auto action = ai::GoalNavigationPolicy {}.decide(observation);
+
+  expect(action.type == ai::ActionType::SeekCover, "higher combat approach keeps generic seek cover intent");
+}
+
+AI_TEST(testGoalNavigationPolicyKeepsSeekCoverWithoutVisibleEnemy) {
+  auto observation = makeObservation();
+  observation.bot.currentTask = ai::TaskType::SeekCover;
+  observation.bot.health = 10.0f;
+  observation.personality.aggression = 0.5f;
+
+  const auto action = ai::GoalNavigationPolicy {}.decide(observation);
+
+  expect(action.type == ai::ActionType::SeekCover, "seek cover without a visible enemy remains generic cover intent");
+}
+
 AI_TEST(testGoalNavigationPolicyMapsTaskActions) {
   auto observation = makeObservation();
   ai::GoalNavigationPolicy policy {};
