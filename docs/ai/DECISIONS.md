@@ -701,7 +701,7 @@ Keeping the files under the YaPB plugin directory also avoids placing training a
 
 ## D086 — Teach free normal navigation as Explore
 
-`GoalNavigationPolicy` maps a free `TaskType::Normal` state to `Explore` instead of copying YaPB's current goal node into a `MoveToNode` action.
+`GoalNavigationPolicy` maps a free `TaskType::Normal` state to `Explore` instead of copying YaPB's current goal node into a `MoveToNode` action, except when the bot is carrying C4 and must preserve demolition objective navigation.
 Task-specific combat, objective, reload, rescue, and navigation actions keep their existing precedence, and unsupported or underspecified task states continue to use the observed legacy goal as a fallback.
 The Explore execution context remains responsible for selecting a novelty-oriented waypoint and owning that target until completion or cancellation.
 
@@ -717,4 +717,14 @@ The post-frame bot integration asks `BotActionExecutor` whether the active actio
 
 Reason: the global navigation guard was terminating task-aware actions immediately, producing large numbers of zero-duration `Interrupted` samples such as `AttackTarget`, `SeekCover`, and `Retreat`.
 These actions already have explicit semantic execution capabilities and must be allowed to own or transform their corresponding legacy task state while preserving the generic guard for free navigation.
+
+## D088 — Preserve demolition objective navigation for the bomb carrier
+
+A bot carrying C4 is excluded from the free `Normal -> Explore` teacher behavior.
+While the carrier is outside a bomb zone, `GoalNavigationPolicy` follows the observed legacy objective goal with `MoveToNode`.
+If no objective goal has been selected yet, the teacher returns no action for that frame so legacy `Normal` execution can choose the bombsite goal.
+Once the carrier is inside a bomb zone, the teacher also returns no action while the task remains `Normal`, allowing YaPB's existing objective logic to transition the bot to `Task::PlantBomb`; the next teacher decision then maps that task to `PlantBomb`.
+
+Reason: generic exploration caused C4 carriers to select novelty waypoints instead of reaching demolition goal nodes, so the legacy bombsite transition never occurred and training captures contained bomb-carrier observations without any `PlantBomb` samples.
+Free navigation for non-carriers remains `Explore`.
 

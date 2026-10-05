@@ -40,7 +40,9 @@ Runtime execution remains separate from the inference implementation.
 
 `Training` currently uses `GoalNavigationPolicy` as a deterministic, task-aware behavior source while collecting transitions.
 It maps observable YaPB tasks, combat timing, and explicit objective state to AI actions.
-A free `TaskType::Normal` state maps to `Explore`, allowing the AI execution context to choose a novelty-oriented waypoint instead of repeatedly copying the current legacy goal; unsupported or underspecified task states still fall back to the observed navigation goal.
+A free `TaskType::Normal` state maps to `Explore`, allowing the AI execution context to choose a novelty-oriented waypoint instead of repeatedly copying the current legacy goal.
+A bomb carrier is the objective-aware exception: while carrying C4 outside a bomb zone, the teacher follows the legacy objective goal; once inside a bomb zone it yields the frame to legacy `Normal` task execution so YaPB can transition to `PlantBomb`.
+Unsupported or underspecified task states still fall back to the observed navigation goal.
 For the active `SeekCover` task, the teacher distinguishes a low combat approach against a visible enemy as `Retreat`; other `SeekCover` states remain `SeekCover`.
 Direct AI-owned actions are executed through the semantic `ActionExecutionContext`; actions without an explicit execution capability remain unsupported and are rejected.
 Training remains a data-collection mode, not online neural-network weight training.

@@ -52,6 +52,29 @@ AI_TEST(testGoalNavigationPolicyExploresForNormalTask) {
   expect(action.targetType == ai::TargetType::None, "explore leaves waypoint selection to the execution context");
 }
 
+AI_TEST(testGoalNavigationPolicyUsesObjectiveGoalForBombCarrier) {
+  auto observation = makeObservation();
+  observation.bot.currentTask = ai::TaskType::Normal;
+  observation.bot.hasC4 = true;
+
+  const auto action = ai::GoalNavigationPolicy {}.decide(observation);
+
+  expect(action.type == ai::ActionType::MoveToNode, "bomb carrier keeps the legacy objective goal");
+  expect(action.targetType == ai::TargetType::Node, "bomb carrier objective navigation targets a node");
+  expect(action.targetNode == 20, "bomb carrier preserves the selected bombsite goal");
+}
+
+AI_TEST(testGoalNavigationPolicyYieldsBombZoneToPlantTaskSelection) {
+  auto observation = makeObservation();
+  observation.bot.currentTask = ai::TaskType::Normal;
+  observation.bot.hasC4 = true;
+  observation.bot.inBombZone = true;
+
+  const auto action = ai::GoalNavigationPolicy {}.decide(observation);
+
+  expect(action.type == ai::ActionType::None, "bomb carrier in a bomb zone yields to legacy plant-task selection");
+}
+
 AI_TEST(testGoalNavigationPolicyMovesToPosition) {
   auto observation = makeObservation();
   observation.bot.currentTask = ai::TaskType::MoveToPosition;

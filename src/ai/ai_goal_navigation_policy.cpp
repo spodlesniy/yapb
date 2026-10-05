@@ -249,6 +249,13 @@ Action GoalNavigationPolicy::decide(const Observation &observation) const {
   }
 
   case TaskType::Normal: {
+    if (observation.bot.hasC4) {
+      if (observation.bot.inBombZone) {
+        return {};
+      }
+      return makeGoalNavigationAction(observation);
+    }
+
     Action action {};
     action.type = ActionType::Explore;
     action.confidence = 1.0f;
