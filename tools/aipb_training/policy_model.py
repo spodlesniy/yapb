@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .model_contract import MODEL_ACTION_TENSOR_SIZE, MODEL_FEATURE_COUNT
+from .model_contract import MODEL_ACTION_ID_COUNT, MODEL_ACTION_TENSOR_SIZE, MODEL_FEATURE_COUNT
 
 
 @dataclass(frozen=True)
@@ -15,6 +15,8 @@ class PolicyModelArchitecture:
     input_features: int
     hidden_features: tuple[int, ...]
     output_features: int
+    action_class_count: int
+    continuous_output_features: int
     normalization: str
     activation: str
 
@@ -23,6 +25,8 @@ POLICY_MODEL_ARCHITECTURE = PolicyModelArchitecture(
     input_features=MODEL_FEATURE_COUNT,
     hidden_features=(256, 256, 128),
     output_features=MODEL_ACTION_TENSOR_SIZE,
+    action_class_count=MODEL_ACTION_ID_COUNT,
+    continuous_output_features=MODEL_ACTION_TENSOR_SIZE - 1,
     normalization="layernorm",
     activation="relu",
 )
