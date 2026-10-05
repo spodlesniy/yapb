@@ -119,6 +119,8 @@ class TrainingRunTests(unittest.TestCase):
             )
 
             self.assertEqual(len(result.history), 2)
+            self.assertGreaterEqual(result.history[-1].train.action_accuracy, 0.0)
+            self.assertLessEqual(result.history[-1].train.action_accuracy, 1.0)
             self.assertEqual(result.start_epoch, 1)
             self.assertEqual(result.train_samples + result.validation_samples, 12)
             self.assertGreaterEqual(result.best_epoch, 1)
@@ -213,6 +215,7 @@ class TrainingRunTests(unittest.TestCase):
             checkpoint = load_checkpoint(result.last_checkpoint_path, model, optimizer)
 
             self.assertEqual(checkpoint["epoch"], 1)
+            self.assertEqual(checkpoint["version"], 3)
             self.assertEqual(checkpoint["format"], "aipb-policy-checkpoint")
             self.assertIn("model_state", checkpoint)
             self.assertIn("optimizer_state", checkpoint)
