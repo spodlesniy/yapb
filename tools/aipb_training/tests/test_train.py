@@ -15,6 +15,7 @@ class TrainCommandTests(unittest.TestCase):
             "dataset.jsonl",
             "--min-samples", "10000",
             "--min-episodes", "100",
+            "--min-action-coverage", "8",
             "--max-dominant-action-share", "0.8",
             "--min-action-samples", "1:50",
             "--min-action-samples", "8:25",
@@ -24,6 +25,7 @@ class TrainCommandTests(unittest.TestCase):
 
         self.assertEqual(args.min_samples, 10000)
         self.assertEqual(args.min_episodes, 100)
+        self.assertEqual(args.min_action_coverage, 8)
         self.assertEqual(args.max_dominant_action_share, 0.8)
         self.assertEqual(args.min_action_samples, ["1:50", "8:25"])
         self.assertEqual(args.min_action_episodes, ["1:10", "8:5"])
