@@ -70,13 +70,12 @@ if git.found()
    hash = run_command ('git', 'rev-parse', '--short', 'HEAD', check: false).stdout().strip()
    author = run_command ('git', 'log', '--pretty="%ae"', '-1', check: false).stdout().strip()
 
-   hostname = find_program('hostname', required: false)
-
-   if hostname.found()
-      machine = run_command('hostname',  check: false).stdout().strip()
-   else
-      machine = 'unknown'
-   endif
+   # Keep generated build metadata stable across CI runners so compiler cache
+   # keys do not depend on the ephemeral host name.
+   machine = '@0@-@1@'.format(os, cpu)
+   build_date = run_command('git', 'log', '-1', '--format=%cs', check: false).stdout().strip()
+   build_datetime = run_command('git', 'log', '-1', '--format=%cI', check: false).stdout().strip()
+   build_year = run_command('git', 'log', '-1', '--date=format:%Y', '--format=%cd', check: false).stdout().strip()
 
    bot_version = meson.project_version()
    cxx_version = compiler.version()
@@ -94,6 +93,9 @@ if git.found()
    version_data.set('BUILD_HASH', hash)
    version_data.set('BUILD_AUTHOR', author)
    version_data.set('BUILD_MACHINE', machine)
+   version_data.set('BUILD_DATE', build_date)
+   version_data.set('BUILD_DATETIME', build_datetime)
+   version_data.set('BUILD_YEAR', build_year)
    version_data.set('BUILD_VERSION', bot_version)
    version_data.set('BUILD_WINVER', winver)
    version_data.set('BUILD_COMPILER', '@0@ @1@'.format(cxx, cxx_version))
