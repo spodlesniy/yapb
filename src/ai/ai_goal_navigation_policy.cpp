@@ -248,8 +248,14 @@ Action GoalNavigationPolicy::decide(const Observation &observation) const {
     return action;
   }
 
+  case TaskType::Normal: {
+    Action action {};
+    action.type = ActionType::Explore;
+    action.confidence = 1.0f;
+    return action;
+  }
+
   case TaskType::Unknown:
-  case TaskType::Normal:
   case TaskType::DoubleJump:
   case TaskType::Blind:
   case TaskType::Spraypaint:

@@ -41,15 +41,15 @@ void addFollowTarget(ai::Observation &observation, int32_t entityIndex) {
 
 } // namespace
 
-AI_TEST(testGoalNavigationPolicyUsesGoalForNormalTask) {
-  const auto observation = makeObservation();
+AI_TEST(testGoalNavigationPolicyExploresForNormalTask) {
+  auto observation = makeObservation();
+  observation.bot.currentTask = ai::TaskType::Normal;
   ai::GoalNavigationPolicy policy {};
 
   const auto action = policy.decide(observation);
 
-  expect(action.type == ai::ActionType::MoveToNode, "normal task uses goal navigation action");
-  expect(action.targetType == ai::TargetType::Node, "goal navigation action targets a node");
-  expect(action.targetNode == 20, "goal navigation action preserves goal node");
+  expect(action.type == ai::ActionType::Explore, "normal task maps to explore");
+  expect(action.targetType == ai::TargetType::None, "explore leaves waypoint selection to the execution context");
 }
 
 AI_TEST(testGoalNavigationPolicyMovesToPosition) {
@@ -337,7 +337,7 @@ AI_TEST(testGoalNavigationPolicyDefinesOutcomeForEveryTaskType) {
   constexpr size_t kTaskTypeCount = static_cast<size_t>(ai::TaskType::Spraypaint) + 1;
   constexpr ai::ActionType expected[kTaskTypeCount] = {
     ai::ActionType::MoveToNode,
-    ai::ActionType::MoveToNode,
+    ai::ActionType::Explore,
     ai::ActionType::None,
     ai::ActionType::MoveToPosition,
     ai::ActionType::FollowPlayer,
@@ -411,11 +411,22 @@ AI_TEST(testGoalNavigationPolicyStopsForDeadBot) {
   expect(action.type == ai::ActionType::None, "dead bot produces no teacher action");
 }
 
-AI_TEST(testGoalNavigationPolicyStopsAtCurrentGoal) {
+AI_TEST(testGoalNavigationPolicyStopsAtCurrentFallbackGoal) {
   auto observation = makeObservation();
+  observation.bot.currentTask = ai::TaskType::Unknown;
   observation.bot.currentGoalNode = observation.bot.currentNode;
 
   const auto action = ai::GoalNavigationPolicy {}.decide(observation);
 
-  expect(action.type == ai::ActionType::None, "reached goal produces no teacher action");
+  expect(action.type == ai::ActionType::None, "reached fallback goal produces no teacher action");
+}
+
+AI_TEST(testGoalNavigationPolicyExploresAtCurrentLegacyGoal) {
+  auto observation = makeObservation();
+  observation.bot.currentTask = ai::TaskType::Normal;
+  observation.bot.currentGoalNode = observation.bot.currentNode;
+
+  const auto action = ai::GoalNavigationPolicy {}.decide(observation);
+
+  expect(action.type == ai::ActionType::Explore, "normal task explores independently of the legacy goal");
 }

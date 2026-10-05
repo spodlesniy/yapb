@@ -698,3 +698,13 @@ Saving does not clear the in-memory training buffer; `yb ai_clear_training` rema
 Reason: training collection is expected to produce multiple captures over time, while the bounded in-memory buffer must be flushed repeatedly.
 Timestamped independent files prevent accidental overwrites and make individual collection sessions easy to identify and archive.
 Keeping the files under the YaPB plugin directory also avoids placing training artifacts in the server root and matches the deployment-oriented package layout used by the ONNX model.
+
+## D086 — Teach free normal navigation as Explore
+
+`GoalNavigationPolicy` maps a free `TaskType::Normal` state to `Explore` instead of copying YaPB's current goal node into a `MoveToNode` action.
+Task-specific combat, objective, reload, rescue, and navigation actions keep their existing precedence, and unsupported or underspecified task states continue to use the observed legacy goal as a fallback.
+The Explore execution context remains responsible for selecting a novelty-oriented waypoint and owning that target until completion or cancellation.
+
+Reason: repeatedly wrapping the current legacy goal as a new AI `MoveToNode` action produced low waypoint diversity and observable back-and-forth movement in Training mode.
+Using the existing AI-owned Explore action for free navigation preserves deterministic execution while generating broader navigation coverage for offline training.
+
