@@ -294,8 +294,6 @@ jobs:
   bot-msvc:
     if: github.event_name == 'workflow_dispatch' && inputs.build_target == 'full'
     needs: [unit-tests]
-    permissions:
-      contents: read
     env:
       name: windows-x86-msvc
       SCCACHE_GHA_ENABLED: "true"
@@ -357,8 +355,6 @@ jobs:
     name: bot-windows-x86
     if: github.event_name == 'workflow_dispatch' && inputs.build_target == 'windows-x86'
     needs: [unit-tests]
-    permissions:
-      contents: read
     runs-on: windows-latest
     env:
       SCCACHE_GHA_ENABLED: "true"
