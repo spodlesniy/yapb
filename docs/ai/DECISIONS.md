@@ -624,3 +624,12 @@ When no waypoint meets the preferred exploration range, the farthest eligible co
 
 Reason: an explicit Explore action must provide meaningful coverage of the waypoint graph rather than degenerating into the legacy goal planner or an unrestricted random waypoint.
 Goal-history novelty makes the action favor less-used areas while preserving the existing navigation implementation and legacy task stack boundary.
+
+## D077 — Make ProtectObjective a direct AI-owned action
+
+ProtectObjective is a distinct AI-owned objective action for the Terrorist side of a demolition map while a bomb is planted.
+The YaPB adapter reuses the established `findDefendNode` defensive-node selection and `MoveToPosition`/Camp task primitives, while the AI executor owns the action lifecycle and cancellation.
+The deterministic teacher emits ProtectObjective during the stable planted-bomb defense Camp phase.
+
+Reason: the planted bomb is the first objective state with an unambiguous active protection target and an observable terminal condition.
+Defining this boundary avoids inventing a generic objective target abstraction before the observation contract can represent other objective types precisely.

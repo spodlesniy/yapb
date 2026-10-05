@@ -776,6 +776,90 @@ void YaPBActionExecutionContext::cancelExplore() {
   m_exploreNavigationTaskCreated = false;
 }
 
+bool YaPBActionExecutionContext::protectObjective() {
+  if (m_bot == nullptr || m_bot->pev == nullptr || m_bot->m_team != Team::Terrorist
+      || !game.mapIs(MapFlags::Demolition) || !gameState.isBombPlanted() || gameState.getBombOrigin().empty()) {
+    return false;
+  }
+
+  const auto currentTask = m_bot->getCurrentTaskId();
+  if (currentTask != Task::Normal && currentTask != Task::MoveToPosition && currentTask != Task::Camp) {
+    return false;
+  }
+
+  if (!m_protectObjectiveActive) {
+    m_bot->ensureCurrentNodeIndex();
+    const int node = m_bot->findDefendNode(gameState.getBombOrigin());
+
+    if (!graph.exists(node)) {
+      return false;
+    }
+
+    m_protectObjectiveActive = true;
+    m_protectObjectiveNode = node;
+    m_protectObjectiveNavigationTaskCreated = false;
+
+    if (currentTask == Task::Camp) {
+      return true;
+    }
+
+    if (currentTask == Task::MoveToPosition) {
+      m_bot->clearTask(Task::MoveToPosition);
+    }
+
+    m_bot->startTask(Task::MoveToPosition, TaskPri::MoveToPosition, node, 0.0f, true);
+    m_protectObjectiveNavigationTaskCreated = true;
+  }
+  else if (m_bot->getCurrentTaskId() == Task::Normal) {
+    const float bombTimeLeft = gameState.getBombTimeLeft();
+    if (bombTimeLeft > 0.0f) {
+      m_bot->startTask(Task::Camp, TaskPri::Camp, kInvalidNodeIndex, game.time() + bombTimeLeft, true);
+    }
+  }
+  else if (m_bot->getCurrentTaskId() != Task::MoveToPosition && m_bot->getCurrentTaskId() != Task::Camp) {
+    return false;
+  }
+
+  if (m_bot->getCurrentTaskId() == Task::MoveToPosition) {
+    m_bot->getTask()->data = m_protectObjectiveNode;
+    m_bot->m_prevGoalIndex = m_protectObjectiveNode;
+    m_bot->m_chosenGoalIndex = m_protectObjectiveNode;
+    m_bot->m_aimFlags |= AimFlags::Nav;
+  }
+
+  return true;
+}
+
+bool YaPBActionExecutionContext::isProtectObjectiveReached() const {
+  return m_protectObjectiveActive && (m_bot == nullptr || m_bot->pev == nullptr || !gameState.isBombPlanted());
+}
+
+void YaPBActionExecutionContext::cancelProtectObjective() {
+  if (m_bot == nullptr) {
+    return;
+  }
+
+  if (m_protectObjectiveActive) {
+    if (m_bot->getCurrentTaskId() == Task::MoveToPosition) {
+      m_bot->clearTask(Task::MoveToPosition);
+    }
+    else if (m_bot->getCurrentTaskId() == Task::Camp) {
+      m_bot->clearTask(Task::Camp);
+    }
+
+    m_bot->clearSearchNodes();
+    m_bot->m_prevGoalIndex = kInvalidNodeIndex;
+    m_bot->m_chosenGoalIndex = kInvalidNodeIndex;
+    m_bot->m_position.clear();
+    m_bot->m_campButtons = 0;
+    m_bot->m_aimFlags &= ~(AimFlags::Nav | AimFlags::Camp);
+  }
+
+  m_protectObjectiveActive = false;
+  m_protectObjectiveNode = kInvalidNodeIndex;
+  m_protectObjectiveNavigationTaskCreated = false;
+}
+
 bool YaPBActionExecutionContext::escapeFromBomb() {
   if (m_bot == nullptr || m_bot->pev == nullptr || !gameState.isBombPlanted()) {
     return false;

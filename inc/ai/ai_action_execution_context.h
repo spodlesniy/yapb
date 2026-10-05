@@ -59,6 +59,10 @@ public:
   virtual bool isExploreReached() const = 0;
   virtual void cancelExplore() = 0;
 
+  virtual bool protectObjective() = 0;
+  virtual bool isProtectObjectiveReached() const = 0;
+  virtual void cancelProtectObjective() = 0;
+
   virtual bool escapeFromBomb() = 0;
   virtual bool isEscapeFromBombReached() const = 0;
   virtual void cancelEscapeFromBomb() = 0;

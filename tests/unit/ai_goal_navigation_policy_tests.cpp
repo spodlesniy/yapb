@@ -124,6 +124,18 @@ AI_TEST(testGoalNavigationPolicyFallsBackForFollowUserWithoutTarget) {
   expect(action.type == ai::ActionType::MoveToNode, "follow without target falls back to goal");
 }
 
+AI_TEST(testGoalNavigationPolicyMapsBombDefenseToProtectObjective) {
+  auto observation = makeObservation();
+  observation.bot.team = 0;
+  observation.bot.currentTask = ai::TaskType::Camp;
+  observation.bot.objectiveFlags |= ai::ObjectiveFlag::BombPlanted;
+
+  const auto action = ai::GoalNavigationPolicy {}.decide(observation);
+
+  expect(action.type == ai::ActionType::ProtectObjective, "planted-bomb defense maps to protect objective");
+  expect(action.targetType == ai::TargetType::None, "protect objective has no explicit target payload");
+}
+
 AI_TEST(testGoalNavigationPolicyMapsTaskActions) {
   auto observation = makeObservation();
   ai::GoalNavigationPolicy policy {};

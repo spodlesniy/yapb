@@ -62,7 +62,7 @@ bool BotActionExecutor::isActionStillOwned(const Action &action) const {
   if (action.type != ActionType::MoveToNode && action.type != ActionType::MoveToPosition
       && action.type != ActionType::HuntTarget && action.type != ActionType::SeekCover
       && action.type != ActionType::Retreat && action.type != ActionType::Explore
-      && action.type != ActionType::EscapeFromBomb) {
+      && action.type != ActionType::ProtectObjective && action.type != ActionType::EscapeFromBomb) {
     return true;
   }
   return m_context->allowsNavigationOverride();
@@ -95,6 +95,9 @@ void BotActionExecutor::cancel() {
   }
   if (m_directExploreActive && m_context != nullptr) {
     m_context->cancelExplore();
+  }
+  if (m_directProtectObjectiveActive && m_context != nullptr) {
+    m_context->cancelProtectObjective();
   }
   if (m_directEscapeFromBombActive && m_context != nullptr) {
     m_context->cancelEscapeFromBomb();
@@ -144,6 +147,7 @@ void BotActionExecutor::cancel() {
   m_directSeekCoverActive = false;
   m_directRetreatActive = false;
   m_directExploreActive = false;
+  m_directProtectObjectiveActive = false;
   m_directEscapeFromBombActive = false;
   m_directRescueHostageActive = false;
   m_directPlantBombActive = false;
@@ -294,6 +298,29 @@ ActionResult BotActionExecutor::execute(const Action &action, const Observation 
       m_directEscapeFromBombActive = false;
     }
     return executeExplore(action);
+
+  case ActionType::ProtectObjective:
+    m_directAttackTargetActive = false;
+    m_directAttackAction = {};
+    m_directHuntTargetActive = false;
+    m_directHuntAction = {};
+    if (m_directSeekCoverActive && m_context != nullptr) {
+      m_context->cancelSeekCover();
+      m_directSeekCoverActive = false;
+    }
+    if (m_directRetreatActive && m_context != nullptr) {
+      m_context->cancelRetreat();
+      m_directRetreatActive = false;
+    }
+    if (m_directExploreActive && m_context != nullptr) {
+      m_context->cancelExplore();
+      m_directExploreActive = false;
+    }
+    if (m_directEscapeFromBombActive && m_context != nullptr) {
+      m_context->cancelEscapeFromBomb();
+      m_directEscapeFromBombActive = false;
+    }
+    return executeProtectObjective(action);
 
   case ActionType::EscapeFromBomb:
     m_directAttackTargetActive = false;
@@ -582,6 +609,25 @@ ActionResult BotActionExecutor::executeExplore(const Action &action) {
   }
 
   m_directExploreActive = true;
+  return { action.type, ActionResultType::Accepted, 0.0f };
+}
+
+ActionResult BotActionExecutor::executeProtectObjective(const Action &action) {
+  if (m_context->isProtectObjectiveReached()) {
+    cancel();
+    return { action.type, ActionResultType::Completed, 0.0f };
+  }
+
+  if (!m_context->protectObjective()) {
+    if (!m_directProtectObjectiveActive) {
+      return { action.type, ActionResultType::Rejected, 0.0f };
+    }
+
+    cancel();
+    return { action.type, ActionResultType::Completed, 0.0f };
+  }
+
+  m_directProtectObjectiveActive = true;
   return { action.type, ActionResultType::Accepted, 0.0f };
 }
 

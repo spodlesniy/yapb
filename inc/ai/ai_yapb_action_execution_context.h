@@ -31,6 +31,9 @@ private:
   bool m_exploreActive {};
   int m_exploreNode { -1 };
   bool m_exploreNavigationTaskCreated {};
+  bool m_protectObjectiveActive {};
+  int m_protectObjectiveNode { -1 };
+  bool m_protectObjectiveNavigationTaskCreated {};
   bool m_escapeFromBombActive {};
   int m_escapeFromBombNode { -1 };
   bool m_escapeFromBombNavigationTaskCreated {};
@@ -82,6 +85,10 @@ public:
   bool explore() override;
   bool isExploreReached() const override;
   void cancelExplore() override;
+
+  bool protectObjective() override;
+  bool isProtectObjectiveReached() const override;
+  void cancelProtectObjective() override;
 
   bool escapeFromBomb() override;
   bool isEscapeFromBombReached() const override;

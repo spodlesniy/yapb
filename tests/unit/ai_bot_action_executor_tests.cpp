@@ -60,6 +60,10 @@ public:
   bool exploreReached {};
   int exploreCalls {};
   int cancelExploreCalls {};
+  bool protectObjectiveAvailable { true };
+  bool protectObjectiveReached {};
+  int protectObjectiveCalls {};
+  int cancelProtectObjectiveCalls {};
   int escapeFromBombCalls {};
   int cancelEscapeFromBombCalls {};
   int rescueHostageCalls {};
@@ -213,6 +217,19 @@ public:
 
   void cancelExplore() override {
     ++cancelExploreCalls;
+  }
+
+  bool protectObjective() override {
+    ++protectObjectiveCalls;
+    return protectObjectiveAvailable;
+  }
+
+  bool isProtectObjectiveReached() const override {
+    return protectObjectiveReached;
+  }
+
+  void cancelProtectObjective() override {
+    ++cancelProtectObjectiveCalls;
   }
 
   bool escapeFromBomb() override {
@@ -932,6 +949,60 @@ AI_TEST(testBotActionExecutorCancelsDirectExplore) {
   executor.cancel();
 
   expect(context.cancelExploreCalls == 1, "cancel releases direct explore");
+}
+
+AI_TEST(testBotActionExecutorDirectlyExecutesProtectObjective) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+  auto action = ai::Action {};
+  action.type = ai::ActionType::ProtectObjective;
+
+  const auto result = executor.execute(action, aliveObservation());
+
+  expect(result.type == ai::ActionResultType::Accepted, "protect objective is accepted");
+  expect(context.protectObjectiveCalls == 1, "protect objective is delegated");
+  expect(!executor.suppressesLegacyTaskExecution(), "protect objective keeps legacy task execution enabled");
+}
+
+AI_TEST(testBotActionExecutorCompletesProtectObjectiveWhenReached) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+  auto action = ai::Action {};
+  action.type = ai::ActionType::ProtectObjective;
+
+  auto result = executor.execute(action, aliveObservation());
+  expect(result.type == ai::ActionResultType::Accepted, "protect objective starts while the objective is active");
+
+  context.protectObjectiveReached = true;
+  result = executor.execute(action, aliveObservation());
+
+  expect(result.type == ai::ActionResultType::Completed, "completed objective ends protection");
+  expect(context.cancelProtectObjectiveCalls == 1, "completion releases direct objective protection");
+}
+
+AI_TEST(testBotActionExecutorRejectsProtectObjectiveWhenRuntimeCannotStartIt) {
+  MockActionExecutionContext context {};
+  context.protectObjectiveAvailable = false;
+  ai::BotActionExecutor executor(context);
+  auto action = ai::Action {};
+  action.type = ai::ActionType::ProtectObjective;
+
+  const auto result = executor.execute(action, aliveObservation());
+
+  expect(result.type == ai::ActionResultType::Rejected, "protect objective is rejected when unavailable");
+  expect(context.protectObjectiveCalls == 1, "objective protection availability is checked");
+}
+
+AI_TEST(testBotActionExecutorCancelsDirectProtectObjective) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+  auto action = ai::Action {};
+  action.type = ai::ActionType::ProtectObjective;
+
+  executor.execute(action, aliveObservation());
+  executor.cancel();
+
+  expect(context.cancelProtectObjectiveCalls == 1, "cancel releases direct objective protection");
 }
 
 AI_TEST(testBotActionExecutorDirectlyExecutesEscapeFromBomb) {

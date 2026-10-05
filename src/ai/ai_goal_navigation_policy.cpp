@@ -57,6 +57,14 @@ Action GoalNavigationPolicy::decide(const Observation &observation) const {
     return {};
   }
 
+  if (observation.bot.team == 0 && observation.bot.currentTask == TaskType::Camp
+      && (observation.bot.objectiveFlags & ObjectiveFlag::BombPlanted)) {
+    Action action {};
+    action.type = ActionType::ProtectObjective;
+    action.confidence = 1.0f;
+    return action;
+  }
+
   switch (observation.bot.currentTask) {
   case TaskType::MoveToPosition: {
     Action action {};

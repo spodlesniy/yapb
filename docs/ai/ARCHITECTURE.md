@@ -235,14 +235,14 @@ The dependency direction is:
 This boundary must remain semantic: the AI executor should not expose `Bot`, `BotTask`, `Task`, `Vector`, `pev`, or other YaPB internals through its contract.
 Future direct AI-owned combat and objective execution should extend the context with explicit capabilities rather than reintroducing a concrete `Bot` dependency.
 
-FollowPlayer, AttackTarget, AimAtTarget, HuntTarget, SeekCover, EscapeFromBomb, RescueHostage, Retreat, Explore, PlantBomb, DefuseBomb, PickupItem, Fire, Camp, Wait, Hide, and ChangeWeapon are direct AI-owned actions.
+FollowPlayer, AttackTarget, AimAtTarget, HuntTarget, SeekCover, EscapeFromBomb, RescueHostage, Retreat, Explore, ProtectObjective, PlantBomb, DefuseBomb, PickupItem, Fire, Camp, Wait, Hide, and ChangeWeapon are direct AI-owned actions.
 `HoldPosition` is a direct AI-owned action over the existing YaPB Pause primitive.
 `Hide` is a distinct direct action that reuses the existing YaPB Hide task as its engine-side mechanic; its setup is shared with the `SeekCover -> Hide` transition so direct execution does not introduce a second Hide behavior.
 AimAtTarget requires the observed current live enemy and reuses YaPB enemy targeting and aiming without requesting fire; like AttackTarget, it suppresses legacy task execution while active so the legacy task stack cannot overwrite the AI-owned combat state.
 AttackTarget reuses YaPB combat aiming and attack-movement helpers with legacy task changes disabled and requests firing.
 HuntTarget uses the last observed enemy position as a navigation target, SeekCover resolves a cover node from the last enemy position, and EscapeFromBomb selects a safe waypoint relative to the planted bomb.
 Retreat reuses YaPB's existing cover-node selection and MoveToPosition path progression as the engine-side retreat primitive; the AI action owns the lifecycle and cancellation.
-Explore selects an available waypoint using goal-history novelty and path distance, then reuses MoveToPosition for traversal; the AI action owns the selected exploration target until completion or cancellation.
+Explore selects an available waypoint using goal-history novelty and path distance, then reuses MoveToPosition for traversal; the AI action owns the selected exploration target until completion or cancellation. ProtectObjective is currently defined for the Terrorist side of a demolition map after the bomb is planted: it selects a defensive node around the planted bomb, traverses to it, and holds the position until the bomb is no longer active.
 These navigation actions reuse YaPB's MoveToPosition/pathfinding machinery through the semantic execution context.
 PlantBomb reuses the existing YaPB PlantBomb task as the engine-side interaction primitive and requires the bot to carry C4 in a bomb zone.
 DefuseBomb reuses the existing YaPB DefuseBomb task as the engine-side interaction primitive and requires a planted bomb.
