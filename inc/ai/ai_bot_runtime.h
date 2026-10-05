@@ -157,6 +157,10 @@ public:
     return m_executor.suppressesLegacyTaskExecution();
   }
 
+  bool isActiveActionStillOwned() const {
+    return !m_runtime.isActive() || m_executor.isActionStillOwned(m_runtime.activeAction());
+  }
+
   Controller &controller() {
     return m_runtime.controller();
   }

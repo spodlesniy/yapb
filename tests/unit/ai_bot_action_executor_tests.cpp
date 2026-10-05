@@ -583,6 +583,40 @@ AI_TEST(testBotActionExecutorInterruptsNavigationWithoutOwnership) {
   expect(context.moveToNodeCalls == 0, "navigation is not delegated after ownership loss");
 }
 
+AI_TEST(testBotActionExecutorKeepsSemanticActionsOutsideGenericNavigationOwnership) {
+  MockActionExecutionContext context {};
+  context.navigationOverrideAllowed = false;
+  ai::BotActionExecutor executor(context);
+
+  ai::Action attack {};
+  attack.type = ai::ActionType::AttackTarget;
+  attack.targetType = ai::TargetType::Player;
+  attack.targetPlayer = 9;
+  expect(executor.isActionStillOwned(attack), "attack ownership does not depend on generic navigation state");
+
+  ai::Action hunt {};
+  hunt.type = ai::ActionType::HuntTarget;
+  hunt.targetType = ai::TargetType::Player;
+  hunt.targetPlayer = 9;
+  expect(executor.isActionStillOwned(hunt), "hunt ownership is validated by the hunt execution context");
+
+  ai::Action cover {};
+  cover.type = ai::ActionType::SeekCover;
+  expect(executor.isActionStillOwned(cover), "seek-cover ownership is validated by the cover execution context");
+
+  ai::Action retreat {};
+  retreat.type = ai::ActionType::Retreat;
+  expect(executor.isActionStillOwned(retreat), "retreat ownership is validated by the retreat execution context");
+
+  ai::Action protect {};
+  protect.type = ai::ActionType::ProtectObjective;
+  expect(executor.isActionStillOwned(protect), "objective protection owns its task-specific lifecycle");
+
+  ai::Action escape {};
+  escape.type = ai::ActionType::EscapeFromBomb;
+  expect(executor.isActionStillOwned(escape), "bomb escape owns its task-specific lifecycle");
+}
+
 AI_TEST(testBotActionExecutorRejectsInactiveContext) {
   MockActionExecutionContext context {};
   context.alive = false;

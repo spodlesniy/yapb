@@ -59,13 +59,16 @@ BotActionExecutor::BotActionExecutor(ActionExecutionContext &context) : m_contex
 
 bool BotActionExecutor::isActionStillOwned(const Action &action) const {
   if (m_context == nullptr) return false;
-  if (action.type != ActionType::MoveToNode && action.type != ActionType::MoveToPosition
-      && action.type != ActionType::HuntTarget && action.type != ActionType::SeekCover
-      && action.type != ActionType::Retreat && action.type != ActionType::Explore
-      && action.type != ActionType::ProtectObjective && action.type != ActionType::EscapeFromBomb) {
+
+  switch (action.type) {
+  case ActionType::MoveToNode:
+  case ActionType::MoveToPosition:
+  case ActionType::Explore:
+    return m_context->allowsNavigationOverride();
+
+  default:
     return true;
   }
-  return m_context->allowsNavigationOverride();
 }
 
 bool BotActionExecutor::suppressesLegacyTaskExecution() const {

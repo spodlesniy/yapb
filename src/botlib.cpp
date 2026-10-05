@@ -3554,9 +3554,8 @@ void Bot::logic () {
 
    // Legacy task selection can still happen after the AI decision (for
    // example in overrideConditions, fall handling, or task execution).
-   // Never leave an AI navigation action active once legacy owns execution.
-   if (m_aiRuntime.isActive ()
-      && !ai::allowsNavigationOverride (getCurrentTaskId (), Task::Normal, Task::MoveToPosition)) {
+   // Cancel only actions whose executor-specific ownership rule was lost.
+   if (m_aiRuntime.isActive () && !m_aiRuntime.isActiveActionStillOwned ()) {
       m_aiRuntime.cancel (m_aiObservation);
    }
 

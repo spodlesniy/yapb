@@ -708,3 +708,13 @@ The Explore execution context remains responsible for selecting a novelty-orient
 Reason: repeatedly wrapping the current legacy goal as a new AI `MoveToNode` action produced low waypoint diversity and observable back-and-forth movement in Training mode.
 Using the existing AI-owned Explore action for free navigation preserves deterministic execution while generating broader navigation coverage for offline training.
 
+## D087 — Scope legacy task ownership to generic navigation
+
+The generic legacy-task ownership guard applies only to `MoveToNode`, `MoveToPosition`, and `Explore`.
+Task-aware semantic actions such as `AttackTarget`, `HuntTarget`, `SeekCover`, `Retreat`, `ProtectObjective`, and `EscapeFromBomb` rely on their dedicated execution-context lifecycle checks instead of being cancelled merely because the current legacy task is not `Normal` or `MoveToPosition`.
+The post-frame bot integration asks `BotActionExecutor` whether the active action is still owned rather than applying a global navigation-neutral task test.
+`Retreat` may start from the observed legacy `SeekCover` state and converts that task to the AI-owned `MoveToPosition` primitive.
+
+Reason: the global navigation guard was terminating task-aware actions immediately, producing large numbers of zero-duration `Interrupted` samples such as `AttackTarget`, `SeekCover`, and `Retreat`.
+These actions already have explicit semantic execution capabilities and must be allowed to own or transform their corresponding legacy task state while preserving the generic guard for free navigation.
+

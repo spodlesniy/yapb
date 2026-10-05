@@ -434,7 +434,7 @@ bool YaPBActionExecutionContext::retreat() {
       || !game.isAliveEntity(m_bot->m_lastEnemy) || m_bot->m_lastEnemyOrigin.empty()) return false;
   const auto currentTask = m_bot->getCurrentTaskId();
   if (!m_retreatActive) {
-    if (currentTask != Task::Normal && currentTask != Task::MoveToPosition) return false;
+    if (currentTask != Task::Normal && currentTask != Task::MoveToPosition && currentTask != Task::SeekCover) return false;
     m_bot->ensureCurrentNodeIndex();
     const float maxDistance = m_bot->m_infectedEnemyTeam ? 2048.0f : 1024.0f;
     const int node = m_bot->findCoverNode(maxDistance);
@@ -442,7 +442,7 @@ bool YaPBActionExecutionContext::retreat() {
     m_retreatActive = true;
     m_retreatNode = node;
     m_retreatNavigationTaskCreated = false;
-    if (currentTask == Task::MoveToPosition) m_bot->clearTask(Task::MoveToPosition);
+    if (currentTask == Task::MoveToPosition || currentTask == Task::SeekCover) m_bot->clearTask(currentTask);
     m_bot->startTask(Task::MoveToPosition, TaskPri::MoveToPosition, node, 0.0f, true);
     m_retreatNavigationTaskCreated = true;
   }

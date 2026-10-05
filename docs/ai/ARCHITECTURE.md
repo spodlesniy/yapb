@@ -276,6 +276,10 @@ The engine-side mechanic may still reuse a YaPB task, but task execution is a ru
 
 `Controller` decides actions from the configured policy for AI-controlled modes and does not route legacy behavior through the AI policy.
 
+Generic navigation ownership is limited to `MoveToNode`, `MoveToPosition`, and `Explore`.
+Task-aware semantic actions such as combat, hunt, cover, retreat, objective protection, and bomb escape validate their own task lifecycle through the execution context and are not cancelled solely because the legacy task ID is non-neutral.
+The post-frame integration check delegates ownership to `BotActionExecutor` so higher-priority legacy transitions still interrupt generic navigation without terminating unrelated semantic actions.
+
 When lifecycle behavior changes, verify the interaction among:
 
 `BotRuntime -> TrainingCollector -> ActionRuntime -> TrainingRecorder`
