@@ -438,7 +438,7 @@ An untested task branch can silently fall back to navigation or produce an unint
 ## D053 — Bound training buffer loss explicitly
 
 The process-wide training buffer holds up to 1024 completed transitions.
-A completed transition that reaches a full buffer is not silently discarded: the pending recorder state remains intact, the buffer increments a dropped-transition counter when a write is refused, and `ai_save_training` reports the count so collection gaps are visible.
+A completed transition that reaches a full buffer is not silently discarded: the pending recorder state remains intact, the buffer increments a dropped-transition counter when a write is refused, and `ai_training_save` reports the count so collection gaps are visible.
 
 Reason: Training collection may run longer than an in-memory buffer.
 A bounded buffer keeps memory predictable, while explicit overflow reporting prevents an incomplete dataset from being mistaken for the full collected experience.
@@ -690,10 +690,10 @@ A dataset with too few represented classes cannot meaningfully evaluate the cate
 
 ## D085 — Store training captures as timestamped YaPB-local JSONL files
 
-`yb ai_save_training` takes no filename argument and creates a new JSONL snapshot under the YaPB plugin `data/training/` directory.
+`yb ai_training_save` takes no filename argument and creates a new JSONL snapshot under the YaPB plugin `data/training/` directory.
 The filename uses local time in the form `YYYY_MM_DD__HH_MM_SS__ai_training.jsonl`.
 If a file with the same timestamp already exists, a numeric suffix is appended before `.jsonl`.
-Saving does not clear the in-memory training buffer; `yb ai_clear_training` remains the explicit buffer-clear operation.
+Saving does not clear the in-memory training buffer; `yb ai_training_clear` remains the explicit buffer-clear operation.
 
 Reason: training collection is expected to produce multiple captures over time, while the bounded in-memory buffer must be flushed repeatedly.
 Timestamped independent files prevent accidental overwrites and make individual collection sessions easy to identify and archive.

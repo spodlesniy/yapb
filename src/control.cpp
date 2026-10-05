@@ -2413,8 +2413,8 @@ BotControl::BotControl () {
          &BotControl::cmdExec
       },
       {
-         "ai_save_training",
-         "ai_save_training [no arguments]",
+         "ai_training_save",
+         "ai_training_save [no arguments]",
          "Saves the collected AI training dataset as a new timestamped JSONL file under the YaPB data/training directory.",
 
          &BotControl::cmdSaveTraining
@@ -2427,8 +2427,8 @@ BotControl::BotControl () {
          &BotControl::cmdTrainingStatus
       },
       {
-         "ai_clear_training",
-         "ai_clear_training",
+         "ai_training_clear",
+         "ai_training_clear",
          "Clears collected AI training transitions without resetting the training episode sequence.",
 
          &BotControl::cmdClearTraining

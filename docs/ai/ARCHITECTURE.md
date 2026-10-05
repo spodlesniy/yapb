@@ -82,7 +82,7 @@ The C++ runtime exports the collected transitions as `aipb-training-jsonl`.
 Stored samples are terminal action transitions; the Python validator enforces this runtime invariant.
 When a terminal result does not provide a positive elapsed time, `TrainingRecorder` derives `elapsed_time` from the terminal and starting observation game times and clamps negative deltas to zero; an explicit positive runtime elapsed time is preserved.
 The in-memory buffer is bounded; when it is full, a completed transition is retained as pending but cannot be stored.
-The cumulative drop count is reported by `ai_save_training`.
+The cumulative drop count is reported by `ai_training_save`.
 Each save creates a new timestamped JSONL file under the YaPB plugin `data/training/` directory and does not clear the in-memory buffer.
 
 Each record contains:
