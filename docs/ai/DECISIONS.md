@@ -677,3 +677,12 @@ Checkpoint version increments to 3 because checkpoints created by the previous r
 
 Reason: action IDs are categorical and have no meaningful ordinal distance, so treating them as a single continuous regression target teaches an artificial numeric relationship between unrelated actions.
 The categorical head provides a direct supervised signal for the 26 action classes while preserving the existing C++ and ONNX deployment contract.
+
+## D084 — Add a global action-coverage readiness gate
+
+The dataset quality tool and training command support a global minimum number of represented action IDs.
+The gate complements per-action sample and episode minimums without requiring all 26 actions.
+This provides a simple readiness checkpoint for the first real training datasets while preserving flexibility for action classes that the current teacher has not yet produced.
+
+Reason: action classification is now a first-class training objective after D082.
+A dataset with too few represented classes cannot meaningfully evaluate the categorical action head, even when total sample and episode counts look healthy.
