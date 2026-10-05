@@ -9,9 +9,9 @@ from pathlib import Path
 from typing import Sequence
 
 from .dataset import TrainingSample
-from .model_contract import MODEL_ACTION_ID_COUNT, ModelOutputIndex
+from .model_contract import MODEL_ACTION_ID_COUNT
 from .policy_model import build_policy_model
-from .trainer import create_optimizer
+from .trainer import create_optimizer, policy_loss
 from .training_contract import encode_policy_batch
 from .dataset import iter_training_batches
 from .training_run import load_checkpoint, split_samples_by_episode
@@ -103,15 +103,13 @@ def evaluate_checkpoint(
         for batch in _batches(selected_samples, batch_size):
             observations = torch.tensor(batch.observations, dtype=torch.float32, device=device)
             targets = torch.tensor(batch.action_targets, dtype=torch.float32, device=device)
-            predictions = model(observations)
-            loss = torch.nn.functional.smooth_l1_loss(predictions, targets)
+            predictions, action_logits = model.forward_training(observations)
+            loss = policy_loss(predictions, targets, action_logits)
 
             errors = torch.abs(predictions - targets)
-            predicted_action_ids = predictions[:, int(ModelOutputIndex.ACTION_ID)]
-            valid_action_ids = (predicted_action_ids >= 0.0) & (predicted_action_ids < MODEL_ACTION_ID_COUNT)
-            decoded_action_ids = predicted_action_ids.to(torch.int64)
-            expected_action_ids = targets[:, int(ModelOutputIndex.ACTION_ID)].to(torch.int64)
-            action_id_correct += int(((decoded_action_ids == expected_action_ids) & valid_action_ids).sum().item())
+            predicted_action_ids = action_logits.argmax(dim=1)
+            expected_action_ids = targets[:, 0].to(torch.int64)
+            action_id_correct += int((predicted_action_ids == expected_action_ids).sum().item())
 
             count = batch.size
             total_loss += float(loss.item()) * count
