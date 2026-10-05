@@ -148,7 +148,7 @@ OnnxModelRunner::~OnnxModelRunner() {
 }
 
 bool OnnxModelRunner::load(const char *modelPath, const char *inputName, const char *outputName) {
-  unload();
+  m_impl->reset();
 
   if (modelPath == nullptr || *modelPath == '\0') {
     m_impl->setError("ONNX model path is empty.");
@@ -181,19 +181,19 @@ bool OnnxModelRunner::load(const char *modelPath, const char *inputName, const c
   }
 
   if (!m_impl->check(m_impl->api->CreateSessionOptions(&m_impl->sessionOptions))) {
-    unload();
+    m_impl->reset();
     return false;
   }
 
   if (!m_impl->check(m_impl->api->SetIntraOpNumThreads(m_impl->sessionOptions, 1))) {
-    unload();
+    m_impl->reset();
     return false;
   }
 
   std::FILE *modelFile = std::fopen(modelPath, "rb");
   if (modelFile == nullptr) {
     m_impl->setError("Could not open ONNX model file.");
-    unload();
+    m_impl->reset();
     return false;
   }
 
@@ -204,7 +204,7 @@ bool OnnxModelRunner::load(const char *modelPath, const char *inputName, const c
   if (modelSize <= 0) {
     std::fclose(modelFile);
     m_impl->setError("ONNX model file is empty.");
-    unload();
+    m_impl->reset();
     return false;
   }
 
@@ -214,13 +214,13 @@ bool OnnxModelRunner::load(const char *modelPath, const char *inputName, const c
 
   if (bytesRead != modelData.size()) {
     m_impl->setError("Could not read complete ONNX model file.");
-    unload();
+    m_impl->reset();
     return false;
   }
 
   if (!m_impl->check(
           m_impl->api->CreateSessionFromArray(m_impl->env, modelData.data(), modelData.size(), m_impl->sessionOptions, &m_impl->session))) {
-    unload();
+    m_impl->reset();
     return false;
   }
 
@@ -229,25 +229,25 @@ bool OnnxModelRunner::load(const char *modelPath, const char *inputName, const c
 
   if (!m_impl->check(m_impl->api->SessionGetInputCount(m_impl->session, &inputCount)) ||
       !m_impl->check(m_impl->api->SessionGetOutputCount(m_impl->session, &outputCount))) {
-    unload();
+    m_impl->reset();
     return false;
   }
 
   if (inputCount != 1 || outputCount != 1) {
     m_impl->setError("ONNX model must expose exactly one input and one output.");
-    unload();
+    m_impl->reset();
     return false;
   }
 
   OrtAllocator *nameAllocator {};
   if (!m_impl->check(m_impl->api->GetAllocatorWithDefaultOptions(&nameAllocator))) {
-    unload();
+    m_impl->reset();
     return false;
   }
 
   char *actualInputName {};
   if (!m_impl->check(m_impl->api->SessionGetInputName(m_impl->session, 0, nameAllocator, &actualInputName))) {
-    unload();
+    m_impl->reset();
     return false;
   }
 
@@ -256,13 +256,13 @@ bool OnnxModelRunner::load(const char *modelPath, const char *inputName, const c
 
   if (!inputNameMatches) {
     m_impl->setError("ONNX model input name does not match the configured input name.");
-    unload();
+    m_impl->reset();
     return false;
   }
 
   char *actualOutputName {};
   if (!m_impl->check(m_impl->api->SessionGetOutputName(m_impl->session, 0, nameAllocator, &actualOutputName))) {
-    unload();
+    m_impl->reset();
     return false;
   }
 
@@ -271,7 +271,7 @@ bool OnnxModelRunner::load(const char *modelPath, const char *inputName, const c
 
   if (!outputNameMatches) {
     m_impl->setError("ONNX model output name does not match the configured output name.");
-    unload();
+    m_impl->reset();
     return false;
   }
 
@@ -279,7 +279,7 @@ bool OnnxModelRunner::load(const char *modelPath, const char *inputName, const c
   OrtTypeInfo *outputTypeInfo {};
 
   if (!m_impl->check(m_impl->api->SessionGetInputTypeInfo(m_impl->session, 0, &inputTypeInfo))) {
-    unload();
+    m_impl->reset();
     return false;
   }
 
@@ -287,12 +287,12 @@ bool OnnxModelRunner::load(const char *modelPath, const char *inputName, const c
   m_impl->api->ReleaseTypeInfo(inputTypeInfo);
 
   if (!validInput) {
-    unload();
+    m_impl->reset();
     return false;
   }
 
   if (!m_impl->check(m_impl->api->SessionGetOutputTypeInfo(m_impl->session, 0, &outputTypeInfo))) {
-    unload();
+    m_impl->reset();
     return false;
   }
 
@@ -300,12 +300,12 @@ bool OnnxModelRunner::load(const char *modelPath, const char *inputName, const c
   m_impl->api->ReleaseTypeInfo(outputTypeInfo);
 
   if (!validOutput) {
-    unload();
+    m_impl->reset();
     return false;
   }
 
   if (!m_impl->check(m_impl->api->CreateCpuMemoryInfo(OrtArenaAllocator, OrtMemTypeDefault, &m_impl->memoryInfo))) {
-    unload();
+    m_impl->reset();
     return false;
   }
 
