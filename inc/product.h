@@ -37,7 +37,7 @@ public:
 public:
    CTS_BUILD_STR name { "YaPB" };
    CTS_BUILD_STR nameLower { "yapb" };
-   CTS_BUILD_STR year { &__DATE__[7] };
+   CTS_BUILD_STR year { MODULE_BUILD_YEAR };
    CTS_BUILD_STR author { "YaPB Project" };
    CTS_BUILD_STR email { "yapb@jeefo.net" };
    CTS_BUILD_STR url { "https://yapb.jeefo.net/" };
@@ -45,8 +45,8 @@ public:
    CTS_BUILD_STR upload { "yapb.jeefo.net/upload" };
    CTS_BUILD_STR httpScheme { "http" };
    CTS_BUILD_STR logtag { "YB" };
-   CTS_BUILD_STR dtime { __DATE__ " " __TIME__ };
-   CTS_BUILD_STR date { __DATE__ };
+   CTS_BUILD_STR dtime { MODULE_BUILD_DATETIME };
+   CTS_BUILD_STR date { MODULE_BUILD_DATE };
    CTS_BUILD_STR version { MODULE_VERSION "." MODULE_COMMIT_COUNT };
    CTS_BUILD_STR cmdPri { "yb" };
    CTS_BUILD_STR cmdSec { "yapb" };
