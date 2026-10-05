@@ -24,6 +24,40 @@ bool hasObservedPlayer(const Observation &observation, int32_t entityIndex) {
   return false;
 }
 
+bool isReloadableWeapon(WeaponType weaponType) {
+  switch (weaponType) {
+  case WeaponType::Pistol:
+  case WeaponType::Shotgun:
+  case WeaponType::ZoomRifle:
+  case WeaponType::Rifle:
+  case WeaponType::SMG:
+  case WeaponType::Sniper:
+  case WeaponType::Heavy:
+    return true;
+  case WeaponType::Unknown:
+  case WeaponType::None:
+  case WeaponType::Melee:
+    return false;
+  }
+  return false;
+}
+
+bool isReloadCompatible(ReloadState reloadState, WeaponType weaponType) {
+  if (!isReloadableWeapon(weaponType)) {
+    return false;
+  }
+
+  switch (reloadState) {
+  case ReloadState::Primary:
+    return weaponType != WeaponType::Pistol;
+  case ReloadState::Secondary:
+    return weaponType == WeaponType::Pistol;
+  case ReloadState::None:
+    return false;
+  }
+  return false;
+}
+
 Action makeTargetPlayerAction(ActionType type, const Observation &observation) {
   if (observation.combat.enemyEntity < 0 || !hasObservedPlayer(observation, observation.combat.enemyEntity)) {
     return {};
@@ -57,7 +91,8 @@ Action GoalNavigationPolicy::decide(const Observation &observation) const {
     return {};
   }
 
-  if (observation.combat.reloadState != ReloadState::None) {
+  if (observation.combat.reloadState != ReloadState::None &&
+      isReloadCompatible(observation.combat.reloadState, observation.combat.weaponType)) {
     Action action {};
     action.type = ActionType::Reload;
     action.weaponType = observation.combat.reloadState == ReloadState::Secondary ? WeaponType::Pistol : WeaponType::Unknown;
