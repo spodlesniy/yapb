@@ -642,3 +642,12 @@ The deterministic teacher exposes an already-active reload state as the Reload a
 
 Reason: reload is a meaningful model action already present in the inference taxonomy, but duplicating the mature YaPB reload state machine would create unnecessary regression risk.
 Keeping the low-level mechanism authoritative while moving intent and lifecycle into the AI boundary provides a stable training target without replacing proven weapon logic prematurely.
+
+## D079 — Make RescueHostage teacher-driven from explicit hostage state
+
+`GoalNavigationPolicy` emits `RescueHostage` while the bot is carrying a hostage and has not reached a rescue zone.
+The action reuses the existing deterministic rescue-goal selection and navigation execution boundary.
+Once the bot is already in the rescue zone, the teacher stops emitting the rescue intent and allows normal goal navigation to resume.
+
+Reason: hostage carrying is already represented explicitly in the observation contract, while the existing rescue execution capability has stable completion semantics.
+Using that state produces a meaningful supervised label without inventing a new hostage target model or changing the engine-side rescue mechanics.

@@ -149,6 +149,26 @@ AI_TEST(testGoalNavigationPolicyMapsBombDefenseToProtectObjective) {
   expect(action.targetType == ai::TargetType::None, "protect objective has no explicit target payload");
 }
 
+AI_TEST(testGoalNavigationPolicyMapsHostageRescue) {
+  auto observation = makeObservation();
+  observation.bot.hasHostage = true;
+
+  const auto action = ai::GoalNavigationPolicy {}.decide(observation);
+
+  expect(action.type == ai::ActionType::RescueHostage, "hostage carrying maps to rescue hostage");
+  expect(action.targetType == ai::TargetType::None, "rescue hostage has no explicit target payload");
+}
+
+AI_TEST(testGoalNavigationPolicyFallsBackAfterHostageRescueZone) {
+  auto observation = makeObservation();
+  observation.bot.hasHostage = true;
+  observation.bot.inRescueZone = true;
+
+  const auto action = ai::GoalNavigationPolicy {}.decide(observation);
+
+  expect(action.type == ai::ActionType::MoveToNode, "rescued hostage falls back to normal goal navigation");
+}
+
 AI_TEST(testGoalNavigationPolicyMapsTaskActions) {
   auto observation = makeObservation();
   ai::GoalNavigationPolicy policy {};

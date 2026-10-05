@@ -73,6 +73,13 @@ Action GoalNavigationPolicy::decide(const Observation &observation) const {
     return action;
   }
 
+  if (observation.bot.hasHostage && !observation.bot.inRescueZone) {
+    Action action {};
+    action.type = ActionType::RescueHostage;
+    action.confidence = 1.0f;
+    return action;
+  }
+
   switch (observation.bot.currentTask) {
   case TaskType::MoveToPosition: {
     Action action {};
