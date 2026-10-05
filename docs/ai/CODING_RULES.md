@@ -32,11 +32,19 @@ followed by project headers such as:
 
 Keep existing local/test-helper conventions intact unless the current change is specifically about include organization.
 
+### Markdown source formatting
+
+For Markdown documentation, write each prose sentence on its own physical line.
+A normal source-level line break inside a paragraph must not be used as a Markdown hard break solely for formatting purposes.
+Preserve blank lines between paragraphs and keep headings, list structure, tables, front matter, fenced and indented code blocks, link definitions, and other syntax-sensitive constructs intact.
+When a documentation-only reformat is performed, verify that the existing non-whitespace content is unchanged before committing.
+
 ### Source-code comments
 
 All comments in source code must be written in English.
 
-Existing comments that are already in English should remain so. New comments and comments modified during an iteration must also be English.
+Existing comments that are already in English should remain so.
+New comments and comments modified during an iteration must also be English.
 
 Comments should explain intent or non-obvious constraints rather than restating obvious code.
 

@@ -6,7 +6,8 @@ This repository is the AiPB development fork of YaPB.
 
 - Work only in the fork `spodlesniy/yapb`.
 - Never modify, push to, or otherwise make changes to the upstream `yapb/yapb` repository.
-- These instructions are repository guidance for coding-agent work. Direct user, system, and developer instructions always take precedence.
+- These instructions are repository guidance for coding-agent work.
+  Direct user, system, and developer instructions always take precedence.
 - Read the relevant documentation under `docs/ai/` before making non-trivial changes.
 
 ## Development workflow
@@ -15,7 +16,8 @@ This repository is the AiPB development fork of YaPB.
 - Keep iterations small, focused, and deeply checked.
 - Do not combine unrelated changes into the same iteration or commit.
 - After a commit is pushed, use the automatic unit-test CI result as the normal validation gate before starting the next iteration.
-- When CI fails, inspect the exact current CI logs and fix the root cause. Do not guess.
+- When CI fails, inspect the exact current CI logs and fix the root cause.
+  Do not guess.
 - Run the full multi-platform workflow for the end of a larger development block, for changes that touch original YaPB production code, or when platform compatibility/regression coverage is specifically required.
 - Before committing, inspect the complete diff and verify the intended test target, syntax, include ordering, fixed-size array usage, and scope of the change.
 
@@ -25,6 +27,7 @@ This repository is the AiPB development fork of YaPB.
 - Use ordinary fixed-size C-style arrays when a fixed-size array is required.
 - Put all standard-library includes before project and local includes, all else being equal.
 - All comments written in source code must be in English.
+- In Markdown files, write each prose sentence on its own physical line; preserve blank lines, headings, list structure, tables, front matter, code blocks, link definitions, and other syntax-sensitive Markdown constructs. Do not use Markdown hard breaks solely for source formatting.
 - Preserve existing public APIs and architecture unless the current iteration explicitly requires an API or architectural change.
 - Prefer engine-independent AI abstractions and keep engine-specific integration at the runtime boundary.
 - Search the repository history for an established solution before introducing compatibility flags or platform-specific workarounds.
@@ -54,7 +57,8 @@ The training buffer is a fixed-capacity contiguous store exposed through read-on
 ## Repository-specific guidance
 
 - Keep `Observation`, `Policy`, `Action`, validation/execution, `ActionResult`, training collection, reward calculation, and transition recording separated by responsibility.
-- Do not put game-specific reward heuristics into the generic recorder. Reward calculation belongs behind the reward-provider abstraction.
+- Do not put game-specific reward heuristics into the generic recorder.
+  Reward calculation belongs behind the reward-provider abstraction.
 - Waypoint data is part of the AI observation/navigation pipeline and should remain consumable without coupling the model-facing contracts to engine-specific implementation details.
 - Preserve the distinction between runtime execution state and training-recording lifecycle state.
 - When changing lifecycle behavior, inspect both `BotRuntime` and `TrainingCollector`/ `TrainingRecorder` so that state is not duplicated or prematurely finalized.

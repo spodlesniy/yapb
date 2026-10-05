@@ -13,6 +13,8 @@ The offline Python training package itself is documented in [tools/aipb_training
 
 ## Source of truth
 
-`AGENTS.md` is the concise entry point for coding-agent instructions. The documents in this directory hold the detailed, durable project context.
+`AGENTS.md` is the concise entry point for coding-agent instructions.
+The documents in this directory hold the detailed, durable project context.
 
-Keep agent-facing instructions concise and actionable. Put larger explanations and historical context here rather than turning `AGENTS.md` into a large project manual.
+Keep agent-facing instructions concise and actionable.
+Put larger explanations and historical context here rather than turning `AGENTS.md` into a large project manual.
