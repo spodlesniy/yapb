@@ -59,6 +59,7 @@ def train_epoch(model, batches: Iterable[PolicyTrainingBatch], optimizer, device
     model.train()
     total_loss = 0.0
     sample_count = 0
+    action_correct = 0
     for batch in batches:
         if batch.size == 0:
             continue
