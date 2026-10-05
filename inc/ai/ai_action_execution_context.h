@@ -55,6 +55,10 @@ public:
   virtual bool isRetreatReached() const = 0;
   virtual void cancelRetreat() = 0;
 
+  virtual bool explore() = 0;
+  virtual bool isExploreReached() const = 0;
+  virtual void cancelExplore() = 0;
+
   virtual bool escapeFromBomb() = 0;
   virtual bool isEscapeFromBombReached() const = 0;
   virtual void cancelEscapeFromBomb() = 0;

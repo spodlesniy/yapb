@@ -28,6 +28,9 @@ private:
   bool m_retreatActive {};
   int m_retreatNode { -1 };
   bool m_retreatNavigationTaskCreated {};
+  bool m_exploreActive {};
+  int m_exploreNode { -1 };
+  bool m_exploreNavigationTaskCreated {};
   bool m_escapeFromBombActive {};
   int m_escapeFromBombNode { -1 };
   bool m_escapeFromBombNavigationTaskCreated {};
@@ -75,6 +78,10 @@ public:
   bool retreat() override;
   bool isRetreatReached() const override;
   void cancelRetreat() override;
+
+  bool explore() override;
+  bool isExploreReached() const override;
+  void cancelExplore() override;
 
   bool escapeFromBomb() override;
   bool isEscapeFromBombReached() const override;

@@ -475,3 +475,9 @@ Reason: the optional ONNX Runtime dependency is a large immutable release asset 
 Retreat is executed through ActionExecutionContext as a distinct AI-owned navigation intent. The YaPB adapter reuses the established `findCoverNode` selection and `MoveToPosition` path progression, but the AI executor owns the Retreat action lifecycle and cancellation.
 
 Reason: Retreat is semantically different from SeekCover even though both may use a safe cover point as their engine-side destination. Reusing the existing waypoint selection and navigation machinery avoids duplicating pathfinding while allowing the model to learn and execute an explicit disengagement intent.
+
+## D076 — Make Explore a direct AI-owned navigation action
+
+Explore is a distinct AI-owned navigation intent. The YaPB adapter selects an unoccupied, non-ladder waypoint with low goal-history frequency and a bounded path distance, then reuses the existing `MoveToPosition` task for traversal. When no waypoint meets the preferred exploration range, the farthest eligible connected waypoint is used as a fallback.
+
+Reason: an explicit Explore action must provide meaningful coverage of the waypoint graph rather than degenerating into the legacy goal planner or an unrestricted random waypoint. Goal-history novelty makes the action favor less-used areas while preserving the existing navigation implementation and legacy task stack boundary.

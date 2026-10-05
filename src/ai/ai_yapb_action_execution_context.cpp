@@ -683,6 +683,99 @@ void YaPBActionExecutionContext::cancelPlantBomb() {
   }
 }
 
+namespace {
+constexpr float kExploreMinPathDistance = 256.0f;
+constexpr float kExploreMaxPathDistance = 1536.0f;
+}
+
+bool YaPBActionExecutionContext::explore() {
+  if (m_bot == nullptr || m_bot->pev == nullptr) return false;
+
+  const auto currentTask = m_bot->getCurrentTaskId();
+  if (!m_exploreActive) {
+    if (currentTask != Task::Normal && currentTask != Task::MoveToPosition) return false;
+
+    m_bot->ensureCurrentNodeIndex();
+    if (!graph.exists(m_bot->m_currentNodeIndex)) return false;
+
+    int bestNode = kInvalidNodeIndex;
+    int bestHistoryCount = INT_MAX;
+    float bestDistance = -1.0f;
+    int fallbackNode = kInvalidNodeIndex;
+    float fallbackDistance = -1.0f;
+
+    for (const auto &path : graph) {
+      if (path.number == m_bot->m_currentNodeIndex || (path.flags & NodeFlag::Ladder) || m_bot->isOccupiedNode(path.number, true)) continue;
+
+      const float distance = planner.dist(m_bot->m_currentNodeIndex, path.number);
+      if (distance <= 0.0f || distance >= kInfiniteHeuristic) continue;
+
+      if (distance > fallbackDistance) {
+        fallbackDistance = distance;
+        fallbackNode = path.number;
+      }
+
+      if (distance < kExploreMinPathDistance || distance > kExploreMaxPathDistance) continue;
+
+      int historyCount = 0;
+      for (const auto goal : m_bot->m_goalHist) {
+        if (goal == path.number) ++historyCount;
+      }
+
+      if (historyCount < bestHistoryCount || (historyCount == bestHistoryCount && distance > bestDistance)) {
+        bestHistoryCount = historyCount;
+        bestDistance = distance;
+        bestNode = path.number;
+      }
+    }
+
+    if (!graph.exists(bestNode)) bestNode = fallbackNode;
+    if (!graph.exists(bestNode)) return false;
+
+    m_exploreActive = true;
+    m_exploreNode = bestNode;
+    m_exploreNavigationTaskCreated = false;
+
+    if (currentTask == Task::MoveToPosition) m_bot->clearTask(Task::MoveToPosition);
+    m_bot->startTask(Task::MoveToPosition, TaskPri::MoveToPosition, bestNode, 0.0f, true);
+    m_exploreNavigationTaskCreated = true;
+  }
+  else if (m_bot->getCurrentTaskId() != Task::MoveToPosition) {
+    if (m_bot->getCurrentTaskId() != Task::Normal) return false;
+    m_bot->startTask(Task::MoveToPosition, TaskPri::MoveToPosition, m_exploreNode, 0.0f, true);
+  }
+
+  m_bot->getTask()->data = m_exploreNode;
+  m_bot->m_prevGoalIndex = m_exploreNode;
+  m_bot->m_chosenGoalIndex = m_exploreNode;
+  m_bot->m_aimFlags |= AimFlags::Nav;
+  return true;
+}
+
+bool YaPBActionExecutionContext::isExploreReached() const {
+  if (m_bot == nullptr || m_bot->pev == nullptr || !m_exploreActive || !graph.exists(m_exploreNode)) return false;
+  const auto &path = graph[m_exploreNode];
+  const float reachDistance = cr::max(kNavigationReachDistance, path.radius);
+  return m_bot->m_currentNodeIndex == m_exploreNode
+      && m_bot->pev->origin.distanceSq(path.origin) <= cr::sqrf(reachDistance);
+}
+
+void YaPBActionExecutionContext::cancelExplore() {
+  if (m_bot == nullptr) return;
+  if (m_exploreActive && m_exploreNavigationTaskCreated && m_bot->getCurrentTaskId() == Task::MoveToPosition)
+    m_bot->clearTask(Task::MoveToPosition);
+  if (m_exploreActive) {
+    m_bot->clearSearchNodes();
+    m_bot->m_prevGoalIndex = kInvalidNodeIndex;
+    m_bot->m_chosenGoalIndex = kInvalidNodeIndex;
+    m_bot->m_position.clear();
+    m_bot->m_aimFlags &= ~AimFlags::Nav;
+  }
+  m_exploreActive = false;
+  m_exploreNode = kInvalidNodeIndex;
+  m_exploreNavigationTaskCreated = false;
+}
+
 bool YaPBActionExecutionContext::escapeFromBomb() {
   if (m_bot == nullptr || m_bot->pev == nullptr || !gameState.isBombPlanted()) {
     return false;

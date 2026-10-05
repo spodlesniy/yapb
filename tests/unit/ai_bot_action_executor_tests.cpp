@@ -56,6 +56,10 @@ public:
   bool retreatReached {};
   int retreatCalls {};
   int cancelRetreatCalls {};
+  bool exploreAvailable { true };
+  bool exploreReached {};
+  int exploreCalls {};
+  int cancelExploreCalls {};
   int escapeFromBombCalls {};
   int cancelEscapeFromBombCalls {};
   int rescueHostageCalls {};
@@ -196,6 +200,19 @@ public:
 
   void cancelRetreat() override {
     ++cancelRetreatCalls;
+  }
+
+  bool explore() override {
+    ++exploreCalls;
+    return exploreAvailable;
+  }
+
+  bool isExploreReached() const override {
+    return exploreReached;
+  }
+
+  void cancelExplore() override {
+    ++cancelExploreCalls;
   }
 
   bool escapeFromBomb() override {
@@ -846,6 +863,76 @@ AI_TEST(testBotActionExecutorCancelReleasesDirectAttack) {
   expect(!executor.suppressesLegacyTaskExecution(), "cancel releases ownership");
 }
 
+
+AI_TEST(testBotActionExecutorDirectlyExecutesExplore) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+  auto action = ai::Action {};
+  action.type = ai::ActionType::Explore;
+
+  const auto result = executor.execute(action, aliveObservation());
+
+  expect(result.type == ai::ActionResultType::Accepted, "explore is accepted");
+  expect(context.exploreCalls == 1, "explore is delegated");
+  expect(!executor.suppressesLegacyTaskExecution(), "explore keeps legacy task execution enabled");
+}
+
+AI_TEST(testBotActionExecutorCompletesExploreWhenReached) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+  auto action = ai::Action {};
+  action.type = ai::ActionType::Explore;
+
+  auto result = executor.execute(action, aliveObservation());
+  expect(result.type == ai::ActionResultType::Accepted, "explore starts before reaching the waypoint");
+
+  context.exploreReached = true;
+  result = executor.execute(action, aliveObservation());
+
+  expect(result.type == ai::ActionResultType::Completed, "reaching the exploration waypoint completes the action");
+  expect(context.cancelExploreCalls == 1, "completion releases direct explore");
+}
+
+AI_TEST(testBotActionExecutorCompletesExploreWhenRuntimeStopsIt) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+  auto action = ai::Action {};
+  action.type = ai::ActionType::Explore;
+
+  auto result = executor.execute(action, aliveObservation());
+  expect(result.type == ai::ActionResultType::Accepted, "explore starts while available");
+
+  context.exploreAvailable = false;
+  result = executor.execute(action, aliveObservation());
+
+  expect(result.type == ai::ActionResultType::Completed, "explore completes when the runtime stops it");
+  expect(context.cancelExploreCalls == 1, "runtime stop releases direct explore");
+}
+
+AI_TEST(testBotActionExecutorRejectsExploreWhenRuntimeCannotStartIt) {
+  MockActionExecutionContext context {};
+  context.exploreAvailable = false;
+  ai::BotActionExecutor executor(context);
+  auto action = ai::Action {};
+  action.type = ai::ActionType::Explore;
+
+  const auto result = executor.execute(action, aliveObservation());
+
+  expect(result.type == ai::ActionResultType::Rejected, "explore is rejected when runtime cannot start it");
+  expect(context.exploreCalls == 1, "explore availability is checked");
+}
+
+AI_TEST(testBotActionExecutorCancelsDirectExplore) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+  auto action = ai::Action {};
+  action.type = ai::ActionType::Explore;
+
+  executor.execute(action, aliveObservation());
+  executor.cancel();
+
+  expect(context.cancelExploreCalls == 1, "cancel releases direct explore");
+}
 
 AI_TEST(testBotActionExecutorDirectlyExecutesEscapeFromBomb) {
   MockActionExecutionContext context {};
