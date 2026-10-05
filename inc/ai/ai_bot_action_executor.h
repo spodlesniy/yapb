@@ -40,6 +40,7 @@ private:
   bool m_directRetreatActive {};
   bool m_directExploreActive {};
   bool m_directProtectObjectiveActive {};
+  bool m_directReloadActive {};
   bool m_directEscapeFromBombActive {};
   bool m_directRescueHostageActive {};
   bool m_directPlantBombActive {};
@@ -66,6 +67,7 @@ private:
   ActionResult executeRetreat(const Action &action);
   ActionResult executeExplore(const Action &action);
   ActionResult executeProtectObjective(const Action &action);
+  ActionResult executeReload(const Action &action);
   ActionResult executeEscapeFromBomb(const Action &action, const Observation &observation);
   ActionResult executeRescueHostage(const Action &action, const Observation &observation);
   ActionResult executePlantBomb(const Action &action, const Observation &observation);

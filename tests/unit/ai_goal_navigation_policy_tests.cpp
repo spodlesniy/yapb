@@ -124,6 +124,19 @@ AI_TEST(testGoalNavigationPolicyFallsBackForFollowUserWithoutTarget) {
   expect(action.type == ai::ActionType::MoveToNode, "follow without target falls back to goal");
 }
 
+AI_TEST(testGoalNavigationPolicyMapsReloadState) {
+  auto observation = makeObservation();
+  observation.combat.reloadState = ai::ReloadState::Primary;
+
+  const auto action = ai::GoalNavigationPolicy {}.decide(observation);
+
+  expect(action.type == ai::ActionType::Reload, "active primary reload maps to reload");
+  expect(action.weaponType == ai::WeaponType::Unknown, "primary reload leaves automatic weapon selection");
+  observation.combat.reloadState = ai::ReloadState::Secondary;
+  expect(ai::GoalNavigationPolicy {}.decide(observation).weaponType == ai::WeaponType::Pistol,
+         "secondary reload maps to pistol category");
+}
+
 AI_TEST(testGoalNavigationPolicyMapsBombDefenseToProtectObjective) {
   auto observation = makeObservation();
   observation.bot.team = 0;

@@ -860,6 +860,42 @@ void YaPBActionExecutionContext::cancelProtectObjective() {
   m_protectObjectiveNavigationTaskCreated = false;
 }
 
+bool YaPBActionExecutionContext::reload(WeaponType weaponType) {
+  if (m_bot == nullptr || m_bot->pev == nullptr || m_bot->usesKnife() || m_bot->m_isUsingGrenade) {
+    return false;
+  }
+
+  if (!m_reloadActive) {
+    const bool secondary = weaponType == WeaponType::Pistol;
+    m_reloadStateIssued = secondary ? static_cast<int>(Reload::Secondary) : static_cast<int>(Reload::Primary);
+    m_bot->m_reloadState = m_reloadStateIssued;
+
+    if (m_bot->getAmmo() <= 0) {
+      m_bot->m_reloadState = Reload::None;
+      return false;
+    }
+
+    m_reloadActive = true;
+  }
+
+  m_bot->checkReload();
+  return m_reloadActive;
+}
+
+bool YaPBActionExecutionContext::isReloadCompleted() const {
+  return m_reloadActive && (m_bot == nullptr || m_bot->pev == nullptr
+      || (m_bot->m_reloadState == Reload::None && !m_bot->m_isReloading));
+}
+
+void YaPBActionExecutionContext::cancelReload() {
+  if (m_bot != nullptr) {
+    m_bot->m_reloadState = Reload::None;
+    m_bot->m_isReloading = false;
+  }
+  m_reloadActive = false;
+  m_reloadStateIssued = static_cast<int>(Reload::None);
+}
+
 bool YaPBActionExecutionContext::escapeFromBomb() {
   if (m_bot == nullptr || m_bot->pev == nullptr || !gameState.isBombPlanted()) {
     return false;

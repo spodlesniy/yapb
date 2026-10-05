@@ -34,6 +34,8 @@ private:
   bool m_protectObjectiveActive {};
   int m_protectObjectiveNode { -1 };
   bool m_protectObjectiveNavigationTaskCreated {};
+  bool m_reloadActive {};
+  int m_reloadStateIssued { 0 };
   bool m_escapeFromBombActive {};
   int m_escapeFromBombNode { -1 };
   bool m_escapeFromBombNavigationTaskCreated {};
@@ -89,6 +91,10 @@ public:
   bool protectObjective() override;
   bool isProtectObjectiveReached() const override;
   void cancelProtectObjective() override;
+
+  bool reload(WeaponType weaponType) override;
+  bool isReloadCompleted() const override;
+  void cancelReload() override;
 
   bool escapeFromBomb() override;
   bool isEscapeFromBombReached() const override;

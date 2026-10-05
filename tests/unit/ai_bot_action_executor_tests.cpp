@@ -64,6 +64,11 @@ public:
   bool protectObjectiveReached {};
   int protectObjectiveCalls {};
   int cancelProtectObjectiveCalls {};
+  bool reloadAvailable { true };
+  bool reloadCompleted {};
+  int reloadCalls {};
+  int cancelReloadCalls {};
+  ai::WeaponType lastReloadWeapon { ai::WeaponType::Unknown };
   int escapeFromBombCalls {};
   int cancelEscapeFromBombCalls {};
   int rescueHostageCalls {};
@@ -230,6 +235,20 @@ public:
 
   void cancelProtectObjective() override {
     ++cancelProtectObjectiveCalls;
+  }
+
+  bool reload(ai::WeaponType weaponType) override {
+    ++reloadCalls;
+    lastReloadWeapon = weaponType;
+    return reloadAvailable;
+  }
+
+  bool isReloadCompleted() const override {
+    return reloadCompleted;
+  }
+
+  void cancelReload() override {
+    ++cancelReloadCalls;
   }
 
   bool escapeFromBomb() override {
@@ -1003,6 +1022,68 @@ AI_TEST(testBotActionExecutorCancelsDirectProtectObjective) {
   executor.cancel();
 
   expect(context.cancelProtectObjectiveCalls == 1, "cancel releases direct objective protection");
+}
+
+AI_TEST(testBotActionExecutorDirectlyExecutesReload) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+  auto action = ai::Action {};
+  action.type = ai::ActionType::Reload;
+
+  const auto result = executor.execute(action, aliveObservation());
+
+  expect(result.type == ai::ActionResultType::Accepted, "reload is accepted");
+  expect(context.reloadCalls == 1, "reload is delegated");
+  expect(context.lastReloadWeapon == ai::WeaponType::Unknown, "reload defaults to automatic weapon selection");
+}
+
+AI_TEST(testBotActionExecutorCompletesReloadWhenRuntimeFinishes) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+  auto action = ai::Action {};
+  action.type = ai::ActionType::Reload;
+
+  expect(executor.execute(action, aliveObservation()).type == ai::ActionResultType::Accepted, "reload starts");
+  context.reloadCompleted = true;
+  expect(executor.execute(action, aliveObservation()).type == ai::ActionResultType::Completed, "reload completes");
+  expect(context.cancelReloadCalls == 1, "reload completion clears runtime state");
+}
+
+AI_TEST(testBotActionExecutorRejectsReloadWhenRuntimeCannotStartIt) {
+  MockActionExecutionContext context {};
+  context.reloadAvailable = false;
+  ai::BotActionExecutor executor(context);
+  auto action = ai::Action {};
+  action.type = ai::ActionType::Reload;
+
+  const auto result = executor.execute(action, aliveObservation());
+
+  expect(result.type == ai::ActionResultType::Rejected, "reload is rejected when unavailable");
+  expect(context.reloadCalls == 1, "reload availability is checked");
+}
+
+AI_TEST(testBotActionExecutorFailsReloadWhenActiveRuntimeStopsIt) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+  auto action = ai::Action {};
+  action.type = ai::ActionType::Reload;
+
+  expect(executor.execute(action, aliveObservation()).type == ai::ActionResultType::Accepted, "reload starts");
+  context.reloadAvailable = false;
+  expect(executor.execute(action, aliveObservation()).type == ai::ActionResultType::Failed, "active reload reports a runtime failure");
+  expect(context.cancelReloadCalls == 1, "failed reload is cancelled");
+}
+
+AI_TEST(testBotActionExecutorCancelsDirectReload) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+  auto action = ai::Action {};
+  action.type = ai::ActionType::Reload;
+
+  executor.execute(action, aliveObservation());
+  executor.cancel();
+
+  expect(context.cancelReloadCalls == 1, "cancel releases direct reload");
 }
 
 AI_TEST(testBotActionExecutorDirectlyExecutesEscapeFromBomb) {

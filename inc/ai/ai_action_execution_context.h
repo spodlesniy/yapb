@@ -63,6 +63,10 @@ public:
   virtual bool isProtectObjectiveReached() const = 0;
   virtual void cancelProtectObjective() = 0;
 
+  virtual bool reload(WeaponType weaponType) = 0;
+  virtual bool isReloadCompleted() const = 0;
+  virtual void cancelReload() = 0;
+
   virtual bool escapeFromBomb() = 0;
   virtual bool isEscapeFromBombReached() const = 0;
   virtual void cancelEscapeFromBomb() = 0;

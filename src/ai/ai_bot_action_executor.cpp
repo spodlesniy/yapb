@@ -99,6 +99,9 @@ void BotActionExecutor::cancel() {
   if (m_directProtectObjectiveActive && m_context != nullptr) {
     m_context->cancelProtectObjective();
   }
+  if (m_directReloadActive && m_context != nullptr) {
+    m_context->cancelReload();
+  }
   if (m_directEscapeFromBombActive && m_context != nullptr) {
     m_context->cancelEscapeFromBomb();
   }
@@ -148,6 +151,7 @@ void BotActionExecutor::cancel() {
   m_directRetreatActive = false;
   m_directExploreActive = false;
   m_directProtectObjectiveActive = false;
+  m_directReloadActive = false;
   m_directEscapeFromBombActive = false;
   m_directRescueHostageActive = false;
   m_directPlantBombActive = false;
@@ -321,6 +325,13 @@ ActionResult BotActionExecutor::execute(const Action &action, const Observation 
       m_directEscapeFromBombActive = false;
     }
     return executeProtectObjective(action);
+
+  case ActionType::Reload:
+    if (m_directProtectObjectiveActive && m_context != nullptr) {
+      m_context->cancelProtectObjective();
+      m_directProtectObjectiveActive = false;
+    }
+    return executeReload(action);
 
   case ActionType::EscapeFromBomb:
     m_directAttackTargetActive = false;
@@ -628,6 +639,25 @@ ActionResult BotActionExecutor::executeProtectObjective(const Action &action) {
   }
 
   m_directProtectObjectiveActive = true;
+  return { action.type, ActionResultType::Accepted, 0.0f };
+}
+
+ActionResult BotActionExecutor::executeReload(const Action &action) {
+  if (m_context->isReloadCompleted()) {
+    cancel();
+    return { action.type, ActionResultType::Completed, 0.0f };
+  }
+
+  if (!m_context->reload(action.weaponType)) {
+    if (!m_directReloadActive) {
+      return { action.type, ActionResultType::Rejected, 0.0f };
+    }
+
+    cancel();
+    return { action.type, ActionResultType::Failed, 0.0f };
+  }
+
+  m_directReloadActive = true;
   return { action.type, ActionResultType::Accepted, 0.0f };
 }
 

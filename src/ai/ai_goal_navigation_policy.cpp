@@ -57,6 +57,14 @@ Action GoalNavigationPolicy::decide(const Observation &observation) const {
     return {};
   }
 
+  if (observation.combat.reloadState != ReloadState::None) {
+    Action action {};
+    action.type = ActionType::Reload;
+    action.weaponType = observation.combat.reloadState == ReloadState::Secondary ? WeaponType::Pistol : WeaponType::Unknown;
+    action.confidence = 1.0f;
+    return action;
+  }
+
   if (observation.bot.team == 0 && observation.bot.currentTask == TaskType::Camp
       && (observation.bot.objectiveFlags & ObjectiveFlag::BombPlanted)) {
     Action action {};

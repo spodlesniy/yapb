@@ -633,3 +633,12 @@ The deterministic teacher emits ProtectObjective during the stable planted-bomb 
 
 Reason: the planted bomb is the first objective state with an unambiguous active protection target and an observable terminal condition.
 Defining this boundary avoids inventing a generic objective target abstraction before the observation contract can represent other objective types precisely.
+
+## D078 — Make Reload a direct AI-owned action
+
+Reload is represented as an explicit AI-owned action with a semantic optional weapon category.
+The YaPB adapter translates that intent into the existing Primary/Secondary reload state and delegates the concrete weapon, ammunition, timing, and input decisions to `checkReload()`.
+The deterministic teacher exposes an already-active reload state as the Reload action.
+
+Reason: reload is a meaningful model action already present in the inference taxonomy, but duplicating the mature YaPB reload state machine would create unnecessary regression risk.
+Keeping the low-level mechanism authoritative while moving intent and lifecycle into the AI boundary provides a stable training target without replacing proven weapon logic prematurely.

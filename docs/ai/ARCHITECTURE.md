@@ -235,7 +235,7 @@ The dependency direction is:
 This boundary must remain semantic: the AI executor should not expose `Bot`, `BotTask`, `Task`, `Vector`, `pev`, or other YaPB internals through its contract.
 Future direct AI-owned combat and objective execution should extend the context with explicit capabilities rather than reintroducing a concrete `Bot` dependency.
 
-FollowPlayer, AttackTarget, AimAtTarget, HuntTarget, SeekCover, EscapeFromBomb, RescueHostage, Retreat, Explore, ProtectObjective, PlantBomb, DefuseBomb, PickupItem, Fire, Camp, Wait, Hide, and ChangeWeapon are direct AI-owned actions.
+FollowPlayer, AttackTarget, AimAtTarget, HuntTarget, SeekCover, EscapeFromBomb, RescueHostage, Retreat, Explore, ProtectObjective, PlantBomb, DefuseBomb, PickupItem, Fire, Camp, Wait, Hide, and ChangeWeapon are direct AI-owned actions. Reload now has a direct execution capability that delegates the low-level reload state machine and input to YaPB's existing `checkReload()` implementation.
 `HoldPosition` is a direct AI-owned action over the existing YaPB Pause primitive.
 `Hide` is a distinct direct action that reuses the existing YaPB Hide task as its engine-side mechanic; its setup is shared with the `SeekCover -> Hide` transition so direct execution does not introduce a second Hide behavior.
 AimAtTarget requires the observed current live enemy and reuses YaPB enemy targeting and aiming without requesting fire; like AttackTarget, it suppresses legacy task execution while active so the legacy task stack cannot overwrite the AI-owned combat state.
@@ -257,7 +257,7 @@ RescueHostage owns the intent to deliver already attached hostages to a rescue w
 ChangeWeapon owns only the semantic weapon-category intent; the YaPB adapter resolves it to an owned concrete weapon and uses `selectWeaponById()`.
 Completion is observed from the current weapon category.
 Cancellation does not attempt to undo an already-issued GoldSrc weapon-selection command.
-Reload remains YaPB-owned because its automatic reload state machine spans `checkReload()` and shared combat/task state.
+Reload is AI-owned at the intent/lifecycle boundary while YaPB remains authoritative for the low-level reload state machine, weapon availability, ammunition checks, weapon selection, and `IN_RELOAD` input.
 Other task-backed actions remain transitional until their direct execution semantics are implemented.
 
 ## Runtime integration
