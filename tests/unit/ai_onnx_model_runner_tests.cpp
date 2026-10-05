@@ -17,6 +17,7 @@
 #include <ai/ai_onnx_model_runner.h>
 
 using ai::test::expect;
+using ai::test::expectNear;
 
 namespace {
 
