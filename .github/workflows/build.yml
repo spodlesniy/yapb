@@ -46,6 +46,78 @@ jobs:
           name: meson-test-logs
           path: unit-tests/meson-logs/testlog.txt
 
+  changes:
+    name: Detect conditional test changes
+    runs-on: ubuntu-latest
+    outputs:
+      training-tools: ${{ steps.filter.outputs.training-tools }}
+      onnx-runtime: ${{ steps.filter.outputs.onnx-runtime }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed paths
+        id: filter
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" || "${{ github.event_name }}" == "release" ]]; then
+            echo "training-tools=true" >> "$GITHUB_OUTPUT"
+            echo "onnx-runtime=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if git cat-file -e "${{ github.event.before }}^{commit}" 2>/dev/null; then
+            changed_files="$(git diff --name-only "${{ github.event.before }}" "${{ github.sha }}")"
+          else
+            changed_files="$(git diff-tree --root --no-commit-id --name-only -r "${{ github.sha }}")"
+          fi
+
+          echo "Changed paths:"
+          printf '%s\n' "$changed_files"
+
+          training_tools=false
+          onnx_runtime=false
+
+          while IFS= read -r file; do
+            if [[ "$training_tools" == true && "$onnx_runtime" == true ]]; then
+              break
+            fi
+
+            case "$file" in
+              tools/aipb_training/*)
+                training_tools=true
+                ;;
+            esac
+
+            case "$file" in
+              .github/workflows/build.yml|meson.build|meson_options.txt|\
+              src/ai/ai_onnx_*.cpp|\
+              inc/ai/ai_onnx_*.h|\
+              tests/unit/ai_onnx_*.cpp|\
+              src/ai/ai_inference_*.cpp|\
+              inc/ai/ai_inference_*.h|\
+              tests/unit/ai_inference_*.cpp|\
+              tools/aipb_training/model_contract.py|\
+              tools/aipb_training/feature_contract.py|\
+              tools/aipb_training/onnx_export.py|\
+              tools/aipb_training/export.py|\
+              tools/aipb_training/policy_model.py|\
+              tools/aipb_training/tests/test_model_contract.py|\
+              tools/aipb_training/tests/test_feature_contract.py|\
+              tools/aipb_training/tests/test_onnx_export.py|\
+              tools/aipb_training/tests/test_export.py|\
+              tools/aipb_training/tests/test_policy_model.py)
+                onnx_runtime=true
+                ;;
+            esac
+          done <<< "$changed_files"
+
+          echo "training-tools=${training_tools}" >> "$GITHUB_OUTPUT"
+          echo "onnx-runtime=${onnx_runtime}" >> "$GITHUB_OUTPUT"
+
   onnx-runtime-tests:
     name: ONNX Runtime AI tests
     needs: [unit-tests, changes]
@@ -128,74 +200,6 @@ jobs:
         with:
           name: onnxruntime-test-logs
           path: unit-tests-onnx/meson-logs/testlog.txt
-
-  changes:
-    name: Detect conditional test changes
-    runs-on: ubuntu-latest
-    outputs:
-      training-tools: ${{ steps.filter.outputs.training-tools }}
-      onnx-runtime: ${{ steps.filter.outputs.onnx-runtime }}
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v7.0.1
-        with:
-          fetch-depth: 0
-
-      - name: Detect changed paths
-        id: filter
-        shell: bash
-        run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" || "${{ github.event_name }}" == "release" ]]; then
-            echo "training-tools=true" >> "$GITHUB_OUTPUT"
-            echo "onnx-runtime=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          if git cat-file -e "${{ github.event.before }}^{commit}" 2>/dev/null; then
-            changed_files="$(git diff --name-only "${{ github.event.before }}" "${{ github.sha }}")"
-          else
-            changed_files="$(git diff-tree --root --no-commit-id --name-only -r "${{ github.sha }}")"
-          fi
-
-          echo "Changed paths:"
-          printf '%s\n' "$changed_files"
-
-          training_tools=false
-          onnx_runtime=false
-
-          while IFS= read -r file; do
-            case "$file" in
-              tools/aipb_training/*)
-                training_tools=true
-                ;;
-            esac
-
-            case "$file" in
-              .github/workflows/build.yml|meson.build|meson_options.txt|\
-              src/ai/ai_onnx_*.cpp|\
-              inc/ai/ai_onnx_*.h|\
-              tests/unit/ai_onnx_*.cpp|\
-              src/ai/ai_inference_*.cpp|\
-              inc/ai/ai_inference_*.h|\
-              tests/unit/ai_inference_*.cpp|\
-              tools/aipb_training/model_contract.py|\
-              tools/aipb_training/feature_contract.py|\
-              tools/aipb_training/onnx_export.py|\
-              tools/aipb_training/export.py|\
-              tools/aipb_training/policy_model.py|\
-              tools/aipb_training/tests/test_model_contract.py|\
-              tools/aipb_training/tests/test_feature_contract.py|\
-              tools/aipb_training/tests/test_onnx_export.py|\
-              tools/aipb_training/tests/test_export.py|\
-              tools/aipb_training/tests/test_policy_model.py)
-                onnx_runtime=true
-                ;;
-            esac
-          done <<< "$changed_files"
-
-          echo "training-tools=${training_tools}" >> "$GITHUB_OUTPUT"
-          echo "onnx-runtime=${onnx_runtime}" >> "$GITHUB_OUTPUT"
 
   training-tools:
     name: Training tools tests
