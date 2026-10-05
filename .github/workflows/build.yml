@@ -73,12 +73,25 @@ jobs:
           ONNXRUNTIME_SHA256: 'a5ed5a3cac51fbb2e90da632ae43d19212faaa20e76484e62bcb7c23ddb3b3fd'
         run: |
           set -euo pipefail
+          cache_dir="${HOME}/.cache/aipb/onnxruntime"
           archive="onnxruntime-linux-x64-${ONNXRUNTIME_VERSION}.tgz"
-          url="https://github.com/microsoft/onnxruntime/releases/download/v${ONNXRUNTIME_VERSION}/${archive}"
-          curl --fail --location --retry 3 --silent --show-error --output "${archive}" "${url}"
-          echo "${ONNXRUNTIME_SHA256}  ${archive}" | sha256sum --check --strict
-          tar -xzf "${archive}"
-          echo "ONNXRUNTIME_ROOT=${archive%.tgz}" >> "$GITHUB_ENV"
+          root="${archive%.tgz}"
+          mkdir -p "${cache_dir}"
+
+          if [[ ! -f "${cache_dir}/${archive}" || ! -d "${cache_dir}/${root}" ]]; then
+            rm -f "${cache_dir}/${archive}"
+            rm -rf "${cache_dir}/${root}"
+            url="https://github.com/microsoft/onnxruntime/releases/download/v${ONNXRUNTIME_VERSION}/${archive}"
+            curl --fail --location --retry 3 --silent --show-error --output "${cache_dir}/${archive}" "${url}"
+            echo "${ONNXRUNTIME_SHA256}  ${cache_dir}/${archive}" | sha256sum --check --strict
+            tar -xzf "${cache_dir}/${archive}" -C "${cache_dir}"
+          else
+            echo "${ONNXRUNTIME_SHA256}  ${cache_dir}/${archive}" | sha256sum --check --strict
+          fi
+
+          rm -rf "${GITHUB_WORKSPACE}/${root}"
+          cp -a "${cache_dir}/${root}" "${GITHUB_WORKSPACE}/${root}"
+          echo "ONNXRUNTIME_ROOT=${root}" >> "$GITHUB_ENV"
       - name: Configure ONNX Runtime dependency
         shell: bash
         env:
