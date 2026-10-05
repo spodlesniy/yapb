@@ -190,14 +190,17 @@ tools/aipb_training/
     └── test_pipeline.py
 ```
 
-The first policy model is a framework-backed feed-forward baseline:
+The policy model is a framework-backed feed-forward supervised behavior-cloning model:
 
-`LayerNorm(243) -> Linear(243,256) -> ReLU -> Linear(256,256) -> ReLU -> Linear(256,128) -> ReLU -> Linear(128,10)`
+`LayerNorm(243) -> Linear(243,256) -> ReLU -> Linear(256,256) -> ReLU -> Linear(256,128) -> ReLU -> action head(26) + parameter head(9) -> output(10)`
 
+The action head predicts one of the 26 supported action IDs.
+The parameter head predicts the remaining nine action fields.
+The exported output keeps the existing ten-value float32 contract by placing the action-class argmax in output position 0 and concatenating the nine parameter values.
 Training uses PyTorch.
 The model has no recurrent state or dropout, so evaluation/inference is deterministic for a fixed model state and input.
 
-The initial training core uses PyTorch with SmoothL1 loss and AdamW.
+The training core uses cross-entropy for action selection and SmoothL1 for the nine non-action-ID outputs, with AdamW.
 Training and evaluation operate on framework-neutral PolicyTrainingBatch values; the trainer does not own dataset splitting or model export.
 
 The training orchestration layer performs deterministic episode-level train/validation splitting, seeded training shuffling, epoch execution, and checkpoint persistence.
@@ -221,7 +224,7 @@ They stream the validated JSONL dataset and report samples, episodes, terminal t
 
 Checkpoint evaluation is a separate offline step from training.
 It reuses the checkpoint's `validation_split` and `seed` so the validation boundary remains deterministic and consistent with the training run.
-The default validation report contains overall SmoothL1 loss, overall mean absolute error, runtime-style action ID accuracy, and per-output mean absolute error for the ten-value action tensor.
+The default validation report contains the same composite loss used during training, overall mean absolute error, categorical action-ID accuracy, and per-output mean absolute error for the ten-value action tensor.
 
 ## Action execution boundary
 
@@ -259,7 +262,8 @@ ChangeWeapon owns only the semantic weapon-category intent; the YaPB adapter res
 Completion is observed from the current weapon category.
 Cancellation does not attempt to undo an already-issued GoldSrc weapon-selection command.
 Reload is AI-owned at the intent/lifecycle boundary while YaPB remains authoritative for the low-level reload state machine, weapon availability, ammunition checks, weapon selection, and `IN_RELOAD` input.
-Other task-backed actions remain transitional until their direct execution semantics are implemented.
+All current model actions have explicit executor branches and semantic execution-context capabilities.
+The engine-side mechanic may still reuse a YaPB task, but task execution is a runtime primitive rather than a generic AI action acknowledgement path.
 
 ## Runtime integration
 
