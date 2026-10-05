@@ -96,7 +96,7 @@ jobs:
           EOF
           echo "PKG_CONFIG_PATH=${pkgconfig_dir}${PKG_CONFIG_PATH:+:${PKG_CONFIG_PATH}}" >> "$GITHUB_ENV"
           echo "LD_LIBRARY_PATH=${GITHUB_WORKSPACE}/${ONNXRUNTIME_ROOT}/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}" >> "$GITHUB_ENV"
-          pkg-config --modversion onnxruntime
+          PKG_CONFIG_PATH="${pkgconfig_dir}" pkg-config --modversion onnxruntime
       - name: Configure test build
         run: meson setup unit-tests-onnx -D64bit=true -Dtests=true -Donnxruntime=true
       - name: Run ONNX Runtime unit tests
