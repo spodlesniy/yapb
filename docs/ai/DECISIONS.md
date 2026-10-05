@@ -659,3 +659,11 @@ When the fire pause expires, the same attack task maps back to `AttackTarget`.
 
 Reason: YaPB already exposes the weapon fire cooldown as observation state, and the execution context has separate aim-without-fire and attack-with-fire capabilities.
 This produces distinct supervised labels for target acquisition during a firing cooldown without adding a new model field or inventing an engine-specific heuristic.
+## D081 — Distinguish retreat from generic seek-cover teacher states
+
+When YaPB has entered `SeekCover`, `GoalNavigationPolicy` labels the state as `Retreat` only when a visible enemy is present and the same combat approach value used by YaPB is below 30.
+The approach is reconstructed from observed health and aggression, while the task state itself establishes that YaPB has already selected cover behavior.
+Other `SeekCover` observations retain the `SeekCover` label.
+
+Reason: `Retreat` and `SeekCover` are intentionally distinct AI semantics, but the current observation contract does not expose YaPB's internal retreat timer, enemy-count pressure, or view-cone state separately.
+Using the existing `SeekCover` task plus the observable portion of YaPB's combat trigger avoids inventing an independent health threshold while still producing a meaningful distinction for supervised training.
