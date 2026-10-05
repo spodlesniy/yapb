@@ -16,6 +16,8 @@
 namespace ai {
 
 constexpr uint32_t kTrainingDatasetFormatVersion = 1;
+constexpr const char kTrainingDatasetDirectory[] = "addons/yapb/data/training";
+constexpr const char kDefaultTrainingDatasetFile[] = "aipb_training.jsonl";
 
 enum class TrainingDatasetWriteError : uint8_t {
   None,
