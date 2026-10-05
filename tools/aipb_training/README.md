@@ -51,7 +51,7 @@ These components are intentionally separated so the model I/O contract remains i
 
 ## Training core
 
-The initial training core uses a robust SmoothL1 loss over the ten-value raw action tensor and AdamW with a learning rate of 1e-3 and weight decay of 1e-4.
+The training core uses cross-entropy over the 26 action classes plus SmoothL1 regression over the nine non-action-ID outputs, with AdamW at a learning rate of 1e-3 and weight decay of 1e-4.
 One training pass updates model parameters; evaluation runs with gradients disabled and restores the model's previous training/evaluation state.
 
 The current trainer operates on already batched `PolicyTrainingBatch` values.
@@ -82,11 +82,15 @@ The first policy model is a small feed-forward network intended as a baseline fo
         -> Linear(243, 256) + ReLU
         -> Linear(256, 256) + ReLU
         -> Linear(256, 128) + ReLU
-        -> Linear(128, 10)
+        -> action head [N, 26]
+        -> parameter head [N, 9]
         -> output [N, 10]
 
+The action head classifies the 26 stable action IDs.
+The parameter head predicts the remaining nine action fields.
+The exported output uses argmax over the action classes as float32 in position 0, followed by the nine parameter values.
 The model has no dropout, recurrent state, or other inference-time state.
-Its output remains the raw AiPB action tensor.
+Its external output remains the raw AiPB action tensor.
 
 PyTorch is the training backend.
 The pinned requirements use the CPU-only PyTorch wheel, so the training tools do not require CUDA or NVIDIA runtime libraries.
@@ -189,7 +193,7 @@ Evaluate a trained checkpoint on the same deterministic episode split used by it
     python -m tools.aipb_training.evaluation dataset.jsonl checkpoints/best.pt
 
 The default split is validation.
-The report includes SmoothL1 loss, overall mean absolute error, action ID accuracy using the runtime's float-to-integer truncation behavior, and mean absolute error for each of the ten model outputs.
+The report includes the composite training loss, overall mean absolute error, action ID accuracy using the runtime's float-to-integer truncation behavior, and mean absolute error for each of the ten model outputs.
 The `--split train` option is available for comparing training-set and held-out behavior.
 
 ## Deployment
