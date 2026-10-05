@@ -160,11 +160,12 @@ AI_TEST(testOnnxModelRunnerLoadsReferenceModel) {
   const bool loaded = runner.load (AIPB_TEST_SOURCE_ROOT "/tests/data/aipb_reference_model.onnx");
 
   expect (loaded, "ONNX Runtime loads the AiPB reference model");
-  expect (runner.isReady (), "reference model leaves the ONNX runner ready");
-
   if (!loaded) {
+    expect (false, runner.getLastError ());
     return;
   }
+
+  expect (runner.isReady (), "reference model leaves the ONNX runner ready");
 
   ai::InferenceFeatures features {};
   const auto result = runner.run (features);
