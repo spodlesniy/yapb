@@ -82,15 +82,15 @@ jobs:
           mkdir -p "${pkgconfig_dir}"
           cat > "${pkgconfig_dir}/onnxruntime.pc" <<EOF
           prefix=${GITHUB_WORKSPACE}/${ONNXRUNTIME_ROOT}
-          exec_prefix=${prefix}
-          libdir=${prefix}/lib
-          includedir=${prefix}/include
+          exec_prefix=${GITHUB_WORKSPACE}/${ONNXRUNTIME_ROOT}
+          libdir=${GITHUB_WORKSPACE}/${ONNXRUNTIME_ROOT}/lib
+          includedir=${GITHUB_WORKSPACE}/${ONNXRUNTIME_ROOT}/include
 
           Name: onnxruntime
           Description: ONNX Runtime CPU release package
           Version: ${ONNXRUNTIME_VERSION}
-          Libs: -L${libdir} -lonnxruntime
-          Cflags: -I${includedir}
+          Libs: -L${GITHUB_WORKSPACE}/${ONNXRUNTIME_ROOT}/lib -lonnxruntime
+          Cflags: -I${GITHUB_WORKSPACE}/${ONNXRUNTIME_ROOT}/include
           EOF
           echo "PKG_CONFIG_PATH=${pkgconfig_dir}${PKG_CONFIG_PATH:+:${PKG_CONFIG_PATH}}" >> "$GITHUB_ENV"
           echo "LD_LIBRARY_PATH=${GITHUB_WORKSPACE}/${ONNXRUNTIME_ROOT}/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}" >> "$GITHUB_ENV"
