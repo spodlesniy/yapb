@@ -159,7 +159,7 @@ Action GoalNavigationPolicy::decide(const Observation &observation) const {
     case TaskType::DefuseBomb:
       action.type = ActionType::DefuseBomb;
       break;
-    case TaskType::SeekCover:
+    case TaskType::SeekCover: {
       constexpr float kRetreatApproachThreshold = 30.0f;
       const float approach = observation.bot.health * observation.personality.aggression;
       const bool seeingEnemy = (observation.combat.perceptionFlags & static_cast<uint32_t>(PerceptionFlag::SeeingEnemy)) != 0;
@@ -168,6 +168,7 @@ Action GoalNavigationPolicy::decide(const Observation &observation) const {
                       ? ActionType::Retreat
                       : ActionType::SeekCover;
       break;
+    }
     case TaskType::EscapeFromBomb:
       action.type = ActionType::EscapeFromBomb;
       break;
