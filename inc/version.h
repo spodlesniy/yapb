@@ -12,6 +12,9 @@
 #define MODULE_COMMIT_HASH "0"
 #define MODULE_AUTHOR "yapb-local@jeefo.net"
 #define MODULE_MACHINE "localhost"
+#define MODULE_BUILD_DATE "unknown"
+#define MODULE_BUILD_DATETIME "unknown"
+#define MODULE_BUILD_YEAR "unknown"
 #define MODULE_COMPILER "default"
 #define MODULE_VERSION "4.5"
 #define MODULE_VERSION_FILE 4,5,0,000
