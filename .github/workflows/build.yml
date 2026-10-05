@@ -329,10 +329,10 @@ jobs:
         shell: pwsh
         run: |
           $nativeFile = Join-Path $env:RUNNER_TEMP "aipb-sccache-native.ini"
-          @"
-[binaries]
-cpp = ['sccache', 'cl.exe']
-"@ | Set-Content -Path $nativeFile -Encoding utf8
+          @(
+            '[binaries]'
+            "cpp = ['sccache', 'cl.exe']"
+          ) | Set-Content -Path $nativeFile -Encoding ascii
 
           if ('${{matrix.arch}}' -eq 'windows-x86-msvc-xp') {
             meson setup ${{matrix.arch}} --native-file $nativeFile -Dwinxp=true
@@ -386,10 +386,10 @@ cpp = ['sccache', 'cl.exe']
         shell: pwsh
         run: |
           $nativeFile = Join-Path $env:RUNNER_TEMP "aipb-sccache-native.ini"
-          @"
-[binaries]
-cpp = ['sccache', 'cl.exe']
-"@ | Set-Content -Path $nativeFile -Encoding utf8
+          @(
+            '[binaries]'
+            "cpp = ['sccache', 'cl.exe']"
+          ) | Set-Content -Path $nativeFile -Encoding ascii
           meson setup windows-x86 --native-file $nativeFile
       - name: Build sources
         run: meson compile -C windows-x86 -v
