@@ -54,5 +54,26 @@ def build_policy_model():
         layers.append(nn.ReLU())
         input_features = hidden_features
 
-    layers.append(nn.Linear(input_features, POLICY_MODEL_ARCHITECTURE.output_features))
-    return nn.Sequential(*layers)
+    trunk = nn.Sequential(*layers)
+
+    class PolicyModel(nn.Module):
+        def __init__(self) -> None:
+            super().__init__()
+            self.trunk = trunk
+            self.action_head = nn.Linear(input_features, POLICY_MODEL_ARCHITECTURE.action_class_count)
+            self.parameter_head = nn.Linear(input_features, POLICY_MODEL_ARCHITECTURE.continuous_output_features)
+
+        def forward_training(self, observations):
+            import torch
+
+            features = self.trunk(observations)
+            action_logits = self.action_head(features)
+            action_parameters = self.parameter_head(features)
+            action_id = action_logits.argmax(dim=1, keepdim=True).to(action_parameters.dtype)
+            return torch.cat((action_id, action_parameters), dim=1), action_logits
+
+        def forward(self, observations):
+            output, _ = self.forward_training(observations)
+            return output
+
+    return PolicyModel()
