@@ -172,7 +172,10 @@ Action GoalNavigationPolicy::decide(const Observation &observation) const {
   }
 
   case TaskType::Attack: {
-    const Action action = makeTargetPlayerAction(ActionType::AttackTarget, observation);
+    const actionType = observation.combat.firePauseRemaining > 0.0f
+                         ? ActionType::AimAtTarget
+                         : ActionType::AttackTarget;
+    const action = makeTargetPlayerAction(actionType, observation);
     return action.type != ActionType::None ? action : makeGoalNavigationAction(observation);
   }
 

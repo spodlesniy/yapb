@@ -76,6 +76,12 @@ AI_TEST(testGoalNavigationPolicyMapsCombatTasks) {
   expect(action.type == ai::ActionType::AttackTarget, "attack task maps to attack target");
   expect(action.targetPlayer == 7, "attack target preserves enemy entity");
 
+  observation.combat.firePauseRemaining = 0.25f;
+  action = policy.decide(observation);
+  expect(action.type == ai::ActionType::AimAtTarget, "attack task during fire pause maps to aim at target");
+  expect(action.targetPlayer == 7, "aim target preserves enemy entity");
+
+  observation.combat.firePauseRemaining = 0.0f;
   observation.bot.currentTask = ai::TaskType::Hunt;
   action = policy.decide(observation);
   expect(action.type == ai::ActionType::HuntTarget, "hunt task maps to hunt target");

@@ -39,7 +39,7 @@ Runtime execution remains separate from the inference implementation.
 ### Training
 
 `Training` currently uses `GoalNavigationPolicy` as a deterministic, task-aware behavior source while collecting transitions.
-It maps observable YaPB tasks and explicit objective state to AI actions and falls back to navigation goals when required task data is not present.
+It maps observable YaPB tasks, combat timing, and explicit objective state to AI actions and falls back to navigation goals when required task data is not present.
 Direct AI-owned actions are executed through the semantic `ActionExecutionContext`; actions without an explicit execution capability remain unsupported and are rejected.
 Training remains a data-collection mode, not online neural-network weight training.
 

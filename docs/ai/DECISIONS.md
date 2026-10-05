@@ -651,3 +651,11 @@ Once the bot is already in the rescue zone, or while an incompatible task is act
 
 Reason: hostage carrying is already represented explicitly in the observation contract, while the existing rescue execution capability has stable completion semantics and explicit task preconditions.
 Keeping the teacher and execution preconditions aligned prevents deterministic training labels from producing actions that the runtime would immediately reject.
+## D080 — Teach aim during an active weapon fire pause
+
+`GoalNavigationPolicy` maps an active `TaskType::Attack` with positive `firePauseRemaining` to `AimAtTarget` instead of `AttackTarget`.
+The enemy target still comes from the current observed live enemy, so the action remains fully specified by the existing observation contract.
+When the fire pause expires, the same attack task maps back to `AttackTarget`.
+
+Reason: YaPB already exposes the weapon fire cooldown as observation state, and the execution context has separate aim-without-fire and attack-with-fire capabilities.
+This produces distinct supervised labels for target acquisition during a firing cooldown without adding a new model field or inventing an engine-specific heuristic.
