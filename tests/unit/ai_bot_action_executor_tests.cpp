@@ -1783,9 +1783,9 @@ AI_TEST(testBotActionExecutorRejectsUnsupportedAction) {
   auto observation = aliveObservation();
 
   ai::Action action {};
-  action.type = ai::ActionType::Reload;
+  action.type = ai::ActionType::None;
 
   expect(executor.execute(action, observation).type == ai::ActionResultType::Rejected,
-      "unsupported reload action is rejected");
+      "none action is rejected as non-executable");
 }
 
