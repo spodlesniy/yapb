@@ -464,3 +464,8 @@ A dedicated Linux CI job enables the optional C++ ONNX Runtime backend and execu
 
 Reason: the normal AI unit-test job intentionally omits the optional ONNX Runtime dependency, so it cannot validate the concrete model-loading and inference path. Separate coverage preserves the lightweight default test while continuously exercising the production backend and reference model together.
 
+## D074 — Cache the pinned ONNX Runtime dependency in CI
+
+The ONNX Runtime CI job caches the pinned Linux x64 release archive and its extracted directory under a cache key containing the exact runtime version and SHA-256. Cached artifacts are still checksum-verified before use.
+
+Reason: the optional ONNX Runtime dependency is a large immutable release asset that is reused across CI runs. Caching the exact verified artifact reduces repeated download and extraction work without weakening dependency integrity or allowing an unrelated runtime build to satisfy the test job.
