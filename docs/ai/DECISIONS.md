@@ -1145,3 +1145,14 @@ This keeps the recovery narrow to an actual stuck state while handling cases whe
 Reason: a post-D119 schema-v6 capture reproduced the same gameplay failure.
 A `ProtectObjective` transition began with `stuck=1` while the current/goal waypoint was about 21 units away and another observed waypoint was about 2 units away.
 The old D119 condition did not re-anchor because the current waypoint could still pass `isReachableNode()`, allowing the bot to keep pushing toward the stale path direction through nearby geometry.
+
+## D123 — Make CT Hunt yield to a planted C4 search
+
+On demolition maps, a Counter-Terrorist no longer starts or continues legacy `Task::Hunt` while the bomb is planted and no enemy is currently visible.
+The same objective-level Hunt gate already used for Terrorist bomb ownership now also covers the CT planted-bomb search state.
+
+Clearing the stale Hunt returns control to YaPB's existing normal objective navigation.
+`findBestGoal()` then uses `findBombNode()` to choose the planted-C4 search goal, while visible enemy combat remains unaffected.
+
+Reason: a schema-v6 gameplay capture contains a CT that stayed in `HuntTarget` from about 13.6 seconds to about 10.1 seconds remaining on the bomb timer and then transitioned directly into `EscapeFromBomb`.
+That left no viable search/defuse phase even though the planted-bomb objective had higher gameplay priority than pursuing a remembered enemy.

@@ -2099,12 +2099,16 @@ void Bot::filterTasks () {
    const bool terroristBombObjective = m_team == Team::Terrorist
       && game.mapIs (MapFlags::Demolition)
       && (gameState.isBombPlanted () || terroristDroppedBombObjective);
+   const bool counterTerroristBombObjective = m_team == Team::CT
+      && game.mapIs (MapFlags::Demolition)
+      && gameState.isBombPlanted ();
+   const bool bombObjectiveBlocksHunt = terroristBombObjective || counterTerroristBombObjective;
 
    if (!terroristDroppedBombObjective) {
       m_loosedBombNodeIndex = kInvalidNodeIndex;
    }
 
-   if (terroristBombObjective && !(m_states & Sense::SeeingEnemy)) {
+   if (bombObjectiveBlocksHunt && !(m_states & Sense::SeeingEnemy)) {
       const auto currentTask = getCurrentTaskId ();
 
       if (currentTask == Task::Hunt || (terroristDroppedBombObjective && currentTask == Task::Camp)) {
@@ -2178,7 +2182,7 @@ void Bot::filterTasks () {
       }
 
       // if half of the round is over, allow hunting
-      if (!terroristBombObjective
+      if (!bombObjectiveBlocksHunt
          && getCurrentTaskId () != Task::EscapeFromBomb
          && game.isNullEntity (m_enemy)
          && !m_isVIP
