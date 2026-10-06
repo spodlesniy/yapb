@@ -1088,3 +1088,13 @@ An already active ProtectObjective may still continue its own `MoveToPosition` o
 
 Reason: gameplay validation showed Terrorists far from the planted bomb remaining stationary for long post-plant intervals.
 The previous first-entry Camp shortcut selected a defend node but immediately discarded it, allowing any unrelated legacy Camp to satisfy ProtectObjective for the rest of the bomb timer without ever repositioning toward the objective.
+
+## D118 — Do not preserve head aim through high recoil
+
+The persistent enemy head-selection lock now applies only while the current recoil and weapon checks still allow head aiming.
+When `isRecoilHigh()` or the existing weapon/distance rule reduces `headshotPct` to zero, the bot aims at the enemy body even if that same enemy had previously been selected for a headshot.
+The existing headshot probability, recoil threshold, weapon spread, firing cadence, and difficulty data are unchanged.
+
+Reason: the previous condition allowed `m_enemyBodyPartSet == m_enemy` to bypass a later `headshotPct = 0`.
+After the first successful head selection, a bot could therefore keep targeting the head throughout a rapid-fire or burst sequence despite recoil logic explicitly deciding that head aim should no longer be allowed.
+This was especially visible with Glock burst fire as consecutive head impacts that looked more precise than the weapon state should permit.

@@ -732,8 +732,11 @@ Vector Bot::getEnemyBodyOffset () {
          }
 
          // now check is our skill match to aim at head, else aim at enemy body
-         if (m_enemyBodyPartSet == m_enemy
-            || ((m_enemyBodyPartSet != m_enemy) && rg.chance (headshotPct))) {
+         const bool headAimAllowed = headshotPct > 0;
+
+         if (headAimAllowed
+            && (m_enemyBodyPartSet == m_enemy
+               || ((m_enemyBodyPartSet != m_enemy) && rg.chance (headshotPct)))) {
 
             spot = headOrigin (m_enemy, distance);
 
