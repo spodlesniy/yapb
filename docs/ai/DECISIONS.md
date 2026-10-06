@@ -1098,3 +1098,14 @@ The existing headshot probability, recoil threshold, weapon spread, firing caden
 Reason: the previous condition allowed `m_enemyBodyPartSet == m_enemy` to bypass a later `headshotPct = 0`.
 After the first successful head selection, a bot could therefore keep targeting the head throughout a rapid-fire or burst sequence despite recoil logic explicitly deciding that head aim should no longer be allowed.
 This was especially visible with Glock burst fire as consecutive head impacts that looked more precise than the weapon state should permit.
+
+## D119 — Re-anchor stuck planted-bomb protection navigation
+
+While an AI-owned `ProtectObjective` is moving toward its defend node, a bot that is already marked stuck now validates whether its current waypoint is still directly reachable from its physical position.
+If that current waypoint is no longer reachable, the execution context re-anchors the bot to the nearest reachable waypoint, clears the stale path, and lets the existing `MoveToPosition` task rebuild a graph route to the same defend objective.
+
+The recovery is limited to the combination of active objective movement, an actual stuck state, and an unreachable current waypoint.
+Normal collision probing, defend-node selection, and path planning are unchanged when the current waypoint remains reachable.
+
+Reason: gameplay graph-debug showed a Terrorist repeatedly pushing into a wall toward a non-nearest waypoint while another route existed out of the corner.
+The accompanying schema-v6 capture contains a 26.9-second `ProtectObjective` transition that begins with `stuck=1`, showing that objective ownership could persist through the broken navigation anchor until the bomb state ended.

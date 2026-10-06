@@ -871,6 +871,17 @@ bool YaPBActionExecutionContext::protectObjective() {
   }
 
   if (m_bot->getCurrentTaskId() == Task::MoveToPosition) {
+    if (m_bot->m_isStuck && graph.exists(m_bot->m_currentNodeIndex)
+        && !m_bot->isReachableNode(m_bot->m_currentNodeIndex)) {
+
+      const int nearestNode = m_bot->findNearestNode();
+
+      if (graph.exists(nearestNode) && nearestNode != m_bot->m_currentNodeIndex) {
+        m_bot->changeNodeIndex(nearestNode);
+        m_bot->clearSearchNodes();
+      }
+    }
+
     m_bot->getTask()->data = m_protectObjectiveNode;
     m_bot->m_prevGoalIndex = m_protectObjectiveNode;
     m_bot->m_chosenGoalIndex = m_protectObjectiveNode;
