@@ -1028,3 +1028,15 @@ Attack and aim continue to use the current enemy, and D108 dropped-C4 recovery a
 
 Reason: using the current enemy for Hunt could produce an immediately rejected target or fall through into navigation that immediately lost ownership to the still-active legacy Hunt task.
 Keeping producer and executor target semantics aligned removes those invalid labels and ownership interruptions at their source.
+
+## D113 — Align semantic navigation completion with legacy waypoint reach
+
+Semantic `MoveToNode` and `MoveToPosition` completion now uses the same live waypoint reach threshold as YaPB's legacy `updateNavigation()` path progression.
+The shared calculation uses `m_pathOrigin`, including its runtime offset inside a waypoint radius, and preserves the existing precision rules for goal, crouch, ladder, jump, travel-flag, lost-node, and recent-repath states.
+The AI execution context no longer approximates completion from the static graph-node origin with a fixed minimum 48-unit radius.
+
+The deterministic teacher, task stack, reward provider, and navigation action schema are unchanged.
+Legacy task execution remains responsible for advancing the path after the semantic action reaches the same waypoint boundary.
+
+Reason: fresh schema-v6 gameplay capture contained repeated zero-duration `MoveToPosition -> Completed` transitions with positive reward while the bot was still approaching the same live path target.
+The semantic reach check could declare the static graph node reached before `updateNavigation()` considered its offset or precision-constrained path origin reached, so the unchanged legacy `MoveToPosition` task was adopted and completed again on subsequent decision cycles.

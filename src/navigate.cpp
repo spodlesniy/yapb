@@ -1081,6 +1081,84 @@ void Bot::translateInput () {
    }
 }
 
+float Bot::getNavigationReachDistanceSq (bool *pathHasFlags) {
+   float desiredDistanceSq = cr::sqrf (48.0f);
+   const float nodeDistanceSq = pev->origin.distanceSq (m_pathOrigin);
+
+   // initialize the radius for a special node type, where the node is considered to be reached
+   if (m_pathFlags & NodeFlag::Lift) {
+      desiredDistanceSq = cr::sqrf (50.0f);
+   }
+   else if (isDucking () || (m_pathFlags & NodeFlag::Goal)) {
+      desiredDistanceSq = cr::sqrf (25.0f);
+
+      // on cs_ maps goals are usually hostages, so increase reachability distance for them, they (hostages) picked anyway
+      if (game.mapIs (MapFlags::HostageRescue)
+         && (m_pathFlags & NodeFlag::Goal)) {
+
+         desiredDistanceSq = cr::sqrf (96.0f);
+      }
+   }
+   else if (isOnLadder ()) {
+      desiredDistanceSq = cr::sqrf (15.0f);
+   }
+   else if (m_pathFlags & NodeFlag::Ladder) {
+      desiredDistanceSq = cr::sqrf (6.0f);
+   }
+   else if (m_currentTravelFlags & PathFlag::Jump) {
+      desiredDistanceSq = 0.0f;
+
+      if (pev->velocity.z > 16.0f) {
+         desiredDistanceSq = cr::sqrf (8.0f);
+      }
+   }
+   else if (m_pathFlags & NodeFlag::Crouch) {
+      desiredDistanceSq = cr::sqrf (6.0f);
+   }
+   else if (m_path->number == cv_debug_goal.as <int> ()) {
+      desiredDistanceSq = 0.0f;
+   }
+   else {
+      desiredDistanceSq = cr::max (cr::sqrf (m_path->radius), desiredDistanceSq);
+   }
+
+   bool hasPathFlags = false;
+
+   // check if this node has special travel flags that require precise reach
+   for (const auto &link : m_path->links) {
+      if (link.flags != 0) {
+         desiredDistanceSq = 0.0f;
+         hasPathFlags = true;
+
+         break;
+      }
+   }
+
+   // make sure reach exactly, if just lost on path
+   if (!m_lostReachableNodeTimer.elapsed ()) {
+      desiredDistanceSq = 0.0f;
+   }
+
+   // if just recalculated path, assume reached current node
+   if (!m_repathTimer.elapsed () && !hasPathFlags) {
+      desiredDistanceSq = cr::sqrf (48.0f);
+   }
+
+   // needs precise placement - check if we get past the point
+   if (desiredDistanceSq < cr::sqrf (16.0f) && nodeDistanceSq < cr::sqrf (30.0f)) {
+      const auto predictRangeSq = m_pathOrigin.distanceSq (pev->origin + pev->velocity * m_frameInterval);
+
+      if (predictRangeSq >= nodeDistanceSq || predictRangeSq <= desiredDistanceSq) {
+         desiredDistanceSq = nodeDistanceSq + 1.0f;
+      }
+   }
+
+   if (pathHasFlags != nullptr) {
+      *pathHasFlags = hasPathFlags;
+   }
+   return desiredDistanceSq;
+}
+
 bool Bot::updateNavigation () {
    // this function is a main path navigation
 
@@ -1324,75 +1402,9 @@ bool Bot::updateNavigation () {
       }
    }
 
-   float desiredDistanceSq = cr::sqrf (48.0f);
-   const float nodeDistanceSq = pev->origin.distanceSq (m_pathOrigin);
-
-   // initialize the radius for a special node type, where the node is considered to be reached
-   if (m_pathFlags & NodeFlag::Lift) {
-      desiredDistanceSq = cr::sqrf (50.0f);
-   }
-   else if (isDucking () || (m_pathFlags & NodeFlag::Goal)) {
-      desiredDistanceSq = cr::sqrf (25.0f);
-
-      // on cs_ maps goals are usually hostages, so increase reachability distance for them, they (hostages) picked anyway
-      if (game.mapIs (MapFlags::HostageRescue)
-         && (m_pathFlags & NodeFlag::Goal)) {
-
-         desiredDistanceSq = cr::sqrf (96.0f);
-      }
-   }
-   else if (isOnLadder ()) {
-      desiredDistanceSq = cr::sqrf (15.0f);
-   }
-   else if (m_pathFlags & NodeFlag::Ladder) {
-      desiredDistanceSq = cr::sqrf (6.0f);
-   }
-   else if (m_currentTravelFlags & PathFlag::Jump) {
-      desiredDistanceSq = 0.0f;
-
-      if (pev->velocity.z > 16.0f) {
-         desiredDistanceSq = cr::sqrf (8.0f);
-      }
-   }
-   else if (m_pathFlags & NodeFlag::Crouch) {
-      desiredDistanceSq = cr::sqrf (6.0f);
-   }
-   else if (m_path->number == cv_debug_goal.as <int> ()) {
-      desiredDistanceSq = 0.0f;
-   }
-   else {
-      desiredDistanceSq = cr::max (cr::sqrf (m_path->radius), desiredDistanceSq);
-   }
    bool pathHasFlags = false;
-
-   // check if node has a special travel flags, so they need to be reached more precisely
-   for (const auto &link : m_path->links) {
-      if (link.flags != 0) {
-         desiredDistanceSq = 0.0f;
-         pathHasFlags = true;
-
-         break;
-      }
-   }
-
-   // make sure reach exactly, if just lost on path
-   if (!m_lostReachableNodeTimer.elapsed ()) {
-      desiredDistanceSq = 0.0f;
-   }
-
-   // if just recalculated path, assume reached current node
-   if (!m_repathTimer.elapsed () && !pathHasFlags) {
-      desiredDistanceSq = cr::sqrf (48.0f);
-   }
-
-   // needs precise placement - check if we get past the point
-   if (desiredDistanceSq < cr::sqrf (16.0f) && nodeDistanceSq < cr::sqrf (30.0f)) {
-      const auto predictRangeSq = m_pathOrigin.distanceSq (pev->origin + pev->velocity * m_frameInterval);
-
-      if (predictRangeSq >= nodeDistanceSq || predictRangeSq <= desiredDistanceSq) {
-         desiredDistanceSq = nodeDistanceSq + 1.0f;
-      }
-   }
+   const float nodeDistanceSq = pev->origin.distanceSq (m_pathOrigin);
+   const float desiredDistanceSq = getNavigationReachDistanceSq (&pathHasFlags);
 
    // this allows us to prevent stupid bot behavior when he reaches almost end point of this route, but some one  (other bot eg)
    // is sitting there, so the bot is unable to reach the node because of other player on it, and he starts to jumping and so on

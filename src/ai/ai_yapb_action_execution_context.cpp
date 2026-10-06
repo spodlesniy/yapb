@@ -15,11 +15,6 @@
 #include <ai/ai_yapb_action_execution_context.h>
 
 namespace ai {
-namespace {
-
-constexpr float kNavigationReachDistance = 48.0f;
-
-} // namespace
 
 YaPBActionExecutionContext::YaPBActionExecutionContext(Bot &bot) : m_bot(&bot) {
 }
@@ -54,9 +49,8 @@ bool YaPBActionExecutionContext::isNavigationTargetReached(int node) const {
     return false;
   }
 
-  const auto &path = graph[node];
-  const float reachDistance = cr::max(kNavigationReachDistance, path.radius);
-  return m_bot->pev->origin.distanceSq(path.origin) <= cr::sqrf(reachDistance);
+  const float reachDistanceSq = m_bot->getNavigationReachDistanceSq();
+  return m_bot->pev->origin.distanceSq(m_bot->m_pathOrigin) < reachDistanceSq;
 }
 
 void YaPBActionExecutionContext::moveToNode(int node) {

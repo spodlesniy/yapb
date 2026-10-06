@@ -429,6 +429,7 @@ private:
    int numFriendsNear (const Vector &origin, const float radius) const;
 
    float getEstimatedNodeReachTime ();
+   float getNavigationReachDistanceSq (bool *pathHasFlags = nullptr);
    float isInFOV (const Vector &dest) const;
    float getShiftSpeed ();
    float calculateScaleFactor (edict_t *ent) const;
