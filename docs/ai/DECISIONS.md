@@ -1052,3 +1052,16 @@ The reward provider is unchanged, so interrupted protection keeps the existing n
 
 Reason: fresh schema-v6 validation showed `ProtectObjective -> Completed` samples at tactical handoff boundaries even though the bomb objective was still active.
 The executor previously mapped both the real objective terminal condition and loss of the compatible runtime task to `Completed`, conflating successful protection with preemption in the training labels.
+
+## D115 — Complete Retreat through the legacy hide transition
+
+An AI-owned `Retreat` now remains active while its `MoveToPosition` task reaches the selected cover node.
+After legacy navigation completes that move, the execution context starts the existing `Hide` behavior and only then reports Retreat as completed.
+The resulting `Hide` task is not cleared when Retreat releases its runtime state, so the next semantic decision can represent hiding separately.
+
+If an incompatible tactical task preempts an active Retreat before the hide transition, the executor now reports `Interrupted` instead of `Completed`.
+Initial inability to choose or start a cover route remains `Rejected`.
+The teacher, observation schema, reward provider, and legacy cover-node selection are unchanged.
+
+Reason: a fresh schema-v6 self-play capture contained 23 Retreat samples, including 20 consecutive zero-duration rejections in one episode after several extremely short completions.
+The previous Retreat lifecycle treated arrival at the cover waypoint as terminal and omitted the `SeekCover -> Hide` transition performed by legacy `seekCover_()`, allowing the same low-health visible-enemy state to immediately request Retreat again.

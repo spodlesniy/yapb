@@ -867,7 +867,7 @@ AI_TEST(testBotActionExecutorCompletesRetreatWhenReached) {
   expect(context.cancelRetreatCalls == 1, "completion releases direct retreat");
 }
 
-AI_TEST(testBotActionExecutorCompletesRetreatWhenRuntimeStopsIt) {
+AI_TEST(testBotActionExecutorInterruptsRetreatWhenRuntimeStopsIt) {
   MockActionExecutionContext context {};
   ai::BotActionExecutor executor(context);
   auto action = ai::Action {};
@@ -876,8 +876,8 @@ AI_TEST(testBotActionExecutorCompletesRetreatWhenRuntimeStopsIt) {
   expect(result.type == ai::ActionResultType::Accepted, "retreat starts while available");
   context.retreatAvailable = false;
   result = executor.execute(action, aliveObservation());
-  expect(result.type == ai::ActionResultType::Completed, "retreat completes when the runtime stops it");
-  expect(context.cancelRetreatCalls == 1, "runtime stop releases direct retreat");
+  expect(result.type == ai::ActionResultType::Interrupted, "retreat is interrupted when the runtime is preempted");
+  expect(context.cancelRetreatCalls == 1, "runtime preemption releases direct retreat");
 }
 
 AI_TEST(testBotActionExecutorRejectsRetreatWhenRuntimeCannotStartIt) {

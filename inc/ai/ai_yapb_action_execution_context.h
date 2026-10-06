@@ -28,6 +28,7 @@ private:
   bool m_retreatActive {};
   int m_retreatNode { -1 };
   bool m_retreatNavigationTaskCreated {};
+  bool m_retreatHideTaskCreated {};
   bool m_exploreActive {};
   int m_exploreNode { -1 };
   bool m_exploreNavigationTaskCreated {};
