@@ -4224,8 +4224,8 @@ bool Bot::isOutOfBombTimer () {
       }
    }
 
-   // add reach time to left time
-   const float reachTime = graph.calculateTravelTime (pev->maxspeed, m_pathOrigin, bombOrigin);
+   // add reach time from the bot's physical position, not from a potentially stale path anchor
+   const float reachTime = graph.calculateTravelTime (pev->maxspeed, pev->origin, bombOrigin);
 
    // for counter-terrorist check alos is we have time to reach position plus average defuse time
    if ((timeLeft < reachTime + 8.0f && !m_hasDefuser && !hasTeammatesWithDefuserKit) || (timeLeft < reachTime + 4.0f && m_hasDefuser)) {

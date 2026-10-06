@@ -1169,3 +1169,12 @@ The last living CT ignores team-wide visited flags as hard exclusions, because t
 Reason: gameplay validation after D123 still showed the last CT reaching the wrong bombsite and then leaving in an unexpected direction.
 The inherited YaPB audibility comparison was reversed, the audible branch could return an invalid node from a narrow 240-unit search without fallback, and the visited-goal loop could discard the bomb-nearest site in favor of a random Goal.
 Together these paths made post-plant search especially unstable after the rest of the CT team had died.
+
+## D125 — Estimate CT bomb escape timing from physical position
+
+`isOutOfBombTimer()` now estimates the Counter-Terrorist's remaining travel time to the planted C4 from `pev->origin` instead of `m_pathOrigin`.
+The existing defuse-kit margins and escape thresholds are unchanged.
+
+Reason: gameplay validation captured a CT reaching an elevated planted C4 but switching to `EscapeFromBomb` before ever entering `PickupItem` or `DefuseBomb`.
+In the same episode the bot was physically beside a nearby waypoint while its current navigation anchor still pointed farther away.
+Because `m_pathOrigin` is a navigation target rather than the bot's physical location, the old timer could overestimate the remaining approach time after climbing onto the bomb box and incorrectly decide that a still-possible defuse was already too late.
