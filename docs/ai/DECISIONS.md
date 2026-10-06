@@ -912,3 +912,15 @@ Reason: v6 gameplay capture still showed repeated ~0.034-second completed `Escap
 The legacy override was running every frame, completing the primitive owned by the already-active AI escape, recreating `Task::EscapeFromBomb`, and causing the execution context to report completion.
 Guarding the legacy transition by the existing action ownership state removes both the dataset churn and the repeated navigation reset without introducing another Bot-level flag.
 
+## D104 — Add a re-enable cooldown to legacy flashlight behavior
+
+The flashlight still turns off immediately when the bot enters `Attack` or `Camp`, has heard an enemy within the last three seconds, reaches a bright area, or exhausts its flashlight charge.
+After any such automatic shutdown, the flashlight may not be turned back on for six seconds.
+The cooldown resets at the start of each round.
+
+The existing light-level hysteresis remains unchanged: on bright-sky maps the flashlight turns on below light level 10 and off above 15; on darker-sky maps the corresponding thresholds remain 40 and 45.
+The cooldown is asymmetric so threat response is never delayed: only re-enabling is postponed.
+
+Reason: task and hearing state can change much faster than the darkness check interval, causing a bot in a dark area to repeatedly toggle the flashlight off for a short tactical event and back on at the next 2-4 second darkness check.
+A short re-enable cooldown preserves the existing tactical-off behavior while removing visible flashlight oscillation.
+
