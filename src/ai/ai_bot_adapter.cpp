@@ -139,6 +139,26 @@ void appendWaypoint(ObservationInput &input, int index, uint16_t connectionFlags
 
 } // namespace
 
+bool hasDroppedBombObjective() {
+  if (!game.mapIs(MapFlags::Demolition) || gameState.isBombPlanted() || cv_ignore_objectives
+      || !gameState.hasInterestingEntities()) {
+    return false;
+  }
+
+  for (const auto &ent : gameState.getInterestingEntities()) {
+    if (game.isNullEntity(ent) || (ent->v.effects & EF_NODRAW)
+        || !ent->v.classname.str().startsWith("weaponbox")) {
+      continue;
+    }
+
+    if (game.isEntityModelMatches(ent, "backpack.mdl")) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 ObservationInput buildObservationInput(const Bot &bot) {
   ObservationInput input {};
 
@@ -230,6 +250,9 @@ ObservationInput buildObservationInput(const Bot &bot) {
   }
   if (bot.m_hasC4) {
     input.bot.objectiveFlags |= ObjectiveFlag::BombCarrier;
+  }
+  if (hasDroppedBombObjective()) {
+    input.bot.objectiveFlags |= ObjectiveFlag::BombDropped;
   }
   if (bot.m_hasHostage) {
     input.bot.objectiveFlags |= ObjectiveFlag::HasHostage;

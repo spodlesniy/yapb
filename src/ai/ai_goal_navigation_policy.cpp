@@ -86,6 +86,7 @@ Action makeGoalNavigationAction(const Observation &observation) {
 
 constexpr float kBombPlantTravelTimeScale = 1.5f;
 constexpr float kBombPlantReserveTime = 10.0f;
+constexpr int kTerroristTeam = 0;
 constexpr int kCounterTerroristTeam = 1;
 
 bool shouldPrioritizeBombPlant(const Observation &observation) {
@@ -287,7 +288,10 @@ Action GoalNavigationPolicy::decide(const Observation &observation) const {
 
   case TaskType::Normal: {
     const bool bombPlanted = (observation.bot.objectiveFlags & ObjectiveFlag::BombPlanted) != 0;
-    if (observation.bot.hasC4 || (observation.bot.team == kCounterTerroristTeam && bombPlanted)) {
+    const bool bombDropped = (observation.bot.objectiveFlags & ObjectiveFlag::BombDropped) != 0;
+    if (observation.bot.hasC4
+        || (observation.bot.team == kTerroristTeam && bombDropped)
+        || (observation.bot.team == kCounterTerroristTeam && bombPlanted)) {
       return {};
     }
 

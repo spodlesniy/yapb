@@ -771,3 +771,16 @@ An already active bomb escape is still excluded, and `isOutOfBombTimer()` contin
 Reason: restricting the late-bomb escape transition to `Normal` and `MoveToPosition` allowed CT bots in tasks such as `Camp`, `Attack`, `Hunt`, or `PickupItem` to remain near the planted bomb after defusing was no longer viable.
 The bomb-timer viability check is already the authoritative decision for this transition, so CT task type should not block the safety escape once that check succeeds.
 
+## D093 — Yield dropped-C4 recovery to legacy objective navigation
+
+The semantic observation exposes `ObjectiveFlag::BombDropped` when the YaPB adapter sees a visible dropped C4 backpack in the cached interesting-entity set.
+A Terrorist in free `Normal` state yields instead of starting `Explore` while this objective is active, allowing the existing `findBestGoalWhenBombAction()` path to select and approach the dropped bomb.
+Generic AI navigation ownership is also revoked while the dropped-C4 objective is active, so an already-running `Explore`, `MoveToNode`, or `MoveToPosition` action is cancelled promptly instead of delaying recovery until that action finishes.
+The existing nearby `PickupItem` flow remains responsible for the actual backpack pickup.
+
+Inference feature schema v5 intentionally remains unchanged and does not serialize the new semantic bit.
+The deterministic teacher only yields control for this state and does not emit a supervised action label that depends on an unencoded feature.
+Schema v6 must encode the dropped-bomb objective before a model-driven policy depends on it directly.
+
+Reason: free exploration can otherwise keep Terrorists away from a dropped C4 after the carrier dies, while returning all Terrorist free navigation to legacy behavior would reintroduce the low-diversity waypoint behavior that `Explore` was introduced to replace.
+

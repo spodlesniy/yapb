@@ -6,10 +6,11 @@
 // SPDX-License-Identifier: MIT
 //
 
-#include <yapb.h>
-
 #include <cmath>
 
+#include <yapb.h>
+
+#include <ai/ai_bot_adapter.h>
 #include <ai/ai_navigation_task_guard.h>
 #include <ai/ai_yapb_action_execution_context.h>
 
@@ -29,6 +30,10 @@ bool YaPBActionExecutionContext::isAlive() const {
 
 bool YaPBActionExecutionContext::allowsNavigationOverride() const {
   if (m_bot == nullptr) {
+    return false;
+  }
+
+  if (m_bot->m_team == Team::Terrorist && hasDroppedBombObjective()) {
     return false;
   }
 
