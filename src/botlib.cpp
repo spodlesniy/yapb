@@ -2279,8 +2279,11 @@ void Bot::startTask (Task id, float desire, int data, float time, bool resume) {
       selectBestWeapon ();
    }
 
-   // this is best place to handle some chatter commands report team some info
-   if (cv_radio_mode.as <int> () > 1) {
+   // this is best place to handle task-change team communication
+   if (tid == Task::PlantBomb && cv_radio_mode.as <int> () == 1) {
+      pushRadioMessage (Radio::CoverMe);
+   }
+   else if (cv_radio_mode.as <int> () > 1) {
       handleChatterTaskChange (tid);
    }
 
@@ -2451,13 +2454,11 @@ bool Bot::lastEnemyShootable () {
 }
 
 void Bot::handleChatterTaskChange (Task tid) {
-   if (rg.chance (90)) {
-      if (tid == Task::Blind) {
-         pushChatterMessage (Chatter::Blind);
-      }
-      else if (tid == Task::PlantBomb) {
-         pushChatterMessage (Chatter::PlantingBomb);
-      }
+   if (tid == Task::PlantBomb) {
+      pushChatterMessage (Chatter::CoverMe);
+   }
+   else if (rg.chance (90) && tid == Task::Blind) {
+      pushChatterMessage (Chatter::Blind);
    }
 
    if (rg.chance (25) && tid == Task::Camp) {

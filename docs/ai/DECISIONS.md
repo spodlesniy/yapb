@@ -888,3 +888,15 @@ A visible enemy can still produce the normal Attack task through the existing co
 Reason: gameplay capture showed a C4 carrier already inside a bomb zone selecting `PickupItem`, leaving the site to collect a weapon, and only later returning toward the objective.
 Once the carrier reaches the plant zone, optional loot has lower priority than establishing the round objective.
 
+## D102 — Use Cover Me instead of Sector Clear when starting a C4 plant
+
+The generic pre-plant Goal arrival radio may still report `SectorClear` for bots that are not carrying C4, but a C4 carrier is excluded from that message.
+Reaching a bombsite with the round objective is not a sector-clear event; it is the transition into planting.
+
+When `Task::PlantBomb` starts, the carrier now issues one cover request through the configured communication mode:
+`Radio::CoverMe` in standard radio mode and `Chatter::CoverMe` in chatter mode.
+The previous random `Chatter::PlantingBomb` task-change line is replaced so the plant transition does not emit two competing messages.
+
+Reason: gameplay validation showed the bomb carrier reaching the plant site and announcing `Sector Clear` immediately before planting.
+That message describes the wrong tactical state and does not ask nearby teammates to protect the stationary planter.
+

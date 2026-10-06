@@ -107,6 +107,7 @@ void Bot::normal_ () {
 
       // if we're reached the goal, and there is not enemies, notify the team
       if (!gameState.isBombPlanted ()
+         && !m_hasC4
          && m_currentNodeIndex != kInvalidNodeIndex
          && (m_pathFlags & NodeFlag::Goal)
          && rg.chance (15)
