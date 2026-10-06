@@ -888,13 +888,24 @@ bool YaPBActionExecutionContext::reload(WeaponType weaponType) {
 }
 
 bool YaPBActionExecutionContext::isReloadCompleted() const {
-  return m_reloadActive && (m_bot == nullptr || m_bot->pev == nullptr
-      || (m_bot->m_reloadState == Reload::None && !m_bot->m_isReloading));
+  if (!m_reloadActive) {
+    return false;
+  }
+
+  if (m_bot == nullptr || m_bot->pev == nullptr) {
+    return true;
+  }
+
+  return m_bot->m_reloadState != m_reloadStateIssued || !m_bot->m_isReloading;
 }
 
 void YaPBActionExecutionContext::cancelReload() {
   if (m_bot != nullptr) {
-    m_bot->m_reloadState = Reload::None;
+    // Preserve a state that checkReload() already advanced to (for example
+    // Primary -> Secondary). Only clear the state still owned by this action.
+    if (m_bot->m_reloadState == m_reloadStateIssued) {
+      m_bot->m_reloadState = Reload::None;
+    }
     m_bot->m_isReloading = false;
   }
   m_reloadActive = false;

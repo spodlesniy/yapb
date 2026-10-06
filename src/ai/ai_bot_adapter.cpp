@@ -219,6 +219,7 @@ ObservationInput buildObservationInput(const Bot &bot) {
     input.combat.ammoInClip = bot.m_ammoInClip[bot.m_currentWeapon];
   }
   input.combat.reloadState = mapReloadState(bot.m_reloadState);
+  input.combat.reloading = bot.m_isReloading;
   input.combat.blind = bot.m_blindTime > game.time();
   input.combat.blindTimeRemaining = input.combat.blind ? cr::max(0.0f, bot.m_blindTime - game.time()) : 0.0f;
   input.combat.firePauseRemaining = cr::max(0.0f, bot.m_firePause - game.time());

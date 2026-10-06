@@ -53,6 +53,7 @@ struct CombatInput {
   WeaponType weaponType { WeaponType::Unknown };
   int32_t ammoInClip {};
   ReloadState reloadState { ReloadState::None };
+  bool reloading {};
   bool blind {};
   float blindTimeRemaining {};
   float firePauseRemaining {};

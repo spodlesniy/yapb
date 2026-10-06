@@ -784,3 +784,16 @@ Schema v6 must encode the dropped-bomb objective before a model-driven policy de
 
 Reason: free exploration can otherwise keep Terrorists away from a dropped C4 after the carrier dies, while returning all Terrorist free navigation to legacy behavior would reintroduce the low-diversity waypoint behavior that `Explore` was introduced to replace.
 
+## D094 — Expose only active reload episodes to the AI lifecycle
+
+YaPB's internal `m_reloadState` is both a reload selector and a cursor used by `checkReload()` while scanning Primary and Secondary weapon classes.
+The game-facing `CombatInput` therefore carries the raw reload state together with `m_isReloading`, while the semantic `Observation.combat.reloadState` is non-None only when YaPB is actually performing a reload.
+The deterministic teacher continues to use the same ReloadState feature and does not gain a hidden teacher-only signal.
+
+An AI-owned Reload action also owns exactly the Primary or Secondary reload state that was active when the action started.
+The action completes when that issued state stops actively reloading or `checkReload()` advances to another state.
+Cancellation clears the reload state only when it is still the state owned by that action; a state already advanced by YaPB is preserved for the normal reload scheduler.
+
+Reason: the previous adapter exposed reload-scan cursor states as semantic Reload actions, producing many 0.034-0.068 second transitions that were not real reloads.
+Filtering at the observation boundary aligns the producer with the existing D078 contract, while state-scoped action completion prevents one semantic action from absorbing the next weapon-class scan.
+Inference feature schema v5 keeps the same three-value ReloadState representation and vector width.

@@ -78,7 +78,7 @@ Observation buildObservation(const ObservationInput &input) {
 
   observation.combat.weaponType = input.combat.weaponType;
   observation.combat.ammoInClip = input.combat.ammoInClip;
-  observation.combat.reloadState = input.combat.reloadState;
+  observation.combat.reloadState = input.combat.reloading ? input.combat.reloadState : ReloadState::None;
   observation.combat.blind = input.combat.blind;
   observation.combat.blindTimeRemaining = finiteOrZero(input.combat.blindTimeRemaining);
   observation.combat.firePauseRemaining = finiteOrZero(input.combat.firePauseRemaining);
