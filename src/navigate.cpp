@@ -2105,47 +2105,55 @@ int Bot::findBombNode () {
    // this function finds the best goal (bomb) node for CTs when searching for a planted bomb.
 
    const auto &goals = graph.m_goalPoints;
-
    const auto &bomb = gameState.getBombOrigin ();
    const auto &audible = isBombAudible ();
 
-   // take the nearest to bomb nodes instead of goal if close enough
-   if (pev->origin.distanceSq (bomb) < cr::sqrf (96.0f)) {
-      const int node = graph.getNearest (bomb, 420.0f);
+   // once the bomb can be heard (or is already very close), route to a real node near the C4.
+   if (pev->origin.distanceSq (bomb) < cr::sqrf (96.0f) || !audible.empty ()) {
+      const int node = graph.getNearest (bomb, 512.0f);
 
-      m_bombSearchOverridden = true;
-
-      if (node != kInvalidNodeIndex) {
+      if (graph.exists (node)) {
+         m_bombSearchOverridden = true;
          return node;
       }
    }
-   else if (!audible.empty ()) {
-      m_bombSearchOverridden = true;
-      return graph.getNearest (audible, 240.0f);
-   }
-   else if (goals.empty ()) {
+
+   if (goals.empty ()) {
       return graph.getNearest (bomb, 512.0f); // reliability check
    }
 
-   int goal = 0, count = 0;
-   float lastDistanceSq = kInfiniteDistance;
+   int goal = kInvalidNodeIndex;
+   float bestDistanceSq = kInfiniteDistance;
+   const bool ignoreVisited = m_numFriendsLeft == 0;
 
-   // find nearest goal node either to bomb (if "heard" or player)
+   // Prefer the goal nearest the planted C4. Team-wide visited state is useful while CTs can
+   // coordinate site checks, but the last CT must not inherit it as a hard exclusion.
    for (const auto &point : goals) {
+      if (!ignoreVisited && graph.isVisited (point)) {
+         continue;
+      }
+
       const float distanceSq = bomb.distanceSq (graph[point].origin);
 
-      // check if we got more close distance
-      if (distanceSq < lastDistanceSq) {
+      if (distanceSq < bestDistanceSq) {
          goal = point;
-         lastDistanceSq = distanceSq;
+         bestDistanceSq = distanceSq;
       }
    }
 
-   while (graph.isVisited (goal)) {
-      goal = goals.random ();
+   if (graph.exists (goal)) {
+      return goal;
+   }
 
-      if (count++ >= static_cast <int> (goals.length ())) {
-         break;
+   // If all goals were marked visited, fall back deterministically to the goal nearest the C4.
+   bestDistanceSq = kInfiniteDistance;
+
+   for (const auto &point : goals) {
+      const float distanceSq = bomb.distanceSq (graph[point].origin);
+
+      if (distanceSq < bestDistanceSq) {
+         goal = point;
+         bestDistanceSq = distanceSq;
       }
    }
    return goal;

@@ -4127,8 +4127,8 @@ Vector Bot::isBombAudible () {
       desiredRadius = 1024.0f;
    }
 
-   // we hear bomb if length greater than radius
-   if (pev->origin.distanceSq2d (bombOrigin) > cr::sqrf (desiredRadius)) {
+   // bomb ticks are audible while the bot is inside the current hearing radius
+   if (pev->origin.distanceSq2d (bombOrigin) <= cr::sqrf (desiredRadius)) {
       return bombOrigin;
    }
    return nullptr;

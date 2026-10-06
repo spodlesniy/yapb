@@ -1156,3 +1156,16 @@ Clearing the stale Hunt returns control to YaPB's existing normal objective navi
 
 Reason: a schema-v6 gameplay capture contains a CT that stayed in `HuntTarget` from about 13.6 seconds to about 10.1 seconds remaining on the bomb timer and then transitioned directly into `EscapeFromBomb`.
 That left no viable search/defuse phase even though the planted-bomb objective had higher gameplay priority than pursuing a remembered enemy.
+
+## D124 — Make CT planted-bomb search deterministic and use correct audibility
+
+The legacy C4 audibility test now reports the planted bomb as audible while the bot is inside the time-dependent hearing radius instead of outside it.
+When the bomb is audible, or already within 96 units, `findBombNode()` routes to a validated graph node near the C4 and falls back to bombsite search if no such node exists.
+
+Bombsite search no longer replaces a visited candidate with a random Goal.
+With surviving CT teammates it chooses the nearest unvisited Goal deterministically and falls back to the Goal nearest the planted C4 if all sites are marked visited.
+The last living CT ignores team-wide visited flags as hard exclusions, because those flags may have been produced by teammates that are no longer alive.
+
+Reason: gameplay validation after D123 still showed the last CT reaching the wrong bombsite and then leaving in an unexpected direction.
+The inherited YaPB audibility comparison was reversed, the audible branch could return an invalid node from a narrow 240-unit search without fallback, and the visited-goal loop could discard the bomb-nearest site in favor of a random Goal.
+Together these paths made post-plant search especially unstable after the rest of the CT team had died.
