@@ -2093,6 +2093,15 @@ void Bot::filterTasks () {
    float &seekCoverDesire = filter[Task::SeekCover].desire;
    float &huntEnemyDesire = filter[Task::Hunt].desire;
    float &blindedDesire = filter[Task::Blind].desire;
+   const bool terroristBombObjective = m_team == Team::Terrorist
+      && game.mapIs (MapFlags::Demolition)
+      && (gameState.isBombPlanted () || ai::hasDroppedBombObjective ());
+
+   if (terroristBombObjective
+      && !(m_states & Sense::SeeingEnemy)
+      && getCurrentTaskId () == Task::Hunt) {
+      clearTask (Task::Hunt);
+   }
 
    // calculate desires to seek cover or hunt
    if (game.isPlayerEntity (m_lastEnemy) && !m_lastEnemyOrigin.empty () && !m_hasC4) {
@@ -2145,7 +2154,8 @@ void Bot::filterTasks () {
       }
 
       // if half of the round is over, allow hunting
-      if (getCurrentTaskId () != Task::EscapeFromBomb
+      if (!terroristBombObjective
+         && getCurrentTaskId () != Task::EscapeFromBomb
          && game.isNullEntity (m_enemy)
          && !m_isVIP
          && gameState.getRoundMidTime () < game.time ()

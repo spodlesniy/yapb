@@ -91,6 +91,17 @@ AI_TEST(testGoalNavigationPolicyYieldsDroppedBombMoveTaskToLegacyObjectiveLogic)
   expect(action.type == ai::ActionType::None, "terrorist yields legacy move-to-position while recovering dropped C4");
 }
 
+AI_TEST(testGoalNavigationPolicyYieldsDroppedBombHuntToLegacyObjectiveLogic) {
+  auto observation = makeObservation();
+  observation.bot.currentTask = ai::TaskType::Hunt;
+  observation.bot.team = 0;
+  observation.bot.objectiveFlags |= ai::ObjectiveFlag::BombDropped;
+
+  const auto action = ai::GoalNavigationPolicy {}.decide(observation);
+
+  expect(action.type == ai::ActionType::None, "stale hunt yields to legacy dropped-C4 recovery");
+}
+
 AI_TEST(testGoalNavigationPolicyYieldsBombZoneToPlantTaskSelection) {
   auto observation = makeObservation();
   observation.bot.currentTask = ai::TaskType::Normal;
@@ -320,11 +331,23 @@ AI_TEST(testGoalNavigationPolicyMapsBombDefenseToProtectObjective) {
   }
 }
 
+AI_TEST(testGoalNavigationPolicyMapsStaleBombDefenseHuntToProtectObjective) {
+  auto observation = makeObservation();
+  observation.bot.team = 0;
+  observation.bot.currentTask = ai::TaskType::Hunt;
+  observation.bot.objectiveFlags |= ai::ObjectiveFlag::BombPlanted;
+
+  const auto action = ai::GoalNavigationPolicy {}.decide(observation);
+
+  expect(action.type == ai::ActionType::ProtectObjective, "stale hunt maps to planted-C4 protection");
+}
+
 AI_TEST(testGoalNavigationPolicyKeepsCombatPriorityDuringBombDefense) {
   auto observation = makeObservation();
   observation.bot.team = 0;
   observation.bot.currentTask = ai::TaskType::Attack;
   observation.bot.objectiveFlags |= ai::ObjectiveFlag::BombPlanted;
+  observation.combat.perceptionFlags |= static_cast<uint32_t>(ai::PerceptionFlag::SeeingEnemy);
   addObservedEnemy(observation, 7);
 
   const auto action = ai::GoalNavigationPolicy {}.decide(observation);

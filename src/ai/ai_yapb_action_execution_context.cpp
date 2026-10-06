@@ -813,7 +813,8 @@ bool YaPBActionExecutionContext::protectObjective() {
   }
 
   const auto currentTask = m_bot->getCurrentTaskId();
-  if (currentTask != Task::Normal && currentTask != Task::MoveToPosition && currentTask != Task::Camp) {
+  if (currentTask != Task::Normal && currentTask != Task::MoveToPosition
+      && currentTask != Task::Camp && currentTask != Task::Hunt) {
     return false;
   }
 
@@ -833,8 +834,8 @@ bool YaPBActionExecutionContext::protectObjective() {
       return true;
     }
 
-    if (currentTask == Task::MoveToPosition) {
-      m_bot->clearTask(Task::MoveToPosition);
+    if (currentTask == Task::MoveToPosition || currentTask == Task::Hunt) {
+      m_bot->clearTask(currentTask);
     }
 
     m_bot->startTask(Task::MoveToPosition, TaskPri::MoveToPosition, node, 0.0f, true);

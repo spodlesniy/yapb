@@ -964,3 +964,16 @@ Reason: v6 gameplay capture showed Terrorists after plant receiving both `Protec
 The old teacher only emitted ProtectObjective once legacy behavior had already reached `Camp`, so navigation toward the defense point and free states after combat could be mislabeled as generic roaming.
 Extending the existing semantic action across its full supported lifecycle removes that contradictory supervision and keeps post-plant movement anchored to the C4 defense objective.
 
+
+## D108 — Suppress stale Hunt while Terrorists own an active bomb objective
+
+On demolition maps, a Terrorist with an active bomb objective no longer starts or continues legacy `Task::Hunt` when no enemy is currently visible.
+For a dropped C4, stale Hunt yields to the existing legacy recovery navigation.
+For a planted C4, stale Hunt is mapped into the semantic `ProtectObjective` lifecycle, which clears the Hunt task before selecting and moving to a defend node.
+
+Visible combat remains unaffected.
+`Sense::SeeingEnemy` can still drive the normal Attack task, and explicit attack actions remain separate from objective protection.
+Only pursuit based on remembered or heard enemy state is suppressed while `BombDropped` or `BombPlanted` owns the Terrorist objective.
+
+Reason: after D106 removed semantic ownership churn from dropped-C4 recovery and D107 unified post-plant defense, gameplay capture showed the same objective conflict resurfacing as stale Hunt transitions.
+Those pursuits could repeatedly displace recovery or protection even though no enemy was actually visible.
