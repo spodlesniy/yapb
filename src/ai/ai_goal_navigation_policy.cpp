@@ -231,7 +231,6 @@ Action GoalNavigationPolicy::decide(const Observation &observation) const {
   }
 
   case TaskType::Camp: {
-    const bool bombPlanted = (observation.bot.objectiveFlags & ObjectiveFlag::BombPlanted) != 0;
     if (observation.bot.team == kCounterTerroristTeam && bombPlanted) {
       return {};
     }
