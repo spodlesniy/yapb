@@ -90,6 +90,17 @@ AI_TEST(testGoalNavigationPolicyYieldsBombZoneToPlantTaskSelection) {
   expect(action.type == ai::ActionType::None, "bomb carrier in a bomb zone yields to legacy plant-task selection");
 }
 
+AI_TEST(testGoalNavigationPolicyRejectsBombZonePickupForCarrier) {
+  auto observation = makeObservation();
+  observation.bot.currentTask = ai::TaskType::PickupItem;
+  observation.bot.hasC4 = true;
+  observation.bot.inBombZone = true;
+
+  const auto action = ai::GoalNavigationPolicy {}.decide(observation);
+
+  expect(action.type == ai::ActionType::None, "bomb carrier in a bomb zone does not learn a pickup detour");
+}
+
 AI_TEST(testGoalNavigationPolicyPrioritizesBombsiteWhenRoundTimeIsCritical) {
   auto observation = makeObservation();
   observation.bot.currentTask = ai::TaskType::Attack;

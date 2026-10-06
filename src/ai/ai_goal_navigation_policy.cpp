@@ -129,6 +129,11 @@ Action GoalNavigationPolicy::decide(const Observation &observation) const {
     }
   }
 
+  if (observation.bot.hasC4 && observation.bot.inBombZone
+      && observation.bot.currentTask == TaskType::PickupItem) {
+    return {};
+  }
+
   if (observation.combat.reloadState != ReloadState::None &&
       isReloadCompatible(observation.combat.reloadState, observation.combat.weaponType)) {
     Action action {};

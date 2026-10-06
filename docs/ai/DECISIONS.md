@@ -876,3 +876,15 @@ It also applied a team-global debounce inside a per-bot radio handler.
 Together those behaviors could produce repeated Sector Clear reports for one site while simultaneously preventing some teammates from abandoning that already-checked site.
 The 512-unit cluster radius intentionally matches the existing planted-C4-to-goal distance used to decide whether a checked goal contains the bomb.
 
+## D101 — Prioritize planting over optional pickups inside a bomb zone
+
+A Terrorist carrying C4 no longer searches for or continues ordinary pickup actions after entering a bomb zone.
+`updatePickups()` clears pickup interest in that state, and an already-running `Task::PickupItem` completes immediately without adding the item to the ignored-item list.
+The AI execution context also rejects continued `PickupItem` ownership in the same state, and the deterministic teacher yields instead of recording the stale pickup as a supervised action.
+
+This rule does not suppress combat.
+A visible enemy can still produce the normal Attack task through the existing combat filter; the change only prevents weapons, items, and other optional pickup targets from pulling the carrier away from the plant objective once the carrier is already inside a valid plant zone.
+
+Reason: gameplay capture showed a C4 carrier already inside a bomb zone selecting `PickupItem`, leaving the site to collect a weapon, and only later returning toward the objective.
+Once the carrier reaches the plant zone, optional loot has lower priority than establishing the round objective.
+

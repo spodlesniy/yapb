@@ -364,6 +364,11 @@ void Bot::updatePickups () {
          return true;
       }
 
+      // bomb carrier already reached a plant zone, don't divert to side pickups
+      else if (m_hasC4 && m_inBombZone) {
+         return true;
+      }
+
       // we're escaping from the bomb, don't bother!
       else if (getCurrentTaskId () == Task::EscapeFromBomb) {
          return true;

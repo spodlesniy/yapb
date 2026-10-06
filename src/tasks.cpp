@@ -1541,6 +1541,15 @@ void Bot::shootBreakable_ () {
 }
 
 void Bot::pickupItem_ () {
+   // planting takes precedence over optional pickups once the C4 carrier is in a bomb zone
+   if (m_hasC4 && m_inBombZone) {
+      m_states &= ~Sense::PickupItem;
+      m_pickupItem = nullptr;
+      m_pickupType = Pickup::None;
+      completeTask ();
+      return;
+   }
+
    if (game.isNullEntity (m_pickupItem)) {
       m_pickupItem = nullptr;
       completeTask ();

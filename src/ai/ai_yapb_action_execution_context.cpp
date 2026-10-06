@@ -622,7 +622,8 @@ void YaPBActionExecutionContext::cancelFireBreakable() {
 }
 
 bool YaPBActionExecutionContext::pickupItem() {
-  if (m_bot == nullptr || m_bot->pev == nullptr || game.isNullEntity(m_bot->m_pickupItem)) {
+  if (m_bot == nullptr || m_bot->pev == nullptr || game.isNullEntity(m_bot->m_pickupItem)
+      || (m_bot->m_hasC4 && m_bot->m_inBombZone)) {
     return false;
   }
 
