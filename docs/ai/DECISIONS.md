@@ -1006,3 +1006,15 @@ Until that later design work begins, the existing flashlight implementation shou
 
 Reason: gameplay validation after D109 still shows flashlight behavior that is not worth refining around illumination semantics.
 The broader AI architecture will benefit more from postponing this mechanic until attention manipulation can be represented intentionally and trained or evaluated as part of tactical behavior.
+
+## D111 — Complete PlantBomb only after the bomb is planted
+
+An active semantic `PlantBomb` action reports `Completed` only when the observation confirms `ObjectiveFlag::BombPlanted`.
+Losing the carried C4, leaving the bomb zone, or losing execution availability before that flag becomes true reports `Interrupted` and releases the existing plant ownership.
+An initial request with invalid planting conditions or an unavailable execution context remains `Rejected`, including a new request made after the bomb is already planted.
+
+The existing YaPB planting task, context start/cancel behavior, and reward provider remain unchanged.
+The training collector records the corrected terminal result through its existing lifecycle, so tactical preemption receives the existing neutral interruption reward.
+
+Reason: the executor previously treated both successful planting and active planting preemption as completion.
+That produced positive `PlantBomb` training labels even when the next observation still showed an unplanted bomb.

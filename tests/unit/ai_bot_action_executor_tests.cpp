@@ -6,13 +6,15 @@
 // SPDX-License-Identifier: MIT
 //
 
-#include "ai_test.h"
-
 #include <cmath>
 #include <limits>
 
 #include <ai/ai_action_execution_context.h>
 #include <ai/ai_bot_action_executor.h>
+#include <ai/ai_goal_navigation_policy.h>
+#include <ai/ai_training_collector.h>
+
+#include "ai_test.h"
 
 using ai::test::expect;
 using ai::test::expectNear;
@@ -84,6 +86,7 @@ public:
   bool rescueHostageAvailable { true };
   int plantBombCalls {};
   int cancelPlantBombCalls {};
+  bool plantBombAvailable { true };
   int defuseBombCalls {};
   int cancelDefuseBombCalls {};
   int pickupItemCalls {};
@@ -275,7 +278,7 @@ public:
 
   bool plantBomb() override {
     ++plantBombCalls;
-    return true;
+    return plantBombAvailable;
   }
 
   void cancelPlantBomb() override {
@@ -1278,14 +1281,16 @@ AI_TEST(testBotActionExecutorCompletesPlantBombWhenBombIsPlanted) {
   auto result = executor.execute(action, observation);
   expect(result.type == ai::ActionResultType::Accepted, "plant bomb starts before completion");
 
-  observation.bot.objectiveFlags |= ai::ObjectiveFlag::BombPlanted;
+  observation.bot.objectiveFlags = ai::ObjectiveFlag::BombPlanted;
+  context.plantBombAvailable = false;
   result = executor.execute(action, observation);
 
   expect(result.type == ai::ActionResultType::Completed, "planted bomb completes the action");
+  expect(context.plantBombCalls == 1, "observed completion does not attempt to plant again");
   expect(context.cancelPlantBombCalls == 1, "completion releases direct plant bomb");
 }
 
-AI_TEST(testBotActionExecutorCompletesPlantBombWhenC4IsLost) {
+AI_TEST(testBotActionExecutorInterruptsPlantBombWhenC4IsLost) {
   MockActionExecutionContext context {};
   ai::BotActionExecutor executor(context);
 
@@ -1301,11 +1306,11 @@ AI_TEST(testBotActionExecutorCompletesPlantBombWhenC4IsLost) {
   observation.bot.objectiveFlags = ai::ObjectiveFlag::InBombZone;
   result = executor.execute(action, observation);
 
-  expect(result.type == ai::ActionResultType::Completed, "losing C4 completes the active action");
+  expect(result.type == ai::ActionResultType::Interrupted, "losing C4 before planting interrupts the active action");
   expect(context.cancelPlantBombCalls == 1, "C4 loss releases direct plant bomb");
 }
 
-AI_TEST(testBotActionExecutorCompletesPlantBombWhenLeavingBombZone) {
+AI_TEST(testBotActionExecutorInterruptsPlantBombWhenLeavingBombZone) {
   MockActionExecutionContext context {};
   ai::BotActionExecutor executor(context);
 
@@ -1321,8 +1326,94 @@ AI_TEST(testBotActionExecutorCompletesPlantBombWhenLeavingBombZone) {
   observation.bot.objectiveFlags = ai::ObjectiveFlag::BombCarrier;
   result = executor.execute(action, observation);
 
-  expect(result.type == ai::ActionResultType::Completed, "leaving the bomb zone completes the active action");
+  expect(result.type == ai::ActionResultType::Interrupted, "leaving the bomb zone before planting interrupts the active action");
   expect(context.cancelPlantBombCalls == 1, "leaving the zone releases direct plant bomb");
+}
+
+AI_TEST(testBotActionExecutorInterruptsPreemptedPlantBomb) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+  auto observation = aliveObservation();
+  observation.bot.objectiveFlags = ai::ObjectiveFlag::BombCarrier | ai::ObjectiveFlag::InBombZone;
+  observation.bot.currentTask = ai::TaskType::PlantBomb;
+  ai::Action action {};
+  action.type = ai::ActionType::PlantBomb;
+
+  expect(executor.execute(action, observation).type == ai::ActionResultType::Accepted, "plant starts before preemption");
+  observation.bot.currentTask = ai::TaskType::Attack;
+  context.plantBombAvailable = false;
+  expect(executor.execute(action, observation).type == ai::ActionResultType::Interrupted,
+         "task preemption without a planted bomb interrupts the active plant");
+  expect(context.plantBombCalls == 2, "active plant checks execution availability");
+  expect(context.cancelPlantBombCalls == 1, "preemption releases plant ownership");
+  expect(executor.execute(action, observation).type == ai::ActionResultType::Rejected,
+         "a new unavailable plant is rejected after interrupted ownership is cleared");
+  executor.cancel();
+  expect(context.cancelPlantBombCalls == 1, "interrupted plant is released only once");
+}
+
+AI_TEST(testBotActionExecutorRejectsInitiallyUnavailablePlantBomb) {
+  MockActionExecutionContext context {};
+  context.plantBombAvailable = false;
+  ai::BotActionExecutor executor(context);
+  auto observation = aliveObservation();
+  observation.bot.objectiveFlags = ai::ObjectiveFlag::BombCarrier | ai::ObjectiveFlag::InBombZone;
+  ai::Action action {};
+  action.type = ai::ActionType::PlantBomb;
+
+  expect(executor.execute(action, observation).type == ai::ActionResultType::Rejected,
+         "initial execution refusal rejects the plant request");
+  expect(context.plantBombCalls == 1, "initial request checks execution availability");
+  expect(context.cancelPlantBombCalls == 0, "rejected request never acquires plant ownership");
+}
+
+AI_TEST(testBotActionExecutorRejectsPlantBombWhenAlreadyPlanted) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+  auto observation = aliveObservation();
+  observation.bot.objectiveFlags = ai::ObjectiveFlag::BombPlanted;
+  ai::Action action {};
+  action.type = ai::ActionType::PlantBomb;
+
+  expect(executor.execute(action, observation).type == ai::ActionResultType::Rejected,
+         "an already planted bomb does not complete a new plant request");
+  expect(context.plantBombCalls == 0, "already planted bomb is not delegated");
+  expect(context.cancelPlantBombCalls == 0, "already planted bomb acquires no plant ownership");
+}
+
+AI_TEST(testTrainingCollectorRecordsPreemptedPlantWithoutSuccessReward) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+  ai::ActionRuntime runtime { executor };
+  ai::GoalNavigationPolicy policy {};
+  runtime.setMode(ai::ControlMode::Training);
+  runtime.setPolicy(&policy);
+  ai::TrainingBuffer buffer {};
+  ai::TrainingRecorder recorder { buffer };
+  ai::ActionOutcomeRewardProvider rewards {};
+  ai::TrainingCollector collector { recorder, rewards };
+  auto observation = aliveObservation();
+  observation.gameTime = 10.0f;
+  observation.bot.currentTask = ai::TaskType::PlantBomb;
+  observation.bot.objectiveFlags = ai::ObjectiveFlag::BombCarrier | ai::ObjectiveFlag::InBombZone;
+
+  expect(collector.step(runtime, observation).type == ai::ActionResultType::Accepted, "teacher plant starts recording");
+  expect(recorder.hasPendingAction() && buffer.empty(), "active plant has no terminal sample yet");
+  observation.gameTime = 11.0f;
+  observation.bot.currentTask = ai::TaskType::Attack;
+  context.plantBombAvailable = false;
+  expect(collector.step(runtime, observation).type == ai::ActionResultType::Interrupted, "preempted plant is interrupted");
+  expect(!runtime.isActive() && !recorder.hasPendingAction(), "interruption finishes runtime and recording lifecycles");
+  expect(buffer.size() == 1, "preempted plant records exactly one transition");
+  const auto &transition = buffer.at(0);
+  expect(transition.action.type == ai::ActionType::PlantBomb, "recorded action remains the original plant");
+  expect(transition.result.type == ai::ActionResultType::Interrupted, "recorded plant result is interrupted");
+  expect(!(transition.nextObservation.bot.objectiveFlags & ai::ObjectiveFlag::BombPlanted), "recorded bomb is not planted");
+  expectNear(transition.reward, 0.0f, 0.001f, "preempted plant receives the existing neutral interruption reward");
+  expectNear(transition.result.elapsedTime, 1.0f, 0.001f, "recorded plant retains its actual elapsed time");
+  collector.step(runtime, observation, false);
+  expect(buffer.size() == 1, "finished plant is not recorded twice");
+  expect(context.cancelPlantBombCalls == 1, "recorded preemption releases plant ownership once");
 }
 
 AI_TEST(testBotActionExecutorRejectsPlantBombWithoutC4) {

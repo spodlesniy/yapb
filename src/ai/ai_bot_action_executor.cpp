@@ -725,7 +725,7 @@ ActionResult BotActionExecutor::executePlantBomb(const Action &action, const Obs
     }
 
     cancel();
-    return { action.type, ActionResultType::Completed, 0.0f };
+    return { action.type, bombPlanted ? ActionResultType::Completed : ActionResultType::Interrupted, 0.0f };
   }
 
   if (!m_context->plantBomb()) {
@@ -734,7 +734,7 @@ ActionResult BotActionExecutor::executePlantBomb(const Action &action, const Obs
     }
 
     cancel();
-    return { action.type, ActionResultType::Completed, 0.0f };
+    return { action.type, ActionResultType::Interrupted, 0.0f };
   }
 
   m_directPlantBombActive = true;
