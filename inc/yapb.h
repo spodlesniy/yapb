@@ -465,6 +465,7 @@ private:
    bool selectBestNextNode ();
    bool hasAnyWeapons () const;
    bool hasAnyAmmoInClip ();
+   bool hasAnyWeaponAmmo () const;
    bool isKnifeMode ();
    bool isGrenadeWar ();
    bool isDeadlyMove (const Vector &to);

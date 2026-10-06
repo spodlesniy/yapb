@@ -1300,8 +1300,13 @@ void Bot::fireWeapons () {
    }
    selectId = tab[choosenWeapon].id;
 
-   // if no available weapon...
+   // if no loaded weapon is available, recover a reloadable firearm before falling back to the knife
    if (choosenWeapon == 0) {
+      if (usesKnife () && hasAnyWeaponAmmo ()) {
+         selectBestWeapon ();
+         return;
+      }
+
       selectIndex = 0;
 
       // loop through all the weapons until terminator is found...
@@ -1846,10 +1851,33 @@ bool Bot::hasAnyAmmoInClip () {
    return hasAmmo;
 }
 
+bool Bot::hasAnyWeaponAmmo () const {
+   const int firearmMask = pev->weapons & (kPrimaryWeaponMask | kSecondaryWeaponMask);
+
+   if (firearmMask == 0) {
+      return false;
+   }
+
+   const auto tab = conf.getRawWeapons ();
+
+   for (int i = 0; tab[i].id; ++i) {
+      const int id = tab[i].id;
+
+      if (!(firearmMask & cr::bit (id))) {
+         continue;
+      }
+
+      if (m_ammoInClip[id] >= tab[i].minPrimaryAmmo || getAmmo (id) >= tab[i].minPrimaryAmmo) {
+         return true;
+      }
+   }
+   return false;
+}
+
 bool Bot::isKnifeMode () {
    return cv_jasonmode || (usesKnife () && !hasAnyWeapons ())
       || m_isCreature
-      || ((m_states & Sense::SeeingEnemy) && usesKnife () && !hasAnyAmmoInClip ());
+      || ((m_states & Sense::SeeingEnemy) && usesKnife () && !hasAnyWeaponAmmo ());
 }
 
 bool Bot::isGrenadeWar () {

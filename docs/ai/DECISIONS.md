@@ -924,3 +924,19 @@ The cooldown is asymmetric so threat response is never delayed: only re-enabling
 Reason: task and hearing state can change much faster than the darkness check interval, causing a bot in a dark area to repeatedly toggle the flashlight off for a short tactical event and back on at the next 2-4 second darkness check.
 A short re-enable cooldown preserves the existing tactical-off behavior while removing visible flashlight oscillation.
 
+## D105 — Recover reloadable firearms before committing to knife combat
+
+`isKnifeMode()` no longer decides that a bot must fight with the knife merely because every owned firearm currently has an empty magazine.
+The bot now checks both loaded rounds and reserve ammunition for all owned primary and secondary weapons.
+Knife-only combat is selected for an armed bot only when none of those firearms has enough loaded or reserve ammunition to fire.
+
+When `fireWeapons()` finds no loaded firearm while the bot currently holds the knife, it now checks for a reloadable owned firearm before falling back to knife combat.
+If reserve ammunition exists, `selectBestWeapon()` switches to that firearm; the existing reload path then handles the empty magazine on the following combat update.
+
+The existing explicit knife modes remain unchanged: `jasonmode`, creatures, and bots that own no primary or secondary weapon still use the knife.
+The existing close-range stab choice in `fireWeapons()` also remains unchanged and runs before this recovery path, so intentional short-range knife attacks are preserved.
+
+Reason: a bot could switch to the knife for movement, encounter an enemy while its firearm magazines were empty, and then have `isKnifeMode()` ignore available reserve ammunition.
+The no-loaded-weapon fallback also only attempted to reload the currently selected weapon, which could not work while the knife was selected.
+Together those conditions could keep the bot attacking with a knife despite carrying a firearm that only needed to be selected and reloaded.
+
