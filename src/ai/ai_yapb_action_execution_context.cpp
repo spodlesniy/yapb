@@ -6,9 +6,9 @@
 // SPDX-License-Identifier: MIT
 //
 
-#include <cmath>
-
 #include <yapb.h>
+
+#include <cmath>
 
 #include <ai/ai_bot_adapter.h>
 #include <ai/ai_navigation_task_guard.h>
