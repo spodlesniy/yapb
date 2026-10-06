@@ -2958,7 +2958,7 @@ void Bot::checkRadioQueue () {
          }
 
          // mark this node as restricted point
-         if (bombPoint != kInvalidNodeIndex && !graph.isVisited (bombPoint)) {
+         if (bombPoint != kInvalidNodeIndex) {
             // does this bot want to defuse?
             if (getCurrentTaskId () == Task::Normal) {
                // is he approaching this goal?
