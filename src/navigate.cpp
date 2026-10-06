@@ -1433,34 +1433,6 @@ bool Bot::updateNavigation () {
       else if (m_pathWalk.empty ()) {
          return false;
       }
-      const int taskTarget = getTask ()->data;
-
-      if (game.mapIs (MapFlags::Demolition)
-         && gameState.isBombPlanted ()
-         && m_team == Team::CT
-         && getCurrentTaskId () != Task::EscapeFromBomb
-         && taskTarget != kInvalidNodeIndex) {
-
-         const auto &bombOrigin = isBombAudible ();
-
-         // bot within 'hearable' bomb tick noises?
-         if (!bombOrigin.empty ()) {
-            const float distanceSq = bombOrigin.distanceSq (graph[taskTarget].origin);
-
-            if (distanceSq > cr::sqrf (512.0f)) {
-               if (rg.chance (50) && !graph.isVisited (taskTarget)) {
-                  pushRadioMessage (Radio::SectorClear);
-               }
-               graph.setVisited (taskTarget); // doesn't hear so not a good goal
-            }
-         }
-         else {
-            if (rg.chance (50) && !graph.isVisited (taskTarget)) {
-               pushRadioMessage (Radio::SectorClear);
-            }
-            graph.setVisited (taskTarget); // doesn't hear so not a good goal
-         }
-      }
       advanceMovement (); // do the actual movement checking
    }
    return false;

@@ -89,6 +89,22 @@ void Bot::normal_ () {
 
    // reached the destination (goal) node?
    if (updateNavigation ()) {
+      if (gameState.isBombPlanted ()
+         && m_team == Team::CT
+         && graph.exists (m_currentNodeIndex)
+         && (m_pathFlags & NodeFlag::Goal)
+         && !graph.isVisited (m_currentNodeIndex)) {
+
+         const auto &bombPos = gameState.getBombOrigin ();
+
+         if (bombPos.empty ()
+            || bombPos.distanceSq (graph[m_currentNodeIndex].origin) > cr::sqrf (512.0f)) {
+
+            pushRadioMessage (Radio::SectorClear);
+            graph.setVisited (m_currentNodeIndex);
+         }
+      }
+
       // if we're reached the goal, and there is not enemies, notify the team
       if (!gameState.isBombPlanted ()
          && m_currentNodeIndex != kInvalidNodeIndex
@@ -898,18 +914,7 @@ void Bot::defuseBomb_ () {
    const auto &bombPos = gameState.getBombOrigin ();
    bool defuseError = false;
 
-   const auto reportSectorClear = [&] () {
-      const float bombPlantTime = gameState.getTimeBombPlanted ();
-
-      if (cr::fequal (m_lastSectorClearBombTime, bombPlantTime)) {
-         return;
-      }
-
-      pushRadioMessage (Radio::SectorClear);
-      m_lastSectorClearBombTime = bombPlantTime;
-   };
-
-   // exception: bomb has been defused
+   // bomb origin is unavailable, or the planted bomb is no longer present
    if (bombPos.empty ()) {
       // fix for stupid behavior of CT's when bot is defused
       for (const auto &bot : bots) {
@@ -922,18 +927,12 @@ void Bot::defuseBomb_ () {
       }
       gameState.setBombOrigin (true);
 
-      if (m_numFriendsLeft != 0 && rg.chance (50)) {
-         if (timeToBlowUp <= 3.0f) {
-            if (cv_radio_mode.as <int> () == 2) {
-               pushChatterMessage (Chatter::BarelyDefused);
-            }
-            else if (cv_radio_mode.as <int> () == 1) {
-               reportSectorClear ();
-            }
-         }
-         else {
-            reportSectorClear ();
-         }
+      if (m_numFriendsLeft != 0
+         && timeToBlowUp <= 3.0f
+         && cv_radio_mode.as <int> () == 2
+         && rg.chance (50)) {
+
+         pushChatterMessage (Chatter::BarelyDefused);
       }
       return;
    }

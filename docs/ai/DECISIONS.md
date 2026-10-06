@@ -749,12 +749,15 @@ A CT in free `Normal` state while the bomb is planted yields to YaPB's existing 
 Reason: the objective path now reaches and plants C4, but carriers can still spend too much of the remaining round on combat or secondary behavior.
 Keeping the urgency signal derivable from existing model-visible inputs avoids a hidden teacher-only feature and avoids an unnecessary feature-schema migration during gameplay validation.
 
-## D091 — Debounce Sector Clear per planted-bomb event
+## D091 — Report Sector Clear only after checking a planted-bomb goal
 
-The legacy `defuseBomb_()` fallback may request `Radio::SectorClear` when the planted-bomb position is empty.
-Each bot records the planted-bomb timestamp for which it last requested that message and does not enqueue another `SectorClear` for the same bomb event.
-Other radio and chatter behavior is unchanged.
+A CT now reports `Radio::SectorClear` only after `normal_()` confirms that navigation actually reached an unvisited `NodeFlag::Goal` while the bomb is planted.
+The reached goal is considered clear when the planted-bomb origin is still unavailable or is more than 512 units from that goal.
+The bot then queues one `SectorClear` message and marks the reached goal visited immediately, preventing another CT from reporting the same checked site.
 
-Reason: repeatedly re-entering the fallback could enqueue the same built-in radio command indefinitely while CT bots searched after a plant.
-A local per-event guard removes the immediate spam without expanding the scope into a general voice-command redesign, which remains suitable for a later phase.
+The previous intermediate-path check in `updateNavigation()` is removed because it could mark the destination goal clear before the bot physically reached and checked it.
+The `defuseBomb_()` empty-origin fallback no longer emits `SectorClear` solely because `getBombOrigin()` is empty.
+The per-bot planted-bomb timestamp debounce is therefore no longer needed and has been removed.
 
+Reason: an empty planted-bomb origin is not proof that the current bombsite is clear; it can also mean that the planted C4 has not been localized yet.
+Tying the radio report and visited-state update to actual arrival at the bombsite restores the intended semantics without changing the broader radio/chatter system.
