@@ -836,3 +836,16 @@ Reason: completing at the first safe waypoint allowed `overrideConditions()` to 
 Training mode therefore recorded repeated one-frame `EscapeFromBomb` transitions even though they represented one continuous escape-and-wait behavior.
 Keeping the semantic action alive across the safe hold aligns the dataset lifecycle with the actual objective behavior without changing `isOutOfBombTimer()` or its CT/T timing rules.
 
+## D098 — Keep planted-C4 defuse state continuous
+
+The planted-C4 `PickupItem -> DefuseBomb` transition now transfers ownership of the detected C4 entity instead of clearing it when the pickup action completes.
+The defuse action releases that entity when its own lifecycle ends.
+
+`defuseBomb_()` no longer completes merely because the first `IN_USE` frame has not yet produced either an old-button state or a HUD progress bar.
+It keeps attempting use while the planted bomb remains valid.
+Once the engine reports an active progress bar, tactical enemy/time checks no longer voluntarily abort the defuse; those checks are only used before defusing actually starts.
+
+Reason: the previous lifecycle could clear the direct planted-C4 entity during the AI action handoff, then end `Task::DefuseBomb` one frame after pressing use if the progress bar had not appeared yet.
+That produced repeated use sounds and short defuse starts, especially when the bomb was planted close to obstructing geometry.
+The old active-progress calculation also subtracted absolute game time from the nominal defuse duration and could allow unrelated tactical state to interrupt an already accepted defuse.
+

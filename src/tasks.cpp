@@ -907,12 +907,6 @@ void Bot::defuseBomb_ () {
    const float fullDefuseTime = m_hasDefuser ? 7.0f : 12.0f;
    const float timeToBlowUp = gameState.getBombTimeLeft ();
 
-   float defuseRemainingTime = fullDefuseTime;
-
-   if (m_hasProgressBar /*&& isOnFloor ()*/) {
-      defuseRemainingTime = fullDefuseTime - game.time ();
-   }
-
    const auto &bombPos = gameState.getBombOrigin ();
    bool defuseError = false;
 
@@ -938,21 +932,23 @@ void Bot::defuseBomb_ () {
       }
       return;
    }
-   else if (defuseRemainingTime > timeToBlowUp) {
-      defuseError = true;
-   }
-   else if (m_states & Sense::SeeingEnemy) {
-      const int friends = numFriendsNear (pev->origin, 768.0f);
-
-      if (friends < 2 && defuseRemainingTime < timeToBlowUp) {
+   else if (!m_hasProgressBar) {
+      if (fullDefuseTime > timeToBlowUp) {
          defuseError = true;
+      }
+      else if (m_states & Sense::SeeingEnemy) {
+         const int friends = numFriendsNear (pev->origin, 768.0f);
 
-         if (defuseRemainingTime + 2.0f > timeToBlowUp) {
-            defuseError = false;
-         }
+         if (friends < 2 && fullDefuseTime < timeToBlowUp) {
+            defuseError = true;
 
-         if (m_numEnemiesLeft > 0 && m_numFriendsLeft > friends) {
-            pushRadioMessage (Radio::NeedBackup);
+            if (fullDefuseTime + 2.0f > timeToBlowUp) {
+               defuseError = false;
+            }
+
+            if (m_numEnemiesLeft > 0 && m_numFriendsLeft > friends) {
+               pushRadioMessage (Radio::NeedBackup);
+            }
          }
       }
    }
@@ -1070,9 +1066,6 @@ void Bot::defuseBomb_ () {
             pushRadioMessage (Radio::NeedBackup);
          }
       }
-   }
-   else {
-      completeTask ();
    }
 }
 

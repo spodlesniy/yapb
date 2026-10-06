@@ -626,6 +626,16 @@ void YaPBActionExecutionContext::cancelPickupItem() {
     return;
   }
 
+  // PickupItem hands a nearby planted C4 to DefuseBomb. Preserve the entity
+  // across that semantic action transition so defuseBomb_() can keep using it
+  // directly even when the bomb is tucked behind nearby geometry.
+  if (m_bot->getCurrentTaskId() == Task::DefuseBomb
+      && m_bot->m_pickupType == Pickup::PlantedC4
+      && !game.isNullEntity(m_bot->m_pickupItem)) {
+    m_bot->m_states &= ~Sense::PickupItem;
+    return;
+  }
+
   m_bot->ensurePickupEntitiesClear();
 }
 
@@ -656,6 +666,12 @@ void YaPBActionExecutionContext::cancelDefuseBomb() {
   if (m_bot->getCurrentTaskId() == Task::DefuseBomb) {
     m_bot->clearTask(Task::DefuseBomb);
   }
+
+  if (m_bot->m_pickupType == Pickup::PlantedC4) {
+    m_bot->m_pickupItem = nullptr;
+    m_bot->m_pickupType = Pickup::None;
+  }
+  m_bot->m_entity.clear();
 }
 
 bool YaPBActionExecutionContext::plantBomb() {
