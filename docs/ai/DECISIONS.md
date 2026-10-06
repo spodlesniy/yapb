@@ -900,3 +900,15 @@ The previous random `Chatter::PlantingBomb` task-change line is replaced so the 
 Reason: gameplay validation showed the bomb carrier reaching the plant site and announcing `Sector Clear` immediately before planting.
 That message describes the wrong tactical state and does not ask nearby teammates to protect the stationary planter.
 
+## D103 — Do not recreate legacy bomb escape while the semantic action owns it
+
+`overrideConditions()` now checks the bot's existing `ai::ActionState` before creating legacy `Task::EscapeFromBomb`.
+If an active semantic `ActionType::EscapeFromBomb` already owns the escape lifecycle, the legacy override does not complete its temporary `MoveToPosition` or `Camp` primitive and does not push another escape task on top.
+
+The existing `isOutOfBombTimer()` decision remains unchanged and still creates the initial legacy escape when no semantic escape action is active.
+Once Training or Neural control adopts that state, the semantic action owns navigation and the safe hold until the planted-bomb state ends.
+
+Reason: v6 gameplay capture still showed repeated ~0.034-second completed `EscapeFromBomb` samples after D097.
+The legacy override was running every frame, completing the primitive owned by the already-active AI escape, recreating `Task::EscapeFromBomb`, and causing the execution context to report completion.
+Guarding the legacy transition by the existing action ownership state removes both the dataset churn and the repeated navigation reset without introducing another Bot-level flag.
+

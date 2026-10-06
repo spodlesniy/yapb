@@ -1700,9 +1700,13 @@ void Bot::updateEmotions () {
 
 void Bot::overrideConditions () {
    const auto tid = getCurrentTaskId ();
+   const auto &aiActionState = getAIActionState ();
+   const bool aiEscapeFromBombActive = aiActionState.isActive ()
+      && aiActionState.action ().type == ai::ActionType::EscapeFromBomb;
 
    // check if we need to escape from bomb
-   if ((m_team == Team::CT || tid == Task::Normal || tid == Task::MoveToPosition)
+   if (!aiEscapeFromBombActive
+      && (m_team == Team::CT || tid == Task::Normal || tid == Task::MoveToPosition)
       && game.mapIs (MapFlags::Demolition)
       && gameState.isBombPlanted ()
       && m_isAlive
