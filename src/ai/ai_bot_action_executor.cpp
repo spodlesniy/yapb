@@ -676,11 +676,6 @@ ActionResult BotActionExecutor::executeEscapeFromBomb(const Action &action, cons
     return { action.type, ActionResultType::Completed, 0.0f };
   }
 
-  if (m_context->isEscapeFromBombReached()) {
-    cancel();
-    return { action.type, ActionResultType::Completed, 0.0f };
-  }
-
   if (!m_context->escapeFromBomb()) {
     if (!m_directEscapeFromBombActive) {
       return { action.type, ActionResultType::Rejected, 0.0f };

@@ -1137,7 +1137,7 @@ AI_TEST(testBotActionExecutorDirectlyExecutesEscapeFromBomb) {
   expect(!executor.suppressesLegacyTaskExecution(), "escape keeps legacy task execution enabled");
 }
 
-AI_TEST(testBotActionExecutorCompletesEscapeFromBombWhenReached) {
+AI_TEST(testBotActionExecutorKeepsEscapeFromBombActiveWhenReached) {
   MockActionExecutionContext context {};
   ai::BotActionExecutor executor(context);
 
@@ -1149,13 +1149,14 @@ AI_TEST(testBotActionExecutorCompletesEscapeFromBombWhenReached) {
 
   auto result = executor.execute(action, observation);
   expect(result.type == ai::ActionResultType::Accepted, "escape starts before reaching safety");
-  expect(context.escapeFromBombCalls == 1, "escape is delegated before completion");
+  expect(context.escapeFromBombCalls == 1, "escape is delegated before reaching safety");
 
   context.escapeFromBombReached = true;
   result = executor.execute(action, observation);
 
-  expect(result.type == ai::ActionResultType::Completed, "reached safety completes escape");
-  expect(context.cancelEscapeFromBombCalls == 1, "completion releases direct escape");
+  expect(result.type == ai::ActionResultType::Accepted, "reached safety keeps escape active while bomb remains planted");
+  expect(context.escapeFromBombCalls == 2, "escape context maintains the safe state after arrival");
+  expect(context.cancelEscapeFromBombCalls == 0, "reaching safety does not terminate escape lifecycle");
 }
 
 AI_TEST(testBotActionExecutorCompletesEscapeFromBombWhenBombEnds) {

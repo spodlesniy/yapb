@@ -825,3 +825,14 @@ Knife behavior and normal visible-enemy fire are unchanged.
 Reason: the previous blind path randomized only X/Y while `m_lastEnemyOrigin` could contain a selected head point, and `m_blindTime > game.time()` bypassed normal recoil pacing.
 Together those behaviors could produce implausibly accurate sustained blind headshots.
 
+## D097 — Keep EscapeFromBomb active through the planted-bomb threat
+
+An AI-owned `EscapeFromBomb` action no longer completes as soon as its selected safe waypoint is reached.
+After arrival, the YaPB execution context replaces its temporary `MoveToPosition` primitive with a temporary `Camp` hold and keeps the same semantic action active while the bomb remains planted.
+If the bot is displaced from the safe waypoint, the hold is released and navigation to the same escape waypoint resumes.
+The action completes when the planted-bomb state ends; cancellation removes either temporary task that the action created.
+
+Reason: completing at the first safe waypoint allowed `overrideConditions()` to recreate legacy `Task::EscapeFromBomb` immediately while the bomb timer was still critical.
+Training mode therefore recorded repeated one-frame `EscapeFromBomb` transitions even though they represented one continuous escape-and-wait behavior.
+Keeping the semantic action alive across the safe hold aligns the dataset lifecycle with the actual objective behavior without changing `isOutOfBombTimer()` or its CT/T timing rules.
+

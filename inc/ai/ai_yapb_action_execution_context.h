@@ -39,6 +39,7 @@ private:
   bool m_escapeFromBombActive {};
   int m_escapeFromBombNode { -1 };
   bool m_escapeFromBombNavigationTaskCreated {};
+  bool m_escapeFromBombHoldTaskCreated {};
   bool m_rescueHostageActive {};
   int m_rescueHostageNode { -1 };
   bool m_rescueHostageNavigationTaskCreated {};

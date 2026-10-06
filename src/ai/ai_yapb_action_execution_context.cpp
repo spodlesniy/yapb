@@ -958,6 +958,7 @@ bool YaPBActionExecutionContext::escapeFromBomb() {
     m_escapeFromBombActive = true;
     m_escapeFromBombNode = bestNode;
     m_escapeFromBombNavigationTaskCreated = false;
+    m_escapeFromBombHoldTaskCreated = false;
 
     if (currentTask == Task::MoveToPosition || currentTask == Task::EscapeFromBomb) {
       m_bot->clearTask(currentTask);
@@ -967,12 +968,37 @@ bool YaPBActionExecutionContext::escapeFromBomb() {
     m_escapeFromBombNavigationTaskCreated = true;
   }
 
+  if (isEscapeFromBombReached()) {
+    if (m_bot->getCurrentTaskId() == Task::MoveToPosition) {
+      m_bot->clearTask(Task::MoveToPosition);
+      m_escapeFromBombNavigationTaskCreated = false;
+    }
+
+    if (m_bot->getCurrentTaskId() != Task::Camp) {
+      if (m_bot->getCurrentTaskId() != Task::Normal) {
+        return false;
+      }
+
+      const float holdTime = game.time() + cr::max(1.0f, gameState.getBombTimeLeft());
+      m_bot->startTask(Task::Camp, TaskPri::Camp, kInvalidNodeIndex, holdTime, true);
+      m_escapeFromBombHoldTaskCreated = true;
+    }
+
+    return true;
+  }
+
+  if (m_escapeFromBombHoldTaskCreated && m_bot->getCurrentTaskId() == Task::Camp) {
+    m_bot->clearTask(Task::Camp);
+    m_escapeFromBombHoldTaskCreated = false;
+  }
+
   if (m_bot->getCurrentTaskId() != Task::MoveToPosition) {
     if (m_bot->getCurrentTaskId() != Task::Normal) {
       return false;
     }
 
     m_bot->startTask(Task::MoveToPosition, TaskPri::MoveToPosition, m_escapeFromBombNode, 0.0f, true);
+    m_escapeFromBombNavigationTaskCreated = true;
   }
 
   m_bot->getTask()->data = m_escapeFromBombNode;
@@ -1006,6 +1032,11 @@ void YaPBActionExecutionContext::cancelEscapeFromBomb() {
     m_bot->clearTask(Task::MoveToPosition);
   }
 
+  if (m_escapeFromBombActive && m_escapeFromBombHoldTaskCreated
+      && m_bot->getCurrentTaskId() == Task::Camp) {
+    m_bot->clearTask(Task::Camp);
+  }
+
   if (m_escapeFromBombActive) {
     m_bot->clearSearchNodes();
     m_bot->m_prevGoalIndex = kInvalidNodeIndex;
@@ -1017,6 +1048,7 @@ void YaPBActionExecutionContext::cancelEscapeFromBomb() {
   m_escapeFromBombActive = false;
   m_escapeFromBombNode = kInvalidNodeIndex;
   m_escapeFromBombNavigationTaskCreated = false;
+  m_escapeFromBombHoldTaskCreated = false;
 }
 
 bool YaPBActionExecutionContext::rescueHostage() {
