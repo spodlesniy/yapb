@@ -2679,6 +2679,41 @@ void BotGraph::setVisited (int index) {
    }
 }
 
+bool BotGraph::isSameGoalCluster (int first, int second, float radius) const {
+   if (!exists (first) || !exists (second)
+      || !(m_paths[first].flags & NodeFlag::Goal)
+      || !(m_paths[second].flags & NodeFlag::Goal)) {
+      return false;
+   }
+
+   return m_paths[first].origin.distanceSq (m_paths[second].origin) <= cr::sqrf (radius);
+}
+
+bool BotGraph::isVisitedGoalCluster (int index, float radius) const {
+   if (!exists (index) || !(m_paths[index].flags & NodeFlag::Goal)) {
+      return false;
+   }
+
+   for (const auto &visited : m_visitedGoals) {
+      if (isSameGoalCluster (index, visited, radius)) {
+         return true;
+      }
+   }
+   return false;
+}
+
+void BotGraph::setVisitedGoalCluster (int index, float radius) {
+   if (!exists (index) || !(m_paths[index].flags & NodeFlag::Goal)) {
+      return;
+   }
+
+   for (const auto &point : m_goalPoints) {
+      if (isSameGoalCluster (index, point, radius)) {
+         setVisited (point);
+      }
+   }
+}
+
 void BotGraph::clearVisited () {
    m_visitedGoals.clear ();
 }

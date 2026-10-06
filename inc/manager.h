@@ -28,7 +28,6 @@ private:
    float m_autoKillCheckTime {}; // time to kill all the bots ?
    float m_maintainTime {}; // time to maintain bot creation
    float m_quotaMaintainTime {}; // time to maintain bot quota
-   float m_plantSearchUpdateTime {}; // time to update for searching planted bomb
    float m_lastChatTime {}; // global chat time timestamp
 
    int m_lastWinner {}; // the team who won previous round
@@ -152,14 +151,6 @@ public:
 
    void clearBombSay (int type) {
       m_bombSayStatus &= ~type;
-   }
-
-   void setPlantedBombSearchTimestamp (const float timestamp) {
-      m_plantSearchUpdateTime = timestamp;
-   }
-
-   float getPlantedBombSearchTimestamp () const {
-      return m_plantSearchUpdateTime;
    }
 
    void setLastRadioTimestamp (const int team, const float timestamp) {

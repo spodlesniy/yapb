@@ -559,7 +559,6 @@ void BotManager::maintainAutoKill () {
 }
 
 void BotManager::reset () {
-   m_plantSearchUpdateTime = 0.0f;
    m_lastChatTime = 0.0f;
    m_bombSayStatus = BombPlantedSay::ChatSay | BombPlantedSay::Chatter;
 }
@@ -2181,7 +2180,6 @@ void BotManager::initRound () {
    graph.clearVisited ();
 
    m_bombSayStatus = BombPlantedSay::ChatSay | BombPlantedSay::Chatter;
-   m_plantSearchUpdateTime = 0.0f;
    m_autoKillCheckTime = 0.0f;
    m_botsCanPause = false;
 

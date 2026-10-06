@@ -93,15 +93,15 @@ void Bot::normal_ () {
          && m_team == Team::CT
          && graph.exists (m_currentNodeIndex)
          && (m_pathFlags & NodeFlag::Goal)
-         && !graph.isVisited (m_currentNodeIndex)) {
+         && !graph.isVisitedGoalCluster (m_currentNodeIndex, 512.0f)) {
 
          const auto &bombPos = gameState.getBombOrigin ();
 
          if (bombPos.empty ()
             || bombPos.distanceSq (graph[m_currentNodeIndex].origin) > cr::sqrf (512.0f)) {
 
+            graph.setVisitedGoalCluster (m_currentNodeIndex, 512.0f);
             pushRadioMessage (Radio::SectorClear);
-            graph.setVisited (m_currentNodeIndex);
          }
       }
 

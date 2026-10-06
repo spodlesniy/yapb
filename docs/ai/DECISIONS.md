@@ -862,3 +862,17 @@ Terrorist planted-bomb defense remains mapped to `ProtectObjective`.
 Reason: the previous legacy condition required `m_defendedBomb`, so a CT that had entered an unrelated camp before the plant could stay there while the team still had time to search for and defuse the C4.
 An active AI Camp could also preserve that stale behavior across the objective transition.
 
+## D100 — Treat planted-bomb Sector Clear as a bombsite-level event
+
+A Counter-Terrorist reports `SectorClear` only after physically reaching an unvisited Goal cluster while the planted C4 is not within 512 units of that checked goal.
+All Goal nodes within the same 512-unit bombsite cluster are marked visited immediately, so reaching another waypoint for the same site does not generate another Sector Clear.
+
+Every CT recipient processes the radio message independently.
+If its current `Normal` target belongs to the reported cluster, that target is invalidated and the bot acknowledges the message.
+The old global `m_plantSearchUpdateTime` 0.5-second gate is removed because it allowed the first recipient to suppress processing of the same Sector Clear by the rest of the CT team.
+
+Reason: the previous implementation tracked visited state per Goal waypoint even though one physical bombsite may contain multiple Goal nodes.
+It also applied a team-global debounce inside a per-bot radio handler.
+Together those behaviors could produce repeated Sector Clear reports for one site while simultaneously preventing some teammates from abandoning that already-checked site.
+The 512-unit cluster radius intentionally matches the existing planted-C4-to-goal distance used to decide whether a checked goal contains the bomb.
+

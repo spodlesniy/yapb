@@ -222,6 +222,8 @@ public:
    bool isNodeReacheableWithJump (const Vector &src, const Vector &destination) const;
    bool checkNodes (bool teleportPlayer, bool onlyPaths = false);
    bool isVisited (int index);
+   bool isVisitedGoalCluster (int index, float radius) const;
+   bool isSameGoalCluster (int first, int second, float radius) const;
 
    bool saveGraphData ();
    bool loadGraphData ();
@@ -250,6 +252,7 @@ public:
    void setSearchIndex (int index);
    void startLearnJump ();
    void setVisited (int index);
+   void setVisitedGoalCluster (int index, float radius);
    void clearVisited ();
 
    void eraseFromBucket (const Vector &pos, int index);

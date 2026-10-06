@@ -2940,8 +2940,7 @@ void Bot::checkRadioQueue () {
       // check if it's a ct command
       if (game.getPlayerTeam (m_radioEntity) == Team::CT
          && m_team == Team::CT
-         && game.isFakeClientEntity (m_radioEntity)
-         && bots.getPlantedBombSearchTimestamp () < game.time ()) {
+         && game.isFakeClientEntity (m_radioEntity)) {
 
          float nearestDistanceSq = kInfiniteDistance;
          int bombPoint = kInvalidNodeIndex;
@@ -2960,15 +2959,14 @@ void Bot::checkRadioQueue () {
          if (bombPoint != kInvalidNodeIndex) {
             // does this bot want to defuse?
             if (getCurrentTaskId () == Task::Normal) {
-               // is he approaching this goal?
-               if (getTask ()->data == bombPoint) {
+               // is he approaching any goal in the checked bombsite?
+               if (graph.isSameGoalCluster (getTask ()->data, bombPoint, 512.0f)) {
                   getTask ()->data = kInvalidNodeIndex;
                   pushRadioMessage (Radio::RogerThat);
                }
             }
-            graph.setVisited (bombPoint);
+            graph.setVisitedGoalCluster (bombPoint, 512.0f);
          }
-         bots.setPlantedBombSearchTimestamp (game.time () + 0.5f);
       }
       break;
 
