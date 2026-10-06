@@ -638,7 +638,7 @@ ActionResult BotActionExecutor::executeProtectObjective(const Action &action) {
     }
 
     cancel();
-    return { action.type, ActionResultType::Completed, 0.0f };
+    return { action.type, ActionResultType::Interrupted, 0.0f };
   }
 
   m_directProtectObjectiveActive = true;

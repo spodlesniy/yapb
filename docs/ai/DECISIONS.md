@@ -1040,3 +1040,15 @@ Legacy task execution remains responsible for advancing the path after the seman
 
 Reason: fresh schema-v6 gameplay capture contained repeated zero-duration `MoveToPosition -> Completed` transitions with positive reward while the bot was still approaching the same live path target.
 The semantic reach check could declare the static graph node reached before `updateNavigation()` considered its offset or precision-constrained path origin reached, so the unchanged legacy `MoveToPosition` task was adopted and completed again on subsequent decision cycles.
+
+## D114 — Treat ProtectObjective tactical preemption as interruption
+
+An active `ProtectObjective` now returns `Interrupted` when its YaPB execution context becomes unavailable while the planted objective is still active.
+`Completed` remains reserved for the explicit objective terminal condition reported by `isProtectObjectiveReached()`, which currently means that the planted bomb is no longer active.
+Initial inability to start protection remains `Rejected`.
+
+This preserves the existing tactical task handoff: if combat, grenade handling, or another incompatible legacy task preempts the defensive `MoveToPosition`/Camp lifecycle, the semantic action releases its owned state without claiming objective success.
+The reward provider is unchanged, so interrupted protection keeps the existing neutral baseline instead of receiving the positive completion baseline.
+
+Reason: fresh schema-v6 validation showed `ProtectObjective -> Completed` samples at tactical handoff boundaries even though the bomb objective was still active.
+The executor previously mapped both the real objective terminal condition and loss of the compatible runtime task to `Completed`, conflating successful protection with preemption in the training labels.

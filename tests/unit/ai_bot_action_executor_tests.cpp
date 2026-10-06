@@ -1050,6 +1050,24 @@ AI_TEST(testBotActionExecutorCompletesProtectObjectiveWhenReached) {
   expect(context.cancelProtectObjectiveCalls == 1, "completion releases direct objective protection");
 }
 
+AI_TEST(testBotActionExecutorInterruptsProtectObjectiveWhenRuntimeIsPreempted) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+  auto action = ai::Action {};
+  action.type = ai::ActionType::ProtectObjective;
+
+  expect(executor.execute(action, aliveObservation()).type == ai::ActionResultType::Accepted,
+         "protect objective starts before tactical preemption");
+
+  context.protectObjectiveAvailable = false;
+  const auto result = executor.execute(action, aliveObservation());
+
+  expect(result.type == ai::ActionResultType::Interrupted,
+         "runtime preemption interrupts objective protection instead of completing it");
+  expect(context.cancelProtectObjectiveCalls == 1, "preemption releases direct objective protection");
+}
+
+
 AI_TEST(testBotActionExecutorRejectsProtectObjectiveWhenRuntimeCannotStartIt) {
   MockActionExecutionContext context {};
   context.protectObjectiveAvailable = false;
