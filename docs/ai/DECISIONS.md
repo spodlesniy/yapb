@@ -761,3 +761,13 @@ The per-bot planted-bomb timestamp debounce is therefore no longer needed and ha
 
 Reason: an empty planted-bomb origin is not proof that the current bombsite is clear; it can also mean that the planted C4 has not been localized yet.
 Tying the radio report and visited-state update to actual arrival at the bombsite restores the intended semantics without changing the broader radio/chatter system.
+
+## D092 — Let CT bomb-timer escape override secondary tasks
+
+When `isOutOfBombTimer()` determines that a CT can no longer reach and defuse the planted bomb in time, `overrideConditions()` may replace any current CT task with `Task::EscapeFromBomb`.
+The existing Terrorist behavior remains limited to `Normal` and `MoveToPosition` tasks.
+An already active bomb escape is still excluded, and `isOutOfBombTimer()` continues to protect an active defuse progress bar from being interrupted.
+
+Reason: restricting the late-bomb escape transition to `Normal` and `MoveToPosition` allowed CT bots in tasks such as `Camp`, `Attack`, `Hunt`, or `PickupItem` to remain near the planted bomb after defusing was no longer viable.
+The bomb-timer viability check is already the authoritative decision for this transition, so CT task type should not block the safety escape once that check succeeds.
+

@@ -1697,12 +1697,11 @@ void Bot::overrideConditions () {
    const auto tid = getCurrentTaskId ();
 
    // check if we need to escape from bomb
-   if ((tid == Task::Normal || tid == Task::MoveToPosition)
+   if ((m_team == Team::CT || tid == Task::Normal || tid == Task::MoveToPosition)
       && game.mapIs (MapFlags::Demolition)
       && gameState.isBombPlanted ()
       && m_isAlive
       && tid != Task::EscapeFromBomb
-      && tid != Task::Camp
       && isOutOfBombTimer ()) {
 
       completeTask (); // complete current task
