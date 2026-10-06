@@ -768,6 +768,20 @@ ai::Observation huntObservation(int targetPlayer) {
   return observation;
 }
 
+AI_TEST(testBotActionExecutorAcceptsTeacherLastEnemyHunt) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+  auto observation = huntObservation(9);
+  observation.bot.currentTask = ai::TaskType::Hunt;
+  observation.bot.currentGoalNode = 20;
+  const auto action = ai::GoalNavigationPolicy {}.decide(observation);
+
+  expect(action.type == ai::ActionType::HuntTarget, "teacher produces a semantic hunt for the last enemy");
+  expect(executor.execute(action, observation).type == ai::ActionResultType::Accepted,
+         "executor accepts the teacher's remembered-enemy target without a current enemy");
+  expect(context.huntTargetCalls == 1 && context.lastHuntTarget == 9, "last enemy is delegated to hunt execution");
+}
+
 AI_TEST(testBotActionExecutorDirectlyExecutesHuntTarget) {
   MockActionExecutionContext context {};
   ai::BotActionExecutor executor(context);

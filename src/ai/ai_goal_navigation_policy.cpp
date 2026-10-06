@@ -71,6 +71,27 @@ Action makeTargetPlayerAction(ActionType type, const Observation &observation) {
   return action;
 }
 
+Action makeHuntTargetAction(const Observation &observation) {
+  const auto target = observation.combat.lastEnemyEntity;
+  if (target < 0) {
+    return {};
+  }
+
+  const auto count = observation.playerCount > kMaxObservedPlayers ? kMaxObservedPlayers : observation.playerCount;
+  for (size_t i = 0; i < count; ++i) {
+    const auto &player = observation.players[i];
+    if (player.valid && player.alive && player.enemy && player.entityIndex == target) {
+      Action action {};
+      action.type = ActionType::HuntTarget;
+      action.targetType = TargetType::Player;
+      action.targetPlayer = target;
+      action.confidence = 1.0f;
+      return action;
+    }
+  }
+  return {};
+}
+
 Action makeGoalNavigationAction(const Observation &observation) {
   if (!observation.bot.alive || observation.bot.currentGoalNode < 0 || observation.bot.currentGoalNode == observation.bot.currentNode) {
     return {};
@@ -283,10 +304,8 @@ Action GoalNavigationPolicy::decide(const Observation &observation) const {
     return action.type != ActionType::None ? action : makeGoalNavigationAction(observation);
   }
 
-  case TaskType::Hunt: {
-    const Action action = makeTargetPlayerAction(ActionType::HuntTarget, observation);
-    return action.type != ActionType::None ? action : makeGoalNavigationAction(observation);
-  }
+  case TaskType::Hunt:
+    return makeHuntTargetAction(observation);
 
   case TaskType::ShootBreakable: {
     Action action {};

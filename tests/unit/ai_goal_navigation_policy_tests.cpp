@@ -93,6 +93,9 @@ AI_TEST(testGoalNavigationPolicyYieldsDroppedBombMoveTaskToLegacyObjectiveLogic)
 
 AI_TEST(testGoalNavigationPolicyYieldsDroppedBombHuntToLegacyObjectiveLogic) {
   auto observation = makeObservation();
+  addObservedEnemy(observation, 7);
+  observation.combat.lastEnemyEntity = 7;
+  observation.combat.enemyEntity = -1;
   observation.bot.currentTask = ai::TaskType::Hunt;
   observation.bot.team = 0;
   observation.bot.objectiveFlags |= ai::ObjectiveFlag::BombDropped;
@@ -184,10 +187,52 @@ AI_TEST(testGoalNavigationPolicyMapsCombatTasks) {
   expect(action.targetPlayer == 7, "aim target preserves enemy entity");
 
   observation.combat.firePauseRemaining = 0.0f;
+  observation.combat.lastEnemyEntity = 7;
+  observation.combat.enemyEntity = -1;
   observation.bot.currentTask = ai::TaskType::Hunt;
   action = policy.decide(observation);
   expect(action.type == ai::ActionType::HuntTarget, "hunt task maps to hunt target");
-  expect(action.targetPlayer == 7, "hunt target preserves enemy entity");
+  expect(action.targetPlayer == 7, "hunt target preserves last enemy entity without a current enemy");
+  expect(action.targetType == ai::TargetType::Player, "hunt targets the observed player");
+}
+
+AI_TEST(testGoalNavigationPolicyHuntsLastEnemyWhenCurrentEnemyDiffers) {
+  auto observation = makeObservation();
+  addObservedEnemy(observation, 7);
+  observation.playerCount = 2;
+  observation.players[1] = observation.players[0];
+  observation.players[1].entityIndex = 9;
+  observation.combat.lastEnemyEntity = 9;
+  observation.bot.currentTask = ai::TaskType::Hunt;
+
+  const auto action = ai::GoalNavigationPolicy {}.decide(observation);
+  expect(action.type == ai::ActionType::HuntTarget, "hunt selects a remembered enemy");
+  expect(action.targetPlayer == 9, "hunt uses last enemy instead of current enemy");
+
+  observation.bot.currentTask = ai::TaskType::Attack;
+  observation.combat.perceptionFlags |= static_cast<uint32_t>(ai::PerceptionFlag::SeeingEnemy);
+  const auto attack = ai::GoalNavigationPolicy {}.decide(observation);
+  expect(attack.type == ai::ActionType::AttackTarget && attack.targetPlayer == 7,
+         "visible attack still targets the current enemy");
+}
+
+AI_TEST(testGoalNavigationPolicyYieldsHuntForInvalidLastEnemy) {
+  auto observation = makeObservation();
+  addObservedEnemy(observation, 7);
+  observation.combat.lastEnemyEntity = 9;
+  observation.bot.currentTask = ai::TaskType::Hunt;
+  ai::GoalNavigationPolicy policy {};
+  expect(policy.decide(observation).type == ai::ActionType::None, "unobserved last enemy yields despite a current enemy and goal");
+
+  observation.combat.lastEnemyEntity = 7;
+  observation.players[0].valid = false;
+  expect(policy.decide(observation).type == ai::ActionType::None, "invalid last enemy yields");
+  observation.players[0].valid = true;
+  observation.players[0].alive = false;
+  expect(policy.decide(observation).type == ai::ActionType::None, "dead last enemy yields");
+  observation.players[0].alive = true;
+  observation.players[0].enemy = false;
+  expect(policy.decide(observation).type == ai::ActionType::None, "friendly last enemy yields");
 }
 
 AI_TEST(testGoalNavigationPolicyMapsFollowUser) {
@@ -333,6 +378,9 @@ AI_TEST(testGoalNavigationPolicyMapsBombDefenseToProtectObjective) {
 
 AI_TEST(testGoalNavigationPolicyMapsStaleBombDefenseHuntToProtectObjective) {
   auto observation = makeObservation();
+  addObservedEnemy(observation, 7);
+  observation.combat.lastEnemyEntity = 7;
+  observation.combat.enemyEntity = -1;
   observation.bot.team = 0;
   observation.bot.currentTask = ai::TaskType::Hunt;
   observation.bot.objectiveFlags |= ai::ObjectiveFlag::BombPlanted;
@@ -491,7 +539,7 @@ AI_TEST(testGoalNavigationPolicyDefinesOutcomeForEveryTaskType) {
     ai::ActionType::PlantBomb,
     ai::ActionType::DefuseBomb,
     ai::ActionType::MoveToNode,
-    ai::ActionType::MoveToNode,
+    ai::ActionType::None,
     ai::ActionType::SeekCover,
     ai::ActionType::ThrowGrenade,
     ai::ActionType::ThrowFlashbang,
@@ -525,15 +573,14 @@ AI_TEST(testGoalNavigationPolicyDefinesOutcomeForEveryTaskType) {
   }
 }
 
-AI_TEST(testGoalNavigationPolicyFallsBackForHuntWhenCombatTargetIsUnavailable) {
+AI_TEST(testGoalNavigationPolicyYieldsHuntWhenLastEnemyIsUnavailable) {
   auto observation = makeObservation();
   observation.bot.currentTask = ai::TaskType::Hunt;
   ai::GoalNavigationPolicy policy {};
 
   const auto action = policy.decide(observation);
 
-  expect(action.type == ai::ActionType::MoveToNode, "hunt without observed target falls back to goal");
-  expect(action.targetNode == 20, "hunt fallback preserves navigation goal");
+  expect(action.type == ai::ActionType::None, "hunt without last enemy yields instead of adopting the navigation goal");
 }
 
 AI_TEST(testGoalNavigationPolicyFallsBackWhenCombatTargetIsUnavailable) {

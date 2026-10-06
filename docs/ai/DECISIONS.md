@@ -1018,3 +1018,13 @@ The training collector records the corrected terminal result through its existin
 
 Reason: the executor previously treated both successful planting and active planting preemption as completion.
 That produced positive `PlantBomb` training labels even when the next observation still showed an unplanted bomb.
+
+## D112 — Align HuntTarget with the observed last enemy
+
+The deterministic teacher maps `TaskType::Hunt` to `HuntTarget` using `combat.lastEnemyEntity` and requires a matching valid, alive enemy in the observed player slots.
+This matches the executor's remembered-enemy target contract without requiring current visibility or a current enemy.
+If that target is unavailable, the Hunt mapping returns `None` instead of falling back to generic `MoveToNode`, leaving the legacy Hunt task in control.
+Attack and aim continue to use the current enemy, and D108 dropped-C4 recovery and planted-C4 protection retain precedence over stale Hunt.
+
+Reason: using the current enemy for Hunt could produce an immediately rejected target or fall through into navigation that immediately lost ownership to the still-active legacy Hunt task.
+Keeping producer and executor target semantics aligned removes those invalid labels and ownership interruptions at their source.
