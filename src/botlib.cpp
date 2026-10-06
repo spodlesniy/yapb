@@ -577,7 +577,7 @@ void Bot::updatePickups () {
 
       // once the C4 is planted, CT objective handling outranks ordinary item upgrades
       if (allowPickup
-         && isDemolitionMap
+         && game.mapIs (MapFlags::Demolition)
          && m_team == Team::CT
          && gameState.isBombPlanted ()
          && pickupType != Pickup::PlantedC4
