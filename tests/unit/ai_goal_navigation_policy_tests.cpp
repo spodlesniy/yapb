@@ -79,6 +79,18 @@ AI_TEST(testGoalNavigationPolicyYieldsDroppedBombNavigationToLegacyObjectiveLogi
   expect(action.type == ai::ActionType::None, "terrorist yields normal navigation to legacy dropped-bomb recovery");
 }
 
+AI_TEST(testGoalNavigationPolicyYieldsDroppedBombMoveTaskToLegacyObjectiveLogic) {
+  auto observation = makeObservation();
+  observation.bot.currentTask = ai::TaskType::MoveToPosition;
+  observation.bot.destination = { 100.0f, 200.0f, 300.0f };
+  observation.bot.team = 0;
+  observation.bot.objectiveFlags |= ai::ObjectiveFlag::BombDropped;
+
+  const auto action = ai::GoalNavigationPolicy {}.decide(observation);
+
+  expect(action.type == ai::ActionType::None, "terrorist yields legacy move-to-position while recovering dropped C4");
+}
+
 AI_TEST(testGoalNavigationPolicyYieldsBombZoneToPlantTaskSelection) {
   auto observation = makeObservation();
   observation.bot.currentTask = ai::TaskType::Normal;

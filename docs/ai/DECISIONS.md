@@ -940,3 +940,15 @@ Reason: a bot could switch to the knife for movement, encounter an enemy while i
 The no-loaded-weapon fallback also only attempted to reload the currently selected weapon, which could not work while the knife was selected.
 Together those conditions could keep the bot attacking with a knife despite carrying a firearm that only needed to be selected and reloaded.
 
+## D106 — Keep dropped-C4 legacy navigation outside the semantic action lifecycle
+
+For a Terrorist while `ObjectiveFlag::BombDropped` is active, the deterministic teacher now yields both free `Normal` navigation and legacy `MoveToPosition` navigation to YaPB's dropped-C4 recovery path.
+The nearby `PickupItem` transition remains semantic and is still recorded once the backpack itself becomes the active pickup target.
+
+The execution context already revokes generic AI navigation ownership while a dropped C4 exists.
+This decision makes the producer consistent with that ownership rule instead of emitting a semantic `MoveToPosition` that the executor must immediately interrupt.
+
+Reason: v6 gameplay capture showed hundreds of zero-duration `MoveToPosition` samples while Terrorists were recovering a dropped C4.
+Legacy objective navigation created `Task::MoveToPosition`, the teacher wrapped it as an AI navigation action, and the D093 ownership guard immediately rejected that action because the dropped-C4 objective must remain legacy-owned.
+Yielding the legacy move task removes that loop and lets one continuous recovery path reach the existing `PickupItem` handoff.
+

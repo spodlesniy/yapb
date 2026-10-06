@@ -134,6 +134,13 @@ Action GoalNavigationPolicy::decide(const Observation &observation) const {
     return {};
   }
 
+  const bool bombDropped = (observation.bot.objectiveFlags & ObjectiveFlag::BombDropped) != 0;
+  if (observation.bot.team == kTerroristTeam && bombDropped
+      && (observation.bot.currentTask == TaskType::Normal
+          || observation.bot.currentTask == TaskType::MoveToPosition)) {
+    return {};
+  }
+
   if (observation.combat.reloadState != ReloadState::None &&
       isReloadCompatible(observation.combat.reloadState, observation.combat.weaponType)) {
     Action action {};
@@ -298,9 +305,7 @@ Action GoalNavigationPolicy::decide(const Observation &observation) const {
 
   case TaskType::Normal: {
     const bool bombPlanted = (observation.bot.objectiveFlags & ObjectiveFlag::BombPlanted) != 0;
-    const bool bombDropped = (observation.bot.objectiveFlags & ObjectiveFlag::BombDropped) != 0;
     if (observation.bot.hasC4
-        || (observation.bot.team == kTerroristTeam && bombDropped)
         || (observation.bot.team == kCounterTerroristTeam && bombPlanted)) {
       return {};
     }
