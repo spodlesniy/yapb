@@ -977,3 +977,17 @@ Only pursuit based on remembered or heard enemy state is suppressed while `BombD
 
 Reason: after D106 removed semantic ownership churn from dropped-C4 recovery and D107 unified post-plant defense, gameplay capture showed the same objective conflict resurfacing as stale Hunt transitions.
 Those pursuits could repeatedly displace recovery or protection even though no enemy was actually visible.
+
+## D109 — Turn off the flashlight from live illumination
+
+Flashlight activation remains conservative and continues to use the cached light level of the current waypoint on the existing 2-4 second darkness cadence.
+Night-vision behavior also remains on that existing cached-light path.
+
+While the flashlight is already on, the bot now samples live illumination at its current position plus 16 units on Z every 0.25 seconds.
+The live shutdown check uses the same D104 hysteresis thresholds: above 15 on bright-sky maps and above 45 on darker-sky maps.
+If live illumination is unavailable, no live-light shutdown is performed and the existing cached behavior remains the fallback.
+A live-light shutdown starts the same six-second re-enable cooldown introduced by D104.
+
+Reason: `m_path->light` describes the cached waypoint illumination rather than the bot's exact current position.
+A bot could therefore leave a dark room and remain under the old dark waypoint value long enough to keep its flashlight on in an obviously bright area.
+A separate live-check timer makes shutdown responsive without increasing the frequency of the broader darkness/NVG logic or its random 2-4 second scheduling.

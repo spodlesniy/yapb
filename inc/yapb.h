@@ -657,6 +657,7 @@ public:
    float m_nextBuyTime {}; // next buy time
    float m_checkDarkTime {}; // check for darkness time
    float m_flashlightReenableTime {}; // earliest time flashlight may be turned back on
+   float m_flashlightIlluminationCheckTime {}; // next live illumination check while flashlight is on
    float m_preventFlashing {}; // bot turned away from flashbang
    float m_blindTime {}; // time when bot is blinded
    float m_blindMoveSpeed {}; // mad speeds when bot is blind

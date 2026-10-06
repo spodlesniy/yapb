@@ -1690,6 +1690,7 @@ void Bot::newRound () {
    m_flashLevel = 100;
    m_checkDarkTime = game.time ();
    m_flashlightReenableTime = 0.0f;
+   m_flashlightIlluminationCheckTime = 0.0f;
 
    m_knifeAttackTime = game.time () + rg (1.3f, 2.6f);
    m_nextBuyTime = game.time () + rg (0.6f, 2.0f);

@@ -60,36 +60,59 @@ bool Bot::seesEntity (const Vector &dest, bool fromBody) {
 }
 
 void Bot::checkDarkness () {
+   constexpr float kFlashlightReenableDelay = 6.0f;
+   constexpr float kFlashlightIlluminationCheckInterval = 0.25f;
+
+   const auto isFlashlightBrightEnough = [] (float lightLevel, float skyColor) {
+      return (skyColor > 50.0f && lightLevel > 15.0f)
+         || (skyColor <= 50.0f && lightLevel > 45.0f);
+   };
+   const auto now = game.time ();
 
    // do not check for darkness at the start of the round
-   if (m_spawnTime + 5.0f > game.time () || !graph.exists (m_currentNodeIndex)) {
+   if (m_spawnTime + 5.0f > now) {
       return;
    }
 
-   // do not check every frame
-   if (m_checkDarkTime > game.time () || cr::fequal (m_path->light, kInvalidLightLevel)) {
+   const auto flashOn = (pev->effects & EF_DIMLIGHT);
+
+   if (mp_flashlight && !m_hasNVG && flashOn && m_flashlightIlluminationCheckTime <= now) {
+      const auto liveLightLevel = illum.getLightLevel (pev->origin + Vector { 0.0f, 0.0f, 16.0f });
+      m_flashlightIlluminationCheckTime = now + kFlashlightIlluminationCheckInterval;
+
+      if (!cr::fequal (liveLightLevel, kInvalidLightLevel)
+         && isFlashlightBrightEnough (liveLightLevel, illum.getSkyColor ())) {
+
+         pev->impulse = 100;
+         m_flashlightReenableTime = now + kFlashlightReenableDelay;
+         return;
+      }
+   }
+
+   if (!graph.exists (m_currentNodeIndex)) {
+      return;
+   }
+
+   // do not run the cached darkness behavior every frame
+   if (m_checkDarkTime > now || cr::fequal (m_path->light, kInvalidLightLevel)) {
       return;
    }
 
    const auto lightLevel = m_path->light;
    const auto skyColor = illum.getSkyColor ();
-   const auto flashOn = (pev->effects & EF_DIMLIGHT);
 
    if (mp_flashlight && !m_hasNVG) {
-      constexpr float kFlashlightReenableDelay = 6.0f;
-
       const auto tid = getCurrentTaskId ();
       const bool tacticalRisk = tid == Task::Camp
          || tid == Task::Attack
          || m_heardSoundTime + 3.0f >= game.time ();
       const bool darkEnough = (skyColor > 50.0f && lightLevel < 10.0f)
          || (skyColor <= 50.0f && lightLevel < 40.0f);
-      const bool brightEnough = (skyColor > 50.0f && lightLevel > 15.0f)
-         || (skyColor <= 50.0f && lightLevel > 45.0f);
+      const bool brightEnough = isFlashlightBrightEnough (lightLevel, skyColor);
 
       if (!flashOn
          && !tacticalRisk
-         && m_flashlightReenableTime <= game.time ()
+         && m_flashlightReenableTime <= now
          && m_flashLevel > 30
          && darkEnough) {
 
@@ -97,7 +120,7 @@ void Bot::checkDarkness () {
       }
       else if (flashOn && (brightEnough || tacticalRisk || m_flashLevel <= 0)) {
          pev->impulse = 100;
-         m_flashlightReenableTime = game.time () + kFlashlightReenableDelay;
+         m_flashlightReenableTime = now + kFlashlightReenableDelay;
       }
    }
    else if (m_hasNVG) {
@@ -111,7 +134,7 @@ void Bot::checkDarkness () {
          issueCommand ("nightvision");
       }
    }
-   m_checkDarkTime = game.time () + rg (2.0f, 4.0f);
+   m_checkDarkTime = now + rg (2.0f, 4.0f);
 }
 
 void Bot::updateBodyAngles () {
