@@ -3103,7 +3103,8 @@ void Bot::frame () {
    if (gameState.isBombPlanted () && m_team == Team::CT && m_isAlive) {
       const auto &bombPosition = gameState.getBombOrigin ();
 
-      if (!m_hasProgressBar
+      if (!bombPosition.empty ()
+         && !m_hasProgressBar
          && getCurrentTaskId () != Task::EscapeFromBomb
          && pev->origin.distanceSq (bombPosition) < cr::sqrf (1540.0f)
          && !isBombDefusing (bombPosition)) {
@@ -3111,7 +3112,13 @@ void Bot::frame () {
          m_ignoredItems.clear ();
          m_itemCheckTime = game.time ();
 
-         clearTask (getCurrentTaskId ());
+         if (!game.isNullEntity (m_pickupItem)
+            && m_pickupType == Pickup::PlantedC4
+            && getCurrentTaskId () != Task::PickupItem
+            && getCurrentTaskId () != Task::DefuseBomb) {
+
+            clearTask (getCurrentTaskId ());
+         }
       }
    }
 

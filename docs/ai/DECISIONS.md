@@ -1065,3 +1065,15 @@ The teacher, observation schema, reward provider, and legacy cover-node selectio
 
 Reason: a fresh schema-v6 self-play capture contained 23 Retreat samples, including 20 consecutive zero-duration rejections in one episode after several extremely short completions.
 The previous Retreat lifecycle treated arrival at the cover waypoint as terminal and omitted the `SeekCover -> Hide` transition performed by legacy `seekCover_()`, allowing the same low-health visible-enemy state to immediately request Retreat again.
+
+## D116 — Preserve CT bomb-search navigation until planted C4 is acquired
+
+The planted-bomb proximity check no longer clears a CT bot's current task merely because the bot is within 1540 units of the known bomb origin.
+That broad proximity window still forces the next item scan, but task interruption now happens only after the pickup system has actually acquired the planted C4 entity as `Pickup::PlantedC4`.
+An empty bomb origin is also excluded from the proximity shortcut.
+
+The existing `PickupItem -> DefuseBomb` handoff and active-defuse protection remain unchanged.
+Enemy combat and late bomb-timer escape keep their existing priorities.
+
+Reason: the proximity reset radius was much larger than the default 450-unit object pickup radius and did not require the planted C4 to be visible or selected.
+A CT could therefore have its `Normal` or `MoveToPosition` bomb-search route repeatedly cleared while still too far away, or unable to see the C4, producing the observed stationary/spinning behavior until combat or the bomb ending changed the task state.
