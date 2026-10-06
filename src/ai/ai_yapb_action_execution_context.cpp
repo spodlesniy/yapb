@@ -835,7 +835,9 @@ bool YaPBActionExecutionContext::protectObjective() {
     return false;
   }
 
-  const auto currentTask = m_bot->getCurrentTaskId();
+  const auto &bombOrigin = gameState.getBombOrigin();
+  auto currentTask = m_bot->getCurrentTaskId();
+
   if (currentTask != Task::Normal && currentTask != Task::MoveToPosition
       && currentTask != Task::Camp && currentTask != Task::Hunt) {
     return false;
@@ -843,7 +845,7 @@ bool YaPBActionExecutionContext::protectObjective() {
 
   if (!m_protectObjectiveActive) {
     m_bot->ensureCurrentNodeIndex();
-    const int node = m_bot->findDefendNode(gameState.getBombOrigin());
+    const int node = m_bot->m_defuseNotified ? graph.getNearest(bombOrigin) : m_bot->findDefendNode(bombOrigin);
 
     if (!graph.exists(node)) {
       return false;
@@ -859,18 +861,43 @@ bool YaPBActionExecutionContext::protectObjective() {
 
     m_bot->startTask(Task::MoveToPosition, TaskPri::MoveToPosition, node, 0.0f, true);
     m_protectObjectiveNavigationTaskCreated = true;
+    currentTask = Task::MoveToPosition;
   }
-  else if (m_bot->getCurrentTaskId() == Task::Normal) {
+  else if (m_bot->m_defuseNotified) {
+    const int node = graph.getNearest(bombOrigin);
+
+    if (!graph.exists(node)) {
+      return false;
+    }
+
+    m_protectObjectiveNode = node;
+
+    if (currentTask == Task::Camp || currentTask == Task::Hunt) {
+      m_bot->clearTask(currentTask);
+      currentTask = m_bot->getCurrentTaskId();
+    }
+
+    if (currentTask == Task::Normal) {
+      m_bot->startTask(Task::MoveToPosition, TaskPri::MoveToPosition, node, 0.0f, true);
+      m_protectObjectiveNavigationTaskCreated = true;
+      currentTask = Task::MoveToPosition;
+    }
+    else if (currentTask == Task::MoveToPosition && m_bot->getTask()->data != node) {
+      m_bot->clearSearchNodes();
+    }
+  }
+  else if (currentTask == Task::Normal) {
     const float bombTimeLeft = gameState.getBombTimeLeft();
     if (bombTimeLeft > 0.0f) {
       m_bot->startTask(Task::Camp, TaskPri::Camp, kInvalidNodeIndex, game.time() + bombTimeLeft, true);
+      currentTask = Task::Camp;
     }
   }
-  else if (m_bot->getCurrentTaskId() != Task::MoveToPosition && m_bot->getCurrentTaskId() != Task::Camp) {
+  else if (currentTask != Task::MoveToPosition && currentTask != Task::Camp) {
     return false;
   }
 
-  if (m_bot->getCurrentTaskId() == Task::MoveToPosition) {
+  if (currentTask == Task::MoveToPosition) {
     if (m_bot->m_isStuck && graph.exists(m_bot->m_currentNodeIndex)
         && !m_bot->isReachableNode(m_bot->m_currentNodeIndex)) {
 

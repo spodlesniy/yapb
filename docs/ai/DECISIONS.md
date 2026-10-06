@@ -1109,3 +1109,15 @@ Normal collision probing, defend-node selection, and path planning are unchanged
 
 Reason: gameplay graph-debug showed a Terrorist repeatedly pushing into a wall toward a non-nearest waypoint while another route existed out of the corner.
 The accompanying schema-v6 capture contains a 26.9-second `ProtectObjective` transition that begins with `stuck=1`, showing that objective ownership could persist through the broken navigation anchor until the bomb state ended.
+
+## D120 — Make heard defuse override passive bomb defense
+
+The existing 512-unit defuse notification now reaches Terrorists that are already executing `MoveToPosition`.
+A current move is retargeted in place instead of being excluded from the notification, while the existing fast-path and exact bomb-position hint remain available to legacy execution.
+
+An AI-owned `ProtectObjective` also treats `m_defuseNotified` as an urgent objective phase.
+Instead of restoring its previously selected defend node or remaining in Camp, it switches the owned navigation target to the waypoint nearest the planted C4 and keeps moving toward the bomb while it remains planted.
+The same 512-unit notification radius still gates this behavior, so no new global knowledge of defusing is introduced.
+
+Reason: YaPB already detects the C4 defuse sound and progress-bar event, but `notifyBombDefuse()` explicitly skipped `Task::MoveToPosition`.
+D117 made planted-bomb defenders spend more of their protection lifecycle in that task, so a bot could audibly receive the defuse event yet remain on its passive defend route until the bomb was disarmed.

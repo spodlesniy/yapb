@@ -2037,24 +2037,36 @@ void BotManager::notifyBombDefuse () {
 
    const auto &bombPos = gameState.getBombOrigin ();
 
+   if (bombPos.empty ()) {
+      return;
+   }
+
    for (const auto &bot : bots) {
       const auto task = bot->getCurrentTaskId ();
 
-      if (!bot->m_defuseNotified
-         && bot->m_isAlive
-         && task != Task::MoveToPosition
-         && task != Task::DefuseBomb
-         && task != Task::EscapeFromBomb) {
+      if (bot->m_defuseNotified
+         || !bot->m_isAlive
+         || bot->m_team != Team::Terrorist
+         || task == Task::DefuseBomb
+         || task == Task::EscapeFromBomb
+         || bot->pev->origin.distanceSq (bombPos) >= cr::sqrf (512.0f)) {
 
-         if (bot->m_team == Team::Terrorist && bot->pev->origin.distanceSq (bombPos) < cr::sqrf (512.0f)) {
-            bot->clearSearchNodes ();
+         continue;
+      }
 
-            bot->m_pathType = FindPath::Fast;
-            bot->m_position = bombPos;
-            bot->m_defuseNotified = true;
+      bot->clearSearchNodes ();
 
-            bot->startTask (Task::MoveToPosition, TaskPri::MoveToPosition, kInvalidNodeIndex, 0.0f, true);
-         }
+      bot->m_pathType = FindPath::Fast;
+      bot->m_position = bombPos;
+      bot->m_defuseNotified = true;
+
+      if (task == Task::MoveToPosition) {
+         bot->getTask ()->data = kInvalidNodeIndex;
+         bot->m_prevGoalIndex = kInvalidNodeIndex;
+         bot->m_chosenGoalIndex = kInvalidNodeIndex;
+      }
+      else {
+         bot->startTask (Task::MoveToPosition, TaskPri::MoveToPosition, kInvalidNodeIndex, 0.0f, true);
       }
    }
 }
