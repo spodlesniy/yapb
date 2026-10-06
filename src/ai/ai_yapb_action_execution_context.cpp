@@ -15,6 +15,11 @@
 #include <ai/ai_yapb_action_execution_context.h>
 
 namespace ai {
+namespace {
+
+constexpr float kNavigationReachDistance = 48.0f;
+
+} // namespace
 
 YaPBActionExecutionContext::YaPBActionExecutionContext(Bot &bot) : m_bot(&bot) {
 }
