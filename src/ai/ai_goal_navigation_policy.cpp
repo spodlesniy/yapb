@@ -150,8 +150,13 @@ Action GoalNavigationPolicy::decide(const Observation &observation) const {
     return action;
   }
 
-  if (observation.bot.team == 0 && observation.bot.currentTask == TaskType::Camp &&
-      (observation.bot.objectiveFlags & ObjectiveFlag::BombPlanted)) {
+  const bool bombPlanted = (observation.bot.objectiveFlags & ObjectiveFlag::BombPlanted) != 0;
+  const bool canProtectPlantedBomb =
+      observation.bot.currentTask == TaskType::Normal ||
+      observation.bot.currentTask == TaskType::MoveToPosition ||
+      observation.bot.currentTask == TaskType::Camp;
+
+  if (observation.bot.team == kTerroristTeam && bombPlanted && canProtectPlantedBomb) {
     Action action {};
     action.type = ActionType::ProtectObjective;
     action.confidence = 1.0f;
@@ -304,7 +309,6 @@ Action GoalNavigationPolicy::decide(const Observation &observation) const {
   }
 
   case TaskType::Normal: {
-    const bool bombPlanted = (observation.bot.objectiveFlags & ObjectiveFlag::BombPlanted) != 0;
     if (observation.bot.hasC4
         || (observation.bot.team == kCounterTerroristTeam && bombPlanted)) {
       return {};

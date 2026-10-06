@@ -301,15 +301,35 @@ AI_TEST(testGoalNavigationPolicyRejectsIncompatibleSecondaryReload) {
 }
 
 AI_TEST(testGoalNavigationPolicyMapsBombDefenseToProtectObjective) {
+  constexpr ai::TaskType defenseTasks[] = {
+    ai::TaskType::Normal,
+    ai::TaskType::MoveToPosition,
+    ai::TaskType::Camp,
+  };
+
+  for (const auto task : defenseTasks) {
+    auto observation = makeObservation();
+    observation.bot.team = 0;
+    observation.bot.currentTask = task;
+    observation.bot.objectiveFlags |= ai::ObjectiveFlag::BombPlanted;
+
+    const auto action = ai::GoalNavigationPolicy {}.decide(observation);
+
+    expect(action.type == ai::ActionType::ProtectObjective, "planted-bomb defense maps to protect objective");
+    expect(action.targetType == ai::TargetType::None, "protect objective has no explicit target payload");
+  }
+}
+
+AI_TEST(testGoalNavigationPolicyKeepsCombatPriorityDuringBombDefense) {
   auto observation = makeObservation();
   observation.bot.team = 0;
-  observation.bot.currentTask = ai::TaskType::Camp;
+  observation.bot.currentTask = ai::TaskType::Attack;
   observation.bot.objectiveFlags |= ai::ObjectiveFlag::BombPlanted;
+  addObservedEnemy(observation, 7);
 
   const auto action = ai::GoalNavigationPolicy {}.decide(observation);
 
-  expect(action.type == ai::ActionType::ProtectObjective, "planted-bomb defense maps to protect objective");
-  expect(action.targetType == ai::TargetType::None, "protect objective has no explicit target payload");
+  expect(action.type == ai::ActionType::AttackTarget, "visible combat remains explicit while protecting planted C4");
 }
 
 AI_TEST(testGoalNavigationPolicyYieldsCtCampAfterBombPlantToLegacyObjectiveLogic) {

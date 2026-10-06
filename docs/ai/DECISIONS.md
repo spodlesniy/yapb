@@ -952,3 +952,15 @@ Reason: v6 gameplay capture showed hundreds of zero-duration `MoveToPosition` sa
 Legacy objective navigation created `Task::MoveToPosition`, the teacher wrapped it as an AI navigation action, and the D093 ownership guard immediately rejected that action because the dropped-C4 objective must remain legacy-owned.
 Yielding the legacy move task removes that loop and lets one continuous recovery path reach the existing `PickupItem` handoff.
 
+## D107 — Keep Terrorists in one planted-bomb protection lifecycle
+
+While the bomb is planted, a Terrorist in `Normal`, `MoveToPosition`, or `Camp` is now taught as one semantic `ProtectObjective` action.
+The existing ProtectObjective execution context already accepts those three legacy states, selects a defensive node with `findDefendNode()`, owns the movement to that node, and converts the reached state into a Camp that lasts until the planted-bomb state ends.
+
+Explicit tactical tasks are not collapsed into protection.
+Attack, aim, grenade, reload, and other task-specific actions keep their existing teacher mappings; when they return to a compatible navigation state while C4 is still planted, protection resumes.
+
+Reason: v6 gameplay capture showed Terrorists after plant receiving both `ProtectObjective` and long ordinary `Explore` / `MoveToPosition` labels.
+The old teacher only emitted ProtectObjective once legacy behavior had already reached `Camp`, so navigation toward the defense point and free states after combat could be mislabeled as generic roaming.
+Extending the existing semantic action across its full supported lifecycle removes that contradictory supervision and keeps post-plant movement anchored to the C4 defense objective.
+
