@@ -595,11 +595,13 @@ void Bot::blind_ () {
       && game.isPlayerEntity (m_lastEnemy)
       && !usesSniper ()) {
 
-      auto error = kSprayDistance * m_lastEnemyOrigin.distance (pev->origin) / 2048.0f;
+      // blindness must not preserve an exact remembered head-height aim point
+      const auto error = cr::max (32.0f, kSprayDistance * m_lastEnemyOrigin.distance (pev->origin) / 2048.0f);
       auto origin = m_lastEnemyOrigin;
 
       origin.x = origin.x + rg (-error, error);
       origin.y = origin.y + rg (-error, error);
+      origin.z = origin.z + rg (-error, error);
 
       m_lookAt = origin; // face last enemy
       m_wantsToFire = true; // and shoot it

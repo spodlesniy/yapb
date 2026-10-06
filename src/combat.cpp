@@ -1163,7 +1163,7 @@ void Bot::handleWeapons (float distance, int, int id, int choosen) {
    const float timeDelta = game.time () - m_frameInterval;
 
    // need to care for burst fire?
-   if ((distance < kSprayDistance && !isRecoilHigh ()) || m_blindTime > game.time () || usesKnife ()) {
+   if ((distance < kSprayDistance && !isRecoilHigh ()) || usesKnife ()) {
       if (id == Weapon::Knife) {
          const float minAttackDistance = m_isCreature ? 80.0f : 72.0f;
 

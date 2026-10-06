@@ -813,3 +813,15 @@ Feature-schema-v5 datasets and checkpoints are not accepted by the v6 tooling an
 Reason: v5 silently overwrote `last_enemy_distance` with `weapon.unknown` and did not expose enough demolition context for team-specific defuse/escape or dropped-C4 behavior to be learned from the serialized dataset.
 Making the incompatible correction once, before the first real training run, gives the model a consistent feature layout and avoids an immediate second schema migration.
 
+## D096 — Degrade blind-fire aim and preserve normal recoil cadence
+
+Legacy blind fire may still fire toward a remembered enemy position, but the remembered point now receives a minimum three-dimensional aim error.
+The Z axis is randomized together with X/Y so a remembered head target cannot retain exact head height while the bot is blinded.
+
+Blindness also no longer forces `fireWeapons()` into the sustained-fire branch.
+Blind shots use the same distance, recoil, and pause cadence as ordinary weapon fire, so automatic weapons stop spraying continuously once recoil requires a pause.
+Knife behavior and normal visible-enemy fire are unchanged.
+
+Reason: the previous blind path randomized only X/Y while `m_lastEnemyOrigin` could contain a selected head point, and `m_blindTime > game.time()` bypassed normal recoil pacing.
+Together those behaviors could produce implausibly accurate sustained blind headshots.
+
