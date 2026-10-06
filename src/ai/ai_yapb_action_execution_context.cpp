@@ -853,11 +853,7 @@ bool YaPBActionExecutionContext::protectObjective() {
     m_protectObjectiveNode = node;
     m_protectObjectiveNavigationTaskCreated = false;
 
-    if (currentTask == Task::Camp) {
-      return true;
-    }
-
-    if (currentTask == Task::MoveToPosition || currentTask == Task::Hunt) {
+    if (currentTask == Task::MoveToPosition || currentTask == Task::Camp || currentTask == Task::Hunt) {
       m_bot->clearTask(currentTask);
     }
 

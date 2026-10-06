@@ -1077,3 +1077,14 @@ Enemy combat and late bomb-timer escape keep their existing priorities.
 
 Reason: the proximity reset radius was much larger than the default 450-unit object pickup radius and did not require the planted C4 to be visible or selected.
 A CT could therefore have its `Normal` or `MoveToPosition` bomb-search route repeatedly cleared while still too far away, or unable to see the C4, producing the observed stationary/spinning behavior until combat or the bomb ending changed the task state.
+
+## D117 — Reposition planted-bomb protection before camping
+
+A Terrorist entering a new `ProtectObjective` lifecycle no longer accepts an arbitrary pre-existing `Camp` task as if it were already the selected bomb-defense position.
+After choosing a defend node from the planted bomb origin, the execution context clears an inherited `MoveToPosition`, `Camp`, or stale `Hunt` task and starts the owned move toward that defend node.
+Only after that navigation finishes does the existing protection lifecycle create the bomb-timed Camp state.
+
+An already active ProtectObjective may still continue its own `MoveToPosition` or Camp state, and tactical preemption semantics from D114 are unchanged.
+
+Reason: gameplay validation showed Terrorists far from the planted bomb remaining stationary for long post-plant intervals.
+The previous first-entry Camp shortcut selected a defend node but immediately discarded it, allowing any unrelated legacy Camp to satisfy ProtectObjective for the rest of the bomb timer without ever repositioning toward the objective.
