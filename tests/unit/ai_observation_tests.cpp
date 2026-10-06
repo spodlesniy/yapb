@@ -33,11 +33,13 @@ AI_TEST(testObservationBuilder) {
   ai::ObservationInput input {};
   input.gameTime = 12.5f;
   input.roundTimeRemaining = 42.0f;
+  input.bombTimeRemaining = 20.0f;
   input.bot.origin = { 100.0f, 200.0f, 300.0f };
   input.bot.velocity = { 10.0f, -20.0f, 0.0f };
   input.bot.destination = { 150.0f, 250.0f, 300.0f };
   input.bot.desiredVelocity = { 20.0f, 0.0f, 0.0f };
   input.bot.throwTarget = { 500.0f, 600.0f, 300.0f };
+  input.bot.droppedBombOrigin = { 200.0f, 200.0f, 300.0f };
   input.bot.health = 87.0f;
   input.bot.team = 1;
   input.bot.currentNode = 7;
@@ -45,7 +47,9 @@ AI_TEST(testObservationBuilder) {
   input.bot.followTargetPlayer = 9;
   input.bot.currentTask = ai::TaskType::Attack;
   input.bot.alive = true;
-  input.bot.objectiveFlags = ai::ObjectiveFlag::BombPlanted | ai::ObjectiveFlag::InBombZone;
+  input.bot.hasDefuser = true;
+  input.bot.objectiveFlags =
+      ai::ObjectiveFlag::BombPlanted | ai::ObjectiveFlag::InBombZone | ai::ObjectiveFlag::BombDropped;
   input.combat.weaponType = ai::WeaponType::Rifle;
   input.combat.ammoInClip = 24;
   input.combat.reloadState = ai::ReloadState::Primary;
@@ -80,11 +84,18 @@ AI_TEST(testObservationBuilder) {
   const ai::Observation observation = ai::buildObservation(input);
 
   expect(observation.gameTime == 12.5f, "builder preserves game time");
+  expect(observation.bombTimeRemaining == 20.0f, "builder preserves bomb time remaining");
   expect(observation.bot.currentNode == 7, "builder preserves current node");
   expect(observation.bot.followTargetPlayer == 9, "builder preserves follow target");
   expect(observation.bot.currentTask == ai::TaskType::Attack, "builder preserves current task");
-  expect(observation.bot.objectiveFlags == (ai::ObjectiveFlag::BombPlanted | ai::ObjectiveFlag::InBombZone),
+  expect(observation.bot.objectiveFlags ==
+             (ai::ObjectiveFlag::BombPlanted | ai::ObjectiveFlag::InBombZone | ai::ObjectiveFlag::BombDropped),
          "builder preserves objective flags");
+  expect(observation.bot.hasDefuser, "builder preserves defuser state");
+  expectNear(observation.bot.droppedBombRelativeOrigin.x, 100.0f, 0.00001f,
+             "dropped bomb x position is relative to bot");
+  expectNear(observation.bot.droppedBombDistance, 100.0f, 0.00001f,
+             "dropped bomb distance is calculated");
   expect(observation.combat.weaponType == ai::WeaponType::Rifle, "builder preserves weapon type");
   expect(observation.combat.ammoInClip == 24, "builder preserves ammo in clip");
   expect(observation.combat.reloadState == ai::ReloadState::Primary, "builder preserves reload state");
@@ -124,6 +135,7 @@ AI_TEST(testObservationBuilder) {
   input.playerCount = 255;
   input.waypointCount = 255;
   input.gameTime = std::numeric_limits<float>::infinity();
+  input.bombTimeRemaining = std::numeric_limits<float>::infinity();
   input.players[0].origin.x = std::numeric_limits<float>::quiet_NaN();
 
   const ai::Observation sanitized = ai::buildObservation(input);
@@ -131,6 +143,7 @@ AI_TEST(testObservationBuilder) {
   expect(sanitized.playerCount == ai::kMaxObservedPlayers, "builder clamps player count");
   expect(sanitized.waypointCount == ai::kMaxObservedWaypoints, "builder clamps waypoint count");
   expect(sanitized.gameTime == 0.0f, "builder sanitizes non-finite game time");
+  expect(sanitized.bombTimeRemaining == 0.0f, "builder sanitizes non-finite bomb time");
   expect(sanitized.players[0].relativeOrigin.x == -100.0f, "builder sanitizes non-finite positions before relative transform");
 }
 

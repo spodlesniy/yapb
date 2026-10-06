@@ -15,7 +15,7 @@
 
 namespace ai {
 
-constexpr uint32_t kInferenceFeatureSchemaVersion = 5;
+constexpr uint32_t kInferenceFeatureSchemaVersion = 6;
 constexpr size_t kInferencePlayerSlots = 8;
 constexpr size_t kInferenceWaypointSlots = 8;
 
@@ -23,6 +23,7 @@ namespace InferenceFeature {
 
 enum class Core : size_t {
   RoundTimeRemaining = 0,
+  BombTimeRemaining,
   TaskTimeRemaining,
   Health,
   Armor,
@@ -53,16 +54,22 @@ enum class Core : size_t {
   FirePauseRemaining,
   EnemyDistance,
   LastEnemyDistance,
-  WeaponBase = 30,
+  HasDefuser,
+  DroppedBombRelativeX,
+  DroppedBombRelativeY,
+  DroppedBombRelativeZ,
+  DroppedBombDistance,
+  TeamBase,
+  WeaponBase = TeamBase + 2,
   ReloadBase = WeaponBase + 10,
   ObjectiveBase = ReloadBase + 3,
-  NavigationBase = ObjectiveBase + 7,
+  NavigationBase = ObjectiveBase + 8,
   PerceptionBase = NavigationBase + 4,
   TaskBase = PerceptionBase + 4,
-  ThrowTargetRelativeX = TaskBase + 22,
+  ThrowTargetRelativeX = TaskBase + 21,
   ThrowTargetRelativeY,
   ThrowTargetRelativeZ,
-  Count = TaskBase + 25,
+  Count = TaskBase + 24,
 };
 
 enum class Player : size_t {

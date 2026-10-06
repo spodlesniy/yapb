@@ -137,9 +137,7 @@ void appendWaypoint(ObservationInput &input, int index, uint16_t connectionFlags
   waypoint.connectionFlags = connectionFlags;
 }
 
-} // namespace
-
-bool hasDroppedBombObjective() {
+bool findDroppedBombObjective(Vector &origin) {
   if (!game.mapIs(MapFlags::Demolition) || gameState.isBombPlanted() || cv_ignore_objectives
       || !gameState.hasInterestingEntities()) {
     return false;
@@ -152,11 +150,19 @@ bool hasDroppedBombObjective() {
     }
 
     if (game.isEntityModelMatches(ent, "backpack.mdl")) {
+      origin = game.getEntityOrigin(ent);
       return true;
     }
   }
 
   return false;
+}
+
+} // namespace
+
+bool hasDroppedBombObjective() {
+  Vector origin {};
+  return findDroppedBombObjective(origin);
 }
 
 ObservationInput buildObservationInput(const Bot &bot) {
@@ -173,6 +179,7 @@ ObservationInput buildObservationInput(const Bot &bot) {
 
   input.gameTime = game.time();
   input.roundTimeRemaining = cr::max(0.0f, gameState.getRoundEndTime() - input.gameTime);
+  input.bombTimeRemaining = gameState.getBombTimeLeft();
 
   input.bot.origin = { bot.pev->origin.x, bot.pev->origin.y, bot.pev->origin.z };
   input.bot.velocity = { bot.pev->velocity.x, bot.pev->velocity.y, bot.pev->velocity.z };
@@ -213,6 +220,7 @@ ObservationInput buildObservationInput(const Bot &bot) {
   }
   input.bot.movingToGoal = bot.m_moveToGoal;
   input.bot.stuck = bot.m_isStuck;
+  input.bot.hasDefuser = bot.m_hasDefuser;
 
   input.combat.weaponType = mapWeaponType(bot.m_weaponType);
   if (bot.m_currentWeapon >= 0 && bot.m_currentWeapon < kMaxWeapons) {
@@ -252,8 +260,10 @@ ObservationInput buildObservationInput(const Bot &bot) {
   if (bot.m_hasC4) {
     input.bot.objectiveFlags |= ObjectiveFlag::BombCarrier;
   }
-  if (hasDroppedBombObjective()) {
+  Vector droppedBombOrigin {};
+  if (findDroppedBombObjective(droppedBombOrigin)) {
     input.bot.objectiveFlags |= ObjectiveFlag::BombDropped;
+    input.bot.droppedBombOrigin = { droppedBombOrigin.x, droppedBombOrigin.y, droppedBombOrigin.z };
   }
   if (bot.m_hasHostage) {
     input.bot.objectiveFlags |= ObjectiveFlag::HasHostage;

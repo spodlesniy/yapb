@@ -16,6 +16,7 @@ namespace ai {
 namespace {
 
 constexpr float kRoundTimeScale = 600.0f;
+constexpr float kBombTimeScale = 60.0f;
 constexpr float kTaskTimeScale = 60.0f;
 constexpr float kPositionScale = 4096.0f;
 constexpr float kHealthScale = 100.0f;
@@ -90,6 +91,7 @@ InferenceFeatures encodeInferenceFeatures(const Observation &observation) {
   const auto set = [&](InferenceFeature::Core feature, float value) { values[enumValue(feature)] = value; };
 
   set(InferenceFeature::Core::RoundTimeRemaining, normalizeNonNegative(observation.roundTimeRemaining, kRoundTimeScale));
+  set(InferenceFeature::Core::BombTimeRemaining, normalizeNonNegative(observation.bombTimeRemaining, kBombTimeScale));
   set(InferenceFeature::Core::TaskTimeRemaining, normalizeNonNegative(observation.bot.taskTimeRemaining, kTaskTimeScale));
   set(InferenceFeature::Core::Health, normalizeNonNegative(observation.bot.health, kHealthScale));
   set(InferenceFeature::Core::Armor, normalizeNonNegative(observation.bot.armor, kHealthScale));
@@ -129,6 +131,15 @@ InferenceFeatures encodeInferenceFeatures(const Observation &observation) {
   set(InferenceFeature::Core::FirePauseRemaining, normalizeNonNegative(observation.combat.firePauseRemaining, kFirePauseScale));
   set(InferenceFeature::Core::EnemyDistance, normalizeNonNegative(observation.combat.enemyDistance, kDistanceScale));
   set(InferenceFeature::Core::LastEnemyDistance, normalizeNonNegative(observation.combat.lastEnemyDistance, kDistanceScale));
+  set(InferenceFeature::Core::HasDefuser, booleanFeature(observation.bot.hasDefuser));
+  set(InferenceFeature::Core::DroppedBombRelativeX, normalizeSigned(observation.bot.droppedBombRelativeOrigin.x, kPositionScale));
+  set(InferenceFeature::Core::DroppedBombRelativeY, normalizeSigned(observation.bot.droppedBombRelativeOrigin.y, kPositionScale));
+  set(InferenceFeature::Core::DroppedBombRelativeZ, normalizeSigned(observation.bot.droppedBombRelativeOrigin.z, kPositionScale));
+  set(InferenceFeature::Core::DroppedBombDistance, normalizeNonNegative(observation.bot.droppedBombDistance, kDistanceScale));
+
+  const auto teamBase = enumValue(InferenceFeature::Core::TeamBase);
+  values[teamBase] = booleanFeature(observation.bot.team == 0);
+  values[teamBase + 1] = booleanFeature(observation.bot.team == 1);
 
   const auto weaponBase = enumValue(InferenceFeature::Core::WeaponBase);
   writeOneHot(values, weaponBase, static_cast<uint8_t>(observation.combat.weaponType), 10);
@@ -137,7 +148,7 @@ InferenceFeatures encodeInferenceFeatures(const Observation &observation) {
   writeOneHot(values, reloadBase, static_cast<uint8_t>(observation.combat.reloadState), 3);
 
   const auto objectiveBase = enumValue(InferenceFeature::Core::ObjectiveBase);
-  for (size_t i = 0; i < 7; ++i) {
+  for (size_t i = 0; i < 8; ++i) {
     values[objectiveBase + i] = booleanFeature(bitSet(observation.bot.objectiveFlags, static_cast<uint32_t>(i)));
   }
 

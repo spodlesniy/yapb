@@ -16,7 +16,7 @@ from .training_contract import PolicyTrainingBatch, encode_policy_batch
 
 
 CHECKPOINT_FORMAT = "aipb-policy-checkpoint"
-CHECKPOINT_VERSION = 3
+CHECKPOINT_VERSION = 4
 
 
 @dataclass(frozen=True)

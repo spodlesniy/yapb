@@ -16,11 +16,19 @@ using ai::test::expect;
 using ai::test::expectNear;
 
 AI_TEST(testInferenceFeatureSchema) {
-  expect(ai::kInferenceFeatureSchemaVersion == 5, "inference feature schema uses the current version");
-  expect(ai::kInferenceFeatureCount == 243, "inference feature vector uses the current width");
-  expect(static_cast<size_t>(ai::InferenceFeature::Core::ThrowTargetRelativeX) == 80, "throw target x keeps the next core index");
-  expect(static_cast<size_t>(ai::InferenceFeature::Core::ThrowTargetRelativeY) == 81, "throw target y follows x");
-  expect(static_cast<size_t>(ai::InferenceFeature::Core::ThrowTargetRelativeZ) == 82, "throw target z follows y");
+  expect(ai::kInferenceFeatureSchemaVersion == 6, "inference feature schema uses the current version");
+  expect(ai::kInferenceFeatureCount == 252, "inference feature vector uses the current width");
+  expect(static_cast<size_t>(ai::InferenceFeature::Core::LastEnemyDistance) == 31,
+         "last enemy distance has its own core index");
+  expect(static_cast<size_t>(ai::InferenceFeature::Core::TeamBase) == 37, "team block starts at the expected index");
+  expect(static_cast<size_t>(ai::InferenceFeature::Core::WeaponBase) == 39,
+         "weapon block no longer overlaps last enemy distance");
+  expect(static_cast<size_t>(ai::InferenceFeature::Core::ReloadBase) == 49, "reload block follows weapons");
+  expect(static_cast<size_t>(ai::InferenceFeature::Core::ObjectiveBase) == 52, "objective block follows reload");
+  expect(static_cast<size_t>(ai::InferenceFeature::Core::TaskBase) == 68, "task block starts at the expected index");
+  expect(static_cast<size_t>(ai::InferenceFeature::Core::ThrowTargetRelativeX) == 89, "throw target x follows task block");
+  expect(static_cast<size_t>(ai::InferenceFeature::Core::ThrowTargetRelativeY) == 90, "throw target y follows x");
+  expect(static_cast<size_t>(ai::InferenceFeature::Core::ThrowTargetRelativeZ) == 91, "throw target z follows y");
 
   const ai::InferenceFeatures features {};
   expect(features.schemaVersion == ai::kInferenceFeatureSchemaVersion, "feature vector defaults to current schema");
@@ -35,7 +43,13 @@ AI_TEST(testInferenceFeatureEncoding) {
   observation.bot.health = 50.0f;
   observation.bot.armor = 25.0f;
   observation.bot.maxSpeed = 320.0f;
+  observation.bot.team = 1;
   observation.bot.alive = true;
+  observation.bot.hasDefuser = true;
+  observation.bot.objectiveFlags = ai::ObjectiveFlag::BombDropped;
+  observation.bot.droppedBombRelativeOrigin = { 512.0f, 0.0f, 0.0f };
+  observation.bot.droppedBombDistance = 512.0f;
+  observation.bombTimeRemaining = 20.0f;
   observation.bot.currentNode = 10;
   observation.bot.currentGoalNode = 20;
   observation.bot.currentTask = ai::TaskType::MoveToPosition;
@@ -43,6 +57,7 @@ AI_TEST(testInferenceFeatureEncoding) {
   observation.personality.aggression = 0.8f;
   observation.combat.ammoInClip = 30;
   observation.combat.weaponType = ai::WeaponType::Rifle;
+  observation.combat.lastEnemyDistance = 2048.0f;
 
   observation.playerCount = 2;
   observation.players[0].entityIndex = 8;
@@ -81,6 +96,8 @@ AI_TEST(testInferenceFeatureEncoding) {
     return ai::kCoreFeatureCount + ai::kInferencePlayerSlots * ai::kPlayerFeatureCount + slot * ai::kWaypointFeatureCount;
   };
 
+  expectNear(features.at(core(ai::InferenceFeature::Core::BombTimeRemaining)), 20.0f / 60.0f, 0.0001f,
+             "bomb time remaining is normalized");
   expectNear(features.at(core(ai::InferenceFeature::Core::TaskTimeRemaining)), 0.5f, 0.0001f, "task time remaining is normalized");
   expectNear(features.at(core(ai::InferenceFeature::Core::Health)), 0.5f, 0.0001f, "health is normalized");
   expectNear(features.at(core(ai::InferenceFeature::Core::ThrowTargetRelativeX)), 1224.0f / 4096.0f, 0.0001f,
@@ -93,8 +110,21 @@ AI_TEST(testInferenceFeatureEncoding) {
              "destination is encoded relative to bot origin");
   expectNear(features.at(core(ai::InferenceFeature::Core::Aggression)), 0.8f, 0.0001f, "personality is preserved");
   expectNear(features.at(core(ai::InferenceFeature::Core::Alive)), 1.0f, 0.0001f, "boolean state is encoded as one");
+  expectNear(features.at(core(ai::InferenceFeature::Core::LastEnemyDistance)), 0.5f, 0.0001f,
+             "last enemy distance is preserved independently from the weapon block");
+  expectNear(features.at(core(ai::InferenceFeature::Core::HasDefuser)), 1.0f, 0.0001f, "defuser state is encoded");
+  expectNear(features.at(core(ai::InferenceFeature::Core::DroppedBombRelativeX)), 512.0f / 4096.0f, 0.0001f,
+             "dropped bomb position is encoded");
+  expectNear(features.at(core(ai::InferenceFeature::Core::DroppedBombDistance)), 512.0f / 4096.0f, 0.0001f,
+             "dropped bomb distance is encoded");
+  expectNear(features.at(core(ai::InferenceFeature::Core::TeamBase)), 0.0f, 0.0001f,
+             "terrorist team slot is clear for a CT");
+  expectNear(features.at(core(ai::InferenceFeature::Core::TeamBase) + 1), 1.0f, 0.0001f,
+             "counter-terrorist team slot is encoded");
   expectNear(features.at(core(ai::InferenceFeature::Core::WeaponBase) + static_cast<size_t>(ai::WeaponType::Rifle)), 1.0f, 0.0001f,
              "weapon type is one-hot encoded");
+  expectNear(features.at(core(ai::InferenceFeature::Core::ObjectiveBase) + 7), 1.0f, 0.0001f,
+             "dropped bomb objective flag is encoded");
 
   expectNear(features.at(playerBase(0) + static_cast<size_t>(ai::InferenceFeature::Player::IsFollowTarget)), 1.0f, 0.0001f, "follow target is encoded");
   expectNear(features.at(playerBase(0) + static_cast<size_t>(ai::InferenceFeature::Player::Distance)), 50.0f / 4096.0f, 0.0001f,

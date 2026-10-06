@@ -47,6 +47,7 @@ Observation buildObservation(const ObservationInput &input) {
 
   observation.gameTime = finiteOrZero(input.gameTime);
   observation.roundTimeRemaining = finiteOrZero(input.roundTimeRemaining);
+  observation.bombTimeRemaining = finiteOrZero(input.bombTimeRemaining);
   observation.personality = input.personality;
 
   observation.bot.origin = finiteOrZero(input.bot.origin);
@@ -54,6 +55,11 @@ Observation buildObservation(const ObservationInput &input) {
   observation.bot.destination = finiteOrZero(input.bot.destination);
   observation.bot.desiredVelocity = finiteOrZero(input.bot.desiredVelocity);
   observation.bot.throwTarget = finiteOrZero(input.bot.throwTarget);
+  if (input.bot.objectiveFlags & ObjectiveFlag::BombDropped) {
+    observation.bot.droppedBombRelativeOrigin =
+        relativePosition(finiteOrZero(input.bot.droppedBombOrigin), observation.bot.origin);
+    observation.bot.droppedBombDistance = finiteOrZero(length(observation.bot.droppedBombRelativeOrigin));
+  }
   observation.bot.health = finiteOrZero(input.bot.health);
   observation.bot.armor = finiteOrZero(input.bot.armor);
   observation.bot.maxSpeed = finiteOrZero(input.bot.maxSpeed);
@@ -71,6 +77,7 @@ Observation buildObservation(const ObservationInput &input) {
   observation.bot.movingToGoal = input.bot.movingToGoal;
   observation.bot.stuck = input.bot.stuck;
   observation.bot.hasC4 = input.bot.hasC4;
+  observation.bot.hasDefuser = input.bot.hasDefuser;
   observation.bot.hasHostage = input.bot.hasHostage;
   observation.bot.inBombZone = input.bot.inBombZone;
   observation.bot.inBuyZone = input.bot.inBuyZone;

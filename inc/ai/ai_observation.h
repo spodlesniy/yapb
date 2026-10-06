@@ -81,7 +81,6 @@ constexpr uint32_t InBombZone = 1u << 3;
 constexpr uint32_t InRescueZone = 1u << 4;
 constexpr uint32_t InEscapeZone = 1u << 5;
 constexpr uint32_t InVIPZone = 1u << 6;
-// TODO: Encode BombDropped in inference feature schema v6 before model-driven policy uses it directly.
 constexpr uint32_t BombDropped = 1u << 7;
 } // namespace ObjectiveFlag
 
@@ -154,10 +153,12 @@ struct BotState {
   Vec3 destination {};
   Vec3 desiredVelocity {};
   Vec3 throwTarget {};
+  Vec3 droppedBombRelativeOrigin {};
 
   float health {};
   float armor {};
   float maxSpeed {};
+  float droppedBombDistance {};
 
   int32_t team { -1 };
   int32_t difficulty { -1 };
@@ -175,6 +176,7 @@ struct BotState {
   bool movingToGoal {};
   bool stuck {};
   bool hasC4 {};
+  bool hasDefuser {};
   bool hasHostage {};
   bool inBombZone {};
   bool inBuyZone {};
@@ -186,6 +188,7 @@ struct Observation {
   // Training encoders should convert it explicitly into model features.
   float gameTime {};
   float roundTimeRemaining {};
+  float bombTimeRemaining {};
 
   BotState bot {};
   CombatState combat {};

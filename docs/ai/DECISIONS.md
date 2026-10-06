@@ -797,3 +797,19 @@ Cancellation clears the reload state only when it is still the state owned by th
 Reason: the previous adapter exposed reload-scan cursor states as semantic Reload actions, producing many 0.034-0.068 second transitions that were not real reloads.
 Filtering at the observation boundary aligns the producer with the existing D078 contract, while state-scoped action completion prevents one semantic action from absorbing the next weapon-class scan.
 Inference feature schema v5 keeps the same three-value ReloadState representation and vector width.
+
+## D095 — Migrate inference features to schema v6
+
+Inference feature schema v6 has 252 ordered float32 features.
+The migration fixes the v5 index collision where `LastEnemyDistance` and `WeaponBase` both started at index 30, and removes the compensating unused gap before the throw-target fields so every core feature block is contiguous.
+
+Schema v6 also makes demolition state required by the current gameplay work visible to the model: a two-slot Terrorist/CT team encoding, defuser ownership, planted-bomb time remaining, the `BombDropped` objective flag, and dropped-C4 relative position plus distance.
+The semantic observation remains engine-independent; the YaPB adapter resolves the dropped backpack entity and converts it into the generic observation input before feature encoding.
+
+The C++ and Python feature contracts move together to version 6 and width 252.
+The reference ONNX fixture uses input shape `[1,252]`, and training checkpoint version advances to 4 because the first model layer changes width.
+Feature-schema-v5 datasets and checkpoints are not accepted by the v6 tooling and must not be mixed with new captures.
+
+Reason: v5 silently overwrote `last_enemy_distance` with `weapon.unknown` and did not expose enough demolition context for team-specific defuse/escape or dropped-C4 behavior to be learned from the serialized dataset.
+Making the incompatible correction once, before the first real training run, gives the model a consistent feature layout and avoids an immediate second schema migration.
+

@@ -22,6 +22,7 @@ struct BotInput {
   Vec3 destination {};
   Vec3 desiredVelocity {};
   Vec3 throwTarget {};
+  Vec3 droppedBombOrigin {};
 
   float health {};
   float armor {};
@@ -43,6 +44,7 @@ struct BotInput {
   bool movingToGoal {};
   bool stuck {};
   bool hasC4 {};
+  bool hasDefuser {};
   bool hasHostage {};
   bool inBombZone {};
   bool inBuyZone {};
@@ -95,6 +97,7 @@ struct WaypointInput {
 struct ObservationInput {
   float gameTime {};
   float roundTimeRemaining {};
+  float bombTimeRemaining {};
 
   BotInput bot {};
   CombatInput combat {};

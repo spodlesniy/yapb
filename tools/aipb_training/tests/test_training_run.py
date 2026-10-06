@@ -215,7 +215,7 @@ class TrainingRunTests(unittest.TestCase):
             checkpoint = load_checkpoint(result.last_checkpoint_path, model, optimizer)
 
             self.assertEqual(checkpoint["epoch"], 1)
-            self.assertEqual(checkpoint["version"], 3)
+            self.assertEqual(checkpoint["version"], 4)
             self.assertEqual(checkpoint["format"], "aipb-policy-checkpoint")
             self.assertIn("model_state", checkpoint)
             self.assertIn("optimizer_state", checkpoint)

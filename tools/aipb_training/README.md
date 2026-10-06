@@ -77,9 +77,9 @@ Reward and transition fields remain in the dataset because they are part of the 
 
 The first policy model is a small feed-forward network intended as a baseline for supervised behavior cloning:
 
-    input [N, 243]
-        -> LayerNorm(243)
-        -> Linear(243, 256) + ReLU
+    input [N, 252]
+        -> LayerNorm(252)
+        -> Linear(252, 256) + ReLU
         -> Linear(256, 256) + ReLU
         -> Linear(256, 128) + ReLU
         -> action head [N, 26]
@@ -106,10 +106,10 @@ The exported policy model has exactly one input:
 | Name | input |
 | Element type | float32 |
 | Rank | 2 |
-| Runtime shape | [1, 243] |
+| Runtime shape | [1, 252] |
 | Meaning | AiPB inference feature vector |
 
-During Python training, a batch has shape [N, 243], where N is the training batch size.
+During Python training, a batch has shape [N, 252], where N is the training batch size.
 
 ## Policy model output
 
@@ -151,8 +151,10 @@ The command validates the ONNX graph and runtime contract and verifies output pa
 
 ## Model feature schema
 
-The current model input is schema version 5 with 243 ordered features.
+The current model input is schema version 6 with 252 ordered features.
+Schema v6 fixes the previous `last_enemy_distance` / `weapon.unknown` index overlap and adds model-visible team, defuser ownership, planted-bomb time remaining, dropped-C4 state, and dropped-C4 relative position/distance.
 Each observed player slot includes an `is_follow_target` flag so FollowPlayer actions can identify their target without relying on unstable player-slot ordering.
+Datasets and checkpoints produced for feature schema v5 are intentionally incompatible with v6 and must not be mixed into a v6 training run.
 
 ## In-game collection status
 
@@ -212,6 +214,6 @@ Use `--output` to place the model at another path when preparing a custom packag
 
 The ONNX exporter uses the PyTorch dynamo exporter with explicit opset 18, saves a static model, checks the ONNX graph, and verifies output parity with ONNX Runtime.
 
-Training may use batches with arbitrary N, but the deployed ONNX model must satisfy the runtime contract exactly: one input [1,243] float32 and one output [1,10] float32.
+Training may use batches with arbitrary N, but the deployed ONNX model must satisfy the runtime contract exactly: one input [1,252] float32 and one output [1,10] float32.
 
 A model with a dynamic or non-singleton runtime batch dimension is not compatible with the current C++ ONNX runner.
