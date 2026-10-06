@@ -2093,14 +2093,38 @@ void Bot::filterTasks () {
    float &seekCoverDesire = filter[Task::SeekCover].desire;
    float &huntEnemyDesire = filter[Task::Hunt].desire;
    float &blindedDesire = filter[Task::Blind].desire;
+   const bool terroristDroppedBombObjective = m_team == Team::Terrorist
+      && game.mapIs (MapFlags::Demolition)
+      && ai::hasDroppedBombObjective ();
    const bool terroristBombObjective = m_team == Team::Terrorist
       && game.mapIs (MapFlags::Demolition)
-      && (gameState.isBombPlanted () || ai::hasDroppedBombObjective ());
+      && (gameState.isBombPlanted () || terroristDroppedBombObjective);
 
-   if (terroristBombObjective
-      && !(m_states & Sense::SeeingEnemy)
-      && getCurrentTaskId () == Task::Hunt) {
-      clearTask (Task::Hunt);
+   if (!terroristDroppedBombObjective) {
+      m_loosedBombNodeIndex = kInvalidNodeIndex;
+   }
+
+   if (terroristBombObjective && !(m_states & Sense::SeeingEnemy)) {
+      const auto currentTask = getCurrentTaskId ();
+
+      if (currentTask == Task::Hunt || (terroristDroppedBombObjective && currentTask == Task::Camp)) {
+         clearTask (currentTask);
+      }
+
+      if (terroristDroppedBombObjective && getCurrentTaskId () == Task::MoveToPosition
+         && (m_loosedBombNodeIndex == kInvalidNodeIndex || getTask ()->data != m_loosedBombNodeIndex)) {
+
+         clearTask (Task::MoveToPosition);
+      }
+
+      if (terroristDroppedBombObjective && getCurrentTaskId () == Task::Normal
+         && (m_loosedBombNodeIndex == kInvalidNodeIndex || getTask ()->data != m_loosedBombNodeIndex)) {
+
+         clearSearchNodes ();
+         getTask ()->data = kInvalidNodeIndex;
+         m_prevGoalIndex = kInvalidNodeIndex;
+         m_chosenGoalIndex = kInvalidNodeIndex;
+      }
    }
 
    // calculate desires to seek cover or hunt

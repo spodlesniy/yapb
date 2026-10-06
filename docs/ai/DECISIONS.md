@@ -1121,3 +1121,15 @@ The same 512-unit notification radius still gates this behavior, so no new globa
 
 Reason: YaPB already detects the C4 defuse sound and progress-bar event, but `notifyBombDefuse()` explicitly skipped `Task::MoveToPosition`.
 D117 made planted-bomb defenders spend more of their protection lifecycle in that task, so a bot could audibly receive the defuse event yet remain on its passive defend route until the bomb was disarmed.
+
+## D121 — Invalidate stale Terrorist goals when the C4 is dropped
+
+A Terrorist without a visible enemy now abandons stale ordinary Camp, Hunt, and unrelated MoveToPosition/Normal navigation as soon as a dropped C4 objective appears.
+The first dropped-bomb frame invalidates the previous goal and path, allowing the existing `findBestGoalWhenBombAction()` logic to select and remember the waypoint nearest the backpack immediately.
+Once that recovery waypoint is installed, its matching `MoveToPosition`/Normal goal is preserved instead of being reset every frame.
+
+The remembered dropped-bomb node is cleared whenever no dropped C4 is present so a later drop at a different location cannot inherit an old recovery target.
+Visible combat and the nearby semantic `PickupItem` handoff remain unchanged.
+
+Reason: D106 intentionally yielded dropped-C4 navigation to legacy YaPB, but an already active Normal or MoveToPosition route could remain valid after the bomber died.
+Because `findBestGoalWhenBombAction()` only runs when legacy navigation needs a new goal, a Terrorist could continue circling a bombsite for much of the round before eventually selecting the dropped backpack on the other side of the map.
