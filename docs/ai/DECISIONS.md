@@ -1178,3 +1178,13 @@ The existing defuse-kit margins and escape thresholds are unchanged.
 Reason: gameplay validation captured a CT reaching an elevated planted C4 but switching to `EscapeFromBomb` before ever entering `PickupItem` or `DefuseBomb`.
 In the same episode the bot was physically beside a nearby waypoint while its current navigation anchor still pointed farther away.
 Because `m_pathOrigin` is a navigation target rather than the bot's physical location, the old timer could overestimate the remaining approach time after climbing onto the bomb box and incorrectly decide that a still-possible defuse was already too late.
+
+## D126 — Prioritize planted C4 over CT loadout pickups
+
+While the C4 is planted on a demolition map, Counter-Terrorists no longer divert to ordinary weapon, ammunition, armor, shield, or custom-item pickups.
+The planted C4 itself remains eligible, and a defusal kit remains eligible for a CT that does not already have one.
+
+The restriction is applied after normal item classification, so existing pickup rules outside the planted-bomb phase are unchanged.
+
+Reason: gameplay validation observed the last surviving CT detour to pick up an AK47 before approaching the planted bomb.
+The legacy pickup scan ran before objective task selection and had no CT post-plant priority gate, allowing loadout improvement to consume critical bomb time even when no teammates remained.
