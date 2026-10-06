@@ -991,3 +991,18 @@ A live-light shutdown starts the same six-second re-enable cooldown introduced b
 Reason: `m_path->light` describes the cached waypoint illumination rather than the bot's exact current position.
 A bot could therefore leave a dark room and remain under the old dark waypoint value long enough to keep its flashlight on in an obviously bright area.
 A separate live-check timer makes shutdown responsive without increasing the frequency of the broader darkness/NVG logic or its random 2-4 second scheduling.
+
+## D110 — Defer flashlight behavior to a later tactical redesign
+
+The current automatic flashlight behavior is not the intended long-term AiPB design.
+D104 and D109 remain as legacy-behavior mitigations for now, but Phase 7 should not spend further effort optimizing the flashlight as a general-purpose lighting aid unless a concrete regression makes it necessary.
+
+The intended future role is tactical and deliberate rather than environmental.
+A bot may eventually use the flashlight to attract attention, expose its presence intentionally, bait an opponent, or draw focus away from a teammate or another tactical action.
+That behavior must be modeled as an explicit tactical decision with appropriate observation, policy, execution, and training semantics rather than as an automatic reaction to darkness.
+
+No such distraction mechanic is introduced now.
+Until that later design work begins, the existing flashlight implementation should be treated as provisional legacy behavior and not as a target for further feature development.
+
+Reason: gameplay validation after D109 still shows flashlight behavior that is not worth refining around illumination semantics.
+The broader AI architecture will benefit more from postponing this mechanic until attention manipulation can be represented intentionally and trained or evaluated as part of tactical behavior.
