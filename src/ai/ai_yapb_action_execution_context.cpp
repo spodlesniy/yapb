@@ -579,6 +579,14 @@ void YaPBActionExecutionContext::cancelHide() {
 
 bool YaPBActionExecutionContext::camp() {
   if (m_bot == nullptr || m_bot->pev == nullptr) return false;
+
+  if (m_bot->m_team == Team::CT
+      && gameState.isBombPlanted()
+      && !m_bot->isBombDefusing(gameState.getBombOrigin())
+      && !m_bot->isOutOfBombTimer()) {
+    return false;
+  }
+
   const auto currentTask = m_bot->getCurrentTaskId();
   if (currentTask == Task::Camp) return true;
   if (currentTask != Task::Normal) return false;

@@ -849,3 +849,16 @@ Reason: the previous lifecycle could clear the direct planted-C4 entity during t
 That produced repeated use sounds and short defuse starts, especially when the bomb was planted close to obstructing geometry.
 The old active-progress calculation also subtracted absolute game time from the nominal defuse duration and could allow unrelated tactical state to interrupt an already accepted defuse.
 
+## D099 — Make ordinary CT camp yield to a planted C4
+
+A Counter-Terrorist may not remain in an ordinary `Camp` task after the bomb is planted while a search/defuse attempt is still viable and no teammate is already defusing.
+The legacy `camp_()` task now exits immediately in that state without depending on `m_defendedBomb`.
+The AI execution context applies the same rule so an already-active semantic `Camp` cannot recreate or retain the legacy task.
+
+The deterministic teacher yields CT `Camp + BombPlanted` to legacy objective logic instead of recording a `Camp` label.
+Legacy state remains responsible for the two intentional exceptions that are not represented in the model observation: another teammate is already defusing, or `isOutOfBombTimer()` has selected the emergency escape path.
+Terrorist planted-bomb defense remains mapped to `ProtectObjective`.
+
+Reason: the previous legacy condition required `m_defendedBomb`, so a CT that had entered an unrelated camp before the plant could stay there while the team still had time to search for and defuse the C4.
+An active AI Camp could also preserve that stale behavior across the objective transition.
+

@@ -289,6 +289,17 @@ AI_TEST(testGoalNavigationPolicyMapsBombDefenseToProtectObjective) {
   expect(action.targetType == ai::TargetType::None, "protect objective has no explicit target payload");
 }
 
+AI_TEST(testGoalNavigationPolicyYieldsCtCampAfterBombPlantToLegacyObjectiveLogic) {
+  auto observation = makeObservation();
+  observation.bot.team = 1;
+  observation.bot.currentTask = ai::TaskType::Camp;
+  observation.bot.objectiveFlags |= ai::ObjectiveFlag::BombPlanted;
+
+  const auto action = ai::GoalNavigationPolicy {}.decide(observation);
+
+  expect(action.type == ai::ActionType::None, "CT camp yields planted-bomb objective handling to legacy logic");
+}
+
 AI_TEST(testGoalNavigationPolicyMapsHostageRescue) {
   auto observation = makeObservation();
   observation.bot.currentTask = ai::TaskType::Normal;

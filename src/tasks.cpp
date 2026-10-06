@@ -653,9 +653,15 @@ void Bot::camp_ () {
    m_checkTerrain = false;
    m_moveToGoal = false;
 
-   if (m_team == Team::CT && gameState.isBombPlanted () && m_defendedBomb && !isBombDefusing (gameState.getBombOrigin ()) && !isOutOfBombTimer ()) {
+   // once C4 is planted, an ordinary CT camp must yield to bomb search/defuse
+   if (m_team == Team::CT
+      && gameState.isBombPlanted ()
+      && !isBombDefusing (gameState.getBombOrigin ())
+      && !isOutOfBombTimer ()) {
+
       m_defendedBomb = false;
       completeTask ();
+      return;
    }
    ignoreCollision ();
 
