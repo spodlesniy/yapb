@@ -898,9 +898,7 @@ bool YaPBActionExecutionContext::protectObjective() {
   }
 
   if (currentTask == Task::MoveToPosition) {
-    if (m_bot->m_isStuck && graph.exists(m_bot->m_currentNodeIndex)
-        && !m_bot->isReachableNode(m_bot->m_currentNodeIndex)) {
-
+    if (m_bot->m_isStuck) {
       const int nearestNode = m_bot->findNearestNode();
 
       if (graph.exists(nearestNode) && nearestNode != m_bot->m_currentNodeIndex) {

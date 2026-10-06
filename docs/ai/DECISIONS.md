@@ -1133,3 +1133,15 @@ Visible combat and the nearby semantic `PickupItem` handoff remain unchanged.
 
 Reason: D106 intentionally yielded dropped-C4 navigation to legacy YaPB, but an already active Normal or MoveToPosition route could remain valid after the bomber died.
 Because `findBestGoalWhenBombAction()` only runs when legacy navigation needs a new goal, a Terrorist could continue circling a bombsite for much of the round before eventually selecting the dropped backpack on the other side of the map.
+
+## D122 — Re-anchor stuck bomb defense to the nearest reachable waypoint
+
+The D119 planted-bomb recovery no longer waits for the current waypoint itself to fail a direct reachability test.
+Whenever an AI-owned `ProtectObjective` movement is already marked stuck, the execution context asks YaPB for the nearest reachable waypoint and switches the current navigation anchor when that waypoint differs from the stale current node.
+The existing defend objective remains unchanged and the path is rebuilt from the new anchor to that same objective.
+
+This keeps the recovery narrow to an actual stuck state while handling cases where the old current waypoint is technically line-reachable but is no longer the correct graph anchor for the bot's physical position.
+
+Reason: a post-D119 schema-v6 capture reproduced the same gameplay failure.
+A `ProtectObjective` transition began with `stuck=1` while the current/goal waypoint was about 21 units away and another observed waypoint was about 2 units away.
+The old D119 condition did not re-anchor because the current waypoint could still pass `isReachableNode()`, allowing the bot to keep pushing toward the stale path direction through nearby geometry.
