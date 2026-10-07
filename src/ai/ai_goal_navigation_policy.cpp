@@ -157,7 +157,14 @@ Action GoalNavigationPolicy::decide(const Observation &observation) const {
 
   const bool enemyVisible =
       (observation.combat.perceptionFlags & static_cast<uint32_t>(PerceptionFlag::SeeingEnemy)) != 0;
+  const bool bombPlanted = (observation.bot.objectiveFlags & ObjectiveFlag::BombPlanted) != 0;
   const bool bombDropped = (observation.bot.objectiveFlags & ObjectiveFlag::BombDropped) != 0;
+
+  if (observation.bot.team == kCounterTerroristTeam && bombPlanted
+      && observation.bot.currentTask == TaskType::MoveToPosition) {
+    return {};
+  }
+
   if (observation.bot.team == kTerroristTeam && bombDropped
       && (observation.bot.currentTask == TaskType::Normal
           || observation.bot.currentTask == TaskType::MoveToPosition
@@ -174,7 +181,6 @@ Action GoalNavigationPolicy::decide(const Observation &observation) const {
     return action;
   }
 
-  const bool bombPlanted = (observation.bot.objectiveFlags & ObjectiveFlag::BombPlanted) != 0;
   const bool canProtectPlantedBomb =
       observation.bot.currentTask == TaskType::Normal ||
       observation.bot.currentTask == TaskType::MoveToPosition ||

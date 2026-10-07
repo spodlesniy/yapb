@@ -1267,3 +1267,16 @@ The regular enemy lookup and hearing update already skip blinded bots, so this c
 Validation: an isolated C++ harness executing the complete production `setAimDirection()` function with engine dependencies stubbed reproduced five failing assertions before the change and passed all nine assertions afterward.
 The harness covers explicit and synthesized LastEnemy aim, stale Enemy and navigation flags, preservation of the task's fire intent, timer expiry, other-task overrides, and ordinary combat focus.
 Gameplay validation of silently moving targets remains required.
+
+## D134 — Keep CT planted-bomb movement under legacy objective ownership
+
+While a planted C4 is active, a Counter-Terrorist in legacy `Task::MoveToPosition` is no longer wrapped as a generic semantic `MoveToPosition` action.
+The deterministic teacher yields that movement to YaPB's planted-bomb search, matching the existing `Normal` and `Camp` objective handoff.
+
+Generic AI navigation ownership is also revoked while the Counter-Terrorist planted-bomb objective is active.
+An `Explore`, `MoveToNode`, or `MoveToPosition` action that began before the plant therefore becomes interrupted on its next execution step, allowing legacy bomb-search navigation to regain control.
+The existing Terrorist dropped-C4 ownership gate remains unchanged.
+
+Reason: schema-v6 gameplay validation captured the last surviving Counter-Terrorist spending about 28.45 seconds in `MoveToPosition` after the bomb was planted before the late-timer escape correctly took over.
+The observation exposes `m_destOrigin` as the generic movement destination, but YaPB updates `m_destOrigin` to the current path waypoint.
+Re-wrapping an objective-owned legacy move could therefore promote an intermediate waypoint to the semantic action target and overwrite the original `MoveToPosition` destination instead of preserving the planted-C4 search lifecycle.

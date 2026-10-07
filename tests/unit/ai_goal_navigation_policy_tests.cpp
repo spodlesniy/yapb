@@ -9,6 +9,7 @@
 #include "ai_test.h"
 
 #include <ai/ai_goal_navigation_policy.h>
+#include <ai/ai_navigation_task_guard.h>
 
 using ai::test::expect;
 
@@ -155,6 +156,27 @@ AI_TEST(testGoalNavigationPolicyYieldsCtNormalNavigationAfterBombPlant) {
   const auto action = ai::GoalNavigationPolicy {}.decide(observation);
 
   expect(action.type == ai::ActionType::None, "CT normal navigation yields to legacy planted-bomb search");
+}
+
+AI_TEST(testGoalNavigationPolicyYieldsCtMoveTaskAfterBombPlant) {
+  auto observation = makeObservation();
+  observation.bot.currentTask = ai::TaskType::MoveToPosition;
+  observation.bot.destination = { 100.0f, 200.0f, 300.0f };
+  observation.bot.team = 1;
+  observation.bot.objectiveFlags |= ai::ObjectiveFlag::BombPlanted;
+
+  const auto action = ai::GoalNavigationPolicy {}.decide(observation);
+
+  expect(action.type == ai::ActionType::None, "CT legacy move-to-position keeps planted-bomb search ownership");
+}
+
+AI_TEST(testNavigationOverrideYieldsToLegacyObjectiveNavigation) {
+  expect(!ai::allowsNavigationOverride(
+             ai::TaskType::MoveToPosition, ai::TaskType::Normal, ai::TaskType::MoveToPosition, true),
+         "legacy objective revokes generic move-to-position ownership");
+  expect(ai::allowsNavigationOverride(
+             ai::TaskType::MoveToPosition, ai::TaskType::Normal, ai::TaskType::MoveToPosition, false),
+         "ordinary move-to-position remains eligible for generic navigation ownership");
 }
 
 AI_TEST(testGoalNavigationPolicyMovesToPosition) {

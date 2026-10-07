@@ -33,11 +33,12 @@ bool YaPBActionExecutionContext::allowsNavigationOverride() const {
     return false;
   }
 
-  if (m_bot->m_team == Team::Terrorist && hasDroppedBombObjective()) {
-    return false;
-  }
+  const bool legacyObjectiveActive =
+      (m_bot->m_team == Team::CT && gameState.isBombPlanted())
+      || (m_bot->m_team == Team::Terrorist && hasDroppedBombObjective());
 
-  return ai::allowsNavigationOverride(m_bot->getCurrentTaskId(), Task::Normal, Task::MoveToPosition);
+  return ai::allowsNavigationOverride(
+      m_bot->getCurrentTaskId(), Task::Normal, Task::MoveToPosition, legacyObjectiveActive);
 }
 
 bool YaPBActionExecutionContext::navigationNodeExists(int node) const {
