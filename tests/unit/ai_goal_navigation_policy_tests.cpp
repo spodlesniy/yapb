@@ -739,6 +739,21 @@ AI_TEST(testBombCarrierBlocksSidePickupsWhileObjectiveIsEnabled) {
          "ignored objectives do not impose bomb-carrier pickup ownership");
 }
 
+AI_TEST(testPlantedBombApproachPreservesFirearmUnderThreat) {
+  expect(ai::preservesFirearmForPlantedBombApproach(true, true, true, true, true),
+         "CT keeps a firearm ready while approaching a planted C4 with living enemies");
+  expect(!ai::preservesFirearmForPlantedBombApproach(false, true, true, true, true),
+         "Terrorist traversal keeps the normal jump knife optimization");
+  expect(!ai::preservesFirearmForPlantedBombApproach(true, false, true, true, true),
+         "non-demolition maps keep the normal jump knife optimization");
+  expect(!ai::preservesFirearmForPlantedBombApproach(true, true, false, true, true),
+         "unplanted bomb state keeps the normal jump knife optimization");
+  expect(!ai::preservesFirearmForPlantedBombApproach(true, true, true, false, true),
+         "CT may use the jump knife optimization after all enemies are gone");
+  expect(!ai::preservesFirearmForPlantedBombApproach(true, true, true, true, false),
+         "ignored objectives keep the legacy traversal optimization");
+}
+
 AI_TEST(testObjectiveInteractionRangeUsesFullThreeDimensionalDistance) {
   expect(ai::isWithinObjectiveInteractionRange(30.0f, 40.0f, 20.0f, 80.0f),
          "nearby objective node inside the full XYZ radius is interaction-safe");

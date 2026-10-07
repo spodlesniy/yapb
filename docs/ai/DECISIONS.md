@@ -1497,3 +1497,12 @@ At the start of that lifecycle the destination is only about 80.93 units from th
 That means the current waypoint is already interaction-safe, but D143's final-stage branch asks the bot to travel toward the waypoint center instead of closing the roughly one-unit interaction-range deficit.
 The helper contract already says that reaching the target node ends graph approach and hands control to the final direct approach.
 D151 makes the planted-C4 task honor that boundary without changing the strict 3D distance requirement or adding a timeout.
+
+## D152 — Keep CT firearms ready on planted-bomb jump approaches
+
+The long/high-jump navigation optimization no longer switches a Counter-Terrorist to the knife while a demolition-map bomb is planted, objectives are enabled, and at least one Terrorist is still alive.
+All other jump traversal keeps the existing knife-speed optimization, including rounds with no remaining enemies and games where objectives are explicitly ignored.
+
+Reason: legacy `advanceMovement()` switches to the knife before long or elevated jump links whenever no enemy is currently visible.
+That is normally a speed optimization, but it creates a predictable vulnerability for a CT entering a planted bombsite: a hidden defender can become visible only after the jump has already started, leaving the CT with the knife equipped at first contact.
+The guard is objective- and threat-scoped rather than global, so ordinary traversal behavior is unchanged.

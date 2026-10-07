@@ -9,6 +9,7 @@
 
 #include <ai/ai_bomb_defense_guard.h>
 #include <ai/ai_bomb_search_guard.h>
+#include <ai/ai_objective_navigation_guard.h>
 
 ConVar cv_has_team_semiclip ("has_team_semiclip", "0", "When enabled, bots will not try to avoid teammates on their way. Assumes that some semiclip plugins are in use.");
 ConVar cv_graph_slope_height ("graph_slope_height", "24.0", "Determines the maximum slope height change between the current and next node to consider the current link as a jump link. Only for generated graphs.", true, 12.0f, 48.0f);
@@ -2604,12 +2605,20 @@ bool Bot::advanceMovement () {
                m_jumpSequence = willJump && jumpDistanceSq > cr::sqrf (96.0f);
             }
 
+            const bool preserveFirearmForBombApproach = ai::preservesFirearmForPlantedBombApproach (
+               m_team == Team::CT,
+               game.mapIs (MapFlags::Demolition),
+               gameState.isBombPlanted (),
+               m_numEnemiesLeft > 0,
+               !cv_ignore_objectives);
+
             // is there a jump node right ahead and do we need to draw out the light weapon ?
             if (willJump && !usesKnife ()
                && m_currentWeapon != Weapon::Scout
                && !m_isReloading && !usesPistol ()
                && (jumpDistanceSq > cr::sqrf (145.0f) || (dst.z - 32.0f > src.z && jumpDistanceSq > cr::sqrf (125.0f)))
-               && !(m_states & Sense::SeeingEnemy)) {
+               && !(m_states & Sense::SeeingEnemy)
+               && !preserveFirearmForBombApproach) {
 
                selectWeaponById (Weapon::Knife); // draw out the knife if we needed
             }

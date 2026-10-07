@@ -45,6 +45,16 @@ constexpr bool blocksBombCarrierSidePickups(bool hasC4, bool objectivesEnabled) 
   return hasC4 && objectivesEnabled;
 }
 
+// Keep a firearm ready while a Counter-Terrorist is traversing toward a
+// planted bomb with living enemies still in the round. The usual jump-speed
+// knife optimization is safe again after the threat is gone or objectives are
+// explicitly disabled.
+constexpr bool preservesFirearmForPlantedBombApproach(bool counterTerrorist, bool demolitionMap,
+                                                      bool bombPlanted, bool enemiesAlive,
+                                                      bool objectivesEnabled) {
+  return counterTerrorist && demolitionMap && bombPlanted && enemiesAlive && objectivesEnabled;
+}
+
 // Objective pickup may temporarily enter the navigation pause inserted between
 // graph jump segments without giving up the semantic pickup lifecycle.
 template <typename TaskType>
