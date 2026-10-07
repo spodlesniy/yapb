@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: MIT
 //
 
+#include <ai/ai_objective_navigation_guard.h>
 #include <yapb.h>
 
 ConVar cv_walking_allowed ("walking_allowed", "1", "Specifies whether bots are able to use 'shift' if they think that an enemy is near.");
@@ -1658,20 +1659,70 @@ void Bot::pickupItem_ () {
    case Pickup::PlantedC4:
       m_aimFlags |= AimFlags::Entity;
 
-      if (m_team == Team::CT && itemDistanceSq < cr::sqrf (80.0f)) {
-         pushChatterMessage (Chatter::DefusingBomb);
+      if (m_team == Team::CT) {
+         constexpr float kDefuseInteractionDistance = 80.0f;
+         const float interactionDistanceSq = cr::sqrf (kDefuseInteractionDistance);
+         const int bombNode = graph.getNearest (dest, 512.0f);
 
-         // notify team of defusing
-         if (m_numEnemiesLeft > 0 && m_numFriendsLeft < 3 && rg.chance (90)) {
-            pushRadioMessage (Radio::NeedBackup);
+         if (itemDistanceSq >= interactionDistanceSq && graph.exists (bombNode)) {
+            if (getTask ()->data != bombNode) {
+               clearSearchNodes ();
+
+               const int nearestNode = findNearestNode ();
+               if (graph.exists (nearestNode) && nearestNode != m_currentNodeIndex) {
+                  changeNodeIndex (nearestNode);
+               }
+
+               getTask ()->data = bombNode;
+               m_prevGoalIndex = bombNode;
+               m_chosenGoalIndex = bombNode;
+            }
+            else if (m_currentNodeIndex == bombNode) {
+               const int nearestNode = findNearestNode ();
+
+               if (graph.exists (nearestNode) && nearestNode != bombNode) {
+                  clearSearchNodes ();
+                  changeNodeIndex (nearestNode);
+
+                  getTask ()->data = bombNode;
+                  m_prevGoalIndex = bombNode;
+                  m_chosenGoalIndex = bombNode;
+               }
+            }
+
+            if (!hasActiveGoal () && graph.exists (m_currentNodeIndex) && m_currentNodeIndex != bombNode) {
+               findPath (m_currentNodeIndex, bombNode, FindPath::Fast);
+            }
          }
-         m_moveToGoal = false;
-         m_checkTerrain = false;
 
-         m_moveSpeed = 0.0f;
-         m_strafeSpeed = 0.0f;
+         const bool useGraphApproach = ai::shouldUseGraphObjectiveApproach (
+            itemDistanceSq, interactionDistanceSq, graph.exists (bombNode), m_currentNodeIndex == bombNode);
 
-         startTask (Task::DefuseBomb, TaskPri::DefuseBomb, kInvalidNodeIndex, 0.0f, false);
+         if (useGraphApproach) {
+            m_aimFlags &= ~AimFlags::Entity;
+            m_aimFlags |= AimFlags::Nav;
+            m_moveToGoal = true;
+            m_checkTerrain = true;
+
+            updateNavigation ();
+            break;
+         }
+
+         if (itemDistanceSq < interactionDistanceSq) {
+            pushChatterMessage (Chatter::DefusingBomb);
+
+            // notify team of defusing
+            if (m_numEnemiesLeft > 0 && m_numFriendsLeft < 3 && rg.chance (90)) {
+               pushRadioMessage (Radio::NeedBackup);
+            }
+            m_moveToGoal = false;
+            m_checkTerrain = false;
+
+            m_moveSpeed = 0.0f;
+            m_strafeSpeed = 0.0f;
+
+            startTask (Task::DefuseBomb, TaskPri::DefuseBomb, kInvalidNodeIndex, 0.0f, false);
+         }
       }
       break;
 

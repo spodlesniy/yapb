@@ -1290,3 +1290,17 @@ HE friendly-fire checks, HE waypoint prediction, flash waypoint selection, heigh
 Reason: a schema-v6 gameplay capture showed two Counter-Terrorists throwing HE grenades into the same hidden Terrorist position while both observations reported `SeeingEnemy=false` and the target player slot was neither visible nor heard.
 Their throw target was within about 49 horizontal units of the Terrorist's actual current position.
 The legacy grenade planner accepted `HearingEnemy` or `SuspectEnemy`, but then read `m_lastEnemy->v.origin` and `m_lastEnemy->v.velocity` directly, allowing a retained entity pointer to reveal current movement behind geometry.
+
+## D136 — Route planted-C4 pickup through the graph before direct interaction
+
+A Counter-Terrorist that has acquired the planted C4 as `Pickup::PlantedC4` now keeps using graph navigation while the bomb remains outside the existing 80-unit defuse interaction radius.
+The pickup task targets the nearest graph node to the planted C4 with `FindPath::Fast`, re-anchors its current node to the nearest node from the bot's physical position when the pickup route is first established, and lets `updateNavigation()` execute jump, ladder, and other path-link behavior.
+If a stale current node already equals the bomb node while the bot is still outside interaction range, the pickup performs the same physical re-anchor before deciding that graph navigation is complete.
+Once the target node is physically reached, or no usable graph node exists, the existing direct entity approach remains the final fallback before `DefuseBomb`.
+
+The semantic `PickupItem` lifecycle also remains active through the short `Task::Pause` that YaPB navigation may insert between jump segments while the planted-C4 pickup is still valid.
+Ordinary item pickups do not gain ownership of unrelated Pause tasks.
+The interaction radius, C4 acquisition rules, active-defuse handoff, enemy priority, and late bomb-timer escape are unchanged.
+
+Reason: schema-v6 gameplay validation captured a Counter-Terrorist repeatedly entering `PickupItem` about 89–90 units from an elevated planted C4, becoming stuck while pushing directly into a low border even though a nearby waypoint route existed.
+The old pickup task overwrote `m_destOrigin` with the C4 entity every frame and never called graph navigation, so acquiring the objective discarded the jump-capable route that had brought the bot to the bombsite.

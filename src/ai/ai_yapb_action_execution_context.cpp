@@ -12,6 +12,7 @@
 
 #include <ai/ai_bot_adapter.h>
 #include <ai/ai_navigation_task_guard.h>
+#include <ai/ai_objective_navigation_guard.h>
 #include <ai/ai_yapb_action_execution_context.h>
 
 namespace ai {
@@ -683,7 +684,11 @@ bool YaPBActionExecutionContext::pickupItem() {
     return false;
   }
 
-  return m_bot->getCurrentTaskId() == Task::PickupItem;
+  const bool plantedC4PickupActive =
+      m_bot->m_pickupType == Pickup::PlantedC4 && gameState.isBombPlanted();
+
+  return ai::ownsObjectivePickupTask(
+      m_bot->getCurrentTaskId(), Task::PickupItem, Task::Pause, plantedC4PickupActive);
 }
 
 void YaPBActionExecutionContext::cancelPickupItem() {

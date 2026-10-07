@@ -10,6 +10,7 @@
 
 #include <ai/ai_goal_navigation_policy.h>
 #include <ai/ai_navigation_task_guard.h>
+#include <ai/ai_objective_navigation_guard.h>
 
 using ai::test::expect;
 
@@ -643,4 +644,29 @@ AI_TEST(testGoalNavigationPolicyExploresAtCurrentLegacyGoal) {
   const auto action = ai::GoalNavigationPolicy {}.decide(observation);
 
   expect(action.type == ai::ActionType::Explore, "normal task explores independently of the legacy goal");
+}
+
+AI_TEST(testObjectiveApproachUsesGraphUntilInteractionRange) {
+  constexpr float interactionDistanceSq = 80.0f * 80.0f;
+
+  expect(ai::shouldUseGraphObjectiveApproach(90.0f * 90.0f, interactionDistanceSq, true, false),
+         "objective outside interaction range uses graph navigation");
+  expect(!ai::shouldUseGraphObjectiveApproach(79.0f * 79.0f, interactionDistanceSq, true, false),
+         "objective inside interaction range uses the direct interaction approach");
+  expect(!ai::shouldUseGraphObjectiveApproach(90.0f * 90.0f, interactionDistanceSq, false, false),
+         "missing objective node falls back to the direct approach");
+  expect(!ai::shouldUseGraphObjectiveApproach(90.0f * 90.0f, interactionDistanceSq, true, true),
+         "reaching the objective node avoids a source-equals-destination path rebuild");
+}
+
+AI_TEST(testObjectivePickupKeepsOwnershipThroughNavigationPause) {
+  expect(ai::ownsObjectivePickupTask(
+             ai::TaskType::PickupItem, ai::TaskType::PickupItem, ai::TaskType::Pause, false),
+         "ordinary pickup owns its pickup task");
+  expect(ai::ownsObjectivePickupTask(
+             ai::TaskType::Pause, ai::TaskType::PickupItem, ai::TaskType::Pause, true),
+         "active objective pickup survives the temporary navigation pause");
+  expect(!ai::ownsObjectivePickupTask(
+             ai::TaskType::Pause, ai::TaskType::PickupItem, ai::TaskType::Pause, false),
+         "ordinary pickup does not absorb an unrelated pause");
 }
