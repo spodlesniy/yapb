@@ -1457,3 +1457,13 @@ Reason: schema-v7 gameplay validation captured two Counter-Terrorists with about
 Both consumed rifle ammunition while still deeply blinded, including several rounds during the first fraction of a second.
 D096 and D133 removed exact remembered aim and sustained-fire cadence, but they still allowed firing from the first frame of a full flash.
 D147 separates complete visual denial from the later recovery phase without removing human-like uncertain suppressive fire near the end of blindness.
+
+## D148 — Preserve crlib-first include order in the YaPB action context
+
+`src/ai/ai_yapb_action_execution_context.cpp` keeps `<yapb.h>` before `<cmath>` as an intentional compatibility exception to the normal standard-library-first include convention.
+The pinned crlib revision provides its own global placement `operator new(size_t, void *)` when `CR_COMPAT_STL` is not defined and expects that definition to appear before a standard header pulls in the STL placement-new implementation.
+
+Reason: the manually triggered Windows x86 build for D147 failed only while compiling this translation unit with MSVC 18.
+D140 had reordered `<cmath>` ahead of `<yapb.h>`; the compiler then reported C2084/C3615 in `crlib/memory.h` because placement `operator new` already had a body.
+The same Windows x86 workflow succeeded on D139 with the historical `<yapb.h>`-first order.
+Restoring that proven include order avoids a wider crlib compatibility-mode change.

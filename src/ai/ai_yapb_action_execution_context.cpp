@@ -6,9 +6,10 @@
 // SPDX-License-Identifier: MIT
 //
 
-#include <cmath>
-
+// crlib provides placement new before STL <new>; yapb.h must stay first on MSVC x86.
 #include <yapb.h>
+
+#include <cmath>
 
 #include <ai/ai_bot_adapter.h>
 #include <ai/ai_hunt_progress_guard.h>
