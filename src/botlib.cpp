@@ -10,6 +10,7 @@
 #include <ai/ai_bot_adapter.h>
 #include <ai/ai_inference_model_service.h>
 #include <ai/ai_navigation_task_guard.h>
+#include <ai/ai_perception_guard.h>
 
 ConVar cv_debug ("debug", "0", "Enables or disables useful messages about bot states. Not required for end users.", true, 0.0f, 4.0f);
 ConVar cv_ai_mode ("ai_mode", "0", "Selects AiPB control mode. 0 = Legacy, 1 = Neural, 2 = Training.", true, 0.0f, 2.0f);
@@ -4255,6 +4256,7 @@ void Bot::updateHearing () {
       return;
    }
    m_hearedEnemy = nullptr;
+   Vector heardNoiseOrigin {};
    float nearestDistanceSq = kInfiniteDistance;
 
    // setup potential visibility set from engine
@@ -4284,6 +4286,7 @@ void Bot::updateHearing () {
 
       if (distanceSq < nearestDistanceSq) {
          m_hearedEnemy = client.ent;
+         heardNoiseOrigin = client.noise.pos;
          nearestDistanceSq = distanceSq;
       }
    }
@@ -4311,10 +4314,10 @@ void Bot::updateHearing () {
 
       auto getHeardOriginWithError = [&] () -> Vector {
          if (nearestDistanceSq > cr::sqrf (384.0f)) {
-            return m_hearedEnemy->v.origin;
+            return heardNoiseOrigin;
          }
          auto error = kSprayDistance * cr::powf (nearestDistanceSq, 0.5f) / 2048.0f;
-         auto origin = m_hearedEnemy->v.origin;
+         auto origin = heardNoiseOrigin;
 
          origin.x = origin.x + rg (-error, error);
          origin.y = origin.y + rg (-error, error);
@@ -4340,8 +4343,9 @@ void Bot::updateHearing () {
          else if (m_hearedEnemy != nullptr) {
             // if bot had an enemy but the heard one is nearer, take it instead
             const float distanceSq = m_lastEnemyOrigin.distanceSq (pev->origin);
+            const bool recentlySeen = m_seeEnemyTime + 1.0f >= game.time ();
 
-            if (distanceSq > m_hearedEnemy->v.origin.distanceSq (pev->origin) && m_seeEnemyTime + 1.0f < game.time ()) {
+            if (ai::shouldReplaceRememberedEnemyWithHeard (distanceSq, nearestDistanceSq, recentlySeen)) {
                m_lastEnemy = m_hearedEnemy;
                m_lastEnemyOrigin = getHeardOriginWithError ();
             }
@@ -4367,12 +4371,11 @@ void Bot::updateHearing () {
             && m_lastEnemy == m_hearedEnemy
             && rg.chance (m_difficultyData->hearThruPct)
             && m_seeEnemyTime + 3.0f > game.time ()
-            && isPenetrableObstacle (m_hearedEnemy->v.origin)) {
+            && isPenetrableObstacle (m_lastEnemyOrigin)) {
 
             m_enemy = m_hearedEnemy;
             m_lastEnemy = m_hearedEnemy;
-            m_enemyOrigin = m_hearedEnemy->v.origin;
-            m_lastEnemyOrigin = m_hearedEnemy->v.origin;
+            m_enemyOrigin = m_lastEnemyOrigin;
 
             m_states |= (Sense::SeeingEnemy | Sense::SuspectEnemy);
             m_seeEnemyTime = game.time ();

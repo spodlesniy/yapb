@@ -1331,3 +1331,17 @@ Existing v6 datasets and checkpoints are rejected by the v7 tooling and must not
 Reason: gameplay investigation found that every player slot was populated from the live entity origin, health, armor, and weapon before the `visible` and `heard` flags were applied.
 A future model could therefore recover exact hidden-enemy state directly from serialized features even when the runtime correctly reported that the enemy was not visible.
 The separate heard-enemy position source remains a follow-up because its current YaPB hearing path may itself use live entity position.
+
+## D139 — Ground hearing memory in the sound event position
+
+Enemy hearing now carries the selected `ClientNoise::pos` through the complete `updateHearing()` decision instead of switching back to the heard player's current entity origin.
+The existing near-range X/Y hearing error is applied around the sound-event position, while the existing far-range branch keeps the exact recorded sound position.
+When deciding whether a newly heard enemy should replace an older remembered enemy, YaPB compares the remembered distance with the selected sound-event distance rather than the hidden player's current distance.
+
+The recent-visibility wall-penetration branch also tests and aims at the already perceived heard position.
+It no longer refreshes `m_enemyOrigin` or `m_lastEnemyOrigin` from `m_hearedEnemy->v.origin`.
+If `checkBodyPartsWithOffsets()` actually sees the heard player, the normal visible-enemy path still acquires the current live position.
+
+Reason: `BotSounds::acquire()` and `simulateNoise()` already store the source position when a sound is emitted, but `updateHearing()` used that position only to decide whether the sound was audible.
+After selecting a client it rebuilt enemy memory, target preference, and through-wall aim from the retained player's live entity position, allowing movement after the sound event to leak into hidden-enemy tracking.
+Feature schema v7 is unchanged because `last_enemy_distance` still represents distance to YaPB's remembered enemy position; D139 corrects how hearing updates that memory rather than changing the feature layout.

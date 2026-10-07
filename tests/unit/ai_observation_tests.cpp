@@ -269,3 +269,12 @@ AI_TEST(testObservationBuilderMasksHiddenEnemyLiveState) {
   expect(teammate.relativeOrigin.x == 400.0f && teammate.health == 90.0f && teammate.weapon == 12,
          "teammate state remains available without enemy visibility");
 }
+
+AI_TEST(testHeardEnemyReplacementUsesSoundEventDistance) {
+  expect(ai::shouldReplaceRememberedEnemyWithHeard(900.0f, 400.0f, false),
+         "nearer heard event may replace stale remembered enemy");
+  expect(!ai::shouldReplaceRememberedEnemyWithHeard(400.0f, 900.0f, false),
+         "farther heard event does not replace a nearer remembered enemy");
+  expect(!ai::shouldReplaceRememberedEnemyWithHeard(900.0f, 400.0f, true),
+         "recent visual contact keeps ownership over a heard event");
+}

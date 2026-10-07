@@ -22,4 +22,11 @@ constexpr bool canExposePlayerState(bool enemy, bool visible) {
   return !enemy || visible;
 }
 
+// A newly heard enemy may replace older memory only when the sound event itself
+// is nearer and recent visual contact does not still own that memory.
+constexpr bool shouldReplaceRememberedEnemyWithHeard(float rememberedDistanceSq, float heardDistanceSq,
+                                                      bool recentlySeen) {
+  return !recentlySeen && heardDistanceSq < rememberedDistanceSq;
+}
+
 } // namespace ai
