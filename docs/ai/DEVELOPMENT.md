@@ -94,22 +94,38 @@ When CI is red:
 - The unit-test job uploads `unit-tests/meson-logs/testlog.txt` as the `meson-test-logs` artifact on failure.
 - Identify the actual compiler, linker, or test failure from the workflow log and, when needed, the uploaded Meson test log.
 - Fix that root cause in a narrowly scoped corrective iteration.
-- Re-run CI before proceeding.
+- For automatic test CI, push the corrective commit and check the resulting automatic run before proceeding.
+- For a user-started manual build, report the failure and recommend a user-run check of the corrective commit; do not dispatch or rerun the manual build.
 
 Do not infer a failure from stale output or unrelated local assumptions.
 
 ## Full workflow
 
 The full multi-platform workflow is intentionally used less frequently because it is more expensive.
+Only the user manually starts this workflow with `build_target=full`.
+Agents must not dispatch or rerun it, even when original YaPB production code was changed or a broader validation checkpoint is due.
 
-Use it when:
+An agent may recommend that the user check a specific commit when:
 
 - a larger development block is complete;
 - original YaPB production code was touched;
 - a platform-specific regression needs validation;
 - release or broad integration confidence is required.
 
+State what could be affected and why the check is useful, then leave the launch decision to the user.
+Inspect a user-started run when relevant and report its exact commit SHA and actual job conclusions.
+An unrun or skipped full build is not a passing build and must not be described as validated.
+
 Unit-test CI remains the normal feedback loop for small AI-layer iterations.
+Automatic push-triggered tests do not authorize an agent to dispatch a manual build.
+
+## Manual Windows x86 game-test build
+
+Only the user manually starts `build_target=windows-x86` (job `bot-windows-x86`) when a build is needed for an in-game check, such as collecting a new training JSONL capture.
+Agents must not dispatch or rerun this build.
+An agent may explain why an in-game check would be useful, identify the commit to test, and inspect the run the user starts.
+A code change, a missing JSONL capture, or a request to investigate gameplay does not authorize an agent to launch this build.
+Keep successful compilation separate from actual gameplay validation and from obtaining the resulting capture.
 
 ## History-first platform compatibility
 

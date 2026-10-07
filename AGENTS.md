@@ -18,7 +18,13 @@ This repository is the AiPB development fork of YaPB.
 - After a commit is pushed, use the automatic unit-test CI result as the normal validation gate before starting the next iteration.
 - When CI fails, inspect the exact current CI logs and fix the root cause.
   Do not guess.
-- Run the full multi-platform workflow for the end of a larger development block, for changes that touch original YaPB production code, or when platform compatibility/regression coverage is specifically required.
+- Only the user manually starts the full multi-platform build (`build_target=full`).
+  Agents must not dispatch or rerun it, including after changes to original YaPB production code.
+  When a change may affect it, explain the reason and recommend that the user check the specific commit.
+- Only the user manually starts the Windows x86 build (`build_target=windows-x86`, job `bot-windows-x86`) when a game-test build is needed, for example to collect a new JSONL capture.
+  Agents must not dispatch or rerun it; they may recommend a game check and inspect a run the user started.
+- Automatic test CI triggered by ordinary pushes remains the normal validation gate.
+  It does not authorize an agent to start either manual build.
 - Before committing, inspect the complete diff and verify the intended test target, syntax, include ordering, fixed-size array usage, and scope of the change.
 
 ## Coding rules
