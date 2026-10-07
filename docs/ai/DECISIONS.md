@@ -1230,3 +1230,14 @@ Terrorist post-plant movement keeps the existing mixed path policy.
 
 Reason: gameplay validation showed a lone CT starting from the middle of the map after plant and taking an obviously longer route to the bombsite, then failing to arrive before the timer expired.
 Once the C4 is planted, travel time is the dominant CT navigation constraint and the shortest available graph route is the correct priority.
+
+## D131 — Prefer camp waypoints for bomb escape destinations
+
+Semantic `EscapeFromBomb` now searches first for the nearest unoccupied `NodeFlag::Camp` waypoint outside the existing randomized safe radius.
+Camp points restricted to the opposite team are excluded.
+If no eligible camp waypoint exists, the executor falls back to the previous nearest-safe-node behavior and finally to the existing farthest-node fallback.
+
+The hold phase after reaching the escape destination remains unchanged.
+
+Reason: gameplay validation showed CTs correctly deciding that a defuse was no longer possible, running only far enough to leave the blast radius, and then standing still in exposed open ground until the explosion.
+The previous selection logic treated every graph node outside the safe radius as equally suitable and only started `Task::Camp` after arrival, so the final waiting location did not have to be an actual camping/cover waypoint.

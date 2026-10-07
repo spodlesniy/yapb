@@ -1022,8 +1022,21 @@ bool YaPBActionExecutionContext::escapeFromBomb() {
     float nearestDistanceSq = kInfiniteDistance;
     int bestNode = kInvalidNodeIndex;
 
-    for (const auto &path : graph) {
+    const auto isEligibleEscapeNode = [&](const Path &path) {
       if (path.origin.distanceSq(bombOrigin) < cr::sqrf(safeRadius) || m_bot->isOccupiedNode(path.number)) {
+        return false;
+      }
+
+      if ((m_bot->m_team == Team::CT && (path.flags & NodeFlag::TerroristOnly))
+          || (m_bot->m_team == Team::Terrorist && (path.flags & NodeFlag::CTOnly))) {
+        return false;
+      }
+
+      return true;
+    };
+
+    for (const auto &path : graph) {
+      if (!(path.flags & NodeFlag::Camp) || !isEligibleEscapeNode(path)) {
         continue;
       }
 
@@ -1032,6 +1045,23 @@ bool YaPBActionExecutionContext::escapeFromBomb() {
       if (distanceSq < nearestDistanceSq) {
         nearestDistanceSq = distanceSq;
         bestNode = path.number;
+      }
+    }
+
+    if (!graph.exists(bestNode)) {
+      nearestDistanceSq = kInfiniteDistance;
+
+      for (const auto &path : graph) {
+        if (!isEligibleEscapeNode(path)) {
+          continue;
+        }
+
+        const float distanceSq = m_bot->pev->origin.distanceSq(path.origin);
+
+        if (distanceSq < nearestDistanceSq) {
+          nearestDistanceSq = distanceSq;
+          bestNode = path.number;
+        }
       }
     }
 
