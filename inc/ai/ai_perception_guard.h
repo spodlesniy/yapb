@@ -30,6 +30,11 @@ constexpr bool shouldReplaceRememberedEnemyWithHeard(float rememberedDistanceSq,
 }
 
 constexpr float kGrenadeTargetFreshness = 3.0f;
+constexpr float kStrongBlindFireSuppressionTime = 2.0f;
+
+constexpr bool suppressBlindFire(float blindTimeRemaining) {
+  return blindTimeRemaining > kStrongBlindFireSuppressionTime;
+}
 
 // Grenades may use remembered enemy state only while that exact target still has
 // fresh sensory support. Sticky global perception flags alone are insufficient.

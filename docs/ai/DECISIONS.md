@@ -1445,3 +1445,15 @@ The old final near-bomb/random fallbacks are also preserved.
 
 Reason: planted-bomb `ProtectObjective` intentionally transitions to a long `Task::Camp` after reaching its defend node, but the legacy `findDefendNode()` candidate search did not prefer `NodeFlag::Camp` at all.
 That allowed a Terrorist to select an ordinary exposed navigation waypoint and then treat it as a prolonged bomb-defense camp position.
+
+## D147 — Suppress remembered-enemy fire during the strongest flash phase
+
+Legacy `Task::Blind` no longer initiates remembered-enemy fire while more than two seconds of blindness remain.
+During that strong-blind phase the bot keeps the existing blind movement and cover behavior but does not set the blind task's fire intent.
+Once blindness reaches the final two seconds, the existing D096 behavior becomes available again: a 50-percent fire opportunity toward a three-dimensionally randomized remembered position with ordinary recoil and fire-pause cadence.
+Sniper, knife, difficulty, and remembered-target eligibility rules are otherwise unchanged.
+
+Reason: schema-v7 gameplay validation captured two Counter-Terrorists with about 4.6 seconds of blind time remaining immediately after a near-full flash.
+Both consumed rifle ammunition while still deeply blinded, including several rounds during the first fraction of a second.
+D096 and D133 removed exact remembered aim and sustained-fire cadence, but they still allowed firing from the first frame of a full flash.
+D147 separates complete visual denial from the later recovery phase without removing human-like uncertain suppressive fire near the end of blindness.

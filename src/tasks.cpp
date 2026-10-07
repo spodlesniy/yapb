@@ -6,6 +6,7 @@
 //
 
 #include <ai/ai_objective_navigation_guard.h>
+#include <ai/ai_perception_guard.h>
 #include <yapb.h>
 
 ConVar cv_walking_allowed ("walking_allowed", "1", "Specifies whether bots are able to use 'shift' if they think that an enemy is near.");
@@ -594,7 +595,10 @@ void Bot::blind_ () {
    m_navTimeset = game.time ();
 
    // if bot remembers last enemy position
-   if (rg.chance (50)
+   const float blindTimeRemaining = m_blindTime - game.time ();
+
+   if (!ai::suppressBlindFire (blindTimeRemaining)
+      && rg.chance (50)
       && m_difficulty >= Difficulty::Normal
       && !m_lastEnemyOrigin.empty ()
       && game.isPlayerEntity (m_lastEnemy)
