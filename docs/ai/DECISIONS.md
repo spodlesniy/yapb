@@ -1188,3 +1188,15 @@ The restriction is applied after normal item classification, so existing pickup 
 
 Reason: gameplay validation observed the last surviving CT detour to pick up an AK47 before approaching the planted bomb.
 The legacy pickup scan ran before objective task selection and had no CT post-plant priority gate, allowing loadout improvement to consume critical bomb time even when no teammates remained.
+
+## D127 — Escape a stuck bomb-defense anchor through a connected neighbor
+
+The planted-bomb protection recovery now falls back to YaPB's existing `findNextBestNode()` path-recovery logic when `findNearestNode()` returns the same current waypoint for a stuck bot.
+That fallback selects a different graph-connected, physically reachable waypoint and uses it as the new navigation anchor before rebuilding the route to the unchanged bomb-defense objective.
+
+The normal nearest-node recovery from D122 remains the first choice.
+The connected-neighbor fallback is used only while `ProtectObjective` owns `MoveToPosition` and the bot is already marked stuck.
+
+Reason: another schema-v6 gameplay capture reproduced the same wall-pushing failure after D122.
+The stuck Terrorist's current and defend goal were the same waypoint about 21 units away while another observed waypoint was almost under the bot.
+Because the current waypoint still passed ordinary reachability, `findNearestNode()` could return it again and D122 made no progress.
