@@ -50,6 +50,34 @@ void addGoalWaypoint(ai::Observation &observation, float distance) {
 
 } // namespace
 
+
+AI_TEST(testGoalNavigationPolicyKeepsBombCarrierSeekCoverBounded) {
+  auto observation = makeObservation();
+  observation.bot.currentTask = ai::TaskType::SeekCover;
+  observation.bot.hasC4 = true;
+  observation.bot.health = 14.0f;
+  observation.personality.aggression = 0.5f;
+  observation.combat.perceptionFlags |= static_cast<uint32_t>(ai::PerceptionFlag::SeeingEnemy);
+
+  const auto action = ai::GoalNavigationPolicy {}.decide(observation);
+
+  expect(action.type == ai::ActionType::SeekCover,
+         "low-health visible combat keeps C4 carrier cover bounded instead of starting retreat-hide lifecycle");
+}
+
+AI_TEST(testGoalNavigationPolicyStillRetreatsLowHealthNonCarrier) {
+  auto observation = makeObservation();
+  observation.bot.currentTask = ai::TaskType::SeekCover;
+  observation.bot.health = 14.0f;
+  observation.personality.aggression = 0.5f;
+  observation.combat.perceptionFlags |= static_cast<uint32_t>(ai::PerceptionFlag::SeeingEnemy);
+
+  const auto action = ai::GoalNavigationPolicy {}.decide(observation);
+
+  expect(action.type == ai::ActionType::Retreat,
+         "low-health visible combat still starts retreat for a bot without C4");
+}
+
 AI_TEST(testGoalNavigationPolicyExploresForNormalTask) {
   auto observation = makeObservation();
   observation.bot.currentTask = ai::TaskType::Normal;

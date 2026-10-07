@@ -1419,3 +1419,16 @@ Grenade-war mode remains exempt from the perception freshness gate.
 Reason: schema-v7 gameplay validation after D135 and D139 captured a hidden-target sequence where one CT threw two HE grenades, two smokes, and a flash while `SeeingEnemy=false` and no live enemy player slot was marked heard.
 The throw points clustered around an old remembered position near a corpse.
 The remaining cause was not live-position leakage: `Sense::HearingEnemy` persists for up to ten seconds, so the grenade planner could repeatedly consume the inventory long after the specific sound event that created the memory had gone stale.
+
+## D145 — Keep bomb-carrier cover bounded instead of entering Retreat/Hide
+
+A Terrorist carrying C4 no longer upgrades a legacy `Task::SeekCover` into the semantic `Retreat` lifecycle solely because health and aggression make the bot cautious while an enemy is visible.
+The carrier still executes semantic `SeekCover`, so immediate combat pressure can move it to a cover node.
+Once that bounded cover move completes, control returns to the normal bomb-objective selection instead of extending the detour into `Retreat -> Hide`.
+
+Bots without C4 keep the existing low-health visible-enemy `SeekCover -> Retreat` behavior.
+Planting, direct combat, dropped-C4 recovery, and the D142 optional-pickup gate are unchanged.
+
+Reason: gameplay validation showed a 14-HP bomb carrier retreating far away from the planting route after a firefight before eventually crossing the map back toward a bombsite.
+The teacher mapped every low-approach visible-enemy `SeekCover` to `Retreat`, and D115 intentionally makes Retreat continue through the subsequent legacy Hide transition.
+That lifecycle is useful for ordinary survival behavior but can monopolize a C4 carrier long after the immediate need to break line of fire has passed.

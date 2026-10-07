@@ -288,8 +288,9 @@ Action GoalNavigationPolicy::decide(const Observation &observation) const {
       constexpr float kRetreatApproachThreshold = 30.0f;
       const float approach = observation.bot.health * observation.personality.aggression;
       const bool seeingEnemy = (observation.combat.perceptionFlags & static_cast<uint32_t>(PerceptionFlag::SeeingEnemy)) != 0;
+      const bool allowRetreatLifecycle = !observation.bot.hasC4;
 
-      action.type = seeingEnemy && approach < kRetreatApproachThreshold
+      action.type = allowRetreatLifecycle && seeingEnemy && approach < kRetreatApproachThreshold
                       ? ActionType::Retreat
                       : ActionType::SeekCover;
       break;
