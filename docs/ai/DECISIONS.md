@@ -1252,3 +1252,18 @@ Aim, firing, target ownership, and normal graph navigation are unchanged.
 Reason: gameplay validation reproduced the recurring wall-stuck location without an active bomb objective.
 The Terrorist was in `AttackTarget` with a currently visible enemy while the Counter-Terrorist was on the opposite side of the wall.
 YaPB deliberately disables its generic stuck/collision recovery for `Task::Attack`, and the semantic attack execution also uses `ignoreCollision()`, allowing direct combat movement to keep pressing into blocking geometry as long as the enemy remained visible through the local geometry.
+
+## D133 — Preserve the blind task's uncertain aim through the frame
+
+While `Task::Blind` is active and the blind timer has not expired, `setAimDirection()` leaves the task-selected aim and fire intent intact.
+Ordinary aiming resumes as soon as the timer expires or another task owns execution.
+The blind task's existing random error, firing probability, movement, and recoil cadence are unchanged.
+
+Reason: `logic()` executes `blind_()` before `setAimDirection()`.
+The latter could overwrite the uncertain aim with the exact `m_lastEnemyOrigin` through `AimFlags::LastEnemy`, including the flag synthesized from recent sight, or select another ordinary aim target.
+That bypassed the three-dimensional blind-fire error introduced by D096.
+The regular enemy lookup and hearing update already skip blinded bots, so this correction does not claim to resolve unconfirmed continuous live-position tracking or stale hearing telemetry.
+
+Validation: an isolated C++ harness executing the complete production `setAimDirection()` function with engine dependencies stubbed reproduced five failing assertions before the change and passed all nine assertions afterward.
+The harness covers explicit and synthesized LastEnemy aim, stale Enemy and navigation flags, preservation of the task's fire intent, timer expiry, other-task overrides, and ordinary combat focus.
+Gameplay validation of silently moving targets remains required.

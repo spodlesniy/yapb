@@ -392,6 +392,10 @@ bool Frustum::check (const Planes &planes, edict_t *ent) const {
 }
 
 void Bot::setAimDirection () {
+   // The blind task owns its uncertain aim; ordinary aiming must not restore an exact target.
+   if (getCurrentTaskId () == Task::Blind && m_blindTime > game.time ()) {
+      return;
+   }
    uint32_t flags = m_aimFlags;
 
    // don't allow bot to look at danger positions under certain circumstances
