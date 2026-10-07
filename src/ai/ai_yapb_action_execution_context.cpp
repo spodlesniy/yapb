@@ -341,6 +341,9 @@ void YaPBActionExecutionContext::cancelHuntTarget(int targetPlayer) {
     if (m_huntNavigationTaskCreated) {
       m_bot->clearTask(Task::MoveToPosition);
     }
+    if (m_bot->getCurrentTaskId() == Task::Hunt) {
+      m_bot->clearTask(Task::Hunt);
+    }
     m_bot->clearSearchNodes();
     m_bot->m_position.clear();
     m_huntTargetActive = false;

@@ -1212,3 +1212,11 @@ Visible combat is unchanged and continues to outrank the objective through the e
 Reason: a schema-v6 gameplay capture contained a Counter-Terrorist `HuntTarget` transition lasting 41.93 seconds.
 The hunt began before the plant and remained active after the C4 was planted, finally ending with about 32.7 seconds left on the bomb timer.
 D123 prevented legacy Hunt selection after plant, but `ActionLoop` does not query the policy while a semantic action remains active, so the pre-plant HuntTarget kept recreating its remembered-enemy navigation and blocked bomb-search decisions.
+
+## D129 — Release the underlying legacy Hunt when semantic HuntTarget ends
+
+Cancelling a semantic `HuntTarget` now also removes an exposed legacy `Task::Hunt` after the semantic navigation task has been released.
+The change applies only when the semantic hunt owns the same remembered-enemy lifecycle and does not touch visible `Attack` behavior.
+
+Reason: post-D128 gameplay capture showed the active `HuntTarget` correctly becoming `Interrupted` at the instant the C4 was planted, but the next observation still reported `currentTask=Hunt`.
+That stale underlying task could briefly keep the Counter-Terrorist rotating or reselecting remembered-enemy movement before normal planted-bomb search took over.
