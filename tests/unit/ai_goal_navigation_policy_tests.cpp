@@ -709,6 +709,19 @@ AI_TEST(testObjectiveApproachUsesGraphUntilInteractionRange) {
   expect(!ai::shouldFinishObjectiveApproachDirectly(
              90.0f * 90.0f, interactionDistanceSq, false, true),
          "a non-interaction node does not acquire the safe direct finishing path");
+
+  expect(ai::shouldFinishObjectiveApproachViaInteractionNode(
+             90.0f * 90.0f, interactionDistanceSq, true, true, false),
+         "blocked direct finish falls back to the interaction-safe node center");
+  expect(!ai::shouldFinishObjectiveApproachViaInteractionNode(
+             90.0f * 90.0f, interactionDistanceSq, true, true, true),
+         "clear direct finish keeps the D151 short approach");
+  expect(!ai::shouldFinishObjectiveApproachViaInteractionNode(
+             79.0f * 79.0f, interactionDistanceSq, true, true, false),
+         "node-center fallback stops once the bot is already inside interaction range");
+  expect(!ai::shouldFinishObjectiveApproachViaInteractionNode(
+             90.0f * 90.0f, interactionDistanceSq, true, false, false),
+         "node-center fallback requires the interaction-safe node to be reached first");
 }
 
 AI_TEST(testPlantedBombPickupScannerYieldsToActiveDefuse) {

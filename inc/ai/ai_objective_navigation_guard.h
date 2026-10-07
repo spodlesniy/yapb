@@ -25,6 +25,18 @@ constexpr bool shouldFinishObjectiveApproachDirectly(float distanceSq, float int
   return distanceSq >= interactionDistanceSq && interactionNodeExists && interactionNodeReached;
 }
 
+// If the short final line to the objective is physically blocked, keep using
+// the already selected interaction-safe node as a geometry-aware staging point.
+// Its center lies inside the interaction sphere, so reaching it is sufficient.
+constexpr bool shouldFinishObjectiveApproachViaInteractionNode(float distanceSq, float interactionDistanceSq,
+                                                              bool interactionNodeExists, bool interactionNodeReached,
+                                                              bool directApproachReachable) {
+  return distanceSq >= interactionDistanceSq
+      && interactionNodeExists
+      && interactionNodeReached
+      && !directApproachReachable;
+}
+
 // Objective interaction range is a full 3D sphere. A node that is close in XY
 // but too far above or below the objective must not be treated as interaction-safe.
 constexpr bool isWithinObjectiveInteractionRange(float deltaX, float deltaY, float deltaZ,

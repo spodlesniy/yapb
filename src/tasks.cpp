@@ -1755,13 +1755,30 @@ void Bot::pickupItem_ () {
             break;
          }
 
-         // Reaching an interaction-safe waypoint means the graph has already
-         // selected a valid side of the C4. Finish only the short remaining
-         // distance into the 3D interaction sphere instead of walking back to
-         // the waypoint center after its navigation radius has been satisfied.
-         if (ai::shouldFinishObjectiveApproachDirectly (
+         const bool directApproachReachable = graph.isNodeReacheable (pev->origin, dest);
+
+         // Reaching an interaction-safe waypoint normally hands off to the short
+         // direct approach introduced by D151. Keep that fast path only while the
+         // actual bot-to-C4 segment remains physically traversable.
+         if (directApproachReachable && ai::shouldFinishObjectiveApproachDirectly (
             itemDistanceSq, interactionDistanceSq, hasInteractionNode, m_currentNodeIndex == bombNode)) {
 
+            m_moveToGoal = true;
+            m_checkTerrain = true;
+            break;
+         }
+
+         // A box edge, railing, or other local obstacle can make the C4 origin
+         // unreachable even though the graph has already delivered us to a node
+         // whose center lies inside defuse range. In that case finish toward the
+         // known-safe node center instead of steering repeatedly into the obstacle.
+         if (ai::shouldFinishObjectiveApproachViaInteractionNode (
+            itemDistanceSq, interactionDistanceSq, hasInteractionNode,
+            m_currentNodeIndex == bombNode, directApproachReachable)) {
+
+            m_aimFlags &= ~AimFlags::Entity;
+            m_aimFlags |= AimFlags::Nav;
+            m_destOrigin = graph[bombNode].origin;
             m_moveToGoal = true;
             m_checkTerrain = true;
             break;

@@ -1595,3 +1595,14 @@ Reason: the format-v2 capture `2026_10_07__22_46_02__ai_training.jsonl` contains
 During that pre-progress-bar interval, planted-C4 discovery sees `isBombDefusing(origin)` as true and can enter its teammate-defense branch for the same bot, pushing `Camp` and `MoveToPosition` above the non-resumable defuse task.
 That task-stack transition detaches the CT from the C4 before the progress bar stabilizes and then forces pickup reacquisition.
 D158 prevents the self-preemption at its source and also makes any remaining unexpected ownership loss explicit in training data.
+
+## D159 — Fall back to the interaction-safe node when the direct C4 finish is blocked
+
+The planted-C4 pickup keeps D151's short direct finish when the live bot-to-C4 segment is physically reachable.
+After an interaction-safe waypoint has already been reached, the bot now checks that short segment with the existing graph reachability test before steering directly at the C4 entity.
+If local geometry blocks the segment, the bot instead finishes toward the selected waypoint center, whose full 3D position is already guaranteed to lie inside the 80-unit defuse interaction sphere.
+
+Reason: the format-v2 capture contains planted-C4 `PickupItem` lifecycles that remain active for many seconds after the CT has reached the bombsite.
+The observed in-game behavior is repeated turning or sliding immediately beside the C4, especially when the bomb lies on or behind a box edge or railing.
+D151 correctly avoids forcing every near-C4 approach back to the waypoint center, but its unconditional direct final segment assumes that the C4 origin itself is physically traversable from the bot's current side.
+D159 preserves the D151 fast path for open geometry while restoring the interaction-safe node as a local staging target only when the direct segment is blocked.
