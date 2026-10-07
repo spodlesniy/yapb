@@ -20,6 +20,8 @@ class TrainingCollector final {
 private:
   TrainingRecorder *m_recorder {};
   const RewardProvider *m_rewardProvider {};
+  ActionResult m_pendingTerminalResult {};
+  bool m_terminalPending {};
 
 public:
   TrainingCollector(TrainingRecorder &recorder, const RewardProvider &rewardProvider)
@@ -32,7 +34,13 @@ public:
 
   ActionResult step(ActionRuntime &runtime, const Observation &observation, bool allowDecision = true);
 
-  bool cancel(ActionRuntime &runtime, const Observation &nextObservation);
+  bool cancel(ActionRuntime &runtime);
+
+  bool finalizeTerminal(const Observation &nextObservation);
+
+  bool hasPendingTerminal() const {
+    return m_terminalPending;
+  }
 
   void endEpisode();
 

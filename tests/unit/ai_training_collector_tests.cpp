@@ -113,6 +113,9 @@ AI_TEST(testTrainingCollectorCanReplaceRewardProvider) {
   const auto result = collector.step(runtime, makeObservation(60.0f, 80));
 
   expect(result.type == ai::ActionResultType::Completed, "replacement provider test completes the action");
+  expect(collector.hasPendingTerminal(), "terminal result waits for a post-execution observation");
+  expect(replacementRewards.callCount == 0, "reward waits for the post-execution observation");
+  expect(collector.finalizeTerminal(makeObservation(60.0f, 81)), "post-execution observation finalizes the action");
   expect(initialRewards.callCount == 0, "replaced reward provider is not invoked");
   expect(replacementRewards.callCount == 1, "replacement reward provider is invoked");
 }
@@ -158,6 +161,7 @@ AI_TEST(testTrainingCollectorResetPreservesBuffer) {
 
   executor.setResult(ai::ActionResultType::Completed);
   collector.step(runtime, makeObservation(41.0f, 61));
+  expect(collector.finalizeTerminal(makeObservation(41.0f, 62)), "reset test finalizes completed sample");
   expect(buffer.size() == 1, "reset test creates a completed sample");
 
   executor.setResult(ai::ActionResultType::Accepted);
@@ -167,6 +171,7 @@ AI_TEST(testTrainingCollectorResetPreservesBuffer) {
   collector.reset();
 
   expect(!recorder.hasPendingAction(), "collector reset clears pending action");
+  expect(!collector.hasPendingTerminal(), "collector reset clears pending terminal result");
   expect(recorder.episodeId() == 0, "collector reset clears current episode");
   expect(buffer.size() == 1, "collector reset preserves previously recorded samples");
 }
@@ -193,7 +198,12 @@ AI_TEST(testTrainingCollectorRecordsTrainingCompletion) {
   const auto completed = collector.step(runtime, makeObservation(21.0f, 41));
 
   expect(completed.type == ai::ActionResultType::Completed, "training mode forwards the terminal action result");
+  expect(buffer.empty(), "terminal action waits for the post-execution observation");
+  expect(collector.hasPendingTerminal(), "training mode retains the terminal result until finalization");
+  expect(collector.finalizeTerminal(makeObservation(21.0f, 42)), "training mode accepts a fresh terminal snapshot");
   expect(buffer.size() == 1, "training mode records one completed transition");
+  expect(buffer.at(0).nextObservation.bot.currentNode == 42,
+         "training transition stores the post-execution observation");
   expectNear(buffer.at(0).result.elapsedTime, 1.0f, 0.0001f,
              "training mode derives elapsed time from the action observations");
   expect(!recorder.hasPendingAction(), "recorded training transition clears pending state");
@@ -215,8 +225,10 @@ AI_TEST(testTrainingCollectorRecordsTrainingCancellation) {
   collector.step(runtime, makeObservation(30.0f, 50));
   expect(recorder.hasPendingAction(), "training cancellation test starts a pending action");
 
-  expect(collector.cancel(runtime, makeObservation(30.5f, 51)), "collector cancels the active training action");
+  expect(collector.cancel(runtime), "collector cancels the active training action");
   expect(runtime.result().type == ai::ActionResultType::Interrupted, "training cancellation exposes the interrupted result");
+  expect(buffer.empty(), "training cancellation waits for a post-cancel observation");
+  expect(collector.finalizeTerminal(makeObservation(30.5f, 51)), "post-cancel observation finalizes training transition");
   expect(buffer.size() == 1, "training cancellation records one transition");
   expect(buffer.at(0).result.type == ai::ActionResultType::Interrupted, "training transition stores interruption result");
   expectNear(buffer.at(0).result.elapsedTime, 0.5f, 0.0001f,
@@ -245,7 +257,11 @@ AI_TEST(testTrainingCollectorRecordsCompletedAction) {
   const auto completed = collector.step(runtime, makeObservation(2.0f, 41));
 
   expect(completed.type == ai::ActionResultType::Completed, "collector forwards the terminal action result");
+  expect(buffer.empty(), "collector defers completed transition until post-execution state is supplied");
+  expect(collector.finalizeTerminal(makeObservation(2.0f, 42)), "collector finalizes with post-execution state");
   expect(buffer.size() == 1, "collector records one completed transition");
+  expect(buffer.at(0).nextObservation.bot.currentNode == 42,
+         "collector stores state captured after terminal side effects");
   expect(!recorder.hasPendingAction(), "recorded transition clears pending recorder state");
   expect(rewards.callCount == 1, "collector computes reward exactly once");
   expectNear(rewards.lastRewardInputGameTime, 1.0f, 0.0001f, "reward receives the initial observation");
@@ -272,6 +288,8 @@ AI_TEST(testTrainingCollectorRecordsImmediateCompletion) {
   const auto result = collector.step(runtime, makeObservation(5.0f, 20));
 
   expect(result.type == ai::ActionResultType::Completed, "collector sees an immediate terminal result");
+  expect(buffer.empty(), "immediate completion waits for a post-execution observation");
+  expect(collector.finalizeTerminal(makeObservation(5.0f, 21)), "immediate completion finalizes explicitly");
   expect(buffer.size() == 1, "collector records an immediately completed action");
   expect(!recorder.hasPendingAction(), "immediate completion clears pending recorder state");
   expect(rewards.callCount == 1, "immediate completion computes one reward");
@@ -311,9 +329,11 @@ AI_TEST(testTrainingCollectorRecordsCancellation) {
   collector.step(runtime, makeObservation(10.0f, 30));
   expect(recorder.hasPendingAction(), "cancellation test starts a pending action");
 
-  expect(collector.cancel(runtime, makeObservation(10.5f, 31)), "collector cancels the active runtime action");
+  expect(collector.cancel(runtime), "collector cancels the active runtime action");
   expect(runtime.result().type == ai::ActionResultType::Interrupted, "runtime exposes the interrupted result");
+  expect(buffer.empty(), "cancellation waits for a post-cancel observation");
+  expect(collector.finalizeTerminal(makeObservation(10.5f, 31)), "post-cancel observation finalizes transition");
   expect(buffer.size() == 1, "cancellation records a terminal transition");
-  expect(buffer.at(0).result.type == ai::ActionResultType::Interrupted, "transition stores the interruption result");
+  expect(buffer.at(0).result.type == ai::ActionResultType::Interrupted, "transition stores interruption result");
   expect(rewards.callCount == 1, "cancellation computes one reward");
 }

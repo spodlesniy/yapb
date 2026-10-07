@@ -1568,3 +1568,16 @@ At the first zero-time completion the current waypoint can still differ from the
 The current observation contract does not reliably expose the final target of an arbitrary pre-existing legacy MoveToPosition task.
 Yielding is therefore safer than inventing that target or changing feature schema in this fix.
 High-level semantic actions such as HuntTarget, SeekCover, Retreat, Explore, ProtectObjective, and EscapeFromBomb may still use YaPB MoveToPosition internally while their own action lifecycle remains active.
+
+## D157 — Record terminal next_observation after executor side effects
+
+`TrainingCollector` no longer finishes a terminal transition with the observation that was passed into `runtime.step()`.
+Instead it retains the terminal `ActionResult` until `finalizeTerminal()` receives a fresh observation.
+`BotRuntime` rebuilds that observation directly from the live bot immediately after terminal execution or cancellation, and also flushes a pending terminal snapshot before starting a new training episode or resetting runtime state.
+
+Reason: terminal executors may clear tasks, release targets, consume remembered state, or otherwise mutate YaPB while producing their terminal result.
+The previous collector recorded the pre-execution input snapshot as `next_observation`, so those terminal side effects could never appear in the transition's next state.
+This is visible in the schema-v7 capture as completed actions whose encoded next task still describes the task that completion just released.
+
+This decision changes only in-memory collection/runtime semantics.
+The JSONL dataset format version and Python/offline contract are intentionally left unchanged in this commit and will be versioned separately after the runtime change passes CI.

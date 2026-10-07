@@ -11,6 +11,10 @@
 namespace ai {
 
 ActionResult TrainingCollector::step(ActionRuntime &runtime, const Observation &observation, bool allowDecision) {
+  if (m_terminalPending) {
+    finalizeTerminal(observation);
+  }
+
   const bool wasActive = runtime.isActive();
   const auto result = runtime.step(observation, allowDecision);
 
@@ -32,15 +36,14 @@ ActionResult TrainingCollector::step(ActionRuntime &runtime, const Observation &
   }
 
   if (ownsResult && result.isTerminal() && m_recorder->hasPendingAction()) {
-    const float reward =
-      m_rewardProvider->compute(m_recorder->pendingObservation(), m_recorder->pendingAction(), observation, result);
-    m_recorder->finishAction(observation, result, reward);
+    m_pendingTerminalResult = result;
+    m_terminalPending = true;
   }
 
   return result;
 }
 
-bool TrainingCollector::cancel(ActionRuntime &runtime, const Observation &nextObservation) {
+bool TrainingCollector::cancel(ActionRuntime &runtime) {
   if (!runtime.cancel()) {
     return false;
   }
@@ -53,21 +56,41 @@ bool TrainingCollector::cancel(ActionRuntime &runtime, const Observation &nextOb
   }
 
   const auto &result = runtime.result();
-  if (!result.isTerminal()) {
-    return true;
+  if (result.isTerminal()) {
+    m_pendingTerminalResult = result;
+    m_terminalPending = true;
+  }
+  return true;
+}
+
+bool TrainingCollector::finalizeTerminal(const Observation &nextObservation) {
+  if (!m_terminalPending || !m_recorder->hasPendingAction()) {
+    return false;
   }
 
   const float reward =
-    m_rewardProvider->compute(m_recorder->pendingObservation(), m_recorder->pendingAction(), nextObservation, result);
-  m_recorder->finishAction(nextObservation, result, reward);
+    m_rewardProvider->compute(m_recorder->pendingObservation(), m_recorder->pendingAction(), nextObservation,
+                              m_pendingTerminalResult);
+  const auto recordResult = m_recorder->finishAction(nextObservation, m_pendingTerminalResult, reward);
+
+  if (recordResult != TrainingRecordResult::Recorded) {
+    return false;
+  }
+
+  m_pendingTerminalResult = {};
+  m_terminalPending = false;
   return true;
 }
 
 void TrainingCollector::endEpisode() {
+  m_pendingTerminalResult = {};
+  m_terminalPending = false;
   m_recorder->endEpisode();
 }
 
 void TrainingCollector::reset() {
+  m_pendingTerminalResult = {};
+  m_terminalPending = false;
   m_recorder->reset();
 }
 

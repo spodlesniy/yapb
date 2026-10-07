@@ -25,6 +25,7 @@ namespace ai {
 // The runtime is intentionally dormant while the controller stays in Legacy mode.
 class BotRuntime final {
 private:
+  Bot *m_bot {};
   GoalNavigationPolicy m_goalNavigationPolicy {};
   InferencePolicy m_inferencePolicy {};
   TrainingRecorder m_trainingRecorder {};
@@ -37,17 +38,21 @@ private:
   BotActionExecutor m_executor;
   ActionRuntime m_runtime;
 
+  Observation captureObservation() const;
+
 public:
   explicit BotRuntime(Bot &bot);
 
-  void setMode(ControlMode mode, const Observation &nextObservation) {
+  void setMode(ControlMode mode, const Observation &) {
     const auto previousMode = m_runtime.getMode();
     if (mode == previousMode) {
       return;
     }
 
     if ((previousMode == ControlMode::Neural || previousMode == ControlMode::Training) && m_runtime.isActive()) {
-      m_trainingCollector.cancel(m_runtime, nextObservation);
+      if (m_trainingCollector.cancel(m_runtime)) {
+        m_trainingCollector.finalizeTerminal(captureObservation());
+      }
     }
 
     m_runtime.setMode(mode);
@@ -122,6 +127,9 @@ public:
       return;
     }
 
+    if (m_trainingCollector.hasPendingTerminal()) {
+      m_trainingCollector.finalizeTerminal(captureObservation());
+    }
     m_trainingRecorder.beginEpisode();
   }
 
@@ -178,14 +186,28 @@ public:
   }
 
   ActionResult step(const Observation &observation, bool allowDecision = true) {
-    return m_trainingCollector.step(m_runtime, observation, allowDecision);
+    const auto result = m_trainingCollector.step(m_runtime, observation, allowDecision);
+
+    if (result.isTerminal()) {
+      m_trainingCollector.finalizeTerminal(captureObservation());
+    }
+    return result;
   }
 
-  bool cancel(const Observation &nextObservation) {
-    return m_trainingCollector.cancel(m_runtime, nextObservation);
+  bool cancel(const Observation &) {
+    if (!m_trainingCollector.cancel(m_runtime)) {
+      return false;
+    }
+
+    m_trainingCollector.finalizeTerminal(captureObservation());
+    return true;
   }
 
   void reset() {
+    if (m_trainingCollector.hasPendingTerminal()) {
+      m_trainingCollector.finalizeTerminal(captureObservation());
+    }
+
     m_runtime.reset();
     m_trainingCollector.reset();
   }
