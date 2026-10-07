@@ -304,7 +304,7 @@ void YaPBActionExecutionContext::cancelFollowPlayer(int targetPlayer) {
   if (m_bot->getCurrentTaskId() == Task::FollowUser) m_bot->clearTask(Task::FollowUser);
 }
 
-bool YaPBActionExecutionContext::huntTarget(int targetPlayer) {
+bool YaPBActionExecutionContext::huntTarget(int targetPlayer, const Vec3 &position) {
   if (m_bot == nullptr || m_bot->pev == nullptr || targetPlayer <= 0 || targetPlayer > game.maxClients()) {
     return false;
   }
@@ -322,7 +322,7 @@ bool YaPBActionExecutionContext::huntTarget(int targetPlayer) {
   if (!m_huntTargetActive || m_huntTargetPlayer != targetPlayer) {
     m_huntTargetActive = true;
     m_huntTargetPlayer = targetPlayer;
-    m_huntTargetOrigin = { target->v.origin.x, target->v.origin.y, target->v.origin.z };
+    m_huntTargetOrigin = position;
     m_huntNavigationTaskCreated = false;
   }
 

@@ -43,7 +43,7 @@ public:
   virtual bool throwSmoke(const Vec3 &position) = 0;
   virtual void cancelThrowSmoke() = 0;
 
-  virtual bool huntTarget(int targetPlayer) = 0;
+  virtual bool huntTarget(int targetPlayer, const Vec3 &position) = 0;
   virtual bool isHuntTargetReached(int targetPlayer) const = 0;
   virtual void cancelHuntTarget(int targetPlayer) = 0;
 

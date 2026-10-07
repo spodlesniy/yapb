@@ -74,7 +74,7 @@ public:
   bool throwSmoke(const Vec3 &position) override;
   void cancelThrowSmoke() override;
 
-  bool huntTarget(int targetPlayer) override;
+  bool huntTarget(int targetPlayer, const Vec3 &position) override;
   bool isHuntTargetReached(int targetPlayer) const override;
   void cancelHuntTarget(int targetPlayer) override;
 

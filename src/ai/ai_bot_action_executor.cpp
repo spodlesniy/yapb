@@ -577,7 +577,13 @@ ActionResult BotActionExecutor::executeHuntTarget(const Action &action, const Ob
     return { action.type, ActionResultType::Completed, 0.0f };
   }
 
-  if (!m_context->huntTarget(action.targetPlayer)) {
+  const Vec3 rememberedPosition {
+    observation.bot.origin.x + observation.combat.lastEnemyRelativeOrigin.x,
+    observation.bot.origin.y + observation.combat.lastEnemyRelativeOrigin.y,
+    observation.bot.origin.z + observation.combat.lastEnemyRelativeOrigin.z,
+  };
+
+  if (!m_context->huntTarget(action.targetPlayer, rememberedPosition)) {
     if (!m_directHuntTargetActive) {
       return { action.type, ActionResultType::Rejected, 0.0f };
     }

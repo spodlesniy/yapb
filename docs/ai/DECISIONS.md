@@ -1304,3 +1304,15 @@ The interaction radius, C4 acquisition rules, active-defuse handoff, enemy prior
 
 Reason: schema-v6 gameplay validation captured a Counter-Terrorist repeatedly entering `PickupItem` about 89–90 units from an elevated planted C4, becoming stuck while pushing directly into a low border even though a nearby waypoint route existed.
 The old pickup task overwrote `m_destOrigin` with the C4 entity every frame and never called graph navigation, so acquiring the objective discarded the jump-capable route that had brought the bot to the bombsite.
+
+## D137 — Hunt the remembered enemy position instead of the live entity position
+
+Semantic `HuntTarget` now passes the remembered enemy position from the current observation into the execution context.
+The executor reconstructs the absolute hunt point from `bot.origin + combat.lastEnemyRelativeOrigin`, and the YaPB context freezes that point when a hunt lifecycle starts.
+The retained player entity is still used to validate target identity, team, and liveness, but its live `v.origin` no longer chooses the hunt destination.
+
+The public action remains `TargetType::Player` and inference action schema v2 is unchanged.
+Bomb-objective preemption, hunt completion, cancellation, and the existing legacy `Task::Hunt` cleanup are unchanged.
+
+Reason: gameplay validation showed two Counter-Terrorists spending about 35 seconds in remembered-enemy hunts before a bomb plant interrupted them.
+Inspection found that `YaPBActionExecutionContext::huntTarget()` initialized `m_huntTargetOrigin` from `target->v.origin`, so a retained pointer to a hidden player could reveal that player's current position at semantic-hunt start instead of using YaPB's legitimately remembered `m_lastEnemyOrigin`.

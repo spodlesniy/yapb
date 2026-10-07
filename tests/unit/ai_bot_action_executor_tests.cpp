@@ -79,6 +79,7 @@ public:
   int lastAttackTarget { -1 };
   int lastAimTarget { -1 };
   int lastHuntTarget { -1 };
+  ai::Vec3 lastHuntPosition {};
   bool followPlayerAvailable { true };
   bool huntTargetReached {};
   bool seekCoverReached {};
@@ -173,9 +174,10 @@ public:
   bool throwSmoke(const ai::Vec3 &position) override { ++throwSmokeCalls; lastThrowSmokeTarget = position; return true; }
   void cancelThrowSmoke() override { ++cancelThrowSmokeCalls; }
 
-  bool huntTarget(int targetPlayer) override {
+  bool huntTarget(int targetPlayer, const ai::Vec3 &position) override {
     ++huntTargetCalls;
     lastHuntTarget = targetPlayer;
+    lastHuntPosition = position;
     return true;
   }
 
@@ -759,7 +761,9 @@ AI_TEST(testBotActionExecutorCompletesAttackWhenTargetChanges) {
 
 ai::Observation huntObservation(int targetPlayer) {
   auto observation = aliveObservation();
+  observation.bot.origin = { 100.0f, 200.0f, 300.0f };
   observation.combat.lastEnemyEntity = targetPlayer;
+  observation.combat.lastEnemyRelativeOrigin = { 25.0f, -50.0f, 10.0f };
   observation.playerCount = 1;
   observation.players[0].entityIndex = targetPlayer;
   observation.players[0].valid = true;
@@ -780,6 +784,9 @@ AI_TEST(testBotActionExecutorAcceptsTeacherLastEnemyHunt) {
   expect(executor.execute(action, observation).type == ai::ActionResultType::Accepted,
          "executor accepts the teacher's remembered-enemy target without a current enemy");
   expect(context.huntTargetCalls == 1 && context.lastHuntTarget == 9, "last enemy is delegated to hunt execution");
+  expect(context.lastHuntPosition.x == 125.0f && context.lastHuntPosition.y == 150.0f
+             && context.lastHuntPosition.z == 310.0f,
+         "hunt execution receives the remembered enemy position from observation");
 }
 
 AI_TEST(testBotActionExecutorDirectlyExecutesHuntTarget) {
@@ -796,6 +803,9 @@ AI_TEST(testBotActionExecutorDirectlyExecutesHuntTarget) {
   expect(result.type == ai::ActionResultType::Accepted, "remembered enemy hunt is accepted");
   expect(context.huntTargetCalls == 1, "hunt target is delegated");
   expect(context.lastHuntTarget == 9, "hunt target is preserved");
+  expect(context.lastHuntPosition.x == 125.0f && context.lastHuntPosition.y == 150.0f
+             && context.lastHuntPosition.z == 310.0f,
+         "hunt uses remembered coordinates instead of a live player position");
   expect(!executor.suppressesLegacyTaskExecution(), "hunt keeps legacy task execution enabled");
 }
 
