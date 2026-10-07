@@ -1476,3 +1476,13 @@ The memory is preserved if the same target has newer visual evidence or a newer 
 Reason: the schema-v7 capture `2026_10_07__18_26_56__ai_training.jsonl` shows episode 197 reopening target 10 after an 8.018 s stalled `HuntTarget`, followed by a long sequence of short repeated hunts.
 D140 bounds one semantic lifecycle, but `Bot::filterTasks()` can immediately recreate legacy `Task::Hunt` while the same remembered contact remains actionable.
 Legacy `Bot::huntEnemy_()` already clears `m_lastEnemyOrigin` after reaching the remembered position, so semantic reach/stall now uses the same consume-on-exhaustion boundary without discarding evidence that arrived after the hunt began.
+
+## D150 — Visible enemies preempt bomb planting
+
+An active semantic `PlantBomb` is interrupted as soon as the observation contains a confirmed visible enemy.
+A new `PlantBomb` request is rejected while that visible enemy remains present, so the action executor cannot immediately recreate the legacy planting task before combat gets a new policy decision.
+
+Reason: schema-v7 episode 198 recorded one `PlantBomb` lifecycle lasting 11.078 s even though a normal uninterrupted plant is much shorter.
+The legacy `plantBomb_()` task already completes when `m_enemy` is alive, but the semantic action pipeline keeps executing the same active action until it receives a terminal result.
+Without explicit visible-enemy preemption, `YaPBActionExecutionContext::plantBomb()` can see the resumed `Normal` task on the next semantic step and start `Task::PlantBomb` again, effectively hiding the combat interruption inside one long semantic plant lifecycle.
+D150 makes that interruption terminal and returns control to the policy so `AttackTarget` can re-enter on the next decision.

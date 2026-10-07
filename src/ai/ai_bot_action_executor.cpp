@@ -18,8 +18,8 @@ bool isFinitePosition(const Vec3 &position) {
   return std::isfinite(position.x) && std::isfinite(position.y) && std::isfinite(position.z);
 }
 
-bool hasObservedEnemyTarget(const Action &action, const Observation &observation) {
-  if (action.targetType != TargetType::Player || observation.combat.enemyEntity != action.targetPlayer
+bool hasObservedVisibleEnemy(const Observation &observation) {
+  if (observation.combat.enemyEntity < 0
       || !(observation.combat.perceptionFlags & static_cast<uint32_t>(PerceptionFlag::SeeingEnemy))) {
     return false;
   }
@@ -27,11 +27,18 @@ bool hasObservedEnemyTarget(const Action &action, const Observation &observation
   const auto count = observation.playerCount > kMaxObservedPlayers ? kMaxObservedPlayers : observation.playerCount;
   for (size_t i = 0; i < count; ++i) {
     const auto &player = observation.players[i];
-    if (player.valid && player.alive && player.enemy && player.visible && player.entityIndex == action.targetPlayer) {
+    if (player.valid && player.alive && player.enemy && player.visible
+        && player.entityIndex == observation.combat.enemyEntity) {
       return true;
     }
   }
   return false;
+}
+
+bool hasObservedEnemyTarget(const Action &action, const Observation &observation) {
+  return action.targetType == TargetType::Player
+      && observation.combat.enemyEntity == action.targetPlayer
+      && hasObservedVisibleEnemy(observation);
 }
 
 
@@ -760,6 +767,15 @@ ActionResult BotActionExecutor::executePlantBomb(const Action &action, const Obs
 
     cancel();
     return { action.type, bombPlanted ? ActionResultType::Completed : ActionResultType::Interrupted, 0.0f };
+  }
+
+  if (hasObservedVisibleEnemy(observation)) {
+    if (!m_directPlantBombActive) {
+      return { action.type, ActionResultType::Rejected, 0.0f };
+    }
+
+    cancel();
+    return { action.type, ActionResultType::Interrupted, 0.0f };
   }
 
   if (!m_context->plantBomb()) {

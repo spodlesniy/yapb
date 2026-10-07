@@ -1434,6 +1434,55 @@ AI_TEST(testBotActionExecutorCompletesPlantBombWhenBombIsPlanted) {
   expect(context.cancelPlantBombCalls == 1, "completion releases direct plant bomb");
 }
 
+AI_TEST(testBotActionExecutorInterruptsPlantBombForVisibleEnemy) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  auto observation = aliveObservation();
+  observation.bot.objectiveFlags = ai::ObjectiveFlag::BombCarrier | ai::ObjectiveFlag::InBombZone;
+
+  auto plant = ai::Action {};
+  plant.type = ai::ActionType::PlantBomb;
+
+  auto result = executor.execute(plant, observation);
+  expect(result.type == ai::ActionResultType::Accepted, "plant starts before an enemy is visible");
+  expect(context.plantBombCalls == 1, "initial plant is delegated once");
+
+  observation = attackObservation(9);
+  observation.bot.objectiveFlags = ai::ObjectiveFlag::BombCarrier | ai::ObjectiveFlag::InBombZone;
+  result = executor.execute(plant, observation);
+
+  expect(result.type == ai::ActionResultType::Interrupted, "visible enemy interrupts the active plant");
+  expect(context.plantBombCalls == 1, "visible-enemy preemption does not restart the legacy plant task");
+  expect(context.cancelPlantBombCalls == 1, "visible-enemy preemption releases plant ownership");
+
+  ai::Action attack {};
+  attack.type = ai::ActionType::AttackTarget;
+  attack.targetType = ai::TargetType::Player;
+  attack.targetPlayer = 9;
+
+  result = executor.execute(attack, observation);
+  expect(result.type == ai::ActionResultType::Accepted, "combat can re-enter after plant interruption");
+  expect(context.attackTargetCalls == 1, "visible enemy is delegated to combat after plant interruption");
+}
+
+AI_TEST(testBotActionExecutorRejectsPlantBombForVisibleEnemy) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  auto observation = attackObservation(9);
+  observation.bot.objectiveFlags = ai::ObjectiveFlag::BombCarrier | ai::ObjectiveFlag::InBombZone;
+
+  ai::Action action {};
+  action.type = ai::ActionType::PlantBomb;
+
+  const auto result = executor.execute(action, observation);
+
+  expect(result.type == ai::ActionResultType::Rejected, "new plant is rejected while a visible enemy is present");
+  expect(context.plantBombCalls == 0, "rejected visible-enemy plant never restarts the legacy plant task");
+  expect(context.cancelPlantBombCalls == 0, "rejected visible-enemy plant never acquires ownership");
+}
+
 AI_TEST(testBotActionExecutorInterruptsPlantBombWhenC4IsLost) {
   MockActionExecutionContext context {};
   ai::BotActionExecutor executor(context);
