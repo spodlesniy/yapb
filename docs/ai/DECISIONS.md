@@ -1241,3 +1241,14 @@ The hold phase after reaching the escape destination remains unchanged.
 
 Reason: gameplay validation showed CTs correctly deciding that a defuse was no longer possible, running only far enough to leave the blast radius, and then standing still in exposed open ground until the explosion.
 The previous selection logic treated every graph node outside the safe radius as equally suitable and only started `Task::Camp` after arrival, so the final waiting location did not have to be an actual camping/cover waypoint.
+
+## D132 — Stop semantic combat movement from pushing directly into walls
+
+The YaPB execution boundary for semantic `AttackTarget` now checks the requested forward combat movement against nearby blocking geometry after the normal attack movement calculation.
+When forward movement is blocked, the executor removes the forward component and preserves or selects an unblocked lateral strafe direction.
+
+Aim, firing, target ownership, and normal graph navigation are unchanged.
+
+Reason: gameplay validation reproduced the recurring wall-stuck location without an active bomb objective.
+The Terrorist was in `AttackTarget` with a currently visible enemy while the Counter-Terrorist was on the opposite side of the wall.
+YaPB deliberately disables its generic stuck/collision recovery for `Task::Attack`, and the semantic attack execution also uses `ignoreCollision()`, allowing direct combat movement to keep pressing into blocking geometry as long as the enemy remained visible through the local geometry.

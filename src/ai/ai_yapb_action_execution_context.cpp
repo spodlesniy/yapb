@@ -123,6 +123,35 @@ bool YaPBActionExecutionContext::attackTarget(int targetPlayer) {
   m_bot->ignoreCollision();
   m_bot->focusEnemy();
   m_bot->attackMovement(false);
+
+  if (m_bot->m_moveSpeed > 20.0f) {
+    const auto directMove = (target->v.origin - m_bot->pev->origin).normalize2d_apx();
+    TraceResult tr {};
+
+    if (m_bot->isBlockedForward(directMove, &tr)) {
+      m_bot->m_moveSpeed = 0.0f;
+
+      const bool wallOnLeft = m_bot->checkWallOnLeft(96.0f);
+      const bool wallOnRight = m_bot->checkWallOnRight(96.0f);
+
+      if (m_bot->m_strafeSpeed < 0.0f && wallOnLeft) {
+        m_bot->m_strafeSpeed = 0.0f;
+      }
+      else if (m_bot->m_strafeSpeed > 0.0f && wallOnRight) {
+        m_bot->m_strafeSpeed = 0.0f;
+      }
+
+      if (cr::fzero(m_bot->m_strafeSpeed)) {
+        if (!wallOnLeft) {
+          m_bot->m_strafeSpeed = -m_bot->pev->maxspeed;
+        }
+        else if (!wallOnRight) {
+          m_bot->m_strafeSpeed = m_bot->pev->maxspeed;
+        }
+      }
+    }
+  }
+
   return true;
 }
 
