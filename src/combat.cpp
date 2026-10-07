@@ -2352,6 +2352,21 @@ void Bot::checkGrenadesThrow () {
       return;
    }
 
+   const bool liveEnemyStateAvailable = ai::canUseLiveEnemyState (
+      (m_states & Sense::SeeingEnemy) != 0,
+      (m_states & Sense::SuspectEnemy) != 0,
+      m_enemy == m_lastEnemy && game.isAliveEntity (m_enemy));
+
+   const bool heardTargetMatches =
+      m_lastHeardEnemy == m_lastEnemy && game.isAliveEntity (m_lastHeardEnemy);
+
+   if (!isGrenadeMode && !ai::hasFreshGrenadeTarget (
+      liveEnemyStateAvailable, heardTargetMatches, game.time (), m_seeEnemyTime, m_heardSoundTime)) {
+
+      clearThrowStates (m_states);
+      return;
+   }
+
    // check if we have grenades to throw
    const auto grenadeToThrow = bestGrenadeCarried ();
 
@@ -2376,11 +2391,6 @@ void Bot::checkGrenadesThrow () {
          return;
       }
    }
-   const bool liveEnemyStateAvailable = ai::canUseLiveEnemyState (
-      (m_states & Sense::SeeingEnemy) != 0,
-      (m_states & Sense::SuspectEnemy) != 0,
-      m_enemy == m_lastEnemy && game.isAliveEntity (m_enemy));
-
    Vector grenadeTargetOrigin = m_lastEnemyOrigin;
    Vector grenadeTargetVelocity {};
 

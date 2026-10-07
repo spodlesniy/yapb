@@ -278,3 +278,19 @@ AI_TEST(testHeardEnemyReplacementUsesSoundEventDistance) {
   expect(!ai::shouldReplaceRememberedEnemyWithHeard(900.0f, 400.0f, true),
          "recent visual contact keeps ownership over a heard event");
 }
+
+AI_TEST(testGrenadeTargetRequiresFreshMatchingPerception) {
+  expect(ai::hasFreshGrenadeTarget(true, false, 20.0f, 0.0f, 0.0f),
+         "currently visible enemy passes grenade freshness");
+  expect(ai::hasFreshGrenadeTarget(false, false, 20.0f, 18.0f, 0.0f),
+         "recent visual memory remains fresh for grenade planning");
+  expect(!ai::hasFreshGrenadeTarget(false, false, 22.0f, 18.0f, 0.0f),
+         "old visual memory cannot keep grenade planning alive");
+
+  expect(ai::hasFreshGrenadeTarget(false, true, 20.0f, 0.0f, 18.0f),
+         "recent sound from the remembered enemy is a fresh grenade target");
+  expect(!ai::hasFreshGrenadeTarget(false, false, 20.0f, 0.0f, 19.5f),
+         "sound from another enemy does not refresh the remembered grenade target");
+  expect(!ai::hasFreshGrenadeTarget(false, true, 22.0f, 0.0f, 18.0f),
+         "expired heard target cannot be sustained by sticky hearing state");
+}

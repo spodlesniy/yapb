@@ -1404,3 +1404,18 @@ The reload-to-defuse proximity check inside `defuseBomb_()` is also changed from
 Reason: schema-v7 gameplay validation after D136 captured a CT spending about 13.6 seconds in `PickupItem` near an elevated planted C4 before another CT eventually defused it.
 D136 routed to the waypoint nearest the C4, but once `m_currentNodeIndex == bombNode` it fell back to direct entity movement even if the bot had merely entered a large waypoint radius and was still outside defuse range.
 That allowed the final approach to push into the box or border supporting the C4 instead of completing the graph-supported vertical approach.
+
+## D144 — Require fresh target evidence before legacy grenade planning
+
+Legacy grenade planning now requires fresh sensory support for the remembered target.
+The freshness check accepts current confirmed visibility, visual memory from the previous three seconds, or acoustic memory from the previous three seconds when that sound belongs to the same `m_lastEnemy`.
+A separate `m_lastHeardEnemy` pointer pairs `m_heardSoundTime` with the enemy that actually produced the recent audible event, so hearing a different enemy cannot refresh grenade targeting for an older remembered target.
+The sticky `Sense::HearingEnemy` and `Sense::SuspectEnemy` flags remain available to the rest of legacy behavior but no longer authorize grenade throws by themselves.
+
+The three-second freshness window matches YaPB's existing post-throw grenade cooldown.
+After one grenade is released, another grenade against the same remembered location therefore requires renewed visual or matching acoustic evidence before the next planner opportunity.
+Grenade-war mode remains exempt from the perception freshness gate.
+
+Reason: schema-v7 gameplay validation after D135 and D139 captured a hidden-target sequence where one CT threw two HE grenades, two smokes, and a flash while `SeeingEnemy=false` and no live enemy player slot was marked heard.
+The throw points clustered around an old remembered position near a corpse.
+The remaining cause was not live-position leakage: `Sense::HearingEnemy` persists for up to ten seconds, so the grenade planner could repeatedly consume the inventory long after the specific sound event that created the memory had gone stale.

@@ -369,6 +369,7 @@ private:
    edict_t *m_avoidGrenade {}; // pointer to grenade entity to avoid
    edict_t *m_hindrance {}; // the hindrance
    edict_t *m_hearedEnemy {}; // the heared enemy
+   edict_t *m_lastHeardEnemy {}; // enemy associated with m_heardSoundTime
 
    Vector m_liftTravelPos {}; // lift travel position
    Vector m_moveAngles {}; // bot move angles

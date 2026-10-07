@@ -29,4 +29,19 @@ constexpr bool shouldReplaceRememberedEnemyWithHeard(float rememberedDistanceSq,
   return !recentlySeen && heardDistanceSq < rememberedDistanceSq;
 }
 
+constexpr float kGrenadeTargetFreshness = 3.0f;
+
+// Grenades may use remembered enemy state only while that exact target still has
+// fresh sensory support. Sticky global perception flags alone are insufficient.
+constexpr bool hasFreshGrenadeTarget(bool visibleTarget, bool heardTargetMatches,
+                                     float now, float lastSeenTime, float lastHeardTime) {
+  const bool recentlySeen = lastSeenTime > 0.0f
+      && lastSeenTime + kGrenadeTargetFreshness > now;
+  const bool recentlyHeard = heardTargetMatches
+      && lastHeardTime > 0.0f
+      && lastHeardTime + kGrenadeTargetFreshness > now;
+
+  return visibleTarget || recentlySeen || recentlyHeard;
+}
+
 } // namespace ai

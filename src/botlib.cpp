@@ -4306,6 +4306,7 @@ void Bot::updateHearing () {
          selectBestWeapon ();
       }
 
+      m_lastHeardEnemy = m_hearedEnemy;
       m_heardSoundTime = game.time ();
       m_states |= Sense::HearingEnemy;
 
