@@ -687,3 +687,12 @@ AI_TEST(testBombSearchGoalSelectionUsesVisitedStateAndOwnDistance) {
   expect(ai::isBetterBombSearchGoal(700.0f, 5, 700.0f, 10),
          "equal-distance bombsites use node index as deterministic tie-break");
 }
+
+AI_TEST(testBombCarrierBlocksSidePickupsWhileObjectiveIsEnabled) {
+  expect(ai::blocksBombCarrierSidePickups(true, true),
+         "active C4 carrier does not divert to optional pickups");
+  expect(!ai::blocksBombCarrierSidePickups(false, true),
+         "ordinary Terrorist remains eligible for pickups");
+  expect(!ai::blocksBombCarrierSidePickups(true, false),
+         "ignored objectives do not impose bomb-carrier pickup ownership");
+}

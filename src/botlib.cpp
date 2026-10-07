@@ -10,6 +10,7 @@
 #include <ai/ai_bot_adapter.h>
 #include <ai/ai_inference_model_service.h>
 #include <ai/ai_navigation_task_guard.h>
+#include <ai/ai_objective_navigation_guard.h>
 #include <ai/ai_perception_guard.h>
 
 ConVar cv_debug ("debug", "0", "Enables or disables useful messages about bot states. Not required for end users.", true, 0.0f, 4.0f);
@@ -365,8 +366,8 @@ void Bot::updatePickups () {
          return true;
       }
 
-      // bomb carrier already reached a plant zone, don't divert to side pickups
-      else if (m_hasC4 && m_inBombZone) {
+      // bomb carrier should keep ownership of the planting objective on the way to the site
+      else if (ai::blocksBombCarrierSidePickups (m_hasC4, !cv_ignore_objectives)) {
          return true;
       }
 

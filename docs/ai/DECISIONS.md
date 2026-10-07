@@ -1374,3 +1374,16 @@ A demolition graph without goal nodes falls back to a random graph node instead 
 Reason: schema-v7 gameplay validation showed a CT leaving the bombsite that was closer to him and running toward the other site immediately after plant, even though neither surviving CT had legitimate information identifying that site.
 Inspection found that D124's deterministic pre-audibility search ranked every goal by `bomb.distanceSq(graph[point].origin)`, so the search algorithm used the actual C4 origin before hearing or acquiring it.
 D141 preserves deterministic coordinated search while removing that hidden objective knowledge.
+
+## D142 — Keep C4 carriers out of optional pickup detours
+
+A bot carrying C4 now blocks the normal item-pickup scanner for the entire active demolition objective, not only after entering a bomb zone.
+This prevents weapon, ammo, armor, grenade, shield, custom-item, and other side pickups from replacing the carrier's route to a bombsite.
+If an optional pickup was already selected when the bot acquired C4, the normal blocked-pickup cleanup clears that target on the next pickup update.
+
+The gate applies only while objectives are enabled.
+When `cv_ignore_objectives` is active, carrying C4 does not suppress ordinary pickup behavior.
+Dropped-C4 recovery for bots that do not yet carry the bomb and planted-C4 handling remain unchanged.
+
+Reason: schema-v7 gameplay validation showed a 14-HP bomb carrier repeatedly entering `PickupItem` while still carrying C4, including late-round weapon changes before finally reaching a bombsite and planting.
+The previous guard blocked pickups only for `m_hasC4 && m_inBombZone`, leaving the entire approach route open to optional item detours.
