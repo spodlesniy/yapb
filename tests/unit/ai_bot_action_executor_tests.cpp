@@ -1674,6 +1674,108 @@ AI_TEST(testBotActionExecutorDirectlyExecutesDefuseBomb) {
   expect(!executor.suppressesLegacyTaskExecution(), "defuse bomb keeps legacy task execution enabled");
 }
 
+AI_TEST(testBotActionExecutorInterruptsActiveDefuseForVisibleEnemyWithTimeToFight) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  auto observation = aliveObservation();
+  observation.bot.objectiveFlags = ai::ObjectiveFlag::BombPlanted;
+  observation.bot.hasDefuser = true;
+  observation.bombTimeRemaining = 19.2f;
+
+  ai::Action action {};
+  action.type = ai::ActionType::DefuseBomb;
+
+  auto result = executor.execute(action, observation);
+  expect(result.type == ai::ActionResultType::Accepted, "defuse starts before the enemy is visible");
+  expect(context.defuseBombCalls == 1, "initial defuse is delegated once");
+
+  observation = attackObservation(10);
+  observation.bot.objectiveFlags = ai::ObjectiveFlag::BombPlanted;
+  observation.bot.hasDefuser = true;
+  observation.bombTimeRemaining = 15.76f;
+
+  result = executor.execute(action, observation);
+
+  expect(result.type == ai::ActionResultType::Interrupted,
+         "visible enemy interrupts active defuse while enough bomb time remains");
+  expect(context.defuseBombCalls == 1,
+         "combat preemption happens before the legacy defuse task can continue");
+  expect(context.cancelDefuseBombCalls == 1,
+         "combat preemption releases direct defuse ownership");
+
+  ai::Action attack {};
+  attack.type = ai::ActionType::AttackTarget;
+  attack.targetType = ai::TargetType::Player;
+  attack.targetPlayer = 10;
+
+  result = executor.execute(attack, observation);
+  expect(result.type == ai::ActionResultType::Accepted,
+         "combat can re-enter immediately after defuse interruption");
+  expect(context.attackTargetCalls == 1,
+         "visible enemy is delegated to combat after defuse interruption");
+}
+
+AI_TEST(testBotActionExecutorKeepsUrgentKitDefuseUnderVisibleEnemy) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  auto observation = aliveObservation();
+  observation.bot.objectiveFlags = ai::ObjectiveFlag::BombPlanted;
+  observation.bot.hasDefuser = true;
+  observation.bombTimeRemaining = 12.0f;
+
+  ai::Action action {};
+  action.type = ai::ActionType::DefuseBomb;
+
+  auto result = executor.execute(action, observation);
+  expect(result.type == ai::ActionResultType::Accepted, "kit defuse starts before urgent combat contact");
+
+  observation = attackObservation(10);
+  observation.bot.objectiveFlags = ai::ObjectiveFlag::BombPlanted;
+  observation.bot.hasDefuser = true;
+  observation.bombTimeRemaining = 8.5f;
+
+  result = executor.execute(action, observation);
+
+  expect(result.type == ai::ActionResultType::Accepted,
+         "kit defuse remains active inside the nine-second safety window");
+  expect(context.defuseBombCalls == 2,
+         "urgent kit defuse continues through the legacy task");
+  expect(context.cancelDefuseBombCalls == 0,
+         "urgent kit defuse is not canceled for visible combat");
+}
+
+AI_TEST(testBotActionExecutorKeepsUrgentNoKitDefuseUnderVisibleEnemy) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  auto observation = aliveObservation();
+  observation.bot.objectiveFlags = ai::ObjectiveFlag::BombPlanted;
+  observation.bot.hasDefuser = false;
+  observation.bombTimeRemaining = 18.0f;
+
+  ai::Action action {};
+  action.type = ai::ActionType::DefuseBomb;
+
+  auto result = executor.execute(action, observation);
+  expect(result.type == ai::ActionResultType::Accepted, "no-kit defuse starts before urgent combat contact");
+
+  observation = attackObservation(10);
+  observation.bot.objectiveFlags = ai::ObjectiveFlag::BombPlanted;
+  observation.bot.hasDefuser = false;
+  observation.bombTimeRemaining = 13.5f;
+
+  result = executor.execute(action, observation);
+
+  expect(result.type == ai::ActionResultType::Accepted,
+         "no-kit defuse remains active inside the fourteen-second safety window");
+  expect(context.defuseBombCalls == 2,
+         "urgent no-kit defuse continues through the legacy task");
+  expect(context.cancelDefuseBombCalls == 0,
+         "urgent no-kit defuse is not canceled for visible combat");
+}
+
 AI_TEST(testBotActionExecutorCompletesDefuseBombWhenBombIsGone) {
   MockActionExecutionContext context {};
   ai::BotActionExecutor executor(context);

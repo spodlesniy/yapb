@@ -1523,3 +1523,17 @@ The actual defensive position still comes from `findDefendNode()`, so D146's aut
 Reason: the previous trigger made objective defense a low-health random special case.
 A healthy CT could ignore the dropped bomb completely, while multiple CTs could independently roll into the same behavior because `m_defendedBomb` was only per-bot state.
 D153 makes the role objective-driven and coordinated without forcing the whole CT team to camp.
+
+## D154 — Visible enemies preempt non-urgent active defuses
+
+An already active semantic `DefuseBomb` is interrupted when a confirmed visible enemy appears and the bomb timer still leaves more than the full defuse duration plus the existing two-second legacy safety margin.
+With a defuse kit this means combat preempts while more than 9 seconds remain; without a kit the threshold is 14 seconds.
+Inside those safety windows the bot keeps defusing under pressure instead of giving up an objective that may no longer be recoverable.
+
+This preemption applies only after semantic defuse ownership has already been acquired.
+Starting a new defuse still delegates to legacy `defuseBomb_()`, preserving its existing pre-progress-bar checks for visible enemies, nearby friends, and forced-defuse urgency.
+
+Reason: schema-v7 episode 197 starts `DefuseBomb` with no visible enemy, a defuse kit, and about 19.20 seconds left on the bomb.
+After 3.44 seconds the lifecycle ends with a visible enemy, health reduced from 48 to 19, and about 15.76 seconds still remaining.
+Legacy `defuseBomb_()` checks `SeeingEnemy` only while `m_hasProgressBar` is false, so once the progress bar starts an enemy can arrive while the bot continues holding use despite ample time to fight first.
+D154 moves that active-lifecycle combat preemption into the semantic executor, where it can terminate the action immediately and return control to policy for `AttackTarget`.

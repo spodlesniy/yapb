@@ -9,6 +9,7 @@
 #include <cmath>
 
 #include <ai/ai_action_execution_context.h>
+#include <ai/ai_bomb_defense_guard.h>
 #include <ai/ai_bot_action_executor.h>
 
 namespace ai {
@@ -793,6 +794,16 @@ ActionResult BotActionExecutor::executePlantBomb(const Action &action, const Obs
 
 ActionResult BotActionExecutor::executeDefuseBomb(const Action &action, const Observation &observation) {
   const bool bombPlanted = observation.bot.objectiveFlags & ObjectiveFlag::BombPlanted;
+
+  if (m_directDefuseBombActive
+      && shouldPreemptActiveDefuseForVisibleEnemy(
+          hasObservedVisibleEnemy(observation),
+          observation.bot.hasDefuser,
+          observation.bombTimeRemaining)) {
+
+    cancel();
+    return { action.type, ActionResultType::Interrupted, 0.0f };
+  }
 
   if (!bombPlanted) {
     if (!m_directDefuseBombActive) {
