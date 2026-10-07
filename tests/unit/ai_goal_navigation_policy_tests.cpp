@@ -543,6 +543,18 @@ AI_TEST(testGoalNavigationPolicyKeepsSeekCoverWithoutVisibleEnemy) {
   expect(action.type == ai::ActionType::SeekCover, "seek cover without a visible enemy remains generic cover intent");
 }
 
+AI_TEST(testGoalNavigationPolicyYieldsBlindTaskToLegacyExecution) {
+  auto observation = makeObservation();
+  observation.bot.currentTask = ai::TaskType::Blind;
+  observation.bot.currentGoalNode = 20;
+  observation.bot.currentNode = 10;
+
+  const auto action = ai::GoalNavigationPolicy {}.decide(observation);
+
+  expect(action.type == ai::ActionType::None,
+         "blind task yields instead of starting generic navigation that cannot own the legacy task");
+}
+
 AI_TEST(testGoalNavigationPolicyMapsTaskActions) {
   auto observation = makeObservation();
   ai::GoalNavigationPolicy policy {};
@@ -601,7 +613,7 @@ AI_TEST(testGoalNavigationPolicyDefinesOutcomeForEveryTaskType) {
     ai::ActionType::EscapeFromBomb,
     ai::ActionType::Fire,
     ai::ActionType::Hide,
-    ai::ActionType::MoveToNode,
+    ai::ActionType::None,
     ai::ActionType::MoveToNode,
   };
 

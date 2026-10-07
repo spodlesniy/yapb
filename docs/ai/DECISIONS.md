@@ -1537,3 +1537,16 @@ Reason: schema-v7 episode 197 starts `DefuseBomb` with no visible enemy, a defus
 After 3.44 seconds the lifecycle ends with a visible enemy, health reduced from 48 to 19, and about 15.76 seconds still remaining.
 Legacy `defuseBomb_()` checks `SeeingEnemy` only while `m_hasProgressBar` is false, so once the progress bar starts an enemy can arrive while the bot continues holding use despite ample time to fight first.
 D154 moves that active-lifecycle combat preemption into the semantic executor, where it can terminate the action immediately and return control to policy for `AttackTarget`.
+
+## D155 — Yield semantic navigation while the legacy Blind task owns the bot
+
+`GoalNavigationPolicy` no longer falls through from `TaskType::Blind` to `makeGoalNavigationAction()`.
+While the legacy blind task is active, the teacher returns `ActionType::None`, leaving movement, cover, uncertain late-flash fire, and task completion to `blind_()`.
+
+Reason: schema-v7 episode 177 records five consecutive `MoveToNode` actions with zero elapsed time and `Interrupted` results while the observed task remains `Blind`.
+The policy previously grouped `Blind` with generic fallback tasks, so every decision produced a goal-navigation action.
+Generic navigation ownership intentionally accepts only `Normal` or `MoveToPosition`; therefore the executor immediately revoked each of those blind-time actions and the next decision recreated another one.
+That loop adds terminal churn to training data without controlling the bot.
+
+D155 changes only the confirmed Blind mismatch.
+The existing fallback behavior for `Unknown`, `DoubleJump`, and `Spraypaint` is unchanged until separate evidence justifies changing those task mappings.

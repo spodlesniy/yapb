@@ -349,9 +349,11 @@ Action GoalNavigationPolicy::decide(const Observation &observation) const {
     return action;
   }
 
+  case TaskType::Blind:
+    return {};
+
   case TaskType::Unknown:
   case TaskType::DoubleJump:
-  case TaskType::Blind:
   case TaskType::Spraypaint:
     break;
   }
