@@ -9,6 +9,7 @@
 #include "ai_test.h"
 
 #include <ai/ai_observation_builder.h>
+#include <ai/ai_perception_guard.h>
 #include <ai/ai_observation_state.h>
 
 #include <cmath>
@@ -211,4 +212,15 @@ AI_TEST(testObservationState) {
   state.markUpdated();
   expect(state.isValid(), "observation state can become valid again");
   expect(state.sequence() == 3, "observation sequence resumes after invalidation");
+}
+
+AI_TEST(testLiveEnemyStateRequiresConfirmedVisibility) {
+  expect(ai::canUseLiveEnemyState(true, false, true),
+         "confirmed visible current enemy may expose live entity state");
+  expect(!ai::canUseLiveEnemyState(false, false, true),
+         "hidden remembered enemy cannot expose live entity state");
+  expect(!ai::canUseLiveEnemyState(true, true, true),
+         "suspected enemy cannot expose live entity state");
+  expect(!ai::canUseLiveEnemyState(true, false, false),
+         "a different visible enemy cannot expose the remembered target's live state");
 }

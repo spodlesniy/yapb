@@ -1280,3 +1280,13 @@ The existing Terrorist dropped-C4 ownership gate remains unchanged.
 Reason: schema-v6 gameplay validation captured the last surviving Counter-Terrorist spending about 28.45 seconds in `MoveToPosition` after the bomb was planted before the late-timer escape correctly took over.
 The observation exposes `m_destOrigin` as the generic movement destination, but YaPB updates `m_destOrigin` to the current path waypoint.
 Re-wrapping an objective-owned legacy move could therefore promote an intermediate waypoint to the semantic action target and overwrite the original `MoveToPosition` destination instead of preserving the planted-C4 search lifecycle.
+
+## D135 — Keep grenade prediction on legitimately perceived enemy state
+
+Grenade planning now reads the live enemy entity position, velocity, ground state, and facing only when the remembered enemy is also the current confirmed visible enemy.
+A suspected or otherwise hidden remembered enemy keeps using `m_lastEnemyOrigin` with no live velocity prediction.
+HE friendly-fire checks, HE waypoint prediction, flash waypoint selection, height validation, and smoke prediction all follow the same perception boundary.
+
+Reason: a schema-v6 gameplay capture showed two Counter-Terrorists throwing HE grenades into the same hidden Terrorist position while both observations reported `SeeingEnemy=false` and the target player slot was neither visible nor heard.
+Their throw target was within about 49 horizontal units of the Terrorist's actual current position.
+The legacy grenade planner accepted `HearingEnemy` or `SuspectEnemy`, but then read `m_lastEnemy->v.origin` and `m_lastEnemy->v.velocity` directly, allowing a retained entity pointer to reveal current movement behind geometry.

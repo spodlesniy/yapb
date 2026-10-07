@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: MIT
 //
 
+#include <ai/ai_perception_guard.h>
 #include <yapb.h>
 
 ConVar cv_shoots_thru_walls ("shoots_thru_walls", "2", "Specifies whether bots are able to fire at enemies behind the wall, if they hear or suspect them.", true, 0.0f, 3.0f);
@@ -2375,23 +2376,39 @@ void Bot::checkGrenadesThrow () {
          return;
       }
    }
-   float distanceSq = m_lastEnemyOrigin.distanceSq2d (pev->origin);
+   const bool liveEnemyStateAvailable = ai::canUseLiveEnemyState (
+      (m_states & Sense::SeeingEnemy) != 0,
+      (m_states & Sense::SuspectEnemy) != 0,
+      m_enemy == m_lastEnemy && game.isAliveEntity (m_enemy));
 
-   // don't throw grenades at anything that isn't on the ground!
-   if (!(m_lastEnemy->v.flags & (FL_ONGROUND | FL_PARTIALGROUND)) && !m_lastEnemy->v.waterlevel && m_lastEnemyOrigin.z > pev->absmax.z) {
+   Vector grenadeTargetOrigin = m_lastEnemyOrigin;
+   Vector grenadeTargetVelocity {};
+
+   if (liveEnemyStateAvailable) {
+      grenadeTargetOrigin = m_lastEnemy->v.origin;
+      grenadeTargetVelocity = m_lastEnemy->v.velocity.get2d ();
+   }
+
+   float distanceSq = grenadeTargetOrigin.distanceSq2d (pev->origin);
+
+   // only a confirmed visible enemy exposes current ground state
+   if (liveEnemyStateAvailable
+      && !(m_lastEnemy->v.flags & (FL_ONGROUND | FL_PARTIALGROUND))
+      && !m_lastEnemy->v.waterlevel
+      && grenadeTargetOrigin.z > pev->absmax.z) {
+
       distanceSq = kInfiniteDistance;
    }
 
-   // too high to throw?
-   if (m_lastEnemy->v.origin.z > pev->origin.z + 500.0f) {
+   // reject targets that are known to be too high from either live or remembered state
+   if (grenadeTargetOrigin.z > pev->origin.z + 500.0f) {
       distanceSq = kInfiniteDistance;
    }
 
    // special condition if we're have valid current enemy
-   if (!isGrenadeMode && ((m_states & Sense::SeeingEnemy)
-      && game.isAliveEntity (m_enemy)
+   if (!isGrenadeMode && liveEnemyStateAvailable
       && ((m_enemy->v.button | m_enemy->v.oldbuttons) & IN_ATTACK)
-      && util.isVisible (pev->origin, m_enemy))
+      && util.isVisible (pev->origin, m_enemy)
       && util.isInViewCone (pev->origin, m_enemy)) {
 
       // do not throw away grenades if anyone is attacking us
@@ -2413,12 +2430,12 @@ void Bot::checkGrenadesThrow () {
       // care about different grenades
       switch (grenadeToThrow) {
       case Weapon::Explosive:
-         if (mp_friendlyfire && numFriendsNear (m_lastEnemy->v.origin, 256.0f) > 0) {
+         if (mp_friendlyfire && numFriendsNear (grenadeTargetOrigin, 256.0f) > 0) {
             allowThrowing = false;
          }
          else {
-            const auto radius = cr::max (192.0f, m_lastEnemy->v.velocity.length2d ());
-            const auto &pos = m_lastEnemy->v.velocity.get2d () + m_lastEnemy->v.origin;
+            const auto radius = cr::max (192.0f, grenadeTargetVelocity.length2d ());
+            const auto pos = grenadeTargetOrigin + grenadeTargetVelocity;
 
             auto predicted = graph.getNearestInRadius (radius, pos, 12);
 
@@ -2462,7 +2479,7 @@ void Bot::checkGrenadesThrow () {
 
       case Weapon::Flashbang:
       {
-         const int nearest = graph.getNearest (m_lastEnemy->v.velocity.get2d () + m_lastEnemy->v.origin);
+         const int nearest = graph.getNearest (grenadeTargetOrigin + grenadeTargetVelocity);
 
          if (nearest != kInvalidNodeIndex) {
             m_throw = graph[nearest].origin;
@@ -2500,7 +2517,7 @@ void Bot::checkGrenadesThrow () {
       }
 
       case Weapon::Smoke:
-         if (allowThrowing && !game.isNullEntity (m_lastEnemy)) {
+         if (allowThrowing && liveEnemyStateAvailable) {
             if (util.getConeDeviation (m_lastEnemy, pev->origin) >= 0.9f) {
                allowThrowing = false;
             }
@@ -2508,8 +2525,8 @@ void Bot::checkGrenadesThrow () {
 
          if (allowThrowing) {
             m_throw = m_lastEnemyOrigin - pev->velocity;
-            if (!game.isNullEntity (m_enemy)) {
-               m_throw += m_enemy->v.velocity;
+            if (liveEnemyStateAvailable) {
+               m_throw += grenadeTargetVelocity;
             }
             m_states |= Sense::ThrowSmoke;
          }
