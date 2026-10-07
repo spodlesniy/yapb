@@ -1432,3 +1432,16 @@ Planting, direct combat, dropped-C4 recovery, and the D142 optional-pickup gate 
 Reason: gameplay validation showed a 14-HP bomb carrier retreating far away from the planting route after a firefight before eventually crossing the map back toward a bombsite.
 The teacher mapped every low-approach visible-enemy `SeekCover` to `Retreat`, and D115 intentionally makes Retreat continue through the subsequent legacy Hide transition.
 That lifecycle is useful for ordinary survival behavior but can monopolize a C4 carrier long after the immediate need to break line of fire has passed.
+
+## D146 — Prefer authored camp waypoints for planted-bomb defense
+
+`findDefendNode()` now searches in two passes when selecting a Terrorist planted-C4 defense position.
+The first pass considers only graph-authored `NodeFlag::Camp` waypoints.
+Those candidates must still satisfy all of the existing defense requirements: they cannot be ladder/current nodes, must be visible to the bomb waypoint, must be within the existing route-distance limit, must be unoccupied, and must have a clear direct trace to the defended bomb position.
+The existing practice-damage scoring and final candidate selection are unchanged.
+
+If no camp waypoint satisfies those constraints, a second pass runs the previous generic-node search so maps without suitable camp annotations keep working.
+The old final near-bomb/random fallbacks are also preserved.
+
+Reason: planted-bomb `ProtectObjective` intentionally transitions to a long `Task::Camp` after reaching its defend node, but the legacy `findDefendNode()` candidate search did not prefer `NodeFlag::Camp` at all.
+That allowed a Terrorist to select an ordinary exposed navigation waypoint and then treat it as a prolonged bomb-defense camp position.

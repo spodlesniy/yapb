@@ -8,6 +8,7 @@
 
 #include "ai_test.h"
 
+#include <ai/ai_bomb_defense_guard.h>
 #include <ai/ai_bomb_search_guard.h>
 #include <ai/ai_goal_navigation_policy.h>
 #include <ai/ai_navigation_task_guard.h>
@@ -737,4 +738,15 @@ AI_TEST(testObjectiveInteractionRangeUsesFullThreeDimensionalDistance) {
          "shorter graph route wins among interaction-safe nodes");
   expect(ai::isBetterObjectiveApproachNode(500.0f, 5, 500.0f, 10),
          "equal route distance uses node index as deterministic tie-break");
+}
+
+AI_TEST(testBombDefensePrefersCampNodesBeforeGenericFallback) {
+  expect(ai::isBombDefenseNodeEligibleForPass(true, true, false),
+         "camp waypoint is eligible during preferred bomb-defense pass");
+  expect(!ai::isBombDefenseNodeEligibleForPass(true, false, false),
+         "ordinary waypoint is excluded while a camp-only pass is active");
+  expect(ai::isBombDefenseNodeEligibleForPass(false, false, false),
+         "ordinary waypoint remains eligible for compatibility fallback");
+  expect(!ai::isBombDefenseNodeEligibleForPass(false, true, true),
+         "ladder waypoint is excluded from both bomb-defense passes");
 }

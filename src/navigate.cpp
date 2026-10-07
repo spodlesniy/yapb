@@ -7,6 +7,7 @@
 
 #include <yapb.h>
 
+#include <ai/ai_bomb_defense_guard.h>
 #include <ai/ai_bomb_search_guard.h>
 
 ConVar cv_has_team_semiclip ("has_team_semiclip", "0", "When enabled, bots will not try to avoid teammates on their way. Assumes that some semiclip plugins are in use.");
@@ -2172,11 +2173,6 @@ int Bot::findDefendNode (const Vector &origin) {
    int nodeIndex[kMaxNodeLinks] {};
    float nearestDistance[kMaxNodeLinks] {};
 
-   for (int i = 0; i < kMaxNodeLinks; ++i) {
-      nodeIndex[i] = kInvalidNodeIndex;
-      nearestDistance[i] = 128.0f;
-   }
-
    const int posIndex = graph.getNearest (origin);
    int srcIndex = m_currentNodeIndex;
 
@@ -2188,38 +2184,58 @@ int Bot::findDefendNode (const Vector &origin) {
       return graph.random ();
    }
 
-   // find the best node now
-   for (const auto &path : graph) {
-      // exclude ladder & current nodes
-      if ((path.flags & NodeFlag::Ladder) || path.number == srcIndex || !vistab.visible (path.number, posIndex)) {
-         continue;
-      }
-
-      // use the 'real' path finding distances
-      auto distance = planner.dist (srcIndex, path.number);
-
-      // skip nodes too far
-      if (distance > kMaxDistance) {
-         continue;
-      }
-
-      // skip occupied points
-      if (isOccupiedNode (path.number)) {
-         continue;
-      }
-      game.testLine (path.origin, graph[posIndex].origin, TraceIgnore::Glass, ent (), &tr);
-
-      // check if line not hit anything
-      if (!cr::fequal (tr.flFraction, 1.0f)) {
-         continue;
-      }
-
+   auto collectCandidates = [&] (bool requireCamp) {
       for (int i = 0; i < kMaxNodeLinks; ++i) {
-         if (distance > nearestDistance[i]) {
-            nodeIndex[i] = path.number;
-            nearestDistance[i] = distance;
+         nodeIndex[i] = kInvalidNodeIndex;
+         nearestDistance[i] = 128.0f;
+      }
+
+      for (const auto &path : graph) {
+         if (!ai::isBombDefenseNodeEligibleForPass (
+            requireCamp, (path.flags & NodeFlag::Camp) != 0, (path.flags & NodeFlag::Ladder) != 0)) {
+            continue;
+         }
+
+         // exclude current nodes and nodes without visibility to the bomb position
+         if (path.number == srcIndex || !vistab.visible (path.number, posIndex)) {
+            continue;
+         }
+
+         // use the 'real' path finding distances
+         auto distance = planner.dist (srcIndex, path.number);
+
+         // skip nodes too far
+         if (distance > kMaxDistance) {
+            continue;
+         }
+
+         // skip occupied points
+         if (isOccupiedNode (path.number)) {
+            continue;
+         }
+         game.testLine (path.origin, graph[posIndex].origin, TraceIgnore::Glass, ent (), &tr);
+
+         // check if line not hit anything
+         if (!cr::fequal (tr.flFraction, 1.0f)) {
+            continue;
+         }
+
+         for (int i = 0; i < kMaxNodeLinks; ++i) {
+            if (distance > nearestDistance[i]) {
+               nodeIndex[i] = path.number;
+               nearestDistance[i] = distance;
+            }
          }
       }
+   };
+
+   // Prefer graph-authored camp positions that already satisfy the legacy
+   // distance, occupancy, visibility and direct line-of-sight requirements.
+   collectCandidates (true);
+
+   // Maps without a usable camp waypoint retain the previous generic-node search.
+   if (nodeIndex[0] == kInvalidNodeIndex) {
+      collectCandidates (false);
    }
 
    // use statistic if we have them
