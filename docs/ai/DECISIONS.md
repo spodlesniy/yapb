@@ -1583,3 +1583,15 @@ The runtime/collector change landed first and passed CI independently.
 The follow-up dataset-contract step increments JSONL format version from 1 to 2 and updates the Python validator/fixtures accordingly.
 Feature schema remains v7 and action schema remains v2; only the meaning of terminal `next_observation` changed.
 Version-1 captures are therefore rejected by the current offline validator so stale pre-terminal next-state samples cannot be silently mixed with corrected captures.
+ 
+## D158 — Keep planted-C4 pickup scanning out of active defuse
+
+Once a Counter-Terrorist has transitioned from planted-C4 `PickupItem` into legacy `Task::DefuseBomb`, `updatePickups()` no longer rescans or reassigns pickup behavior until that defuse task ends.
+The existing planted-C4 entity binding is preserved so `defuseBomb_()` can continue using it directly through `MDLL_Use()` while the progress bar is being acquired.
+If semantic `DefuseBomb` nevertheless loses its legacy defuse task while the bomb is still planted, the executor now reports `Interrupted` rather than `Completed`.
+Actual bomb disappearance remains the only planted-objective completion path.
+
+Reason: the format-v2 capture `2026_10_07__22_46_02__ai_training.jsonl` contains two independent CT lifecycles where `PickupItem` hands off to `DefuseBomb`, but `DefuseBomb` terminates after about 0.595 seconds while `objective.bomb_planted` remains true and the post-terminal task becomes `MoveToPosition`.
+During that pre-progress-bar interval, planted-C4 discovery sees `isBombDefusing(origin)` as true and can enter its teammate-defense branch for the same bot, pushing `Camp` and `MoveToPosition` above the non-resumable defuse task.
+That task-stack transition detaches the CT from the C4 before the progress bar stabilizes and then forces pickup reacquisition.
+D158 prevents the self-preemption at its source and also makes any remaining unexpected ownership loss explicit in training data.

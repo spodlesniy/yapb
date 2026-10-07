@@ -820,7 +820,7 @@ ActionResult BotActionExecutor::executeDefuseBomb(const Action &action, const Ob
     }
 
     cancel();
-    return { action.type, ActionResultType::Completed, 0.0f };
+    return { action.type, ActionResultType::Interrupted, 0.0f };
   }
 
   m_directDefuseBombActive = true;

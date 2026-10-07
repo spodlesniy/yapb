@@ -68,6 +68,13 @@ constexpr bool isBetterDroppedBombDefender(float candidateDistanceSq, int candid
       || (candidateDistanceSq == bestDistanceSq && (bestIndex < 0 || candidateIndex < bestIndex));
 }
 
+// Once planted-C4 pickup has handed control to DefuseBomb, pickup discovery
+// must leave the preserved C4 entity binding alone until defuse ownership ends.
+template <typename TaskType>
+constexpr bool preservesPlantedBombPickupDuringDefuse(TaskType currentTask, TaskType defuseTask) {
+  return currentTask == defuseTask;
+}
+
 // Objective pickup may temporarily enter the navigation pause inserted between
 // graph jump segments without giving up the semantic pickup lifecycle.
 template <typename TaskType>

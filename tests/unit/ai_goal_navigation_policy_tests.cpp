@@ -711,6 +711,13 @@ AI_TEST(testObjectiveApproachUsesGraphUntilInteractionRange) {
          "a non-interaction node does not acquire the safe direct finishing path");
 }
 
+AI_TEST(testPlantedBombPickupScannerYieldsToActiveDefuse) {
+  expect(ai::preservesPlantedBombPickupDuringDefuse(ai::TaskType::DefuseBomb, ai::TaskType::DefuseBomb),
+         "active defuse preserves the handed-off planted-C4 pickup binding");
+  expect(!ai::preservesPlantedBombPickupDuringDefuse(ai::TaskType::PickupItem, ai::TaskType::DefuseBomb),
+         "pickup approach remains eligible for ordinary pickup scanning");
+}
+
 AI_TEST(testObjectivePickupKeepsOwnershipThroughNavigationPause) {
   expect(ai::ownsObjectivePickupTask(
              ai::TaskType::PickupItem, ai::TaskType::PickupItem, ai::TaskType::Pause, false),

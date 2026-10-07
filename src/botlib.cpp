@@ -349,6 +349,14 @@ void Bot::setIdealReactionTimers (bool actual) {
 void Bot::updatePickups () {
    // this function finds Items to collect or use in the near of a bot
 
+   // PickupItem may hand the planted C4 entity directly to DefuseBomb.
+   // Do not rescan pickups while that task owns the bot: the scanner can see
+   // the same C4 as "already being defused" before the progress bar appears,
+   // start a defensive move task, and detach the bot from its own defuse.
+   if (ai::preservesPlantedBombPickupDuringDefuse (getCurrentTaskId (), Task::DefuseBomb)) {
+      return;
+   }
+
    // utility to check if this function is currently doesn't allowed to run
    const auto isPickupBlocked = [&] () -> bool {
       // zombie or chickens not allowed to pickup anything

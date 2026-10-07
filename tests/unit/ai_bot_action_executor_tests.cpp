@@ -300,9 +300,11 @@ public:
     ++cancelPlantBombCalls;
   }
 
+  bool defuseBombAvailable { true };
+
   bool defuseBomb() override {
     ++defuseBombCalls;
-    return true;
+    return defuseBombAvailable;
   }
 
   void cancelDefuseBomb() override {
@@ -1782,6 +1784,29 @@ AI_TEST(testBotActionExecutorKeepsUrgentNoKitDefuseUnderVisibleEnemy) {
          "urgent no-kit defuse continues through the legacy task");
   expect(context.cancelDefuseBombCalls == 0,
          "urgent no-kit defuse is not canceled for visible combat");
+}
+
+AI_TEST(testBotActionExecutorInterruptsActiveDefuseWhenLegacyOwnershipIsLost) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  auto observation = aliveObservation();
+  observation.bot.objectiveFlags = ai::ObjectiveFlag::BombPlanted;
+
+  ai::Action action {};
+  action.type = ai::ActionType::DefuseBomb;
+
+  auto result = executor.execute(action, observation);
+  expect(result.type == ai::ActionResultType::Accepted,
+         "defuse starts while the planted bomb and legacy task are available");
+
+  context.defuseBombAvailable = false;
+  result = executor.execute(action, observation);
+
+  expect(result.type == ai::ActionResultType::Interrupted,
+         "losing legacy defuse ownership while C4 remains planted interrupts instead of completing");
+  expect(context.cancelDefuseBombCalls == 1,
+         "lost defuse ownership releases direct semantic ownership");
 }
 
 AI_TEST(testBotActionExecutorCompletesDefuseBombWhenBombIsGone) {
