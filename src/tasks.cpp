@@ -280,8 +280,11 @@ void Bot::normal_ () {
 
       auto pathSearchType = m_pathType;
 
-      // override with fast path
-      if (game.mapIs (MapFlags::Demolition) && gameState.isBombPlanted ()) {
+      // CTs must take the shortest available route while the planted C4 timer is running.
+      if (game.mapIs (MapFlags::Demolition) && gameState.isBombPlanted () && m_team == Team::CT) {
+         pathSearchType = FindPath::Fast;
+      }
+      else if (game.mapIs (MapFlags::Demolition) && gameState.isBombPlanted ()) {
          pathSearchType = rg.chance (80) ? FindPath::Fast : FindPath::Optimal;
       }
       ensureCurrentNodeIndex ();

@@ -1220,3 +1220,13 @@ The change applies only when the semantic hunt owns the same remembered-enemy li
 
 Reason: post-D128 gameplay capture showed the active `HuntTarget` correctly becoming `Interrupted` at the instant the C4 was planted, but the next observation still reported `currentTask=Hunt`.
 That stale underlying task could briefly keep the Counter-Terrorist rotating or reselecting remembered-enemy movement before normal planted-bomb search took over.
+
+## D130 — Force the shortest CT route to a planted C4
+
+Counter-Terrorists now use `FindPath::Fast` unconditionally while normal demolition navigation is targeting a planted C4.
+The previous generic planted-bomb override kept a 20 percent chance of `FindPath::Optimal`, which can deliberately choose a safer but longer route.
+
+Terrorist post-plant movement keeps the existing mixed path policy.
+
+Reason: gameplay validation showed a lone CT starting from the middle of the map after plant and taking an obviously longer route to the bombsite, then failing to arrive before the timer expired.
+Once the C4 is planted, travel time is the dominant CT navigation constraint and the shortest available graph route is the correct priority.
