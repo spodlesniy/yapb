@@ -205,14 +205,8 @@ Action GoalNavigationPolicy::decide(const Observation &observation) const {
   }
 
   switch (observation.bot.currentTask) {
-  case TaskType::MoveToPosition: {
-    Action action {};
-    action.type = ActionType::MoveToPosition;
-    action.targetType = TargetType::Position;
-    action.targetPosition = observation.bot.destination;
-    action.confidence = 1.0f;
-    return action;
-  }
+  case TaskType::MoveToPosition:
+    return {};
 
   case TaskType::FollowUser: {
     if (observation.bot.followTargetPlayer < 0 || !hasObservedPlayer(observation, observation.bot.followTargetPlayer))

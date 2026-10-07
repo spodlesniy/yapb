@@ -1550,3 +1550,21 @@ That loop adds terminal churn to training data without controlling the bot.
 
 D155 changes only the confirmed Blind mismatch.
 The existing fallback behavior for `Unknown`, `DoubleJump`, and `Spraypaint` is unchanged until separate evidence justifies changing those task mappings.
+
+## D156 — Yield pre-existing legacy MoveToPosition tasks
+
+`GoalNavigationPolicy` no longer converts an already active legacy `Task::MoveToPosition` into a semantic `MoveToPosition` action.
+The teacher returns `ActionType::None` and lets the legacy task keep its route ownership.
+Direct semantic `MoveToPosition` execution remains supported for Neural or explicitly supplied actions; only the teacher mapping of an existing legacy task changes.
+
+Reason: the observation field named `destination` is sourced from YaPB's `m_destOrigin`, which is the current path-step origin, not the legacy task's final target.
+The old teacher mapping copied that transient point into `Action::targetPosition`.
+`BotActionExecutor` then resolved its nearest node and `YaPBActionExecutionContext::moveToPosition()` wrote that node back into `getTask()->data`, allowing semantic replay to replace the legacy task's final goal with an intermediate waypoint.
+
+Schema-v7 confirms the resulting lifecycle mismatch.
+Episodes 179, 185, and 197 contain zero-time `MoveToPosition -> Completed` transitions while the observed task remains `MoveToPosition`; several occur in consecutive pairs.
+At the first zero-time completion the current waypoint can still differ from the goal, which is consistent with the executor completing the transient path-step action before the legacy route itself is complete.
+
+The current observation contract does not reliably expose the final target of an arbitrary pre-existing legacy MoveToPosition task.
+Yielding is therefore safer than inventing that target or changing feature schema in this fix.
+High-level semantic actions such as HuntTarget, SeekCover, Retreat, Explore, ProtectObjective, and EscapeFromBomb may still use YaPB MoveToPosition internally while their own action lifecycle remains active.

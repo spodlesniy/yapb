@@ -210,18 +210,15 @@ AI_TEST(testNavigationOverrideYieldsToLegacyObjectiveNavigation) {
          "ordinary move-to-position remains eligible for generic navigation ownership");
 }
 
-AI_TEST(testGoalNavigationPolicyMovesToPosition) {
+AI_TEST(testGoalNavigationPolicyYieldsLegacyMoveToPositionTask) {
   auto observation = makeObservation();
   observation.bot.currentTask = ai::TaskType::MoveToPosition;
   observation.bot.destination = { 100.0f, 200.0f, 300.0f };
 
   const auto action = ai::GoalNavigationPolicy {}.decide(observation);
 
-  expect(action.type == ai::ActionType::MoveToPosition, "move task maps to move-to-position");
-  expect(action.targetType == ai::TargetType::Position, "move-to-position targets a position");
-  expect(action.targetPosition.x == 100.0f, "move-to-position preserves x");
-  expect(action.targetPosition.y == 200.0f, "move-to-position preserves y");
-  expect(action.targetPosition.z == 300.0f, "move-to-position preserves z");
+  expect(action.type == ai::ActionType::None,
+         "legacy move-to-position task yields because observation destination is only the transient path step");
 }
 
 AI_TEST(testGoalNavigationPolicyMapsCombatTasks) {
@@ -597,7 +594,7 @@ AI_TEST(testGoalNavigationPolicyDefinesOutcomeForEveryTaskType) {
     ai::ActionType::MoveToNode,
     ai::ActionType::Explore,
     ai::ActionType::None,
-    ai::ActionType::MoveToPosition,
+    ai::ActionType::None,
     ai::ActionType::FollowPlayer,
     ai::ActionType::PickupItem,
     ai::ActionType::Camp,
