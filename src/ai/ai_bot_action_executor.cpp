@@ -573,6 +573,7 @@ ActionResult BotActionExecutor::executeHuntTarget(const Action &action, const Ob
   }
 
   if (m_context->isHuntTargetReached(action.targetPlayer)) {
+    m_context->consumeHuntTargetMemory(action.targetPlayer);
     cancel();
     return { action.type, ActionResultType::Completed, 0.0f };
   }
@@ -592,6 +593,7 @@ ActionResult BotActionExecutor::executeHuntTarget(const Action &action, const Ob
   }
 
   if (m_context->isHuntTargetStalled(action.targetPlayer)) {
+    m_context->consumeHuntTargetMemory(action.targetPlayer);
     cancel();
     return { action.type, ActionResultType::Interrupted, 0.0f };
   }

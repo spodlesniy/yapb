@@ -1467,3 +1467,12 @@ Reason: the manually triggered Windows x86 build for D147 failed only while comp
 D140 had reordered `<cmath>` ahead of `<yapb.h>`; the compiler then reported C2084/C3615 in `crlib/memory.h` because placement `operator new` already had a body.
 The same Windows x86 workflow succeeded on D139 with the historical `<yapb.h>`-first order.
 Restoring that proven include order avoids a wider crlib compatibility-mode change.
+
+## D149 — Consume exhausted remembered-enemy hunts
+
+When a semantic `HuntTarget` reaches its frozen remembered position or D140's no-progress guard declares the hunt stalled, the execution context now attempts to consume the evidence snapshot that started that hunt by clearing `m_lastEnemyOrigin` for the matching target.
+The memory is preserved if the same target has newer visual evidence or a newer retained sound event than the hunt snapshot. Generic cancellation and bomb-objective preemption also preserve enemy memory.
+
+Reason: the schema-v7 capture `2026_10_07__18_26_56__ai_training.jsonl` shows episode 197 reopening target 10 after an 8.018 s stalled `HuntTarget`, followed by a long sequence of short repeated hunts.
+D140 bounds one semantic lifecycle, but `Bot::filterTasks()` can immediately recreate legacy `Task::Hunt` while the same remembered contact remains actionable.
+Legacy `Bot::huntEnemy_()` already clears `m_lastEnemyOrigin` after reaching the remembered position, so semantic reach/stall now uses the same consume-on-exhaustion boundary without discarding evidence that arrived after the hunt began.

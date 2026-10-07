@@ -21,4 +21,9 @@ constexpr bool isHuntProgressStalled(float now, float lastProgressTime) {
   return lastProgressTime >= 0.0f && now >= lastProgressTime + kHuntNoProgressTimeout;
 }
 
+constexpr bool hasNewerHuntEvidence(float seenTime, float noiseEndTime,
+                                    float huntSeenTime, float huntNoiseEndTime) {
+  return seenTime > huntSeenTime || noiseEndTime > huntNoiseEndTime;
+}
+
 } // namespace ai

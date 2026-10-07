@@ -23,6 +23,8 @@ private:
   Vec3 m_huntTargetOrigin {};
   float m_huntBestDistance { -1.0f };
   float m_huntLastProgressTime { -1.0f };
+  float m_huntSeenEvidenceTime { -1.0f };
+  float m_huntNoiseEndTime { -1.0f };
   bool m_huntNavigationTaskCreated {};
   bool m_seekCoverActive {};
   int m_seekCoverNode { -1 };
@@ -79,6 +81,7 @@ public:
   bool huntTarget(int targetPlayer, const Vec3 &position) override;
   bool isHuntTargetReached(int targetPlayer) const override;
   bool isHuntTargetStalled(int targetPlayer) const override;
+  void consumeHuntTargetMemory(int targetPlayer) override;
   void cancelHuntTarget(int targetPlayer) override;
 
   bool seekCover() override;

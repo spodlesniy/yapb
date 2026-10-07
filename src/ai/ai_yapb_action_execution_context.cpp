@@ -22,6 +22,15 @@ namespace {
 
 constexpr float kNavigationReachDistance = 48.0f;
 
+float getPlayerNoiseEndTime(edict_t *player) {
+  for (const auto &client : util.getClients()) {
+    if (client.ent == player) {
+      return client.noise.last;
+    }
+  }
+  return -1.0f;
+}
+
 } // namespace
 
 YaPBActionExecutionContext::YaPBActionExecutionContext(Bot &bot) : m_bot(&bot) {
@@ -327,6 +336,8 @@ bool YaPBActionExecutionContext::huntTarget(int targetPlayer, const Vec3 &positi
     m_huntTargetOrigin = position;
     m_huntBestDistance = -1.0f;
     m_huntLastProgressTime = -1.0f;
+    m_huntSeenEvidenceTime = m_bot->m_seeEnemyTime;
+    m_huntNoiseEndTime = getPlayerNoiseEndTime(target);
     m_huntNavigationTaskCreated = false;
   }
 
@@ -382,6 +393,25 @@ bool YaPBActionExecutionContext::isHuntTargetStalled(int targetPlayer) const {
   return isHuntProgressStalled(game.time(), m_huntLastProgressTime);
 }
 
+void YaPBActionExecutionContext::consumeHuntTargetMemory(int targetPlayer) {
+  if (m_bot == nullptr || !m_huntTargetActive || m_huntTargetPlayer != targetPlayer
+      || targetPlayer <= 0 || targetPlayer > game.maxClients()) {
+    return;
+  }
+
+  auto *target = game.entityOfIndex(targetPlayer);
+  if (game.isNullEntity(target) || m_bot->m_lastEnemy != target) {
+    return;
+  }
+
+  if (hasNewerHuntEvidence(m_bot->m_seeEnemyTime, getPlayerNoiseEndTime(target),
+                           m_huntSeenEvidenceTime, m_huntNoiseEndTime)) {
+    return;
+  }
+
+  m_bot->m_lastEnemyOrigin.clear();
+}
+
 void YaPBActionExecutionContext::cancelHuntTarget(int targetPlayer) {
   if (m_bot == nullptr) {
     return;
@@ -401,6 +431,8 @@ void YaPBActionExecutionContext::cancelHuntTarget(int targetPlayer) {
     m_huntTargetOrigin = {};
     m_huntBestDistance = -1.0f;
     m_huntLastProgressTime = -1.0f;
+    m_huntSeenEvidenceTime = -1.0f;
+    m_huntNoiseEndTime = -1.0f;
     m_huntNavigationTaskCreated = false;
   }
 }

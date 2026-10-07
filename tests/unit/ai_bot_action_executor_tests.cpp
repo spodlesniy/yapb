@@ -84,6 +84,8 @@ public:
   bool followPlayerAvailable { true };
   bool huntTargetReached {};
   bool huntTargetStalled {};
+  int consumeHuntTargetMemoryCalls {};
+  int lastConsumedHuntTarget { -1 };
   bool seekCoverReached {};
   bool escapeFromBombReached {};
   bool rescueHostageAvailable { true };
@@ -189,6 +191,11 @@ public:
 
   bool isHuntTargetStalled(int targetPlayer) const override {
     return huntTargetStalled && targetPlayer == lastHuntTarget;
+  }
+
+  void consumeHuntTargetMemory(int targetPlayer) override {
+    ++consumeHuntTargetMemoryCalls;
+    lastConsumedHuntTarget = targetPlayer;
   }
 
   void cancelHuntTarget(int targetPlayer) override {
@@ -934,6 +941,8 @@ AI_TEST(testBotActionExecutorCompletesHuntWhenTargetPositionIsReached) {
   result = executor.execute(action, huntObservation(9));
 
   expect(result.type == ai::ActionResultType::Completed, "reached hunt target completes the active action");
+  expect(context.consumeHuntTargetMemoryCalls == 1 && context.lastConsumedHuntTarget == 9,
+         "reaching the remembered position consumes that hunt memory");
   expect(context.cancelHuntTargetCalls == 1, "completion releases the active hunt target");
 }
 
@@ -949,6 +958,12 @@ AI_TEST(testHuntProgressGuardRequiresMeaningfulProgress) {
          "hunt remains active inside the no-progress window");
   expect(ai::isHuntProgressStalled(8.0f, 0.0f),
          "hunt stalls after a full no-progress window");
+  expect(!ai::hasNewerHuntEvidence(10.0f, 20.0f, 10.0f, 20.0f),
+         "unchanged perception evidence remains consumable");
+  expect(ai::hasNewerHuntEvidence(10.1f, 20.0f, 10.0f, 20.0f),
+         "new visual evidence protects remembered enemy state");
+  expect(ai::hasNewerHuntEvidence(10.0f, 20.1f, 10.0f, 20.0f),
+         "new sound evidence protects remembered enemy state");
 }
 
 AI_TEST(testBotActionExecutorInterruptsStalledHuntTarget) {
@@ -968,6 +983,8 @@ AI_TEST(testBotActionExecutorInterruptsStalledHuntTarget) {
 
   expect(result.type == ai::ActionResultType::Interrupted,
          "stalled remembered-enemy hunt is interrupted rather than completed");
+  expect(context.consumeHuntTargetMemoryCalls == 1 && context.lastConsumedHuntTarget == 9,
+         "stall interruption consumes the exhausted remembered position");
   expect(context.cancelHuntTargetCalls == 1, "stall interruption releases the active hunt target");
 }
 
@@ -990,6 +1007,8 @@ AI_TEST(testBotActionExecutorInterruptsActiveHuntWhenBombObjectiveStarts) {
   result = executor.execute(action, observation);
 
   expect(result.type == ai::ActionResultType::Interrupted, "planted bomb interrupts an active remembered-enemy hunt");
+  expect(context.consumeHuntTargetMemoryCalls == 0,
+         "objective preemption preserves remembered enemy evidence for later decisions");
   expect(context.cancelHuntTargetCalls == 1, "bomb-objective interruption releases the active hunt target");
 }
 
@@ -1025,6 +1044,8 @@ AI_TEST(testBotActionExecutorCancelsDirectHunt) {
   executor.cancel();
 
   expect(context.cancelHuntTargetCalls == 1, "cancel releases direct hunt");
+  expect(context.consumeHuntTargetMemoryCalls == 0,
+         "generic cancellation does not consume remembered enemy evidence");
   expect(context.lastHuntTarget == 9, "cancel releases active hunt target");
 }
 
