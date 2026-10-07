@@ -295,13 +295,17 @@ AI_TEST(testGrenadeTargetRequiresFreshMatchingPerception) {
          "expired heard target cannot be sustained by sticky hearing state");
 }
 
-AI_TEST(testStrongBlindnessSuppressesRememberedEnemyFire) {
+AI_TEST(testActiveBlindnessSuppressesAllWeaponFire) {
   expect(ai::suppressBlindFire(4.65f),
-         "near-full flash suppresses blind fire");
-  expect(ai::suppressBlindFire(2.01f),
-         "blind fire remains suppressed above the strong-blind threshold");
-  expect(!ai::suppressBlindFire(2.0f),
-         "degraded blind fire becomes eligible at the final two-second phase");
-  expect(!ai::suppressBlindFire(0.5f),
-         "short residual blindness keeps the existing uncertain-fire behavior");
+         "near-full flash suppresses weapon fire");
+  expect(ai::suppressBlindFire(2.0f),
+         "mid-flash blindness suppresses weapon fire");
+  expect(ai::suppressBlindFire(0.5f),
+         "short residual blindness still suppresses weapon fire");
+  expect(ai::suppressBlindFire(0.001f),
+         "any positive blind timer keeps weapon fire suppressed");
+  expect(!ai::suppressBlindFire(0.0f),
+         "weapon fire becomes eligible when the flash timer expires");
+  expect(!ai::suppressBlindFire(-0.1f),
+         "expired blindness does not suppress ordinary combat");
 }

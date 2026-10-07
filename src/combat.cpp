@@ -1234,8 +1234,13 @@ void Bot::handleWeapons (float distance, int, int id, int choosen) {
 }
 
 void Bot::doFireWeapons () {
-   // the bots wants to fire at something?
+   // Active flash blindness suppresses every weapon-fire path, regardless of
+   // which legacy task currently owns the bot.
+   if (ai::suppressBlindFire (m_blindTime - game.time ())) {
+      return;
+   }
 
+   // the bots wants to fire at something?
    if (m_shootAtDeadTime > game.time () || (m_wantsToFire && !m_isUsingGrenade && m_shootTime <= game.time ())) {
       fireWeapons (); // if bot didn't fire a bullet try again next frame
    }

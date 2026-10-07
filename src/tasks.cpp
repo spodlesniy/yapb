@@ -594,28 +594,9 @@ void Bot::blind_ () {
    m_checkTerrain = false;
    m_navTimeset = game.time ();
 
-   // if bot remembers last enemy position
-   const float blindTimeRemaining = m_blindTime - game.time ();
-
-   if (!ai::suppressBlindFire (blindTimeRemaining)
-      && rg.chance (50)
-      && m_difficulty >= Difficulty::Normal
-      && !m_lastEnemyOrigin.empty ()
-      && game.isPlayerEntity (m_lastEnemy)
-      && !usesSniper ()) {
-
-      // blindness must not preserve an exact remembered head-height aim point
-      const auto error = cr::max (32.0f, kSprayDistance * m_lastEnemyOrigin.distance (pev->origin) / 2048.0f);
-      auto origin = m_lastEnemyOrigin;
-
-      origin.x = origin.x + rg (-error, error);
-      origin.y = origin.y + rg (-error, error);
-      origin.z = origin.z + rg (-error, error);
-
-      m_lookAt = origin; // face last enemy
-      m_wantsToFire = true; // and shoot it
-   }
-
+   // Blind movement may keep remembered threat state, but the blind task itself
+   // never creates a fire intent. Weapon fire is globally gated by the active
+   // flash timer in doFireWeapons().
    if (m_difficulty >= Difficulty::Normal && graph.exists (m_blindNodeIndex)) {
       if (updateNavigation ()) {
          if (m_blindTime < game.time ()) {

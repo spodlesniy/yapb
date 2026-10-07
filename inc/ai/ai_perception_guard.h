@@ -30,10 +30,9 @@ constexpr bool shouldReplaceRememberedEnemyWithHeard(float rememberedDistanceSq,
 }
 
 constexpr float kGrenadeTargetFreshness = 3.0f;
-constexpr float kStrongBlindFireSuppressionTime = 2.0f;
 
 constexpr bool suppressBlindFire(float blindTimeRemaining) {
-  return blindTimeRemaining > kStrongBlindFireSuppressionTime;
+  return blindTimeRemaining > 0.0f;
 }
 
 // Grenades may use remembered enemy state only while that exact target still has

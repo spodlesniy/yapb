@@ -1606,3 +1606,15 @@ Reason: the format-v2 capture contains planted-C4 `PickupItem` lifecycles that r
 The observed in-game behavior is repeated turning or sliding immediately beside the C4, especially when the bomb lies on or behind a box edge or railing.
 D151 correctly avoids forcing every near-C4 approach back to the waypoint center, but its unconditional direct final segment assumes that the C4 origin itself is physically traversable from the bot's current side.
 D159 preserves the D151 fast path for open geometry while restoring the interaction-safe node as a local staging target only when the direct segment is blocked.
+
+## D160 — Suppress weapon fire for the entire active flash interval
+
+A positive flash-blind timer now blocks weapon fire globally in `doFireWeapons()`, regardless of which legacy task currently owns the bot.
+`Task::Blind` no longer creates remembered-enemy fire intent at all.
+Movement, cover navigation, suspect-enemy memory, and post-flash combat behavior remain unchanged; ordinary firing becomes eligible again as soon as the blind timer expires.
+
+This supersedes D147's final-two-second exception.
+D147 reduced blind-fire during the strongest flash phase but intentionally restored randomized remembered-enemy fire for the last two seconds.
+The format-v2 gameplay capture still shows rifle ammunition being consumed while the bot is observably blind, including a case reported as a blind kill.
+A separate legacy `Pause` path can also set `m_wantsToFire` while view distance is flash-limited, so changing `blind_()` alone would not guarantee the intended invariant.
+D160 therefore enforces the rule at the final weapon-fire gate: active flash blindness cannot fire, independent of task transitions or remembered targets.
