@@ -921,6 +921,47 @@ AI_TEST(testBotActionExecutorCompletesHuntWhenTargetPositionIsReached) {
   expect(context.cancelHuntTargetCalls == 1, "completion releases the active hunt target");
 }
 
+AI_TEST(testBotActionExecutorInterruptsActiveHuntWhenBombObjectiveStarts) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  auto action = ai::Action {};
+  action.type = ai::ActionType::HuntTarget;
+  action.targetType = ai::TargetType::Player;
+  action.targetPlayer = 9;
+
+  auto observation = huntObservation(9);
+  observation.bot.team = 1;
+
+  auto result = executor.execute(action, observation);
+  expect(result.type == ai::ActionResultType::Accepted, "hunt starts before the bomb objective is active");
+
+  observation.bot.objectiveFlags |= ai::ObjectiveFlag::BombPlanted;
+  result = executor.execute(action, observation);
+
+  expect(result.type == ai::ActionResultType::Interrupted, "planted bomb interrupts an active remembered-enemy hunt");
+  expect(context.cancelHuntTargetCalls == 1, "bomb-objective interruption releases the active hunt target");
+}
+
+AI_TEST(testBotActionExecutorRejectsNewHuntDuringBombObjective) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  auto action = ai::Action {};
+  action.type = ai::ActionType::HuntTarget;
+  action.targetType = ai::TargetType::Player;
+  action.targetPlayer = 9;
+
+  auto observation = huntObservation(9);
+  observation.bot.team = 0;
+  observation.bot.objectiveFlags |= ai::ObjectiveFlag::BombDropped;
+
+  const auto result = executor.execute(action, observation);
+
+  expect(result.type == ai::ActionResultType::Rejected, "dropped C4 rejects a new Terrorist remembered-enemy hunt");
+  expect(context.huntTargetCalls == 0, "rejected bomb-objective hunt is not delegated");
+}
+
 AI_TEST(testBotActionExecutorCancelsDirectHunt) {
   MockActionExecutionContext context {};
   ai::BotActionExecutor executor(context);

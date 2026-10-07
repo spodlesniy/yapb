@@ -52,6 +52,18 @@ bool hasObservedLastEnemyTarget(const Action &action, const Observation &observa
 
   return false;
 }
+
+bool bombObjectivePreemptsHunt(const Observation &observation) {
+  if (observation.combat.perceptionFlags & static_cast<uint32_t>(PerceptionFlag::SeeingEnemy)) {
+    return false;
+  }
+
+  if (observation.bot.objectiveFlags & ObjectiveFlag::BombPlanted) {
+    return true;
+  }
+
+  return observation.bot.team == 0 && (observation.bot.objectiveFlags & ObjectiveFlag::BombDropped);
+}
 } // namespace
 
 BotActionExecutor::BotActionExecutor(ActionExecutionContext &context) : m_context(&context) {
@@ -543,6 +555,15 @@ ActionResult BotActionExecutor::executeThrowSmoke(const Action &action, const Ob
 }
 
 ActionResult BotActionExecutor::executeHuntTarget(const Action &action, const Observation &observation) {
+  if (bombObjectivePreemptsHunt(observation)) {
+    if (!m_directHuntTargetActive) {
+      return { action.type, ActionResultType::Rejected, 0.0f };
+    }
+
+    cancel();
+    return { action.type, ActionResultType::Interrupted, 0.0f };
+  }
+
   if (!hasObservedLastEnemyTarget(action, observation)) {
     if (!m_directHuntTargetActive) {
       return { action.type, ActionResultType::Rejected, 0.0f };

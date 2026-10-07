@@ -1200,3 +1200,15 @@ The connected-neighbor fallback is used only while `ProtectObjective` owns `Move
 Reason: another schema-v6 gameplay capture reproduced the same wall-pushing failure after D122.
 The stuck Terrorist's current and defend goal were the same waypoint about 21 units away while another observed waypoint was almost under the bot.
 Because the current waypoint still passed ordinary reachability, `findNearestNode()` could return it again and D122 made no progress.
+
+## D128 — Interrupt active remembered-enemy hunts when a bomb objective appears
+
+An active semantic `HuntTarget` now yields when a bomb objective becomes active and no enemy is currently visible.
+A planted C4 preempts remembered-enemy hunting for either team, and a dropped C4 preempts Terrorist hunting.
+An already active hunt terminates as `Interrupted`; a new stale hunt request while the objective is already active is `Rejected`.
+
+Visible combat is unchanged and continues to outrank the objective through the existing attack lifecycle.
+
+Reason: a schema-v6 gameplay capture contained a Counter-Terrorist `HuntTarget` transition lasting 41.93 seconds.
+The hunt began before the plant and remained active after the C4 was planted, finally ending with about 32.7 seconds left on the bomb timer.
+D123 prevented legacy Hunt selection after plant, but `ActionLoop` does not query the policy while a semantic action remains active, so the pre-plant HuntTarget kept recreating its remembered-enemy navigation and blocked bomb-search decisions.
