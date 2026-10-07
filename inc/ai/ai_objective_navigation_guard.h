@@ -55,6 +55,19 @@ constexpr bool preservesFirearmForPlantedBombApproach(bool counterTerrorist, boo
   return counterTerrorist && demolitionMap && bombPlanted && enemiesAlive && objectivesEnabled;
 }
 
+// A dropped-C4 defender must be able to act on the objective without abandoning
+// immediate combat or another emergency traversal state.
+constexpr bool isDroppedBombDefenderEligible(bool alive, bool counterTerrorist, bool seesBomb,
+                                             bool seeingEnemy, bool onLadder, bool escaping) {
+  return alive && counterTerrorist && seesBomb && !seeingEnemy && !onLadder && !escaping;
+}
+
+constexpr bool isBetterDroppedBombDefender(float candidateDistanceSq, int candidateIndex,
+                                           float bestDistanceSq, int bestIndex) {
+  return candidateDistanceSq < bestDistanceSq
+      || (candidateDistanceSq == bestDistanceSq && (bestIndex < 0 || candidateIndex < bestIndex));
+}
+
 // Objective pickup may temporarily enter the navigation pause inserted between
 // graph jump segments without giving up the semantic pickup lifecycle.
 template <typename TaskType>

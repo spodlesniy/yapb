@@ -1506,3 +1506,20 @@ All other jump traversal keeps the existing knife-speed optimization, including 
 Reason: legacy `advanceMovement()` switches to the knife before long or elevated jump links whenever no enemy is currently visible.
 That is normally a speed optimization, but it creates a predictable vulnerability for a CT entering a planted bombsite: a hidden defender can become visible only after the jump has already started, leaving the CT with the knife equipped at first contact.
 The guard is objective- and threat-scoped rather than global, so ordinary traversal behavior is unchanged.
+
+## D153 — Coordinate one CT defender for dropped C4
+
+Dropped-C4 defense no longer depends on `health < 60`, Normal-or-higher difficulty, or a 75-percent random roll.
+When a CT perceives a dropped C4, the bots deterministically select one eligible defender: the nearest alive CT that can currently see the C4 and is not in visible combat, on a ladder, or escaping from a planted bomb.
+Equal distances use bot index as a deterministic tie-break.
+
+The selected defender marks that exact dropped-C4 entity in its existing ignored-item set and sets `m_defendedBomb`.
+That exact entity marker acts as ownership: while the defender remains alive, other CTs leave their current behavior alone instead of converging on the C4.
+Non-selected CTs do not permanently ignore the entity, so if the assigned defender dies another eligible CT can take over.
+If the C4 is picked up and dropped again, the new weaponbox entity has no ownership marker and is assigned again.
+
+The actual defensive position still comes from `findDefendNode()`, so D146's authored-`Camp` preference remains responsible for moving the defender off the exposed bomb location when a suitable camp waypoint exists.
+
+Reason: the previous trigger made objective defense a low-health random special case.
+A healthy CT could ignore the dropped bomb completely, while multiple CTs could independently roll into the same behavior because `m_defendedBomb` was only per-bot state.
+D153 makes the role objective-driven and coordinated without forcing the whole CT team to camp.

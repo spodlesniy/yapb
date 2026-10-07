@@ -754,6 +754,34 @@ AI_TEST(testPlantedBombApproachPreservesFirearmUnderThreat) {
          "ignored objectives keep the legacy traversal optimization");
 }
 
+AI_TEST(testDroppedBombDefenderEligibilityPreservesCombatPriority) {
+  expect(ai::isDroppedBombDefenderEligible(true, true, true, false, false, false),
+         "alive CT that sees dropped C4 is eligible to guard it");
+  expect(!ai::isDroppedBombDefenderEligible(false, true, true, false, false, false),
+         "dead CT cannot own dropped-C4 defense");
+  expect(!ai::isDroppedBombDefenderEligible(true, false, true, false, false, false),
+         "Terrorist cannot own CT dropped-C4 defense");
+  expect(!ai::isDroppedBombDefenderEligible(true, true, false, false, false, false),
+         "CT must actually perceive the dropped C4 before being selected");
+  expect(!ai::isDroppedBombDefenderEligible(true, true, true, true, false, false),
+         "visible combat outranks dropped-C4 defense assignment");
+  expect(!ai::isDroppedBombDefenderEligible(true, true, true, false, true, false),
+         "ladder traversal is not interrupted for dropped-C4 defense");
+  expect(!ai::isDroppedBombDefenderEligible(true, true, true, false, false, true),
+         "bomb escape traversal is not interrupted for dropped-C4 defense");
+}
+
+AI_TEST(testDroppedBombDefenderSelectionPrefersNearestThenIndex) {
+  expect(ai::isBetterDroppedBombDefender(100.0f, 8, 200.0f, 4),
+         "nearer eligible CT wins dropped-C4 defense");
+  expect(!ai::isBetterDroppedBombDefender(300.0f, 2, 200.0f, 4),
+         "farther eligible CT does not replace the defender candidate");
+  expect(ai::isBetterDroppedBombDefender(200.0f, 2, 200.0f, 4),
+         "equal-distance defender selection uses bot index deterministically");
+  expect(!ai::isBetterDroppedBombDefender(200.0f, 6, 200.0f, 4),
+         "higher bot index loses an equal-distance defender tie");
+}
+
 AI_TEST(testObjectiveInteractionRangeUsesFullThreeDimensionalDistance) {
   expect(ai::isWithinObjectiveInteractionRange(30.0f, 40.0f, 20.0f, 80.0f),
          "nearby objective node inside the full XYZ radius is interaction-safe");

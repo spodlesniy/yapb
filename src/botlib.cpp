@@ -767,12 +767,56 @@ void Bot::updatePickups () {
                }
             }
             else if (pickupType == Pickup::DroppedC4) {
-               m_ignoredItems.push (ent);
                allowPickup = false;
 
-               if (!m_defendedBomb && m_difficulty >= Difficulty::Normal && rg.chance (75) && m_healthValue < 60) {
+               Bot *assignedDefender = nullptr;
+
+               for (const auto &other : bots) {
+                  if (other->m_isAlive
+                     && other->m_team == Team::CT
+                     && other->m_defendedBomb
+                     && other->isIgnoredItem (ent)) {
+
+                     assignedDefender = other.get ();
+                     break;
+                  }
+               }
+
+               if (assignedDefender == nullptr) {
+                  float bestDistanceSq = kInfiniteDistance;
+                  int bestIndex = kInvalidNodeIndex;
+
+                  for (const auto &other : bots) {
+                     if (other->pev == nullptr || other->isIgnoredItem (ent)) {
+                        continue;
+                     }
+
+                     const float distanceSq = other->pev->origin.distanceSq (origin);
+                     const bool seesBomb = distanceSq <= radiusSq
+                        && cr::abs (origin.z - other->pev->origin.z) <= 96.0f
+                        && other->seesItem (origin, classname);
+                     const bool eligible = ai::isDroppedBombDefenderEligible (
+                        other->m_isAlive,
+                        other->m_team == Team::CT,
+                        seesBomb,
+                        (other->m_states & Sense::SeeingEnemy) != 0,
+                        other->isOnLadder (),
+                        other->getCurrentTaskId () == Task::EscapeFromBomb);
+
+                     if (eligible && ai::isBetterDroppedBombDefender (
+                        distanceSq, other->index (), bestDistanceSq, bestIndex)) {
+
+                        assignedDefender = other.get ();
+                        bestDistanceSq = distanceSq;
+                        bestIndex = other->index ();
+                     }
+                  }
+               }
+
+               if (assignedDefender == this) {
                   const int index = findDefendNode (origin);
 
+                  m_ignoredItems.push (ent);
                   startTask (Task::Camp, TaskPri::Camp, kInvalidNodeIndex, game.time () + rg (cv_camping_time_min.as <float> (), cv_camping_time_max.as <float> ()), true); // push camp task on to stack
                   startTask (Task::MoveToPosition, TaskPri::MoveToPosition, index, game.time () + rg (10.0f, 30.0f), true); // push move command
 
