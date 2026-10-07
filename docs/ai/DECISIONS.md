@@ -1345,3 +1345,17 @@ If `checkBodyPartsWithOffsets()` actually sees the heard player, the normal visi
 Reason: `BotSounds::acquire()` and `simulateNoise()` already store the source position when a sound is emitted, but `updateHearing()` used that position only to decide whether the sound was audible.
 After selecting a client it rebuilt enemy memory, target preference, and through-wall aim from the retained player's live entity position, allowing movement after the sound event to leak into hidden-enemy tracking.
 Feature schema v7 is unchanged because `last_enemy_distance` still represents distance to YaPB's remembered enemy position; D139 corrects how hearing updates that memory rather than changing the feature layout.
+
+## D140 — Interrupt remembered-enemy hunts that stop making progress
+
+Semantic `HuntTarget` now tracks progress toward the frozen remembered enemy position.
+Reducing the straight-line distance by at least 64 units refreshes the hunt progress window.
+If eight seconds pass without another meaningful reduction, the active hunt is interrupted and control returns to the policy.
+There is no hard total hunt duration: a hunt may continue longer than eight seconds while it keeps making progress.
+
+A no-progress termination is recorded as `Interrupted`, not `Completed`, so training does not treat a stalled navigation lifecycle as successful arrival at the remembered enemy position.
+Existing completion on reaching the hunt waypoint, visible-enemy takeover, invalid-target termination, and bomb-objective preemption remain unchanged.
+
+Reason: a schema-v7 gameplay capture after D137 still reproduced paired `HuntTarget` actions lasting about 24.5 seconds before a bomb plant, and another pair lasting about 32.4 seconds in the final round.
+The bots visually rotated or remained tactically inert until the plant interrupted the actions.
+Removing the hidden live-position leak was therefore necessary but not sufficient: the semantic hunt also needed a bounded no-progress lifecycle so a remembered-enemy navigation failure cannot monopolize the action pipeline indefinitely.

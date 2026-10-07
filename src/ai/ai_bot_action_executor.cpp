@@ -591,6 +591,11 @@ ActionResult BotActionExecutor::executeHuntTarget(const Action &action, const Ob
     return { action.type, ActionResultType::Completed, 0.0f };
   }
 
+  if (m_context->isHuntTargetStalled(action.targetPlayer)) {
+    cancel();
+    return { action.type, ActionResultType::Interrupted, 0.0f };
+  }
+
   m_directHuntAction = action;
   m_directHuntTargetActive = true;
   return { action.type, ActionResultType::Accepted, 0.0f };

@@ -12,6 +12,7 @@
 #include <ai/ai_action_execution_context.h>
 #include <ai/ai_bot_action_executor.h>
 #include <ai/ai_goal_navigation_policy.h>
+#include <ai/ai_hunt_progress_guard.h>
 #include <ai/ai_training_collector.h>
 
 #include "ai_test.h"
@@ -82,6 +83,7 @@ public:
   ai::Vec3 lastHuntPosition {};
   bool followPlayerAvailable { true };
   bool huntTargetReached {};
+  bool huntTargetStalled {};
   bool seekCoverReached {};
   bool escapeFromBombReached {};
   bool rescueHostageAvailable { true };
@@ -183,6 +185,10 @@ public:
 
   bool isHuntTargetReached(int targetPlayer) const override {
     return huntTargetReached && targetPlayer == lastHuntTarget;
+  }
+
+  bool isHuntTargetStalled(int targetPlayer) const override {
+    return huntTargetStalled && targetPlayer == lastHuntTarget;
   }
 
   void cancelHuntTarget(int targetPlayer) override {
@@ -929,6 +935,40 @@ AI_TEST(testBotActionExecutorCompletesHuntWhenTargetPositionIsReached) {
 
   expect(result.type == ai::ActionResultType::Completed, "reached hunt target completes the active action");
   expect(context.cancelHuntTargetCalls == 1, "completion releases the active hunt target");
+}
+
+
+AI_TEST(testHuntProgressGuardRequiresMeaningfulProgress) {
+  expect(ai::hasMeaningfulHuntProgress(-1.0f, 1200.0f),
+         "first hunt sample initializes progress");
+  expect(!ai::hasMeaningfulHuntProgress(1200.0f, 1150.0f),
+         "small movement does not continuously refresh the hunt watchdog");
+  expect(ai::hasMeaningfulHuntProgress(1200.0f, 1136.0f),
+         "64 units of approach counts as meaningful hunt progress");
+  expect(!ai::isHuntProgressStalled(7.99f, 0.0f),
+         "hunt remains active inside the no-progress window");
+  expect(ai::isHuntProgressStalled(8.0f, 0.0f),
+         "hunt stalls after a full no-progress window");
+}
+
+AI_TEST(testBotActionExecutorInterruptsStalledHuntTarget) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+
+  auto action = ai::Action {};
+  action.type = ai::ActionType::HuntTarget;
+  action.targetType = ai::TargetType::Player;
+  action.targetPlayer = 9;
+
+  auto result = executor.execute(action, huntObservation(9));
+  expect(result.type == ai::ActionResultType::Accepted, "hunt starts before it stalls");
+
+  context.huntTargetStalled = true;
+  result = executor.execute(action, huntObservation(9));
+
+  expect(result.type == ai::ActionResultType::Interrupted,
+         "stalled remembered-enemy hunt is interrupted rather than completed");
+  expect(context.cancelHuntTargetCalls == 1, "stall interruption releases the active hunt target");
 }
 
 AI_TEST(testBotActionExecutorInterruptsActiveHuntWhenBombObjectiveStarts) {

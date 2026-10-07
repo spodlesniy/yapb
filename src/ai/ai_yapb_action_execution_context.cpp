@@ -6,11 +6,12 @@
 // SPDX-License-Identifier: MIT
 //
 
-#include <yapb.h>
-
 #include <cmath>
 
+#include <yapb.h>
+
 #include <ai/ai_bot_adapter.h>
+#include <ai/ai_hunt_progress_guard.h>
 #include <ai/ai_navigation_task_guard.h>
 #include <ai/ai_objective_navigation_guard.h>
 #include <ai/ai_yapb_action_execution_context.h>
@@ -323,10 +324,19 @@ bool YaPBActionExecutionContext::huntTarget(int targetPlayer, const Vec3 &positi
     m_huntTargetActive = true;
     m_huntTargetPlayer = targetPlayer;
     m_huntTargetOrigin = position;
+    m_huntBestDistance = -1.0f;
+    m_huntLastProgressTime = -1.0f;
     m_huntNavigationTaskCreated = false;
   }
 
   const auto targetOrigin = Vector { m_huntTargetOrigin.x, m_huntTargetOrigin.y, m_huntTargetOrigin.z };
+  const float currentDistance = cr::powf(targetOrigin.distanceSq(m_bot->pev->origin), 0.5f);
+
+  if (hasMeaningfulHuntProgress(m_huntBestDistance, currentDistance)) {
+    m_huntBestDistance = currentDistance;
+    m_huntLastProgressTime = game.time();
+  }
+
   const int node = graph.getNearest(targetOrigin);
   if (!graph.exists(node)) {
     return false;
@@ -363,6 +373,14 @@ bool YaPBActionExecutionContext::isHuntTargetReached(int targetPlayer) const {
          m_bot->pev->origin.distanceSq(graph[node].origin) <= cr::sqrf(cr::max(kNavigationReachDistance, graph[node].radius));
 }
 
+bool YaPBActionExecutionContext::isHuntTargetStalled(int targetPlayer) const {
+  if (!m_huntTargetActive || m_huntTargetPlayer != targetPlayer) {
+    return false;
+  }
+
+  return isHuntProgressStalled(game.time(), m_huntLastProgressTime);
+}
+
 void YaPBActionExecutionContext::cancelHuntTarget(int targetPlayer) {
   if (m_bot == nullptr) {
     return;
@@ -380,6 +398,8 @@ void YaPBActionExecutionContext::cancelHuntTarget(int targetPlayer) {
     m_huntTargetActive = false;
     m_huntTargetPlayer = -1;
     m_huntTargetOrigin = {};
+    m_huntBestDistance = -1.0f;
+    m_huntLastProgressTime = -1.0f;
     m_huntNavigationTaskCreated = false;
   }
 }
