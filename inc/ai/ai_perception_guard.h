@@ -16,4 +16,10 @@ constexpr bool canUseLiveEnemyState(bool seeingEnemy, bool suspectEnemy, bool cu
   return seeingEnemy && !suspectEnemy && currentEnemyMatchesLastEnemy;
 }
 
+// Enemy slot state may expose exact live values only while that enemy is
+// actually visible. Teammate state remains available through normal team data.
+constexpr bool canExposePlayerState(bool enemy, bool visible) {
+  return !enemy || visible;
+}
+
 } // namespace ai

@@ -28,7 +28,7 @@ class ModelContractTests(unittest.TestCase):
         self.assertEqual(MODEL_INPUT_DTYPE, "float32")
         self.assertEqual(MODEL_RUNTIME_INPUT_SHAPE, (1, 252))
         self.assertEqual(MODEL_FEATURE_COUNT, 252)
-        self.assertEqual(MODEL_FEATURE_SCHEMA_VERSION, 6)
+        self.assertEqual(MODEL_FEATURE_SCHEMA_VERSION, 7)
         self.assertEqual(MODEL_ACTION_ID_COUNT, 26)
         self.assertEqual(MODEL_ACTION_SCHEMA_VERSION, 2)
 

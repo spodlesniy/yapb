@@ -11,6 +11,7 @@
 #include <cstddef>
 
 #include <ai/ai_inference_features.h>
+#include <ai/ai_perception_guard.h>
 
 namespace ai {
 namespace {
@@ -182,7 +183,14 @@ InferenceFeatures encodeInferenceFeatures(const Observation &observation) {
       return a.valid > b.valid;
     }
 
-    if (a.distance != b.distance) {
+    const bool aStateKnown = canExposePlayerState(a.enemy, a.visible);
+    const bool bStateKnown = canExposePlayerState(b.enemy, b.visible);
+
+    if (aStateKnown != bStateKnown) {
+      return aStateKnown > bStateKnown;
+    }
+
+    if (aStateKnown && a.distance != b.distance) {
       return a.distance < b.distance;
     }
 
@@ -204,12 +212,15 @@ InferenceFeatures encodeInferenceFeatures(const Observation &observation) {
     values[base + enumValue(InferenceFeature::Player::Visible)] = booleanFeature(player.visible);
     values[base + enumValue(InferenceFeature::Player::Heard)] = booleanFeature(player.heard);
     values[base + enumValue(InferenceFeature::Player::IsFollowTarget)] = booleanFeature(player.isFollowTarget);
-    values[base + enumValue(InferenceFeature::Player::RelativeX)] = normalizeSigned(player.relativeOrigin.x, kPositionScale);
-    values[base + enumValue(InferenceFeature::Player::RelativeY)] = normalizeSigned(player.relativeOrigin.y, kPositionScale);
-    values[base + enumValue(InferenceFeature::Player::RelativeZ)] = normalizeSigned(player.relativeOrigin.z, kPositionScale);
-    values[base + enumValue(InferenceFeature::Player::Distance)] = normalizeNonNegative(player.distance, kDistanceScale);
-    values[base + enumValue(InferenceFeature::Player::Health)] = normalizeNonNegative(player.health, kHealthScale);
-    values[base + enumValue(InferenceFeature::Player::Armor)] = normalizeNonNegative(player.armor, kHealthScale);
+
+    if (canExposePlayerState(player.enemy, player.visible)) {
+      values[base + enumValue(InferenceFeature::Player::RelativeX)] = normalizeSigned(player.relativeOrigin.x, kPositionScale);
+      values[base + enumValue(InferenceFeature::Player::RelativeY)] = normalizeSigned(player.relativeOrigin.y, kPositionScale);
+      values[base + enumValue(InferenceFeature::Player::RelativeZ)] = normalizeSigned(player.relativeOrigin.z, kPositionScale);
+      values[base + enumValue(InferenceFeature::Player::Distance)] = normalizeNonNegative(player.distance, kDistanceScale);
+      values[base + enumValue(InferenceFeature::Player::Health)] = normalizeNonNegative(player.health, kHealthScale);
+      values[base + enumValue(InferenceFeature::Player::Armor)] = normalizeNonNegative(player.armor, kHealthScale);
+    }
   }
 
   const auto waypointBase = kCoreFeatureCount + kInferencePlayerSlots * kPlayerFeatureCount;

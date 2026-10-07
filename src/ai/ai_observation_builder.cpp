@@ -6,12 +6,13 @@
 // SPDX-License-Identifier: MIT
 //
 
-#include <ai/ai_observation_builder.h>
-
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <limits>
+
+#include <ai/ai_observation_builder.h>
+#include <ai/ai_perception_guard.h>
 
 namespace ai {
 namespace {
@@ -106,18 +107,21 @@ Observation buildObservation(const ObservationInput &input) {
     auto &target = observation.players[i];
 
     target.entityIndex = source.entityIndex;
-    target.relativeOrigin = relativePosition(finiteOrZero(source.origin), finiteOrZero(input.bot.origin));
-    target.distance = finiteOrZero(length(target.relativeOrigin));
-    target.health = finiteOrZero(source.health);
-    target.armor = finiteOrZero(source.armor);
     target.team = source.team;
-    target.weapon = source.weapon;
     target.valid = source.valid;
     target.alive = source.alive;
     target.enemy = source.enemy;
     target.visible = source.visible;
     target.heard = source.heard;
     target.isFollowTarget = target.entityIndex == observation.bot.followTargetPlayer;
+
+    if (canExposePlayerState(target.enemy, target.visible)) {
+      target.relativeOrigin = relativePosition(finiteOrZero(source.origin), finiteOrZero(input.bot.origin));
+      target.distance = finiteOrZero(length(target.relativeOrigin));
+      target.health = finiteOrZero(source.health);
+      target.armor = finiteOrZero(source.armor);
+      target.weapon = source.weapon;
+    }
   }
 
   const auto waypointCount = std::min<size_t>(input.waypointCount, kMaxObservedWaypoints);

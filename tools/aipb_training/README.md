@@ -151,10 +151,11 @@ The command validates the ONNX graph and runtime contract and verifies output pa
 
 ## Model feature schema
 
-The current model input is schema version 6 with 252 ordered features.
-Schema v6 fixes the previous `last_enemy_distance` / `weapon.unknown` index overlap and adds model-visible team, defuser ownership, planted-bomb time remaining, dropped-C4 state, and dropped-C4 relative position/distance.
-Each observed player slot includes an `is_follow_target` flag so FollowPlayer actions can identify their target without relying on unstable player-slot ordering.
-Datasets and checkpoints produced for feature schema v5 are intentionally incompatible with v6 and must not be mixed into a v6 training run.
+The current model input is schema version 7 with 252 ordered features.
+Schema v7 keeps the v6 layout but masks exact live position, distance, health, armor, and weapon state for enemy player slots that are not currently visible.
+The `heard` flag remains available, while hidden-enemy location must come from the separate remembered/hearing perception state rather than the live player entity.
+Known teammate state remains available, and player ordering prefers slots with legitimately available state before masked hidden enemies.
+Datasets and checkpoints produced for feature schema v6 are intentionally incompatible with v7 and must not be mixed into a v7 training run.
 
 ## In-game collection status
 

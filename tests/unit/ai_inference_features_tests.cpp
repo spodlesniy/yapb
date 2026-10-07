@@ -16,7 +16,7 @@ using ai::test::expect;
 using ai::test::expectNear;
 
 AI_TEST(testInferenceFeatureSchema) {
-  expect(ai::kInferenceFeatureSchemaVersion == 6, "inference feature schema uses the current version");
+  expect(ai::kInferenceFeatureSchemaVersion == 7, "inference feature schema uses the current version");
   expect(ai::kInferenceFeatureCount == 252, "inference feature vector uses the current width");
   expect(static_cast<size_t>(ai::InferenceFeature::Core::LastEnemyDistance) == 31,
          "last enemy distance has its own core index");
@@ -183,4 +183,49 @@ AI_TEST(testInferenceFeatureOrdering) {
              "player slots are ordered by distance");
   expectNear(features.at(base + ai::kPlayerFeatureCount + static_cast<size_t>(ai::InferenceFeature::Player::Distance)), 200.0f / 4096.0f,
              0.0001f, "second player slot follows deterministic ordering");
+}
+
+AI_TEST(testInferenceFeatureMasksAndDeprioritizesHiddenEnemyState) {
+  ai::Observation observation {};
+  observation.playerCount = 2;
+
+  observation.players[0].entityIndex = 3;
+  observation.players[0].valid = true;
+  observation.players[0].alive = true;
+  observation.players[0].enemy = true;
+  observation.players[0].heard = true;
+  observation.players[0].relativeOrigin = { 10.0f, 20.0f, 30.0f };
+  observation.players[0].distance = 40.0f;
+  observation.players[0].health = 100.0f;
+  observation.players[0].armor = 100.0f;
+
+  observation.players[1].entityIndex = 9;
+  observation.players[1].valid = true;
+  observation.players[1].alive = true;
+  observation.players[1].enemy = true;
+  observation.players[1].visible = true;
+  observation.players[1].relativeOrigin = { 800.0f, 0.0f, 0.0f };
+  observation.players[1].distance = 800.0f;
+  observation.players[1].health = 75.0f;
+  observation.players[1].armor = 25.0f;
+
+  const auto features = ai::encodeInferenceFeatures(observation);
+  const auto first = ai::kCoreFeatureCount;
+  const auto second = first + ai::kPlayerFeatureCount;
+
+  expectNear(features.at(first + static_cast<size_t>(ai::InferenceFeature::Player::Visible)), 1.0f, 0.0001f,
+             "visible enemy is ordered before a hidden enemy even when farther away");
+  expectNear(features.at(first + static_cast<size_t>(ai::InferenceFeature::Player::RelativeX)), 800.0f / 4096.0f, 0.0001f,
+             "visible enemy position remains encoded");
+
+  expectNear(features.at(second + static_cast<size_t>(ai::InferenceFeature::Player::Heard)), 1.0f, 0.0001f,
+             "hidden enemy hearing flag remains encoded");
+  expectNear(features.at(second + static_cast<size_t>(ai::InferenceFeature::Player::RelativeX)), 0.0f, 0.0001f,
+             "hidden enemy position is masked at the feature boundary");
+  expectNear(features.at(second + static_cast<size_t>(ai::InferenceFeature::Player::Distance)), 0.0f, 0.0001f,
+             "hidden enemy distance is masked at the feature boundary");
+  expectNear(features.at(second + static_cast<size_t>(ai::InferenceFeature::Player::Health)), 0.0f, 0.0001f,
+             "hidden enemy health is masked at the feature boundary");
+  expectNear(features.at(second + static_cast<size_t>(ai::InferenceFeature::Player::Armor)), 0.0f, 0.0001f,
+             "hidden enemy armor is masked at the feature boundary");
 }

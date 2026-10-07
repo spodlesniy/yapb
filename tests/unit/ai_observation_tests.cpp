@@ -224,3 +224,48 @@ AI_TEST(testLiveEnemyStateRequiresConfirmedVisibility) {
   expect(!ai::canUseLiveEnemyState(true, false, false),
          "a different visible enemy cannot expose the remembered target's live state");
 }
+
+AI_TEST(testObservationBuilderMasksHiddenEnemyLiveState) {
+  ai::ObservationInput input {};
+  input.bot.origin = { 100.0f, 200.0f, 300.0f };
+  input.playerCount = 3;
+
+  input.players[0].entityIndex = 7;
+  input.players[0].origin = { 500.0f, 600.0f, 700.0f };
+  input.players[0].health = 90.0f;
+  input.players[0].armor = 50.0f;
+  input.players[0].weapon = 12;
+  input.players[0].valid = true;
+  input.players[0].alive = true;
+  input.players[0].enemy = true;
+  input.players[0].heard = true;
+
+  input.players[1] = input.players[0];
+  input.players[1].entityIndex = 8;
+  input.players[1].visible = true;
+
+  input.players[2] = input.players[0];
+  input.players[2].entityIndex = 9;
+  input.players[2].enemy = false;
+  input.players[2].heard = false;
+
+  const auto observation = ai::buildObservation(input);
+
+  const auto &hiddenEnemy = observation.players[0];
+  expect(hiddenEnemy.valid && hiddenEnemy.alive && hiddenEnemy.enemy && hiddenEnemy.heard,
+         "hidden enemy identity and perception flags remain observable");
+  expect(hiddenEnemy.relativeOrigin.x == 0.0f && hiddenEnemy.relativeOrigin.y == 0.0f
+             && hiddenEnemy.relativeOrigin.z == 0.0f,
+         "hidden enemy live position is masked");
+  expect(hiddenEnemy.distance == 0.0f && hiddenEnemy.health == 0.0f && hiddenEnemy.armor == 0.0f,
+         "hidden enemy live distance and combat resources are masked");
+  expect(hiddenEnemy.weapon == -1, "hidden enemy live weapon is masked");
+
+  const auto &visibleEnemy = observation.players[1];
+  expect(visibleEnemy.relativeOrigin.x == 400.0f && visibleEnemy.health == 90.0f && visibleEnemy.weapon == 12,
+         "visible enemy state remains available");
+
+  const auto &teammate = observation.players[2];
+  expect(teammate.relativeOrigin.x == 400.0f && teammate.health == 90.0f && teammate.weapon == 12,
+         "teammate state remains available without enemy visibility");
+}

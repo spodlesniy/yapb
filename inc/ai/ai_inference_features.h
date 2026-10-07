@@ -15,7 +15,7 @@
 
 namespace ai {
 
-constexpr uint32_t kInferenceFeatureSchemaVersion = 6;
+constexpr uint32_t kInferenceFeatureSchemaVersion = 7;
 constexpr size_t kInferencePlayerSlots = 8;
 constexpr size_t kInferenceWaypointSlots = 8;
 

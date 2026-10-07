@@ -1316,3 +1316,18 @@ Bomb-objective preemption, hunt completion, cancellation, and the existing legac
 
 Reason: gameplay validation showed two Counter-Terrorists spending about 35 seconds in remembered-enemy hunts before a bomb plant interrupted them.
 Inspection found that `YaPBActionExecutionContext::huntTarget()` initialized `m_huntTargetOrigin` from `target->v.origin`, so a retained pointer to a hidden player could reveal that player's current position at semantic-hunt start instead of using YaPB's legitimately remembered `m_lastEnemyOrigin`.
+
+## D138 — Mask hidden enemy player state in feature schema v7
+
+Inference feature schema v7 keeps the existing 252-value layout but changes the player-slot perception contract.
+An enemy player slot that is not currently visible retains identity-neutral semantic flags such as valid, alive, enemy, heard, and follow-target state, while exact live position, distance, health, armor, and weapon state are masked.
+Visible enemies keep their observed live state.
+Teammate state remains available because teammate information is part of normal team awareness rather than enemy perception.
+
+The feature encoder repeats the same mask even if an externally constructed `Observation` contains hidden-enemy values, and player ordering prefers slots with available state before masked hidden enemies so zeroed distances cannot displace visible targets.
+The C++ and Python contracts move from feature schema v6 to v7 without changing the 252-value width.
+Existing v6 datasets and checkpoints are rejected by the v7 tooling and must not be mixed with new captures.
+
+Reason: gameplay investigation found that every player slot was populated from the live entity origin, health, armor, and weapon before the `visible` and `heard` flags were applied.
+A future model could therefore recover exact hidden-enemy state directly from serialized features even when the runtime correctly reported that the enemy was not visible.
+The separate heard-enemy position source remains a follow-up because its current YaPB hearing path may itself use live entity position.
