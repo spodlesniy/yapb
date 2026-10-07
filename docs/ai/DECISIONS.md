@@ -1579,5 +1579,7 @@ Reason: terminal executors may clear tasks, release targets, consume remembered 
 The previous collector recorded the pre-execution input snapshot as `next_observation`, so those terminal side effects could never appear in the transition's next state.
 This is visible in the schema-v7 capture as completed actions whose encoded next task still describes the task that completion just released.
 
-This decision changes only in-memory collection/runtime semantics.
-The JSONL dataset format version and Python/offline contract are intentionally left unchanged in this commit and will be versioned separately after the runtime change passes CI.
+The runtime/collector change landed first and passed CI independently.
+The follow-up dataset-contract step increments JSONL format version from 1 to 2 and updates the Python validator/fixtures accordingly.
+Feature schema remains v7 and action schema remains v2; only the meaning of terminal `next_observation` changed.
+Version-1 captures are therefore rejected by the current offline validator so stale pre-terminal next-state samples cannot be silently mixed with corrected captures.

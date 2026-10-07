@@ -60,7 +60,7 @@ def _make_sample(episode_id: int, index: int) -> dict:
 def _write_dataset(path: Path) -> None:
     metadata = {
         "format": "aipb-training-jsonl",
-        "version": 1,
+        "version": 2,
         "feature_schema_version": MODEL_FEATURE_SCHEMA_VERSION,
         "action_schema_version": MODEL_ACTION_SCHEMA_VERSION,
         "type": "metadata",
@@ -86,7 +86,7 @@ class OfflinePipelineSmokeTests(unittest.TestCase):
             _write_dataset(dataset_path)
 
             metadata, samples = load_training_dataset(dataset_path)
-            self.assertEqual(metadata.version, 1)
+            self.assertEqual(metadata.version, 2)
             self.assertEqual(len(samples), 8)
 
             result = run_training(

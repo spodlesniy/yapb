@@ -26,7 +26,7 @@ from tools.aipb_training.model_contract import (
 
 METADATA = {
     "format": "aipb-training-jsonl",
-    "version": 1,
+    "version": 2,
     "feature_schema_version": MODEL_FEATURE_SCHEMA_VERSION,
     "action_schema_version": MODEL_ACTION_SCHEMA_VERSION,
     "type": "metadata",
@@ -113,7 +113,7 @@ class TrainingDatasetLoaderTests(unittest.TestCase):
         metadata, samples = load_training_dataset(path)
 
         self.assertEqual(metadata.format, "aipb-training-jsonl")
-        self.assertEqual(metadata.version, 1)
+        self.assertEqual(metadata.version, 2)
         self.assertEqual(metadata.feature_schema_version, MODEL_FEATURE_SCHEMA_VERSION)
         self.assertEqual(metadata.action_schema_version, MODEL_ACTION_SCHEMA_VERSION)
         self.assertEqual(len(samples), 1)

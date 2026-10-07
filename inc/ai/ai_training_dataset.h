@@ -15,7 +15,7 @@
 
 namespace ai {
 
-constexpr uint32_t kTrainingDatasetFormatVersion = 1;
+constexpr uint32_t kTrainingDatasetFormatVersion = 2;
 constexpr const char kTrainingDatasetDirectory[] = "training";
 constexpr const char kTrainingDatasetFilePrefix[] = "ai_training";
 

@@ -19,7 +19,7 @@ from tools.aipb_training.validate_dataset import DatasetValidationError, validat
 
 METADATA = {
     "format": "aipb-training-jsonl",
-    "version": 1,
+    "version": 2,
     "feature_schema_version": MODEL_FEATURE_SCHEMA_VERSION,
     "action_schema_version": MODEL_ACTION_SCHEMA_VERSION,
     "type": "metadata",
@@ -74,7 +74,7 @@ class TrainingDatasetValidatorTests(unittest.TestCase):
 
     def test_rejects_invalid_metadata(self) -> None:
         metadata = dict(METADATA)
-        metadata["version"] = 2
+        metadata["version"] = 1
         path = self.write_dataset([metadata])
 
         with self.assertRaises(DatasetValidationError):
