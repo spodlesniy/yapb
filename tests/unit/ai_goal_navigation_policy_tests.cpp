@@ -8,6 +8,7 @@
 
 #include "ai_test.h"
 
+#include <ai/ai_bomb_search_guard.h>
 #include <ai/ai_goal_navigation_policy.h>
 #include <ai/ai_navigation_task_guard.h>
 #include <ai/ai_objective_navigation_guard.h>
@@ -669,4 +670,20 @@ AI_TEST(testObjectivePickupKeepsOwnershipThroughNavigationPause) {
   expect(!ai::ownsObjectivePickupTask(
              ai::TaskType::Pause, ai::TaskType::PickupItem, ai::TaskType::Pause, false),
          "ordinary pickup does not absorb an unrelated pause");
+}
+
+AI_TEST(testBombSearchGoalSelectionUsesVisitedStateAndOwnDistance) {
+  expect(ai::isBombSearchGoalEligible(false, false),
+         "unchecked bombsite remains eligible during the first search pass");
+  expect(!ai::isBombSearchGoalEligible(true, false),
+         "visited bombsite is skipped while unchecked sites remain");
+  expect(ai::isBombSearchGoalEligible(true, true),
+         "visited bombsite becomes eligible only for deterministic re-check");
+
+  expect(ai::isBetterBombSearchGoal(500.0f, 20, 700.0f, 10),
+         "nearer bombsite path is preferred");
+  expect(!ai::isBetterBombSearchGoal(900.0f, 5, 700.0f, 10),
+         "farther bombsite path is not preferred");
+  expect(ai::isBetterBombSearchGoal(700.0f, 5, 700.0f, 10),
+         "equal-distance bombsites use node index as deterministic tie-break");
 }

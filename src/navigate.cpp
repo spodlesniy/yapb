@@ -7,6 +7,8 @@
 
 #include <yapb.h>
 
+#include <ai/ai_bomb_search_guard.h>
+
 ConVar cv_has_team_semiclip ("has_team_semiclip", "0", "When enabled, bots will not try to avoid teammates on their way. Assumes that some semiclip plugins are in use.");
 ConVar cv_graph_slope_height ("graph_slope_height", "24.0", "Determines the maximum slope height change between the current and next node to consider the current link as a jump link. Only for generated graphs.", true, 12.0f, 48.0f);
 
@@ -134,7 +136,7 @@ int Bot::findBestGoal () {
       }
    }
    else if (game.mapIs (MapFlags::Demolition) && m_team == Team::CT) {
-      if (gameState.isBombPlanted () && getCurrentTaskId () != Task::EscapeFromBomb && !gameState.getBombOrigin ().empty ()) {
+      if (gameState.isBombPlanted () && getCurrentTaskId () != Task::EscapeFromBomb) {
 
          if (bots.hasBombSay (BombPlantedSay::ChatSay)) {
             pushChatMessage (Chat::Plant);
@@ -2106,10 +2108,11 @@ int Bot::findBombNode () {
 
    const auto &goals = graph.m_goalPoints;
    const auto &bomb = gameState.getBombOrigin ();
-   const auto &audible = isBombAudible ();
+   const bool bombOriginKnown = !bomb.empty ();
+   const auto audible = bombOriginKnown ? isBombAudible () : Vector {};
 
    // once the bomb can be heard (or is already very close), route to a real node near the C4.
-   if (pev->origin.distanceSq (bomb) < cr::sqrf (96.0f) || !audible.empty ()) {
+   if (bombOriginKnown && (pev->origin.distanceSq (bomb) < cr::sqrf (96.0f) || !audible.empty ())) {
       const int node = graph.getNearest (bomb, 512.0f);
 
       if (graph.exists (node)) {
@@ -2119,43 +2122,43 @@ int Bot::findBombNode () {
    }
 
    if (goals.empty ()) {
-      return graph.getNearest (bomb, 512.0f); // reliability check
+      return graph.random (); // no honest bombsite search is possible without goal nodes
    }
 
-   int goal = kInvalidNodeIndex;
-   float bestDistanceSq = kInfiniteDistance;
-   const bool ignoreVisited = m_numFriendsLeft == 0;
+   ensureCurrentNodeIndex ();
+   const bool hasCurrentNode = graph.exists (m_currentNodeIndex);
 
-   // Prefer the goal nearest the planted C4. Team-wide visited state is useful while CTs can
-   // coordinate site checks, but the last CT must not inherit it as a hard exclusion.
-   for (const auto &point : goals) {
-      if (!ignoreVisited && graph.isVisited (point)) {
-         continue;
+   auto findNearestSearchGoal = [&] (bool allowVisited) {
+      int goal = kInvalidNodeIndex;
+      float bestDistance = kInfiniteDistance;
+
+      for (const auto &point : goals) {
+         if (!ai::isBombSearchGoalEligible (graph.isVisited (point), allowVisited)) {
+            continue;
+         }
+
+         const float distance = hasCurrentNode
+            ? planner.dist (m_currentNodeIndex, point)
+            : pev->origin.distanceSq (graph[point].origin);
+
+         if (ai::isBetterBombSearchGoal (distance, point, bestDistance, goal)) {
+            goal = point;
+            bestDistance = distance;
+         }
       }
+      return goal;
+   };
 
-      const float distanceSq = bomb.distanceSq (graph[point].origin);
-
-      if (distanceSq < bestDistanceSq) {
-         goal = point;
-         bestDistanceSq = distanceSq;
-      }
-   }
+   // Before the C4 is legitimately localized, search the nearest unchecked bombsite from
+   // the CT's own position rather than ranking sites by the hidden planted-bomb origin.
+   int goal = findNearestSearchGoal (false);
 
    if (graph.exists (goal)) {
       return goal;
    }
 
-   // If all goals were marked visited, fall back deterministically to the goal nearest the C4.
-   bestDistanceSq = kInfiniteDistance;
-
-   for (const auto &point : goals) {
-      const float distanceSq = bomb.distanceSq (graph[point].origin);
-
-      if (distanceSq < bestDistanceSq) {
-         goal = point;
-         bestDistanceSq = distanceSq;
-      }
-   }
+   // If every site is already checked, deterministically re-check the nearest site.
+   goal = findNearestSearchGoal (true);
    return goal;
 }
 

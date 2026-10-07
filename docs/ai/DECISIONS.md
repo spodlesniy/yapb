@@ -1359,3 +1359,18 @@ Existing completion on reaching the hunt waypoint, visible-enemy takeover, inval
 Reason: a schema-v7 gameplay capture after D137 still reproduced paired `HuntTarget` actions lasting about 24.5 seconds before a bomb plant, and another pair lasting about 32.4 seconds in the final round.
 The bots visually rotated or remained tactically inert until the plant interrupted the actions.
 Removing the hidden live-position leak was therefore necessary but not sufficient: the semantic hunt also needed a bounded no-progress lifecycle so a remembered-enemy navigation failure cannot monopolize the action pipeline indefinitely.
+
+## D141 — Search bombsites without using hidden C4 position
+
+Before a planted C4 is legitimately localized, Counter-Terrorist bombsite search no longer ranks goal nodes by distance to the real planted-bomb origin.
+The first search pass chooses the nearest unvisited bombsite from the CT's own current waypoint using path distance, with physical distance as the fallback when the current waypoint is unavailable.
+If every site is already marked visited, the nearest site is re-checked deterministically.
+This supersedes D124's last-CT visited bypass because, without hidden C4 knowledge, ignoring visited state on every pass could make a lone CT repeatedly select the same nearby cleared site.
+
+The real planted-bomb origin is used only after the C4 is audible or already within the existing 96-unit close-acquisition range.
+CT bombsite search now also remains available when the global bomb-origin cache is empty.
+A demolition graph without goal nodes falls back to a random graph node instead of leaking the hidden C4 position.
+
+Reason: schema-v7 gameplay validation showed a CT leaving the bombsite that was closer to him and running toward the other site immediately after plant, even though neither surviving CT had legitimate information identifying that site.
+Inspection found that D124's deterministic pre-audibility search ranked every goal by `bomb.distanceSq(graph[point].origin)`, so the search algorithm used the actual C4 origin before hearing or acquiring it.
+D141 preserves deterministic coordinated search while removing that hidden objective knowledge.
