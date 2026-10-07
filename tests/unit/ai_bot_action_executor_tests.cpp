@@ -1596,7 +1596,15 @@ AI_TEST(testTrainingCollectorRecordsPreemptedPlantWithoutSuccessReward) {
   observation.bot.currentTask = ai::TaskType::Attack;
   context.plantBombAvailable = false;
   expect(collector.step(runtime, observation).type == ai::ActionResultType::Interrupted, "preempted plant is interrupted");
-  expect(!runtime.isActive() && !recorder.hasPendingAction(), "interruption finishes runtime and recording lifecycles");
+  expect(!runtime.isActive() && recorder.hasPendingAction(), "interruption finishes runtime but awaits post-action state");
+  expect(collector.hasPendingTerminal(), "preempted plant retains its terminal result until finalization");
+  expect(buffer.empty(), "preempted plant is not recorded with the pre-execution observation");
+
+  auto postObservation = observation;
+  postObservation.bot.currentTask = ai::TaskType::Attack;
+  expect(collector.finalizeTerminal(postObservation), "post-action observation finalizes preempted plant");
+  expect(!recorder.hasPendingAction() && !collector.hasPendingTerminal(),
+         "finalization closes the recording lifecycle");
   expect(buffer.size() == 1, "preempted plant records exactly one transition");
   const auto &transition = buffer.at(0);
   expect(transition.action.type == ai::ActionType::PlantBomb, "recorded action remains the original plant");
