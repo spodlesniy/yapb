@@ -17,6 +17,14 @@ constexpr bool shouldUseGraphObjectiveApproach(float distanceSq, float interacti
   return distanceSq >= interactionDistanceSq && targetNodeExists && !targetNodeReached;
 }
 
+// Once an interaction-safe objective node is reached, finish only the remaining
+// distance to the objective interaction sphere. Do not drive back to the center
+// of a waypoint whose navigation radius has already been satisfied.
+constexpr bool shouldFinishObjectiveApproachDirectly(float distanceSq, float interactionDistanceSq,
+                                                     bool interactionNodeExists, bool interactionNodeReached) {
+  return distanceSq >= interactionDistanceSq && interactionNodeExists && interactionNodeReached;
+}
+
 // Objective interaction range is a full 3D sphere. A node that is close in XY
 // but too far above or below the objective must not be treated as interaction-safe.
 constexpr bool isWithinObjectiveInteractionRange(float deltaX, float deltaY, float deltaZ,

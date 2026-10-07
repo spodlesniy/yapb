@@ -1755,13 +1755,13 @@ void Bot::pickupItem_ () {
             break;
          }
 
-         // Reaching a waypoint means entering its navigation radius, not necessarily
-         // standing at its origin. Finish the approach to an interaction-safe node
-         // instead of pushing directly into an elevated or obstructed C4 entity.
-         if (itemDistanceSq >= interactionDistanceSq && hasInteractionNode && m_currentNodeIndex == bombNode) {
-            m_aimFlags &= ~AimFlags::Entity;
-            m_aimFlags |= AimFlags::Nav;
-            m_destOrigin = graph[bombNode].origin;
+         // Reaching an interaction-safe waypoint means the graph has already
+         // selected a valid side of the C4. Finish only the short remaining
+         // distance into the 3D interaction sphere instead of walking back to
+         // the waypoint center after its navigation radius has been satisfied.
+         if (ai::shouldFinishObjectiveApproachDirectly (
+            itemDistanceSq, interactionDistanceSq, hasInteractionNode, m_currentNodeIndex == bombNode)) {
+
             m_moveToGoal = true;
             m_checkTerrain = true;
             break;

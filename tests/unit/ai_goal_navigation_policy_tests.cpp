@@ -686,7 +686,20 @@ AI_TEST(testObjectiveApproachUsesGraphUntilInteractionRange) {
   expect(!ai::shouldUseGraphObjectiveApproach(90.0f * 90.0f, interactionDistanceSq, false, false),
          "missing objective node falls back to the direct approach");
   expect(!ai::shouldUseGraphObjectiveApproach(90.0f * 90.0f, interactionDistanceSq, true, true),
-         "reaching the objective node avoids a source-equals-destination path rebuild");
+         "reaching the objective node hands off to the final direct interaction approach");
+
+  expect(ai::shouldFinishObjectiveApproachDirectly(
+             80.93f * 80.93f, interactionDistanceSq, true, true),
+         "reached interaction-safe node finishes the small remaining distance directly");
+  expect(!ai::shouldFinishObjectiveApproachDirectly(
+             79.0f * 79.0f, interactionDistanceSq, true, true),
+         "direct finishing stops after entering the interaction sphere");
+  expect(!ai::shouldFinishObjectiveApproachDirectly(
+             90.0f * 90.0f, interactionDistanceSq, true, false),
+         "interaction-safe node must be reached before the direct finishing stage");
+  expect(!ai::shouldFinishObjectiveApproachDirectly(
+             90.0f * 90.0f, interactionDistanceSq, false, true),
+         "a non-interaction node does not acquire the safe direct finishing path");
 }
 
 AI_TEST(testObjectivePickupKeepsOwnershipThroughNavigationPause) {

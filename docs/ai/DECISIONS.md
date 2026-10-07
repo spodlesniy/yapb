@@ -1486,3 +1486,14 @@ Reason: schema-v7 episode 198 recorded one `PlantBomb` lifecycle lasting 11.078 
 The legacy `plantBomb_()` task already completes when `m_enemy` is alive, but the semantic action pipeline keeps executing the same active action until it receives a terminal result.
 Without explicit visible-enemy preemption, `YaPBActionExecutionContext::plantBomb()` can see the resumed `Normal` task on the next semantic step and start `Task::PlantBomb` again, effectively hiding the combat interruption inside one long semantic plant lifecycle.
 D150 makes that interruption terminal and returns control to the policy so `AttackTarget` can re-enter on the next decision.
+
+## D151 — Finish planted-C4 pickup at the interaction boundary
+
+After graph navigation reaches an interaction-safe planted-C4 waypoint, the pickup no longer redirects `m_destOrigin` to the waypoint center.
+The graph still selects a waypoint whose origin lies inside the full XYZ 80-unit interaction sphere, but once that node is reached the final movement keeps the C4 entity as the destination and runs only until the bot itself crosses the same 3D interaction boundary.
+
+Reason: schema-v7 episode 197 contains a `PickupItem` lifecycle lasting 22.956 s before `DefuseBomb`.
+At the start of that lifecycle the destination is only about 80.93 units from the bot, while the current waypoint is about 68.9 units from the bot and about 77.5 units from the destination.
+That means the current waypoint is already interaction-safe, but D143's final-stage branch asks the bot to travel toward the waypoint center instead of closing the roughly one-unit interaction-range deficit.
+The helper contract already says that reaching the target node ends graph approach and hands control to the final direct approach.
+D151 makes the planted-C4 task honor that boundary without changing the strict 3D distance requirement or adding a timeout.
