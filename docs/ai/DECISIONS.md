@@ -1387,3 +1387,20 @@ Dropped-C4 recovery for bots that do not yet carry the bomb and planted-C4 handl
 
 Reason: schema-v7 gameplay validation showed a 14-HP bomb carrier repeatedly entering `PickupItem` while still carrying C4, including late-round weapon changes before finally reaching a bombsite and planting.
 The previous guard blocked pickups only for `m_hasC4 && m_inBombZone`, leaving the entire approach route open to optional item detours.
+
+## D143 — Finish planted-C4 approach through a 3D interaction-safe waypoint
+
+Counter-Terrorist planted-C4 pickup now prefers a graph node whose origin lies inside the existing 80-unit defuse interaction radius of the C4.
+Candidate eligibility uses the full three-dimensional XYZ distance.
+A waypoint that is close to the bomb in the horizontal plane but more than the interaction range above or below it is not considered interaction-safe.
+Among reachable interaction-safe nodes, the pickup chooses the shortest precise graph route with a deterministic node-index tie-break.
+If no such node exists, the previous nearest-node plus direct-entity fallback remains available.
+
+Reaching the selected waypoint no longer immediately hands movement back to the C4 entity while the bot is still outside interaction range.
+YaPB navigation can mark a waypoint reached after entering its node radius, so the pickup now finishes that last short segment toward the interaction-safe waypoint origin.
+Only after the bot itself is within the same full 3D 80-unit radius does the existing `DefuseBomb` handoff occur.
+The reload-to-defuse proximity check inside `defuseBomb_()` is also changed from 2D distance to the same full 3D distance so a bot directly below or above the C4 cannot be treated as close enough.
+
+Reason: schema-v7 gameplay validation after D136 captured a CT spending about 13.6 seconds in `PickupItem` near an elevated planted C4 before another CT eventually defused it.
+D136 routed to the waypoint nearest the C4, but once `m_currentNodeIndex == bombNode` it fell back to direct entity movement even if the bot had merely entered a large waypoint radius and was still outside defuse range.
+That allowed the final approach to push into the box or border supporting the C4 instead of completing the graph-supported vertical approach.

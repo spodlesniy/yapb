@@ -696,3 +696,17 @@ AI_TEST(testBombCarrierBlocksSidePickupsWhileObjectiveIsEnabled) {
   expect(!ai::blocksBombCarrierSidePickups(true, false),
          "ignored objectives do not impose bomb-carrier pickup ownership");
 }
+
+AI_TEST(testObjectiveInteractionRangeUsesFullThreeDimensionalDistance) {
+  expect(ai::isWithinObjectiveInteractionRange(30.0f, 40.0f, 20.0f, 80.0f),
+         "nearby objective node inside the full XYZ radius is interaction-safe");
+  expect(!ai::isWithinObjectiveInteractionRange(10.0f, 10.0f, 81.0f, 80.0f),
+         "node close in XY but too far below or above the objective is rejected");
+  expect(!ai::isWithinObjectiveInteractionRange(0.0f, 0.0f, 80.0f, 80.0f),
+         "interaction boundary remains strict at exactly 80 vertical units");
+
+  expect(ai::isBetterObjectiveApproachNode(300.0f, 20, 500.0f, 10),
+         "shorter graph route wins among interaction-safe nodes");
+  expect(ai::isBetterObjectiveApproachNode(500.0f, 5, 500.0f, 10),
+         "equal route distance uses node index as deterministic tie-break");
+}

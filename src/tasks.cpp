@@ -987,7 +987,7 @@ void Bot::defuseBomb_ () {
    m_strafeSpeed = 0.0f;
 
    // bot is reloading and we close enough to start defusing
-   if (m_isReloading && bombPos.distanceSq2d (pev->origin) < cr::sqrf (80.0f)) {
+   if (m_isReloading && bombPos.distanceSq (pev->origin) < cr::sqrf (80.0f)) {
       if (m_numEnemiesLeft == 0
          || timeToBlowUp < fullDefuseTime + 7.0f
          || ((getAmmoInClip () > 8 && m_reloadState == Reload::Primary) || (getAmmoInClip () > 5 && m_reloadState == Reload::Secondary))) {
@@ -1662,7 +1662,50 @@ void Bot::pickupItem_ () {
       if (m_team == Team::CT) {
          constexpr float kDefuseInteractionDistance = 80.0f;
          const float interactionDistanceSq = cr::sqrf (kDefuseInteractionDistance);
-         const int bombNode = graph.getNearest (dest, 512.0f);
+
+         auto isInteractionNode = [&] (int node) {
+            if (!graph.exists (node)) {
+               return false;
+            }
+
+            const auto delta = graph[node].origin - dest;
+            return ai::isWithinObjectiveInteractionRange (
+               delta.x, delta.y, delta.z, kDefuseInteractionDistance);
+         };
+
+         int bombNode = getTask ()->data;
+         bool hasInteractionNode = isInteractionNode (bombNode);
+
+         if (itemDistanceSq >= interactionDistanceSq && !hasInteractionNode) {
+            const int routeStartNode = findNearestNode ();
+            float bestRouteDistance = kInfiniteDistance;
+
+            for (const auto &node : graph.getNearestInRadius (kDefuseInteractionDistance, dest)) {
+               if (!isInteractionNode (node)) {
+                  continue;
+               }
+
+               const float routeDistance = graph.exists (routeStartNode)
+                  ? planner.preciseDistance (routeStartNode, node)
+                  : pev->origin.distanceSq (graph[node].origin);
+
+               if (routeDistance >= kInfiniteDistanceLong) {
+                  continue;
+               }
+
+               if (ai::isBetterObjectiveApproachNode (
+                  routeDistance, node, bestRouteDistance, bombNode)) {
+
+                  bombNode = node;
+                  bestRouteDistance = routeDistance;
+                  hasInteractionNode = true;
+               }
+            }
+
+            if (!hasInteractionNode) {
+               bombNode = graph.getNearest (dest, 512.0f);
+            }
+         }
 
          if (itemDistanceSq >= interactionDistanceSq && graph.exists (bombNode)) {
             if (getTask ()->data != bombNode) {
@@ -1705,6 +1748,18 @@ void Bot::pickupItem_ () {
             m_checkTerrain = true;
 
             updateNavigation ();
+            break;
+         }
+
+         // Reaching a waypoint means entering its navigation radius, not necessarily
+         // standing at its origin. Finish the approach to an interaction-safe node
+         // instead of pushing directly into an elevated or obstructed C4 entity.
+         if (itemDistanceSq >= interactionDistanceSq && hasInteractionNode && m_currentNodeIndex == bombNode) {
+            m_aimFlags &= ~AimFlags::Entity;
+            m_aimFlags |= AimFlags::Nav;
+            m_destOrigin = graph[bombNode].origin;
+            m_moveToGoal = true;
+            m_checkTerrain = true;
             break;
          }
 

@@ -17,6 +17,20 @@ constexpr bool shouldUseGraphObjectiveApproach(float distanceSq, float interacti
   return distanceSq >= interactionDistanceSq && targetNodeExists && !targetNodeReached;
 }
 
+// Objective interaction range is a full 3D sphere. A node that is close in XY
+// but too far above or below the objective must not be treated as interaction-safe.
+constexpr bool isWithinObjectiveInteractionRange(float deltaX, float deltaY, float deltaZ,
+                                                 float interactionDistance) {
+  return deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ
+      < interactionDistance * interactionDistance;
+}
+
+constexpr bool isBetterObjectiveApproachNode(float candidateRouteDistance, int candidateNode,
+                                             float bestRouteDistance, int bestNode) {
+  return candidateRouteDistance < bestRouteDistance
+      || (candidateRouteDistance == bestRouteDistance && (bestNode < 0 || candidateNode < bestNode));
+}
+
 // While carrying C4, side pickups must not take ownership away from the active
 // demolition objective unless objectives are explicitly disabled.
 constexpr bool blocksBombCarrierSidePickups(bool hasC4, bool objectivesEnabled) {
