@@ -330,6 +330,27 @@ bool YaPBActionExecutionContext::huntTarget(int targetPlayer, const Vec3 &positi
     return false;
   }
 
+  // Hearing evidence must have actually been attributed to THIS target by
+  // the bot. Raw client noise from beyond hearing range is not new evidence.
+  const auto heardTargetNoise = [&] () {
+    return (m_bot->m_states & Sense::HearingEnemy) && m_bot->m_hearedEnemy == target
+        ? getPlayerNoiseEndTime(target) : -1.0f;
+  };
+  if (!m_huntTargetActive
+      && suppressConsumedHuntWithoutNewEvidence(
+          targetPlayer, m_consumedHuntTargetPlayer,
+          gameState.getRoundStartTime(), m_consumedHuntRoundStartTime,
+          m_bot->m_seeEnemyTime, heardTargetNoise(),
+          m_consumedHuntSeenTime, m_consumedHuntNoiseEndTime)) {
+    if (m_bot->m_lastEnemy == target) {
+      m_bot->m_lastEnemyOrigin.clear();
+    }
+    if (m_bot->getCurrentTaskId() == Task::Hunt) {
+      m_bot->clearTask(Task::Hunt);
+    }
+    return false;
+  }
+
   if (!m_huntTargetActive || m_huntTargetPlayer != targetPlayer) {
     m_huntTargetActive = true;
     m_huntTargetPlayer = targetPlayer;
@@ -337,12 +358,12 @@ bool YaPBActionExecutionContext::huntTarget(int targetPlayer, const Vec3 &positi
     m_huntBestDistance = -1.0f;
     m_huntLastProgressTime = game.time();
     m_huntSeenEvidenceTime = m_bot->m_seeEnemyTime;
-    m_huntNoiseEndTime = getPlayerNoiseEndTime(target);
+    m_huntNoiseEndTime = heardTargetNoise();
     m_huntNavigationTaskCreated = false;
   }
 
   const auto newEvidenceSeenTime = m_bot->m_seeEnemyTime;
-  const auto newEvidenceNoiseEndTime = getPlayerNoiseEndTime(target);
+  const auto newEvidenceNoiseEndTime = heardTargetNoise();
   const auto rememberedOrigin = Vector { m_huntTargetOrigin.x, m_huntTargetOrigin.y, m_huntTargetOrigin.z };
   const auto candidateOrigin = Vector { position.x, position.y, position.z };
   if (shouldReanchorHuntTarget(
@@ -422,11 +443,19 @@ void YaPBActionExecutionContext::consumeHuntTargetMemory(int targetPlayer) {
     return;
   }
 
-  if (hasNewerHuntEvidence(m_bot->m_seeEnemyTime, getPlayerNoiseEndTime(target),
+  const float heardTargetNoise = (m_bot->m_states & Sense::HearingEnemy)
+      && m_bot->m_hearedEnemy == target ? getPlayerNoiseEndTime(target) : -1.0f;
+  if (hasNewerHuntEvidence(m_bot->m_seeEnemyTime, heardTargetNoise,
                            m_huntSeenEvidenceTime, m_huntNoiseEndTime)) {
     return;
   }
 
+  // Record the completed search BEFORE legacy hearing can repopulate
+  // m_lastEnemyOrigin from the same old sound on the next frame.
+  m_consumedHuntTargetPlayer = targetPlayer;
+  m_consumedHuntSeenTime = m_bot->m_seeEnemyTime;
+  m_consumedHuntNoiseEndTime = heardTargetNoise;
+  m_consumedHuntRoundStartTime = gameState.getRoundStartTime();
   m_bot->m_lastEnemyOrigin.clear();
 }
 

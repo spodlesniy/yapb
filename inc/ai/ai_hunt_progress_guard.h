@@ -34,6 +34,19 @@ constexpr bool hasNewerHuntEvidence(float seenTime, float noiseEndTime,
   return seenTime > huntSeenTime || noiseEndTime > huntNoiseEndTime;
 }
 
+// A hunt that already searched its remembered target must not be restarted
+// by the SAME sight/sound snapshot. New target-specific sensory evidence may
+// authorize another hunt immediately; each round starts with a clean budget.
+constexpr bool suppressConsumedHuntWithoutNewEvidence(
+    int targetPlayer, int consumedTargetPlayer,
+    float roundStartTime, float consumedRoundStartTime,
+    float seenTime, float noiseEndTime,
+    float consumedSeenTime, float consumedNoiseEndTime) {
+  return targetPlayer > 0 && targetPlayer == consumedTargetPlayer
+      && roundStartTime == consumedRoundStartTime
+      && !hasNewerHuntEvidence(seenTime, noiseEndTime, consumedSeenTime, consumedNoiseEndTime);
+}
+
 constexpr float kHuntTargetReanchorDistance = 64.0f;
 
 // A new target position must be backed by strictly newer sensory evidence.

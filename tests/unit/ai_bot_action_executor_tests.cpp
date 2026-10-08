@@ -2267,3 +2267,27 @@ AI_TEST(testHuntReanchorNeedsFreshEvidenceAndSubstantialTargetMovement) {
   expect(ai::shouldReanchorHuntTarget(true, 4096.0f),
          "new reliable contact redirects hunt after meaningful target movement");
 }
+
+AI_TEST(testConsumedHuntRequiresNewEvidenceBeforeRetry) {
+  expect(ai::suppressConsumedHuntWithoutNewEvidence(7, 7, 100.0f, 100.0f,
+         112.0f, 118.0f, 112.0f, 118.0f),
+         "same enemy and unchanged sight/sound snapshot cannot restart a completed hunt");
+  expect(ai::suppressConsumedHuntWithoutNewEvidence(7, 7, 100.0f, 100.0f,
+         112.0f, 117.0f, 112.0f, 118.0f),
+         "hearing state expiring does not count as fresh pursuit evidence");
+  expect(!ai::suppressConsumedHuntWithoutNewEvidence(7, 7, 100.0f, 100.0f,
+         112.1f, 118.0f, 112.0f, 118.0f),
+         "genuinely newer target observation permits immediate retry");
+  expect(!ai::suppressConsumedHuntWithoutNewEvidence(7, 7, 100.0f, 100.0f,
+         112.0f, 118.1f, 112.0f, 118.0f),
+         "new target-specific sound permits immediate retry");
+  expect(!ai::suppressConsumedHuntWithoutNewEvidence(8, 7, 100.0f, 100.0f,
+         112.0f, 118.0f, 112.0f, 118.0f),
+         "consumed memory for one opponent does not block another enemy");
+  expect(!ai::suppressConsumedHuntWithoutNewEvidence(7, 7, 200.0f, 100.0f,
+         112.0f, 118.0f, 112.0f, 118.0f),
+         "new round does not inherit old-round hunt suppression");
+  expect(!ai::suppressConsumedHuntWithoutNewEvidence(7, -1, 100.0f, -1.0f,
+         112.0f, 118.0f, -1.0f, -1.0f),
+         "no consumed hunt leaves first approach available");
+}

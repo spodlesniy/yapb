@@ -25,6 +25,12 @@ private:
   float m_huntLastProgressTime { -1.0f };
   float m_huntSeenEvidenceTime { -1.0f };
   float m_huntNoiseEndTime { -1.0f };
+  // Persist across cancelHuntTarget: its lifecycle reset must not remove the
+  // evidence watermark that prevents the next frame from restarting this hunt.
+  int m_consumedHuntTargetPlayer { -1 };
+  float m_consumedHuntSeenTime { -1.0f };
+  float m_consumedHuntNoiseEndTime { -1.0f };
+  float m_consumedHuntRoundStartTime { -1.0f };
   bool m_huntNavigationTaskCreated {};
   bool m_seekCoverActive {};
   int m_seekCoverNode { -1 };
