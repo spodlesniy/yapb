@@ -113,7 +113,7 @@ class TrainingDatasetLoaderTests(unittest.TestCase):
         metadata, samples = load_training_dataset(path)
 
         self.assertEqual(metadata.format, "aipb-training-jsonl")
-        self.assertEqual(metadata.version, 2)
+        self.assertEqual(metadata.version, 3)
         self.assertEqual(metadata.feature_schema_version, MODEL_FEATURE_SCHEMA_VERSION)
         self.assertEqual(metadata.action_schema_version, MODEL_ACTION_SCHEMA_VERSION)
         self.assertEqual(len(samples), 1)
