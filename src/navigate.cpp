@@ -9,6 +9,7 @@
 
 #include <ai/ai_bomb_defense_guard.h>
 #include <ai/ai_bomb_search_guard.h>
+#include <ai/ai_ct_defuse_path_guard.h>
 #include <ai/ai_objective_navigation_guard.h>
 
 ConVar cv_has_team_semiclip ("has_team_semiclip", "0", "When enabled, bots will not try to avoid teammates on their way. Assumes that some semiclip plugins are in use.");
@@ -3630,6 +3631,36 @@ void Bot::syncFindPath (int srcIndex, int destIndex, FindPath pathType) {
    switch (result) {
    case AStarResult::Success:
       m_pathWalk.reverse (); // reverse path for path follower
+
+      // A*'s danger-aware route may be substantially longer than shortest.
+      // Validate its REAL link distances before committing while the C4
+      // timer is active. Never let the preferred safe route cost the defuse.
+      if (pathType == FindPath::Optimal && m_team == Team::CT
+         && game.mapIs (MapFlags::Demolition) && gameState.isBombPlanted ()) {
+         float distance = 0.0f;
+         bool validLinks = m_pathWalk.length () >= 2;
+         for (size_t i = 1; validLinks && i < m_pathWalk.length (); ++i) {
+            const int from = m_pathWalk.at (i - 1);
+            const int to = m_pathWalk.at (i);
+            validLinks = false;
+            if (!graph.exists (from) || !graph.exists (to)) {
+               break;
+            }
+            for (const auto &link : graph[from].links) {
+               if (link.index == to && link.distance > 0) {
+                  distance += static_cast <float> (link.distance);
+                  validLinks = true;
+                  break;
+               }
+            }
+         }
+         const float shortestDistance = planner.preciseDistance (srcIndex, destIndex);
+         if (!validLinks || !ai::canAffordRiskAwareCtBombRoute (
+            shortestDistance, distance, pev->maxspeed,
+            gameState.getBombTimeLeft (), m_hasDefuser)) {
+            findShortestPath (srcIndex, destIndex);
+         }
+      }
       break;
 
    case AStarResult::InternalError:

@@ -11,6 +11,7 @@
 #include <ai/ai_attack_movement_guard.h>
 #include <ai/ai_bomb_defense_guard.h>
 #include <ai/ai_bomb_search_guard.h>
+#include <ai/ai_ct_defuse_path_guard.h>
 #include <ai/ai_goal_navigation_policy.h>
 #include <ai/ai_navigation_task_guard.h>
 #include <ai/ai_objective_navigation_guard.h>
@@ -1234,4 +1235,32 @@ AI_TEST(testAiRetreatPreservesRouteUnderTransientLegacyTasks) {
          "normal task must resume previously selected retreat waypoint");
   expect(!ai::isTemporaryRetreatTaskOverride(Task::PlantBomb, Task::Attack, Task::Blind, Task::SeekCover),
          "objective tasks must not silently count as retreat progress");
+}
+
+AI_TEST(testCtDefuseRoutePrefersRiskAwarePathOnlyWithObjectiveSlack) {
+  expect(ai::shouldTryRiskAwareCtBombRoute(true, 4, 1600.0f, 250.0f, 30.0f, false),
+         "some CTs can choose risk-aware route to a heard planted C4 with sufficient time");
+  expect(!ai::shouldTryRiskAwareCtBombRoute(true, 3, 1600.0f, 250.0f, 30.0f, false),
+         "other CTs retain the fastest C4 approach");
+  expect(!ai::shouldTryRiskAwareCtBombRoute(false, 4, 1600.0f, 250.0f, 30.0f, false),
+         "searching an unknown bombsite cannot exploit hidden C4 location");
+  expect(!ai::shouldTryRiskAwareCtBombRoute(true, 4, 1600.0f, 250.0f, 16.0f, false),
+         "limited bomb timer requires fast defuse routing");
+  expect(!ai::shouldTryRiskAwareCtBombRoute(true, 4, 32767.0f, 250.0f, 40.0f, true),
+         "unreachable path never authorizes a risk-aware detour");
+}
+
+AI_TEST(testCtDefuseRouteValidatesActualAStarDetour) {
+  expect(ai::canAffordRiskAwareCtBombRoute(1600.0f, 1850.0f, 250.0f, 30.0f, false),
+         "moderately longer risk-aware route is accepted with bomb timer slack");
+  expect(!ai::canAffordRiskAwareCtBombRoute(1600.0f, 2500.0f, 250.0f, 40.0f, false),
+         "danger heuristic cannot send CT on an excessive detour");
+  expect(!ai::canAffordRiskAwareCtBombRoute(1600.0f, 1850.0f, 250.0f, 20.0f, false),
+         "route with insufficient time for a full defuse falls back to shortest");
+  expect(ai::canAffordRiskAwareCtBombRoute(1600.0f, 1850.0f, 250.0f, 21.0f, true),
+         "a defuse kit may make a moderate detour affordable");
+  expect(!ai::canAffordRiskAwareCtBombRoute(1600.0f, -1.0f, 250.0f, 40.0f, true),
+         "malformed negative route length must not be used");
+  expect(!ai::canAffordRiskAwareCtBombRoute(1600.0f, 1850.0f, 0.0f, 40.0f, true),
+         "invalid movement speed must not authorize a detour");
 }

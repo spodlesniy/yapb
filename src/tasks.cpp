@@ -6,6 +6,7 @@
 //
 
 #include <ai/ai_bomb_search_guard.h>
+#include <ai/ai_ct_defuse_path_guard.h>
 #include <ai/ai_objective_navigation_guard.h>
 #include <ai/ai_perception_guard.h>
 #include <yapb.h>
@@ -372,9 +373,16 @@ void Bot::normal_ () {
 
       auto pathSearchType = m_pathType;
 
-      // CTs must take the shortest available route while the planted C4 timer is running.
+      // Keep the shortest approach for an unlocalized bombsite search and
+      // urgent defuse. With audible/known C4 and enough time, distribute CTs
+      // between fastest and risk-aware graph routes.
       if (game.mapIs (MapFlags::Demolition) && gameState.isBombPlanted () && m_team == Team::CT) {
-         pathSearchType = FindPath::Fast;
+         const float shortest = graph.exists (m_currentNodeIndex) && graph.exists (destIndex)
+            ? planner.preciseDistance (m_currentNodeIndex, destIndex) : kInfiniteDistanceLong;
+         pathSearchType = ai::shouldTryRiskAwareCtBombRoute (
+            m_bombSearchOverridden, entindex (), shortest,
+            pev->maxspeed, gameState.getBombTimeLeft (), m_hasDefuser)
+            ? FindPath::Optimal : FindPath::Fast;
       }
       else if (game.mapIs (MapFlags::Demolition) && gameState.isBombPlanted ()) {
          pathSearchType = rg.chance (80) ? FindPath::Fast : FindPath::Optimal;
@@ -1809,7 +1817,12 @@ void Bot::pickupItem_ () {
             }
 
             if (!hasActiveGoal () && graph.exists (m_currentNodeIndex) && m_currentNodeIndex != bombNode) {
-               findPath (m_currentNodeIndex, bombNode, FindPath::Fast);
+               const float shortest = planner.preciseDistance (m_currentNodeIndex, bombNode);
+               const auto routeType = ai::shouldTryRiskAwareCtBombRoute (
+                  true, entindex (), shortest, pev->maxspeed,
+                  gameState.getBombTimeLeft (), m_hasDefuser)
+                  ? FindPath::Optimal : FindPath::Fast;
+               findPath (m_currentNodeIndex, bombNode, routeType);
             }
          }
 
