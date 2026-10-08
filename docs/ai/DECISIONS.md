@@ -1670,6 +1670,14 @@ No changes are made to the conservative graph travel budget for distant reinforc
 Reason: the existing arrival check rejects all paths once the bomb has fewer than four seconds left, including zero-length routes for bots already guarding the site.
 Such bots could then emit repeated rejected ProtectObjective attempts precisely when they should hold an established defense position.
 
+## D178.1 — Fix undefined PickupItem priority in the Windows x86 build
+
+The user-started Windows x86 D178 build failed in `src/tasks.cpp` at the unconfirmed-defuse recovery path because `TaskPri::PickupItem` was not declared.
+Declare `TaskPri::PickupItem` as the established 50.0 baseline and reuse it in `Bot::filterTasks()` for buttons and distance-based pickup desire.
+Keep the existing task handoff and dynamic desire calculation unchanged.
+The Python Training tools tests now verify that all `TaskPri::...` usages in production translation units are declared, because Linux AI unit tests alone do not compile the complete gameplay library.
+This is a separately named, single-commit correction to D178; published history is not rewritten.
+
 ## D178 — Preserve planted-C4 defense camping and enforce crlib-first includes
 
 An actively executing Terrorist `ProtectObjective` may continue its `Camp` task while a planted C4 is active even when the server's ordinary `camping_allowed` setting is disabled.

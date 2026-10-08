@@ -29,6 +29,18 @@ class YapbFirstIncludeTests(unittest.TestCase):
         ]
         self.assertFalse(errors, "yapb.h must be first include (MSVC x86): " + ", ".join(errors))
 
+    def test_production_task_priority_references_are_declared(self) -> None:
+        # AI unit tests do not compile the full game library on Windows x86.
+        header = (ROOT / "inc" / "constant.h").read_text(encoding="utf-8")
+        block = re.search(r"namespace\s+TaskPri\s*\{(.*?)\n\};", header, re.DOTALL)
+        self.assertIsNotNone(block, "TaskPri namespace was not found")
+        declarations = set(re.findall(r"constexpr\s+auto\s+(\w+)\s*\{", block.group(1)))
+        usages: set[str] = set()
+        for path in (ROOT / "src").rglob("*.cpp"):
+            usages.update(re.findall(r"\bTaskPri::(\w+)", path.read_text(encoding="utf-8")))
+        self.assertFalse(usages - declarations,
+                         "Undefined TaskPri symbols: " + ", ".join(sorted(usages - declarations)))
+
     def test_catches_standard_and_local_headers_before_yapb(self) -> None:
         self.assertTrue(misplaced_yapb_include('#include <cstring>\n#include <yapb.h>\n'))
         self.assertTrue(misplaced_yapb_include('#include <ai/ai_perception_guard.h>\n#include <yapb.h>\n'))

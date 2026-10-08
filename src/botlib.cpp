@@ -2243,10 +2243,10 @@ void Bot::filterTasks () {
       m_states |= Sense::PickupItem;
 
       if (m_pickupType == Pickup::Button) {
-         filter[Task::PickupItem].desire = 50.0f; // always pickup button
+         filter[Task::PickupItem].desire = TaskPri::PickupItem; // always pickup button
       }
       else {
-         filter[Task::PickupItem].desire = cr::max (50.0f, 500.0f - pev->origin.distance (game.getEntityOrigin (m_pickupItem)) * 0.2f);
+         filter[Task::PickupItem].desire = cr::max (TaskPri::PickupItem, 500.0f - pev->origin.distance (game.getEntityOrigin (m_pickupItem)) * 0.2f);
       }
    }
    else {

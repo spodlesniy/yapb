@@ -427,6 +427,7 @@ namespace TaskPri {
    constexpr auto Spraypaint { 38.0f };
    constexpr auto FollowUser { 39.0f };
    constexpr auto MoveToPosition { 50.0f };
+   constexpr auto PickupItem { 50.0f }; // minimum pickup desire, also used for defuse retries
    constexpr auto DefuseBomb { 89.0f };
    constexpr auto PlantBomb { 89.0f };
    constexpr auto Attack { 90.0f };
