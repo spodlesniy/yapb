@@ -573,6 +573,14 @@ bool YaPBActionExecutionContext::retreat() {
 
   const auto currentTask = m_bot->getCurrentTaskId();
 
+  // Preserve the selected retreat waypoint while a real combat or blind
+  // task takes temporary precedence. A legacy SeekCover already queued on
+  // the task stack may finish without restarting the semantic retreat.
+  if (m_retreatActive && isTemporaryRetreatTaskOverride(
+        currentTask, Task::Attack, Task::Blind, Task::SeekCover)) {
+    return true;
+  }
+
   if (!m_retreatActive) {
     if (currentTask != Task::Normal && currentTask != Task::MoveToPosition && currentTask != Task::SeekCover) return false;
 

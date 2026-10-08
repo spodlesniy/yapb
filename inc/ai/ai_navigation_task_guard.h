@@ -19,4 +19,22 @@ constexpr bool allowsNavigationOverride(TaskType currentTask, TaskType normalTas
   return !legacyObjectiveActive && (currentTask == normalTask || currentTask == moveToPositionTask);
 }
 
+// The legacy task selector runs BEFORE the AI executor each frame. Once AI
+// Retreat has selected a cover waypoint, another legacy SeekCover selection
+// would replace its MoveToPosition task and immediately restart the retreat.
+// Suppress ONLY the duplicate cover desire; Attack and Blind remain eligible.
+constexpr bool shouldDeferLegacySeekCoverToAiRetreat(bool aiControlEnabled,
+                                                     bool aiActionActive, bool retreatOwned) {
+  return aiControlEnabled && aiActionActive && retreatOwned;
+}
+
+// External legacy tasks can momentarily own execution without invalidating
+// the retreat's destination. Let combat and blindness run uninterrupted;
+// a leftover SeekCover may also finish instead of causing a cancel/restart loop.
+template <typename TaskType>
+constexpr bool isTemporaryRetreatTaskOverride(TaskType task, TaskType attackTask,
+                                               TaskType blindTask, TaskType coverTask) {
+  return task == attackTask || task == blindTask || task == coverTask;
+}
+
 } // namespace ai

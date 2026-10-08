@@ -1208,3 +1208,30 @@ AI_TEST(testBombDefenseDirectionRankingIsBoundedBySafetyAndTravel) {
             500.0f, false, 0.0f, 9, 4, 4, 2, 4),
          "crowding avoidance remains more important than topology preference");
 }
+
+AI_TEST(testAiRetreatPreventsDuplicateLegacySeekCoverSelection) {
+  expect(ai::shouldDeferLegacySeekCoverToAiRetreat(true, true, true),
+         "active AI retreat owns its escape waypoint; legacy cover must not overwrite it");
+  expect(!ai::shouldDeferLegacySeekCoverToAiRetreat(false, true, true),
+         "pure legacy mode must retain normal seek-cover decisions");
+  expect(!ai::shouldDeferLegacySeekCoverToAiRetreat(true, false, true),
+         "inactive retreat cannot suppress fresh cover decisions");
+  expect(!ai::shouldDeferLegacySeekCoverToAiRetreat(true, true, false),
+         "other AI actions may not suppress ordinary legacy cover decisions");
+}
+
+AI_TEST(testAiRetreatPreservesRouteUnderTransientLegacyTasks) {
+  using Task = ai::TaskType;
+  expect(ai::isTemporaryRetreatTaskOverride(Task::SeekCover, Task::Attack, Task::Blind, Task::SeekCover),
+         "already queued legacy cover must not restart an active AI retreat every frame");
+  expect(ai::isTemporaryRetreatTaskOverride(Task::Attack, Task::Attack, Task::Blind, Task::SeekCover),
+         "visible enemy combat temporarily overrides retreat without losing its destination");
+  expect(ai::isTemporaryRetreatTaskOverride(Task::Blind, Task::Attack, Task::Blind, Task::SeekCover),
+         "flash blindness temporarily overrides retreat without discarding navigation");
+  expect(!ai::isTemporaryRetreatTaskOverride(Task::MoveToPosition, Task::Attack, Task::Blind, Task::SeekCover),
+         "owned retreat navigation still follows the regular task handling");
+  expect(!ai::isTemporaryRetreatTaskOverride(Task::Normal, Task::Attack, Task::Blind, Task::SeekCover),
+         "normal task must resume previously selected retreat waypoint");
+  expect(!ai::isTemporaryRetreatTaskOverride(Task::PlantBomb, Task::Attack, Task::Blind, Task::SeekCover),
+         "objective tasks must not silently count as retreat progress");
+}

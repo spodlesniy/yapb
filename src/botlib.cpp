@@ -2389,6 +2389,15 @@ void Bot::filterTasks () {
       seekCoverDesire = 0.0f;
    }
 
+   // AI Retreat already owns the escape route. Re-adding legacy SeekCover
+   // each frame replaces MoveToPosition and creates a retreat/cancel loop.
+   // Only cover desire is suppressed: direct combat and Blind still win.
+   if (ai::shouldDeferLegacySeekCoverToAiRetreat (
+      m_aiRuntime.isControlEnabled (), m_aiRuntime.isActive (),
+      m_aiRuntime.activeAction ().type == ai::ActionType::Retreat)) {
+      seekCoverDesire = 0.0f;
+   }
+
    // blinded behavior
    blindedDesire = m_blindTime > game.time () ? TaskPri::Blind : 0.0f;
 
