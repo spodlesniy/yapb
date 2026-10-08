@@ -335,23 +335,26 @@ bool YaPBActionExecutionContext::huntTarget(int targetPlayer, const Vec3 &positi
     m_huntTargetPlayer = targetPlayer;
     m_huntTargetOrigin = position;
     m_huntBestDistance = -1.0f;
-    m_huntLastProgressTime = -1.0f;
+    m_huntLastProgressTime = game.time();
     m_huntSeenEvidenceTime = m_bot->m_seeEnemyTime;
     m_huntNoiseEndTime = getPlayerNoiseEndTime(target);
     m_huntNavigationTaskCreated = false;
   }
 
   const auto targetOrigin = Vector { m_huntTargetOrigin.x, m_huntTargetOrigin.y, m_huntTargetOrigin.z };
-  const float currentDistance = cr::powf(targetOrigin.distanceSq(m_bot->pev->origin), 0.5f);
-
-  if (hasMeaningfulHuntProgress(m_huntBestDistance, currentDistance)) {
-    m_huntBestDistance = currentDistance;
-    m_huntLastProgressTime = game.time();
-  }
-
   const int node = graph.getNearest(targetOrigin);
   if (!graph.exists(node)) {
     return false;
+  }
+
+  const int fromNode = graph.getNearest(m_bot->pev->origin);
+  if (graph.exists(fromNode)) {
+    const float routeDistance = planner.preciseDistance(fromNode, node);
+    if (isUsableHuntGraphDistance(routeDistance)
+        && hasMeaningfulHuntProgress(m_huntBestDistance, routeDistance)) {
+      m_huntBestDistance = routeDistance;
+      m_huntLastProgressTime = game.time();
+    }
   }
 
   if (m_bot->getCurrentTaskId() != Task::MoveToPosition) {

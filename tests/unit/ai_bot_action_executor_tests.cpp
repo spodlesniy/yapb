@@ -2243,3 +2243,15 @@ AI_TEST(testBotActionExecutorRejectsUnsupportedAction) {
       "none action is rejected as non-executable");
 }
 
+AI_TEST(testHuntGraphDistanceRejectsUnreachableAndInvalidRoutes) {
+  expect(ai::isUsableHuntGraphDistance(0.0f),
+         "same waypoint is a valid graph distance");
+  expect(ai::isUsableHuntGraphDistance(350.0f),
+         "connected shortest waypoint route can support meaningful hunt progress");
+  expect(!ai::isUsableHuntGraphDistance(-1.0f),
+         "negative graph distances cannot reset the stall timer");
+  expect(!ai::isUsableHuntGraphDistance(32767.0f),
+         "unreachable Floyd path must not reset hunt stall timer");
+  expect(!ai::isUsableHuntGraphDistance(999999.0f),
+         "invalid infinite-distance sentinel must not reset hunt stall timer");
+}
