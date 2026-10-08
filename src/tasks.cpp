@@ -109,6 +109,62 @@ void Bot::normal_ () {
             }
          }
       }
+      else if (!gameState.getBombOrigin ().empty () && !m_bombSearchOverridden
+         && graph.exists (getTask ()->data)
+         && (graph[getTask ()->data].flags & NodeFlag::Goal)) {
+
+         // Do not consult the planted C4's hidden position here. Negative
+         // evidence is valid only if the CT is close enough to hear C4
+         // ANYWHERE inside the complete bombsite trigger volume.
+         const float bombTimer = mp_c4timer.as <float> ();
+         if (bombTimer > 0.0f) {
+            const float elapsedPercent = (game.time () - gameState.getTimeBombPlanted ())
+               / bombTimer * 100.0f;
+            const float audibleRadius = ai::bombAudibleRadiusAtPercent (elapsedPercent);
+            const int currentGoal = getTask ()->data;
+            const auto &goalOrigin = graph[currentGoal].origin;
+            bool hasAssociatedBrush = false;
+            bool allRelevantBrushesAudible = true;
+            bool hasNearbyPointTarget = false;
+
+            game.searchEntities ("classname", "func_bomb_target", [&] (edict_t *bombTarget) {
+               const auto &min = bombTarget->v.absmin;
+               const auto &max = bombTarget->v.absmax;
+               if (!ai::isBombTargetNearGoal (goalOrigin.x, goalOrigin.y,
+                     min.x, min.y, max.x, max.y)) {
+                  return EntitySearchResult::Continue;
+               }
+
+               if (ai::isGoalInsideBombTargetVolume (goalOrigin.x, goalOrigin.y,
+                     min.x, min.y, max.x, max.y)) {
+                  hasAssociatedBrush = true;
+               }
+               if (!ai::isEntireBombTargetAudible (pev->origin.x, pev->origin.y,
+                     min.x, min.y, max.x, max.y, audibleRadius)) {
+                  allRelevantBrushesAudible = false;
+               }
+               return EntitySearchResult::Continue;
+            });
+
+            // info_bomb_target is point-defined: its complete planting radius
+            // is not represented by absmin/absmax, so do not draw an inference.
+            game.searchEntities ("classname", "info_bomb_target", [&] (edict_t *bombTarget) {
+               if (game.getEntityOrigin (bombTarget).distanceSq2d (goalOrigin)
+                  <= cr::sqrf (ai::kBombsiteSearchClusterRadius)) {
+                  hasNearbyPointTarget = true;
+                  return EntitySearchResult::Break;
+               }
+               return EntitySearchResult::Continue;
+            });
+
+            if (hasAssociatedBrush && allRelevantBrushesAudible && !hasNearbyPointTarget) {
+               graph.setVisitedGoalCluster (currentGoal, ai::kBombsiteSearchClusterRadius);
+               clearSearchNodes ();
+               getTask ()->data = kInvalidNodeIndex;
+               m_prevGoalIndex = kInvalidNodeIndex;
+            }
+         }
+      }
    }
 
    // if bomb planted and it's a CT calculate new path to bomb point if he's not already heading for

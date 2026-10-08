@@ -997,3 +997,47 @@ AI_TEST(testAudibleBombCanRetargetActiveCtBombsiteSearch) {
   expect(!ai::shouldChangeAudibleBombGoal(16, 16),
          "matching goal must not repeatedly reset CT navigation");
 }
+
+
+AI_TEST(testBombsiteHearingRadiusMatchesLiveThresholds) {
+  expectNear(ai::bombAudibleRadiusAtPercent(0.0f), 768.0f, 0.001f,
+             "first planted C4 ticks have legacy hearing radius");
+  expectNear(ai::bombAudibleRadiusAtPercent(28.0f), 768.0f, 0.001f,
+             "28 percent threshold is strict");
+  expectNear(ai::bombAudibleRadiusAtPercent(28.1f), 1024.0f, 0.001f,
+             "hearing radius expands after 28 percent");
+  expectNear(ai::bombAudibleRadiusAtPercent(52.1f), 1280.0f, 0.001f,
+             "hearing radius expands after 52 percent");
+  expectNear(ai::bombAudibleRadiusAtPercent(68.1f), 2048.0f, 0.001f,
+             "hearing radius expands after 68 percent");
+  expectNear(ai::bombAudibleRadiusAtPercent(85.1f), 4096.0f, 0.001f,
+             "final C4 ticks travel farther");
+}
+
+AI_TEST(testSilentBombsiteRequiresCompleteAudibleBrushBounds) {
+  expect(ai::isGoalInsideBombTargetVolume(64.0f, 64.0f, 0.0f, 0.0f, 128.0f, 128.0f),
+         "goal waypoint in known bomb brush may be evaluated");
+  expect(ai::isBombTargetNearGoal(64.0f, 64.0f, 0.0f, 0.0f, 128.0f, 128.0f),
+         "known bomb target brush is associated with search goal");
+  expect(ai::isEntireBombTargetAudible(200.0f, 200.0f,
+            0.0f, 0.0f, 128.0f, 128.0f, 768.0f),
+         "near CT can rule out a fully covered silent bombsite");
+  expect(!ai::isEntireBombTargetAudible(710.0f, 0.0f,
+            -100.0f, -100.0f, 100.0f, 100.0f, 768.0f),
+         "hearing the brush center alone is insufficient when far corners remain out of range");
+  expect(!ai::isEntireBombTargetAudible(0.0f, 0.0f,
+            -500.0f, -500.0f, 500.0f, 500.0f, 768.0f),
+         "large planting zone cannot be excluded by silence near its center");
+  expect(!ai::isEntireBombTargetAudible(0.0f, 0.0f,
+            100.0f, 100.0f, 0.0f, 0.0f, 768.0f),
+         "invalid engine bounds cannot be used as negative evidence");
+  expect(!ai::isEntireBombTargetAudible(0.0f, 0.0f,
+            0.0f, 0.0f, 128.0f, 128.0f, 0.0f),
+         "unknown hearing radius does not justify excluding a site");
+  expect(!ai::isGoalInsideBombTargetVolume(900.0f, 900.0f,
+            0.0f, 0.0f, 128.0f, 128.0f),
+         "unrelated bomb goal must not be excluded");
+  expect(ai::isBombTargetNearGoal(400.0f, 0.0f,
+            0.0f, 0.0f, 128.0f, 128.0f),
+         "all bomb brushes near the candidate goal must be checked");
+}

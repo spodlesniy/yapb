@@ -8,6 +8,7 @@
 #include <yapb.h>
 
 #include <ai/ai_bomb_defense_guard.h>
+#include <ai/ai_bomb_search_guard.h>
 #include <ai/ai_bot_adapter.h>
 #include <ai/ai_inference_model_service.h>
 #include <ai/ai_navigation_task_guard.h>
@@ -4280,22 +4281,12 @@ Vector Bot::isBombAudible () {
    }
    const auto &bombOrigin = gameState.getBombOrigin ();
 
-   const float timeElapsed = ((game.time () - gameState.getTimeBombPlanted ()) / mp_c4timer.as <float> ()) * 100.0f;
-   float desiredRadius = 768.0f;
-
-   // start the manual calculations
-   if (timeElapsed > 85.0f) {
-      desiredRadius = 4096.0f;
+   const float bombTimer = mp_c4timer.as <float> ();
+   if (bombTimer <= 0.0f) {
+      return nullptr;
    }
-   else if (timeElapsed > 68.0f) {
-      desiredRadius = 2048.0f;
-   }
-   else if (timeElapsed > 52.0f) {
-      desiredRadius = 1280.0f;
-   }
-   else if (timeElapsed > 28.0f) {
-      desiredRadius = 1024.0f;
-   }
+   const float timeElapsed = ((game.time () - gameState.getTimeBombPlanted ()) / bombTimer) * 100.0f;
+   const float desiredRadius = ai::bombAudibleRadiusAtPercent (timeElapsed);
 
    // bomb ticks are audible while the bot is inside the current hearing radius
    if (pev->origin.distanceSq2d (bombOrigin) <= cr::sqrf (desiredRadius)) {
