@@ -7,6 +7,7 @@
 
 #include <yapb.h>
 
+#include <ai/ai_bomb_defense_guard.h>
 #include <ai/ai_bot_adapter.h>
 #include <ai/ai_inference_model_service.h>
 #include <ai/ai_navigation_task_guard.h>
