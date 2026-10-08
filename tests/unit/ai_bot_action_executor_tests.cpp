@@ -2255,3 +2255,15 @@ AI_TEST(testHuntGraphDistanceRejectsUnreachableAndInvalidRoutes) {
   expect(!ai::isUsableHuntGraphDistance(999999.0f),
          "invalid infinite-distance sentinel must not reset hunt stall timer");
 }
+
+
+AI_TEST(testHuntReanchorNeedsFreshEvidenceAndSubstantialTargetMovement) {
+  expect(!ai::shouldReanchorHuntTarget(false, 100000.0f),
+         "old memory cannot redirect hunt merely due to a changed coordinate");
+  expect(!ai::shouldReanchorHuntTarget(true, 100.0f),
+         "fresh minor hearing jitter must not reset the hunt route");
+  expect(!ai::shouldReanchorHuntTarget(true, 4095.0f),
+         "subthreshold localization change preserves stable hunt ownership");
+  expect(ai::shouldReanchorHuntTarget(true, 4096.0f),
+         "new reliable contact redirects hunt after meaningful target movement");
+}

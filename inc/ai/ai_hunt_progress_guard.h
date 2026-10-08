@@ -34,4 +34,12 @@ constexpr bool hasNewerHuntEvidence(float seenTime, float noiseEndTime,
   return seenTime > huntSeenTime || noiseEndTime > huntNoiseEndTime;
 }
 
+constexpr float kHuntTargetReanchorDistance = 64.0f;
+
+// A new target position must be backed by strictly newer sensory evidence.
+// Tiny shifts (e.g. hearing localization noise) must not reset the path or stall clock.
+constexpr bool shouldReanchorHuntTarget(bool newerEvidence, float positionChangeSq) {
+  return newerEvidence && positionChangeSq >= kHuntTargetReanchorDistance * kHuntTargetReanchorDistance;
+}
+
 } // namespace ai

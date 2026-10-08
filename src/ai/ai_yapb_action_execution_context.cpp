@@ -341,6 +341,21 @@ bool YaPBActionExecutionContext::huntTarget(int targetPlayer, const Vec3 &positi
     m_huntNavigationTaskCreated = false;
   }
 
+  const auto newEvidenceSeenTime = m_bot->m_seeEnemyTime;
+  const auto newEvidenceNoiseEndTime = getPlayerNoiseEndTime(target);
+  const auto rememberedOrigin = Vector { m_huntTargetOrigin.x, m_huntTargetOrigin.y, m_huntTargetOrigin.z };
+  const auto candidateOrigin = Vector { position.x, position.y, position.z };
+  if (shouldReanchorHuntTarget(
+      hasNewerHuntEvidence(newEvidenceSeenTime, newEvidenceNoiseEndTime,
+                           m_huntSeenEvidenceTime, m_huntNoiseEndTime),
+      rememberedOrigin.distanceSq(candidateOrigin))) {
+    m_huntTargetOrigin = position;
+    m_huntBestDistance = -1.0f;
+    m_huntLastProgressTime = game.time();
+    m_huntSeenEvidenceTime = newEvidenceSeenTime;
+    m_huntNoiseEndTime = newEvidenceNoiseEndTime;
+  }
+
   const auto targetOrigin = Vector { m_huntTargetOrigin.x, m_huntTargetOrigin.y, m_huntTargetOrigin.z };
   const int node = graph.getNearest(targetOrigin);
   if (!graph.exists(node)) {
