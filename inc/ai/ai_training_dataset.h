@@ -31,6 +31,7 @@ struct TrainingDatasetWriteResult {
   size_t count {};
   size_t combatEventCount {};
   size_t navigationEventCount {};
+  size_t defuseEventCount {};
   size_t failedIndex {};
   TrainingDatasetWriteError error { TrainingDatasetWriteError::None };
 
