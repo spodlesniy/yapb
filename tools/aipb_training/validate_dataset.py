@@ -261,6 +261,22 @@ def iter_validated_samples(path: str | Path):
                 _require(isinstance(value.get("bot_id"), int), f"line {line_number}: invalid navigation bot")
                 continue
 
+            if isinstance(value, dict) and value.get("type") == "defuse_event":
+                _require(metadata["version"] == 3, f"line {line_number}: defuse events require version 3")
+                _require(value.get("event") in {
+                    "defuse_attempt", "defuse_start", "defuse_interrupted", "defuse_complete"
+                }, f"line {line_number}: unknown defuse event")
+                _require(_is_number(value.get("game_time")), f"line {line_number}: invalid defuse time")
+                _require(type(value.get("bot_id")) is int, f"line {line_number}: invalid defuse bot")
+                _require(isinstance(value.get("evidence_source"), str),
+                         f"line {line_number}: missing defuse evidence")
+                if value["event"] == "defuse_complete":
+                    _require(value["evidence_source"] == "bomb_defused_text_message",
+                             f"line {line_number}: unconfirmed defuse completion")
+                    _require(value["bot_id"] == -1,
+                             f"line {line_number}: completion cannot claim an unknown defuser")
+                continue
+
             current_feature_count = _validate_sample(value, line_number)
             if feature_count is None:
                 feature_count = current_feature_count
