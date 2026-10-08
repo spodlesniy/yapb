@@ -6,6 +6,7 @@
 //
 
 #include <yapb.h>
+#include <cstring>
 
 void MessageDispatcher::netMsgTextMsg () {
    enum args { msg = 1, min = 2 };
@@ -31,7 +32,7 @@ void MessageDispatcher::netMsgTextMsg () {
    };
 
    // Exact TextMsg, not merely CounterWin: the winner cannot prove a defuse.
-   if (cr::StringRef (m_args[msg].chars_) == "#Bomb_Defused") {
+   if (std::strcmp (m_args[msg].chars_, "#Bomb_Defused") == 0) {
       // Global event: TextMsg carries no trustworthy defuser identity.
       // Never attribute this completion to an arbitrary nearby bot.
       if (game.mapIs (MapFlags::Demolition) && gameState.isBombPlanted () && !gameState.isRoundOver ()) {
