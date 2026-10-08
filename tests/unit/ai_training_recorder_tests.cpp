@@ -521,6 +521,67 @@ AI_TEST(testTrainingDatasetWriterRejectsUnsupportedTransition) {
   std::remove(path);
 }
 
+
+AI_TEST(testDefuseAttemptTrackerDeduplicatesEngineMessages) {
+   ai::DefuseAttemptTracker tracker {};
+   expect(tracker.beginUse(10.0f), "first use creates an attempt");
+   expect(!tracker.beginUse(10.1f), "holding USE does not create duplicate attempts");
+   expect(tracker.attemptId() == 1, "attempt id is stable");
+   expect(tracker.confirmProgress(10.5f), "BarTime confirms progress once");
+   expect(!tracker.confirmProgress(10.6f), "repeated positive BarTime is deduplicated");
+   expect(tracker.loseProgress(11.0f), "zero BarTime marks pending interruption");
+   expect(!tracker.progressLossExpired(11.5f), "transient loss is deferred");
+   expect(!tracker.confirmProgress(11.6f), "recovered progress is not another defuse start");
+   expect(!tracker.loseProgress(11.7f) == false, "progress can be lost again after recovery");
+   expect(tracker.progressLossExpired(12.8f), "persistent loss is reported");
+   expect(tracker.end(), "end closes the active attempt");
+   expect(!tracker.end(), "end is idempotent");
+   expect(tracker.beginUse(13.0f) && tracker.attemptId() == 2, "new attempt gets a new id");
+   tracker.reset();
+   expect(!tracker.active() && tracker.attemptId() == 0, "new round resets tracking");
+}
+
+AI_TEST(testDefuseDiagnosticWriterDoesNotProduceTrainingSamples) {
+   const char *path = "aipb-defuse-events-test.jsonl";
+   ai::TrainingBuffer buffer {};
+   ai::DefuseEvent e {};
+   e.type = ai::DefuseEventType::Start;
+   e.evidence = ai::DefuseEvidence::BarTimePositive;
+   e.gameTime = 20.5f;
+   e.botId = 5;
+   e.attemptId = 3;
+   e.bombTimeRemaining = 21.0f;
+   e.distanceToBomb = 30.0f;
+   e.hasProgressBar = true;
+   e.hasBombPosition = true;
+   e.bombPosition = { 12.0f, 13.0f, 14.0f };
+   expect(buffer.appendDefuseEvent(e), "diagnostic is captured");
+   expect(buffer.size() == 0 && buffer.defuseEventCount() == 1,
+          "defuse diagnostics are not training transitions");
+   const auto result = ai::writeTrainingDataset(buffer, path);
+   expect(result.isValid() && result.count == 0 && result.defuseEventCount == 1,
+          "dataset serializes diagnostics without altering sample count");
+   std::FILE *file = std::fopen(path, "rb");
+   expect(file != nullptr, "defuse JSONL is written");
+   if (file) {
+      char line[4096] {};
+      expect(std::fgets(line, sizeof(line), file) != nullptr, "metadata exists");
+      expect(std::fgets(line, sizeof(line), file) != nullptr, "defuse event exists");
+      expect(std::strstr(line, "\"type\":\"defuse_event\"") != nullptr,
+             "new event is identified");
+      expect(std::strstr(line, "\"event\":\"defuse_start\"") != nullptr,
+             "event identity is stable");
+      expect(std::strstr(line, "\"evidence_source\":\"bar_time_positive\"") != nullptr,
+             "engine evidence is serialized");
+      expect(std::strstr(line, "\"bomb_position\":[12,13,14]") != nullptr,
+             "known bomb position is preserved");
+      std::fclose(file);
+   }
+   std::remove(path);
+   buffer.clear();
+   expect(buffer.defuseEventCount() == 0, "clear resets objective diagnostics");
+}
+
 AI_TEST(testTrainingBufferStoresCombatEventsIndependentlyOfSamples) {
   ai::TrainingBuffer buffer {};
   ai::CombatEvent event {};
