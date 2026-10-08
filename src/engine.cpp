@@ -1863,6 +1863,8 @@ void GameState::roundStart () {
 
    // tell the bots
    bots.initRound ();
+   // One shared round id advances after all bots finish their old-round state.
+   m_telemetryRoundId = ai::nextNavigationRoundId (m_telemetryRoundId);
    setBombOrigin (true);
 
    // calculate the round mid/end in world time

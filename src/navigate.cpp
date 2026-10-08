@@ -3827,16 +3827,21 @@ void Bot::findPath (int srcIndex, int destIndex, FindPath pathType /*= FindPath:
       }
    }
 
-   // Capture the request before the worker receives it. Record observed
-   // path after the worker finishes, in the normal bot logic thread.
-   recordNavigationEvent(ai::NavigationEventType::RouteRequest,
-      m_aiNavPreviousGoal != destIndex ? ai::NavigationEventReason::GoalChanged
-                                       : ai::NavigationEventReason::SameGoalRepath,
-      srcIndex, destIndex, static_cast<int>(pathType));
-   m_aiNavPendingRouteSource = srcIndex;
-   m_aiNavPendingRouteGoal = destIndex;
-   m_aiNavPendingPathType = static_cast<int>(pathType);
-   m_aiNavPendingRoute = true;
+   // Keep every worker request; sample only telemetry to avoid buffer floods.
+   if (m_aiRuntime.controller ().getMode () == ai::ControlMode::Training) {
+      const bool newGoal = !m_aiNavigationGate.hasRoute ()
+         || m_aiNavigationGate.lastRouteDestination () != destIndex;
+      if (m_aiNavigationGate.acceptRoute (game.time (), destIndex, static_cast<int>(pathType))) {
+         recordNavigationEvent(ai::NavigationEventType::RouteRequest,
+            newGoal ? ai::NavigationEventReason::GoalChanged
+                    : ai::NavigationEventReason::SameGoalRepath,
+            srcIndex, destIndex, static_cast<int>(pathType));
+         m_aiNavPendingRouteSource = srcIndex;
+         m_aiNavPendingRouteGoal = destIndex;
+         m_aiNavPendingPathType = static_cast<int>(pathType);
+         m_aiNavPendingRoute = true;
+      }
+   }
    worker.enqueue ([this, srcIndex, destIndex, pathType, allies] () {
       syncFindPath (srcIndex, destIndex, pathType, allies);
    });

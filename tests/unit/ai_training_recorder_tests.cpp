@@ -656,6 +656,51 @@ AI_TEST(testCombatEventWriterPreservesOriginalTransitionCount) {
   std::remove(path);
 }
 
+AI_TEST(testNavigationDiagnosticRateLimiter) {
+   ai::NavigationDiagnosticGate gate {};
+   expect(gate.acceptRoute(0.0f, 42, 1), "first route accepted");
+   expect(!gate.acceptRoute(1.0f, 42, 1), "duplicate route throttled");
+   expect(!gate.acceptRoute(2.0f, 50, 1), "quick goal oscillation throttled");
+   expect(gate.acceptRoute(4.0f, 50, 1), "changed goal sampled");
+   expect(!gate.acceptRoute(8.0f, 50, 1), "repeat route throttled");
+   expect(gate.acceptRoute(16.0f, 50, 1), "periodic route sampled");
+   expect(gate.acceptWaypoint(0.0f), "first waypoint accepted");
+   expect(!gate.acceptWaypoint(1.0f), "duplicate waypoint throttled");
+   expect(gate.acceptWaypoint(6.0f), "later waypoint accepted");
+   expect(gate.acceptLowDisplacement(0.0f), "first stall accepted");
+   expect(!gate.acceptLowDisplacement(1.0f), "duplicate stall throttled");
+   expect(gate.acceptLowDisplacement(12.0f), "later stall accepted");
+   gate.reset();
+   expect(gate.acceptRoute(0.0f, 42, 1), "new round resets rate limiting");
+}
+
+AI_TEST(testNavigationRoundIdAndBufferCompaction) {
+   expect(ai::nextNavigationRoundId(41) == 42, "shared game round advances");
+   expect(ai::nextNavigationRoundId(0xffffffffu) == 1, "round id skips zero");
+   ai::TrainingBuffer buffer {};
+   ai::NavigationEvent e {};
+   for (size_t i = 0; i < ai::kTrainingNavigationEventCapacity; ++i) {
+      e.gameTime = static_cast<float>(i);
+      expect(buffer.appendNavigationEvent(e), "initial navigation accepted");
+   }
+   e.gameTime = 2048.0f;
+   expect(buffer.appendNavigationEvent(e), "full buffer keeps accepting");
+   expect(buffer.navigationEventCount() == ai::kTrainingNavigationEventCapacity / 2 + 1,
+          "compaction frees half capacity");
+   expect(buffer.droppedNavigationEvents() == ai::kTrainingNavigationEventCapacity / 2,
+          "discarded records counted");
+   expect(buffer.navigationCompactionCount() == 1, "compaction counter updated");
+   expect(buffer.navigationEventAt(0).gameTime == 0.0f, "early timeline retained");
+   expect(buffer.navigationEventAt(buffer.navigationEventCount() - 1).gameTime == 2048.0f,
+          "recent timeline retained");
+   for (size_t i = 1; i < buffer.navigationEventCount(); ++i) {
+      expect(buffer.navigationEventAt(i - 1).gameTime < buffer.navigationEventAt(i).gameTime,
+             "retained events remain chronological");
+   }
+   buffer.clear();
+   expect(buffer.navigationCompactionCount() == 0, "clear resets compaction count");
+}
+
 AI_TEST(testNavigationEventBufferIsBoundedAndSeparateFromTraining) {
   ai::TrainingBuffer buffer {};
   ai::NavigationEvent event {};

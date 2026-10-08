@@ -3631,7 +3631,7 @@ void Bot::recordDefuseEvent (ai::DefuseEventType type, ai::DefuseEventReason rea
    e.evidence = evidence;
    e.gameTime = game.time ();
    e.roundStartTime = gameState.getRoundStartTime ();
-   e.roundId = m_aiCombatRoundId;
+   e.roundId = gameState.getTelemetryRoundId ();
    e.episodeId = m_aiRuntime.trainingRecorder ().episodeId ();
    e.attemptId = m_aiDefuseTracker.attemptId ();
    e.attemptElapsed = m_aiDefuseTracker.elapsed (e.gameTime);
@@ -3692,7 +3692,7 @@ void Bot::recordCombatEvent (ai::CombatEventType type, int weaponId, int targetI
    e.type = type;
    e.gameTime = game.time ();
    e.roundStartTime = gameState.getRoundStartTime ();
-   e.roundId = m_aiCombatRoundId;
+   e.roundId = gameState.getTelemetryRoundId ();
    e.episodeId = m_aiRuntime.trainingRecorder ().episodeId ();
    e.botId = entindex ();
    e.team = static_cast <int> (m_team);
@@ -3724,7 +3724,7 @@ void Bot::recordNavigationEvent (ai::NavigationEventType type, ai::NavigationEve
    event.reason = reason;
    event.gameTime = game.time ();
    event.roundStartTime = gameState.getRoundStartTime ();
-   event.roundId = m_aiCombatRoundId;
+   event.roundId = gameState.getTelemetryRoundId ();
    event.episodeId = m_aiRuntime.trainingRecorder ().episodeId ();
    event.botId = entindex ();
    event.team = m_team;
@@ -3743,8 +3743,8 @@ void Bot::recordNavigationEvent (ai::NavigationEventType type, ai::NavigationEve
    event.distanceToGoal = graph.exists(event.goalNode)
       ? pev->origin.distance(graph[event.goalNode].origin) : -1.0f;
 
-   // PathWalk is populated by a worker; only inspect it under its lock.
-   if (m_pathFindLock.tryLock ()) {
+   // Only route snapshots inspect PathWalk under its worker lock.
+   if (type == ai::NavigationEventType::RouteObserved && m_pathFindLock.tryLock ()) {
       const size_t length = m_pathWalk.length ();
       const size_t kept = cr::min(length, static_cast<size_t>(ai::kNavigationDiagnosticPathNodes));
       event.pathNodeCount = static_cast <int> (kept);
@@ -3766,6 +3766,8 @@ void Bot::recordNavigationEvent (ai::NavigationEventType type, ai::NavigationEve
 void Bot::updateNavigationDiagnostics () {
    if (m_aiRuntime.controller ().getMode () != ai::ControlMode::Training || !pev) {
       m_aiNavInitialized = false;
+      m_aiNavPendingRoute = false;
+      m_aiNavigationGate.reset ();
       return;
    }
    const int task = getCurrentTaskId ();
@@ -3782,7 +3784,7 @@ void Bot::updateNavigationDiagnostics () {
    if (task != m_aiNavPreviousTask) {
       recordNavigationEvent(ai::NavigationEventType::TaskChange, ai::NavigationEventReason::TaskStarted);
    }
-   if (m_currentNodeIndex != m_aiNavPreviousNode) {
+   if (m_currentNodeIndex != m_aiNavPreviousNode && m_aiNavigationGate.acceptWaypoint (game.time ())) {
       recordNavigationEvent(ai::NavigationEventType::WaypointChanged, ai::NavigationEventReason::WaypointChanged);
    }
    if (m_aiNavPendingRoute) {
@@ -3796,7 +3798,8 @@ void Bot::updateNavigationDiagnostics () {
       if (ai::shouldReportLowNavigationDisplacement(
              elapsed, moved, m_moveToGoal && graph.exists(goal),
              (m_states & (Sense::SeeingEnemy | Sense::HearingEnemy)) != 0
-                || m_blindTime > game.time () || isOnLadder())) {
+                || m_blindTime > game.time () || isOnLadder())
+          && m_aiNavigationGate.acceptLowDisplacement (game.time ())) {
          recordNavigationEvent(ai::NavigationEventType::LowDisplacement,
                                ai::NavigationEventReason::LowDisplacement);
       }

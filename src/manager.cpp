@@ -1503,8 +1503,10 @@ void Bot::newRound () {
    endDefuseAttempt (ai::DefuseEventReason::RoundEnded, ai::DefuseEvidence::RoundMessage);
    cancelAIAction ();
    m_aiObservationState.invalidate ();
-   ++m_aiCombatRoundId;
    m_aiFlashEventActive = false;
+   m_aiNavInitialized = false;
+   m_aiNavPendingRoute = false;
+   m_aiNavigationGate.reset ();
    m_aiRuntime.beginTrainingEpisode ();
 
    // delete all allocated path nodes

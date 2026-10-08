@@ -91,6 +91,17 @@ An interrupted attempt records its actual evidence source rather than claiming a
 Likewise, `round_message` refers to the round message path, whereas `game_state` means the code observed that C4 was no longer marked as planted.
 The Python validator checks evidence compatibility without counting diagnostic records as model-training samples.
 
+## D176.4 navigation telemetry and shared round identity
+
+Same-goal route requests are sampled every 12 seconds; changed goals or path types every 4 seconds.
+Waypoint-change events are sampled every 6 seconds, and low-displacement events every 12 seconds per bot.
+These limits affect diagnostics only; all navigation requests still reach the pathfinder.
+A `route_observed` snapshot follows an admitted request, not necessarily a worker completion callback.
+Once the 2048-event navigation buffer is full, chronological decimation preserves half of earlier samples and continues collecting newer samples.
+This bounded history is intentionally lossy; `ai_training_status` reports discarded records and compaction counts.
+The game-wide `GameState` round identifier advances only at global round start after preceding-round bot cleanup.
+Combat, navigation and defuse records share it; joining bots never increment it.
+
 ## Dataset and offline training pipeline
 
 The C++ runtime exports the collected transitions as `aipb-training-jsonl`.

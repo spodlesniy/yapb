@@ -13,6 +13,61 @@ constexpr int kNavigationDiagnosticPathNodes = 32;
 constexpr float kNavigationDiagnosticSamplePeriod = 2.0f;
 constexpr float kNavigationDiagnosticMinProgress = 32.0f;
 
+// Throttle diagnostics only; gameplay pathfinding remains unchanged.
+constexpr float kNavigationSameGoalRouteInterval = 12.0f;
+constexpr float kNavigationChangedGoalRouteInterval = 4.0f;
+constexpr float kNavigationWaypointEventInterval = 6.0f;
+constexpr float kNavigationLowDisplacementEventInterval = 12.0f;
+
+// Shared round identity; zero means no round start was observed yet.
+constexpr uint32_t nextNavigationRoundId(uint32_t previous) {
+  const uint32_t next = previous + 1;
+  return next ? next : 1;
+}
+
+class NavigationDiagnosticGate final {
+private:
+  float m_lastRouteTime {}, m_lastWaypointTime {}, m_lastLowDisplacementTime {};
+  int m_lastRouteDestination { -1 }, m_lastRoutePathType { -1 };
+  bool m_hasRoute {}, m_hasWaypoint {}, m_hasLowDisplacement {};
+
+public:
+  void reset() { *this = NavigationDiagnosticGate {}; }
+  bool hasRoute() const { return m_hasRoute; }
+  int lastRouteDestination() const { return m_lastRouteDestination; }
+
+  bool acceptRoute(float now, int destination, int pathType) {
+    if (m_hasRoute && now >= m_lastRouteTime) {
+      const bool changed = destination != m_lastRouteDestination
+          || pathType != m_lastRoutePathType;
+      const float interval = changed
+          ? kNavigationChangedGoalRouteInterval : kNavigationSameGoalRouteInterval;
+      if (now - m_lastRouteTime < interval) return false;
+    }
+    m_hasRoute = true;
+    m_lastRouteTime = now;
+    m_lastRouteDestination = destination;
+    m_lastRoutePathType = pathType;
+    return true;
+  }
+
+  bool acceptWaypoint(float now) {
+    if (m_hasWaypoint && now >= m_lastWaypointTime
+        && now - m_lastWaypointTime < kNavigationWaypointEventInterval) return false;
+    m_hasWaypoint = true;
+    m_lastWaypointTime = now;
+    return true;
+  }
+
+  bool acceptLowDisplacement(float now) {
+    if (m_hasLowDisplacement && now >= m_lastLowDisplacementTime
+        && now - m_lastLowDisplacementTime < kNavigationLowDisplacementEventInterval) return false;
+    m_hasLowDisplacement = true;
+    m_lastLowDisplacementTime = now;
+    return true;
+  }
+};
+
 enum class NavigationEventType : uint8_t {
   TaskChange, RouteRequest, RouteObserved, WaypointChanged, LowDisplacement,
 };

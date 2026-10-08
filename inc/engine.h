@@ -777,6 +777,7 @@ class GameState final : public Singleton <GameState> {
 private:
    bool m_bombPlanted {}; // is bomb planted ?
    bool m_roundOver {}; // well, round is over>
+   uint32_t m_telemetryRoundId {}; // shared by all bots for one game round
    bool m_resetHud {}; // reset HUD is called for some one
 
    float m_timeBombPlanted {}; // time the bomb were planted
@@ -811,6 +812,10 @@ public:
 
    float getRoundStartTime () const {
       return m_timeRoundStart;
+   }
+
+   uint32_t getTelemetryRoundId () const {
+      return m_telemetryRoundId;
    }
 
    float getRoundMidTime () const {

@@ -42,6 +42,7 @@ void MessageDispatcher::netMsgTextMsg () {
          e.evidence = ai::DefuseEvidence::BombDefusedMessage;
          e.gameTime = game.time ();
          e.roundStartTime = gameState.getRoundStartTime ();
+         e.roundId = gameState.getTelemetryRoundId ();
          e.team = Team::CT;
          e.bombTimeRemaining = gameState.getBombTimeLeft ();
          const auto &bomb = gameState.getBombOrigin ();

@@ -50,6 +50,7 @@ private:
   size_t m_droppedDefuseEvents {};
   size_t m_navigationEventCount {};
   size_t m_droppedNavigationEvents {};
+  size_t m_navigationCompactionCount {};
   size_t m_combatEventCount {};
   size_t m_droppedCombatEvents {};
   size_t m_size {};
@@ -113,8 +114,14 @@ public:
 
   bool appendNavigationEvent(const NavigationEvent &event) {
     if (m_navigationEventCount >= kTrainingNavigationEventCapacity) {
-      ++m_droppedNavigationEvents;
-      return false;
+      // Preserve an ordered sample of earlier events and make room for new ones.
+      const size_t kept = kTrainingNavigationEventCapacity / 2;
+      for (size_t i = 0; i < kept; ++i) {
+        m_navigationEvents[i] = m_navigationEvents[i * 2];
+      }
+      m_navigationEventCount = kept;
+      m_droppedNavigationEvents += kTrainingNavigationEventCapacity - kept;
+      ++m_navigationCompactionCount;
     }
     m_navigationEvents[m_navigationEventCount++] = event;
     return true;
@@ -122,6 +129,7 @@ public:
 
   size_t navigationEventCount() const { return m_navigationEventCount; }
   size_t droppedNavigationEvents() const { return m_droppedNavigationEvents; }
+  size_t navigationCompactionCount() const { return m_navigationCompactionCount; }
   const NavigationEvent &navigationEventAt(size_t index) const { return m_navigationEvents[index]; }
 
   bool appendDefuseEvent(const DefuseEvent &event) {
@@ -145,6 +153,7 @@ public:
     m_droppedCombatEvents = 0;
     m_navigationEventCount = 0;
     m_droppedNavigationEvents = 0;
+    m_navigationCompactionCount = 0;
     m_defuseEventCount = 0;
     m_droppedDefuseEvents = 0;
     m_droppedTransitions = 0;

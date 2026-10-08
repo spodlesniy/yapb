@@ -455,6 +455,11 @@ int BotControl::cmdTrainingStatus () {
       static_cast <int> (ai::kTrainingTransitionCapacity),
       static_cast <int> (buffer.episodeCount ()),
       static_cast <int> (buffer.droppedTransitions ()));
+   msg ("Navigation diagnostics: %d/%d retained, %d thinned, %d compactions.",
+      static_cast <int> (buffer.navigationEventCount ()),
+      static_cast <int> (ai::kTrainingNavigationEventCapacity),
+      static_cast <int> (buffer.droppedNavigationEvents ()),
+      static_cast <int> (buffer.navigationCompactionCount ()));
    return BotCommandResult::Handled;
 }
 

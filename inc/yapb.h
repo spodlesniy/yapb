@@ -781,7 +781,7 @@ public:
    int m_aiNavPreviousTask { -1 };
    int m_aiNavPreviousNode { -1 };
    int m_aiNavPreviousGoal { -1 };
-   int m_aiNavPreviousPathCount { -1 };
+   ai::NavigationDiagnosticGate m_aiNavigationGate {};
    int m_aiNavPendingRouteSource { -1 };
    int m_aiNavPendingRouteGoal { -1 };
    int m_aiNavPendingPathType { -1 };
@@ -792,7 +792,6 @@ public:
 
    ai::DefuseAttemptTracker m_aiDefuseTracker {};
    bool m_aiFlashEventActive {};
-   uint32_t m_aiCombatRoundId {};
    ai::BotRuntime m_aiRuntime;
 
 public:
