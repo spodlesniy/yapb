@@ -171,6 +171,44 @@ bool writeNavigationEvent(cr::File &file, const NavigationEvent &event) {
       && writeString(file, "}\n");
 }
 
+bool writeDefuseEvent(cr::File &file, const DefuseEvent &e) {
+  if (!writeString(file, "{\"type\":\"defuse_event\",\"event\":\"")
+      || !writeString(file, defuseEventName(e.type))
+      || !writeString(file, "\",\"reason\":\"")
+      || !writeString(file, defuseReasonName(e.reason))
+      || !writeString(file, "\",\"evidence_source\":\"")
+      || !writeString(file, defuseEvidenceName(e.evidence))
+      || !writeString(file, "\",\"game_time\":") || !writeFloat(file, e.gameTime)
+      || !writeString(file, ",\"round_start_time\":") || !writeFloat(file, e.roundStartTime)
+      || !writeString(file, ",\"round_id\":") || !writeUnsigned(file, e.roundId)
+      || !writeString(file, ",\"episode_id\":") || !writeUnsigned(file, e.episodeId)
+      || !writeString(file, ",\"attempt_id\":") || !writeUnsigned(file, e.attemptId)
+      || !writeString(file, ",\"bot_id\":") || !writeInt(file, e.botId)
+      || !writeString(file, ",\"team\":") || !writeInt(file, e.team)
+      || !writeString(file, ",\"task\":") || !writeInt(file, e.task)
+      || !writeString(file, ",\"ai_action\":") || !writeInt(file, e.aiAction)
+      || !writeString(file, ",\"bomb_time_remaining\":") || !writeFloat(file, e.bombTimeRemaining)
+      || !writeString(file, ",\"distance_to_bomb\":") || !writeFloat(file, e.distanceToBomb)
+      || !writeString(file, ",\"attempt_elapsed\":") || !writeFloat(file, e.attemptElapsed)
+      || !writeString(file, ",\"bomb_position\":")) return false;
+  if (e.hasBombPosition) {
+    if (!writeVec3(file, e.bombPosition)) return false;
+  }
+  else if (!writeString(file, "null")) return false;
+  if (!writeString(file, ",\"bot_position\":")) return false;
+  if (e.hasBotPosition) {
+    if (!writeVec3(file, e.botPosition)) return false;
+  }
+  else if (!writeString(file, "null")) return false;
+  return writeString(file, ",\"has_defuse_kit\":")
+      && writeString(file, e.hasDefuseKit ? "true" : "false")
+      && writeString(file, ",\"has_progress_bar\":")
+      && writeString(file, e.hasProgressBar ? "true" : "false")
+      && writeString(file, ",\"is_ducking\":")
+      && writeString(file, e.isDucking ? "true" : "false")
+      && writeString(file, "}\n");
+}
+
 bool writeSample(cr::File &file, const TrainingSample &sample) {
   return writeString(file, "{\"episode_id\":") &&
          writeUnsigned(file, sample.episodeId) &&
@@ -254,6 +292,14 @@ TrainingDatasetWriteResult writeTrainingDataset(const TrainingBuffer &buffer, co
       return result;
     }
     ++result.navigationEventCount;
+  }
+
+  for (size_t i = 0; i < buffer.defuseEventCount(); ++i) {
+    if (!writeDefuseEvent(file, buffer.defuseEventAt(i))) {
+      result.error = TrainingDatasetWriteError::IoError;
+      return result;
+    }
+    ++result.defuseEventCount;
   }
 
   if (file.flush()) {
