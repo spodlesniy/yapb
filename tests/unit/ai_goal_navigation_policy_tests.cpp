@@ -9,6 +9,7 @@
 #include "ai_test.h"
 
 #include <ai/ai_attack_movement_guard.h>
+#include <ai/ai_bomb_carrier_goal_guard.h>
 #include <ai/ai_bomb_defense_guard.h>
 #include <ai/ai_bomb_search_guard.h>
 #include <ai/ai_ct_defuse_path_guard.h>
@@ -1297,4 +1298,55 @@ AI_TEST(testCtBombRouteCongestionPenaltyIsBounded) {
          "route diversity cannot outweigh excessive travel length");
   expect(!ai::canAffordRiskAwareCtBombRoute(1500.0f, 1725.0f, 250.0f, 21.0f, false),
          "bomb timer still vetoes shared-route detours that cannot finish defuse");
+}
+
+
+AI_TEST(testBombCarrierSiteOptionsAreDistinctAndSortedByRouteQuality) {
+  ai::BombCarrierGoalOption options[4] {};
+  ai::retainBombCarrierGoal(options, { 10, 400.0f, 500.0f, 0.0f, 0.0f, 0.0f });
+  ai::retainBombCarrierGoal(options, { 11, 300.0f, 510.0f, 100.0f, 0.0f, 0.0f });
+  ai::retainBombCarrierGoal(options, { 20, 350.0f, 550.0f, 1200.0f, 0.0f, 0.0f });
+  expect(ai::chooseBombCarrierGoal(options) == 11,
+         "better waypoint of the same site replaces, not duplicates, the old choice");
+  expect(options[0].node == 11 && options[1].node == 20 && options[2].node == -1,
+         "two separate bombsites occupy two distinct candidate slots");
+
+  ai::retainBombCarrierGoal(options, { 10, 450.0f, 500.0f, 0.0f, 0.0f, 0.0f });
+  expect(options[0].node == 11 && options[1].node == 20,
+         "inferior candidate from the same site never displaces its better waypoint");
+  ai::retainBombCarrierGoal(options, { 21, 220.0f, 560.0f, 1300.0f, 0.0f, 0.0f });
+  expect(ai::chooseBombCarrierGoal(options) == 21,
+         "a better route to the other bombsite may change the plan");
+}
+
+AI_TEST(testBombCarrierDoesNotAutomaticallyRunToNearestSite) {
+  const float nearest = 700.0f;
+  const float alternative = 1100.0f;
+  expect(ai::canConsiderBombCarrierGoal(alternative, nearest),
+         "opposite bombsite within a sensible detour is considered");
+  expect(!ai::canConsiderBombCarrierGoal(2700.0f, nearest),
+         "grossly inefficient detour does not trump reaching a site");
+  expect(!ai::canConsiderBombCarrierGoal(500.0f, 32767.0f),
+         "unreachable base graph does not authorize a bombsite choice");
+  expect(ai::bombCarrierGoalScore(alternative, 50, 250, 2, false, -60.0f, false)
+           < ai::bombCarrierGoalScore(nearest, 1500, 0, 0, false, 60.0f, false),
+         "safer well-supported farther bombsite can defeat nearby dangerous site");
+  expect(ai::bombCarrierGoalScore(1000.0f, 0, 0, 0, true, 0.0f, false)
+           < ai::bombCarrierGoalScore(1000.0f, 0, 0, 0, false, 0.0f, false),
+         "continuity preference avoids unnecessary replanning");
+  expect(ai::bombCarrierGoalScore(900.0f, 1000, 0, 0, false, 0.0f, true)
+           < ai::bombCarrierGoalScore(900.0f, 1000, 0, 0, false, 0.0f, false),
+         "rusher is less deterred by historical danger than a normal carrier");
+}
+
+AI_TEST(testBombCarrierSiteOptionsCapAndStableTies) {
+  ai::BombCarrierGoalOption options[2] {};
+  ai::retainBombCarrierGoal(options, { 8, 200.0f, 200.0f, 0.0f, 0.0f, 0.0f });
+  ai::retainBombCarrierGoal(options, { 9, 300.0f, 300.0f, 1200.0f, 0.0f, 0.0f });
+  ai::retainBombCarrierGoal(options, { 3, 250.0f, 250.0f, 2500.0f, 0.0f, 0.0f });
+  expect(options[0].node == 8 && options[1].node == 3,
+         "full candidate buffer replaces only its lowest-quality entry");
+  ai::retainBombCarrierGoal(options, { 4, 200.0f, 200.0f, 2500.0f, 0.0f, 0.0f });
+  expect(ai::chooseBombCarrierGoal(options) == 4,
+         "equal scores are settled by stable waypoint index");
 }

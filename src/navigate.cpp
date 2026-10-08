@@ -7,6 +7,7 @@
 
 #include <yapb.h>
 
+#include <ai/ai_bomb_carrier_goal_guard.h>
 #include <ai/ai_bomb_defense_guard.h>
 #include <ai/ai_bomb_search_guard.h>
 #include <ai/ai_ct_defuse_path_guard.h>
@@ -295,8 +296,82 @@ int Bot::findGoalPost (int tactic, IntArray *defensive, IntArray *offensive) {
       postProcessGoals (*offensive, goalChoices);
    }
    else if (tactic == GoalTactic::Goal && !graph.m_goalPoints.empty ()) { // map goal node
-      // force bomber to select closest goal
-      if (m_isVIP || m_hasC4) {
+      // C4 carrier must consider genuine *distinct* and reachable sites.
+      // Unlike the old <=1024-unit heuristic, the opposite site remains an
+      // option, with bounded path detour, learned danger and team support.
+      if (m_hasC4 && m_team == Team::Terrorist && !gameState.isBombPlanted ()) {
+         ensureCurrentNodeIndex ();
+         const int from = graph.exists (m_currentNodeIndex)
+            ? m_currentNodeIndex : graph.getNearest (pev->origin);
+         if (graph.exists (from)) {
+            float nearestRouteDistance = ai::kBombCarrierUnreachableDistance;
+            for (const auto &point : graph.m_goalPoints) {
+               if (!graph.exists (point) || isGroupOfEnemies (graph[point].origin)) {
+                  continue;
+               }
+               const float distance = planner.preciseDistance (from, point);
+               if (ai::isBombCarrierGoalReachable (distance) && distance < nearestRouteDistance) {
+                  nearestRouteDistance = distance;
+               }
+            }
+
+            ai::BombCarrierGoalOption siteOptions[4] {};
+            for (const auto &point : graph.m_goalPoints) {
+               if (!graph.exists (point) || isGroupOfEnemies (graph[point].origin)) {
+                  continue;
+               }
+               const float distance = planner.preciseDistance (from, point);
+               if (!ai::canConsiderBombCarrierGoal (distance, nearestRouteDistance)) {
+                  continue;
+               }
+
+               const auto &origin = graph[point].origin;
+               int nearbyAllies = 0;
+               for (const auto &ally : bots) {
+                  if (!ally || ally.get () == this || !ally->m_isAlive || ally->m_team != m_team) {
+                     continue;
+                  }
+                  const int allyGoal = ally->getTask ()->data;
+                  if (ally->pev->origin.distanceSq (origin) <= cr::sqrf (ai::kBombCarrierAllySupportRadius)
+                     || (graph.exists (allyGoal)
+                        && graph[allyGoal].origin.distanceSq (origin)
+                            <= cr::sqrf (ai::kBombCarrierSiteClusterRadius))) {
+                     ++nearbyAllies;
+                     if (nearbyAllies >= 2) {
+                        break;
+                     }
+                  }
+               }
+
+               const bool preserveSite = graph.exists (m_prevGoalIndex)
+                  && graph[m_prevGoalIndex].origin.distanceSq (origin)
+                      <= cr::sqrf (ai::kBombCarrierSiteClusterRadius);
+               ai::BombCarrierGoalOption option {};
+               option.node = point;
+               option.routeDistance = distance;
+               option.x = origin.x;
+               option.y = origin.y;
+               option.z = origin.z;
+               option.score = ai::bombCarrierGoalScore (
+                  distance,
+                  practice.getDamage (m_team, point, point),
+                  practice.getValue (m_team, from, point),
+                  nearbyAllies, preserveSite,
+                  rg (-120.0f, 120.0f),
+                  m_personality == Personality::Rusher);
+               ai::retainBombCarrierGoal (siteOptions, option);
+            }
+
+            const int chosenSite = ai::chooseBombCarrierGoal (siteOptions);
+            if (graph.exists (chosenSite)) {
+               return m_chosenGoalIndex = chosenSite;
+            }
+         }
+         // In an incomplete map/graph use the existing generic goal fallback.
+         postProcessGoals (graph.m_goalPoints, goalChoices);
+      }
+      // VIP path selection keeps the existing behavior.
+      else if (m_isVIP) {
          for (const auto &point : graph.m_goalPoints) {
             const float distanceSq = graph[point].origin.distanceSq (pev->origin);
 
