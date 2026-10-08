@@ -149,6 +149,25 @@ constexpr DefuseRouteEvaluation chooseDefuseRoute(bool alreadyHasKit, float bomb
 }
 
 
+
+// Keep an already selected defuse kit if another usable kit improves estimated
+// slack only marginally. Never retain a candidate with an invalid budget.
+constexpr bool isBetterDefuseKitCandidate(float candidateSlack, bool candidateIsCurrent,
+                                          float bestSlack, bool bestIsCurrent) {
+  if (!(candidateSlack > 0.0f)) {
+    return false;
+  }
+  if (!(bestSlack > 0.0f)) {
+    return true;
+  }
+  if (candidateIsCurrent != bestIsCurrent
+      && candidateSlack <= bestSlack + kDefuseRouteSwitchHysteresis
+      && bestSlack <= candidateSlack + kDefuseRouteSwitchHysteresis) {
+    return candidateIsCurrent;
+  }
+  return candidateSlack > bestSlack + (bestIsCurrent ? kDefuseRouteSwitchHysteresis : 0.0f);
+}
+
 constexpr bool shouldPreemptActiveDefuseForVisibleEnemy(bool visibleEnemy, bool hasDefuser,
                                                         float bombTimeRemaining) {
   const float fullDefuseTime = hasDefuser ? kDefuseTimeWithKit : kDefuseTimeWithoutKit;

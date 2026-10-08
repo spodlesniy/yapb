@@ -912,3 +912,19 @@ AI_TEST(testDefuseRouteComparisonAbandonsUnviableKitAndPreventsChurn) {
     { true, 400.0f }, { true, 700.0f }, { true, 700.0f }, 20, 2, Choice::Direct).choice == Choice::None,
     "exact safety margin boundary does not claim guaranteed defuse");
 }
+
+
+AI_TEST(testDefuseKitCandidatePrefersStableCurrentKit) {
+  expect(ai::isBetterDefuseKitCandidate(10.0f, false, -1.0f, false),
+         "first feasible kit can be selected");
+  expect(!ai::isBetterDefuseKitCandidate(10.4f, false, 10.0f, true),
+         "small gain cannot steal an already selected kit");
+  expect(ai::isBetterDefuseKitCandidate(10.0f, true, 10.4f, false),
+         "current kit wins a near-equal comparison");
+  expect(ai::isBetterDefuseKitCandidate(12.0f, false, 10.0f, true),
+         "sufficient improvement permits switching to another kit");
+  expect(!ai::isBetterDefuseKitCandidate(0.0f, true, 10.0f, false),
+         "infeasible current kit must not be retained");
+  expect(!ai::isBetterDefuseKitCandidate(-1.0f, false, -1.0f, false),
+         "invalid kit is not selected when none exists");
+}

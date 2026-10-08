@@ -450,7 +450,9 @@ void Bot::updatePickups () {
                direct, distanceLeg (botNode, kitNode), distanceLeg (kitNode, bombNode),
                -1, -1, priorChoice);
             if (assessment.choice == ai::DefuseRouteChoice::ViaKit
-               && assessment.viaKit.slackSeconds > bestSlack) {
+               && ai::isBetterDefuseKitCandidate (
+                  assessment.viaKit.slackSeconds, candidate == m_pickupItem && m_pickupType == Pickup::DefusalKit,
+                  bestSlack, preferredDefuseKit == m_pickupItem && m_pickupType == Pickup::DefusalKit)) {
                preferredDefuseKit = candidate;
                bestSlack = assessment.viaKit.slackSeconds;
             }
