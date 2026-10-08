@@ -85,6 +85,36 @@ AI_TEST(testGoalNavigationPolicyStillRetreatsLowHealthNonCarrier) {
          "low-health visible combat still starts retreat for a bot without C4");
 }
 
+AI_TEST(testVisibleEnemyTargetHysteresisPreventsEqualDistanceOscillation) {
+  // Squared distances match lookupEnemies() and preserve its visibility range.
+  const float current = 400.0f * 400.0f;
+  expect(ai::shouldKeepCurrentVisibleEnemy(true, false, false, current, 395.0f * 395.0f),
+         "small distance difference preserves the currently visible target");
+  expect(ai::shouldKeepCurrentVisibleEnemy(true, false, false, current, 300.0f * 300.0f),
+         "exactly 25 percent closer is not enough to force a switch");
+  expect(!ai::shouldKeepCurrentVisibleEnemy(true, false, false, current, 295.0f * 295.0f),
+         "a substantially closer challenger can replace the current enemy");
+
+  // Once switched, near-equal oscillations must not immediately switch back.
+  const float newCurrent = 295.0f * 295.0f;
+  expect(ai::shouldKeepCurrentVisibleEnemy(true, false, false, newCurrent, current),
+         "a formerly selected target cannot win back focus while farther away");
+}
+
+AI_TEST(testVisibleEnemyTargetHysteresisAllowsLossAndPriorityTargets) {
+  const float current = 400.0f * 400.0f;
+  expect(!ai::shouldKeepCurrentVisibleEnemy(false, false, false, current, 398.0f * 398.0f),
+         "lost or hidden current enemy never receives a sticky target bonus");
+  expect(!ai::shouldKeepCurrentVisibleEnemy(true, false, true, current, 399.0f * 399.0f),
+         "a newly visible VIP bypasses hysteresis on assassination maps");
+  expect(ai::shouldKeepCurrentVisibleEnemy(true, true, false, current, 200.0f * 200.0f),
+         "a visible VIP retains priority over a non-VIP challenger");
+  expect(!ai::shouldKeepCurrentVisibleEnemy(true, false, false, -1.0f, current),
+         "invalid current distance cannot lock a target");
+  expect(!ai::shouldKeepCurrentVisibleEnemy(true, false, false, current, -1.0f),
+         "invalid candidate distance cannot lock a target");
+}
+
 AI_TEST(testGoalNavigationPolicyExploresForNormalTask) {
   auto observation = makeObservation();
   observation.bot.currentTask = ai::TaskType::Normal;

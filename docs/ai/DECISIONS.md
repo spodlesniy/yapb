@@ -1670,6 +1670,20 @@ No changes are made to the conservative graph travel budget for distant reinforc
 Reason: the existing arrival check rejects all paths once the bomb has fewer than four seconds left, including zero-length routes for bots already guarding the site.
 Such bots could then emit repeated rejected ProtectObjective attempts precisely when they should hold an established defense position.
 
+## D179 — Keep visible combat targets until a challenger is meaningfully better
+
+A bot that is still tracking a live, visible, non-shielded enemy does not replace it on each scan with a merely marginally closer visible enemy.
+A new ordinary player must be more than 25 percent closer by linear distance to trigger the replacement; comparisons use squared distances and a pure helper in `ai_perception_guard.h`.
+The existing scan cadence, field-of-view and PVS checks, shield handling, reaction timing, and monster selection remain unchanged.
+Current-target retention applies only to verified visible player targets, so lost, dead, shielded, or otherwise invalid targets do not stay artificially locked.
+Assassination VIP priority overrides the distance hysteresis, both when acquiring a VIP and when retaining an already visible VIP.
+When the original target is preserved, its captured visible aim origin and body-part state are restored after the scan of other players.
+Tests cover near-ties, the improvement threshold, returning to a prior target, invalid visibility evidence, and VIP precedence.
+
+Reason: the D178.1 gameplay report observed unnaturally rapid changes of aim direction, apparently alternating between similarly attractive enemies.
+Previously `lookupEnemies()` selected the shortest candidate distance after each re-scan, allowing small positional fluctuations to redirect aim sharply.
+This narrow correction stabilizes target selection without changing the aim-motion model, grenade behavior, or flashblind protection.
+
 ## D178.1 — Fix undefined PickupItem priority in the Windows x86 build
 
 The user-started Windows x86 D178 build failed in `src/tasks.cpp` at the unconfirmed-defuse recovery path because `TaskPri::PickupItem` was not declared.

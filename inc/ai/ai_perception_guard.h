@@ -29,6 +29,25 @@ constexpr bool shouldReplaceRememberedEnemyWithHeard(float rememberedDistanceSq,
   return !recentlySeen && heardDistanceSq < rememberedDistanceSq;
 }
 
+// Switch a still-visible target only for a meaningful distance advantage.
+// Squared distances avoid square roots in the combat scan.
+constexpr float kVisibleEnemySwitchDistanceRatio = 0.75f;
+constexpr float kVisibleEnemySwitchDistanceRatioSq =
+    kVisibleEnemySwitchDistanceRatio * kVisibleEnemySwitchDistanceRatio;
+
+constexpr bool shouldKeepCurrentVisibleEnemy(bool currentVisible,
+                                             bool currentIsVip, bool candidateIsVip,
+                                             float currentDistanceSq, float candidateDistanceSq) {
+  if (!currentVisible || currentDistanceSq < 0.0f || candidateDistanceSq < 0.0f) {
+    return false;
+  }
+  // A newly visible priority objective must not be delayed by the threshold.
+  if (currentIsVip != candidateIsVip) {
+    return currentIsVip;
+  }
+  return candidateDistanceSq >= currentDistanceSq * kVisibleEnemySwitchDistanceRatioSq;
+}
+
 constexpr float kEnemyHearingExpiration = 10.0f;
 
 // Expire sensory evidence regardless of the scan cadence. A sound heard on

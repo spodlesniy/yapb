@@ -386,6 +386,13 @@ bool Bot::lookupEnemies () {
    edict_t *player, *newEnemy = nullptr;
    float nearestDistanceSq = cr::sqrf (m_viewDistance);
 
+   // Store only an actually visible, shield-clear current target. The scan
+   // may evaluate many enemies and overwrite the shared aim hitbox state.
+   edict_t *visibleCurrentEnemy = nullptr;
+   float currentEnemyDistanceSq = -1.0f;
+   Vector currentEnemyOrigin {};
+   auto currentEnemyParts = Visibility::None;
+
    // clear suspected flag
    if (!game.isNullEntity (m_enemy) && (m_states & Sense::SeeingEnemy)) {
       m_states &= ~Sense::SuspectEnemy;
@@ -483,6 +490,13 @@ bool Bot::lookupEnemies () {
             }
             const float distanceSq = player->v.origin.distanceSq (pev->origin);
 
+            if (player == m_enemy) {
+               visibleCurrentEnemy = player;
+               currentEnemyDistanceSq = distanceSq;
+               currentEnemyOrigin = m_enemyOrigin;
+               currentEnemyParts = m_enemyParts;
+            }
+
             if (distanceSq < nearestDistanceSq) {
                nearestDistanceSq = distanceSq;
                newEnemy = player;
@@ -494,6 +508,22 @@ bool Bot::lookupEnemies () {
             }
          }
       }
+      // A nearly equidistant challenger must not bounce the bot's aim between
+      // two live enemies. This applies only when both are currently visible,
+      // not shielded, and are ordinary player targets. A VIP retains priority.
+      if (visibleCurrentEnemy != nullptr && newEnemy != nullptr
+         && newEnemy != visibleCurrentEnemy && game.isPlayerEntity (newEnemy)
+         && ai::shouldKeepCurrentVisibleEnemy (
+            true,
+            game.is (MapFlags::Assassination) && game.isPlayerVIP (visibleCurrentEnemy),
+            game.is (MapFlags::Assassination) && game.isPlayerVIP (newEnemy),
+            currentEnemyDistanceSq, nearestDistanceSq)) {
+
+         newEnemy = visibleCurrentEnemy;
+         m_enemyOrigin = currentEnemyOrigin;
+         m_enemyParts = currentEnemyParts;
+      }
+
       m_enemyUpdateTime = game.time () + (usesKnife () ? 1.25f : 0.85f);
 
       if (game.isNullEntity (newEnemy) && !game.isNullEntity (shieldEnemy)) {
