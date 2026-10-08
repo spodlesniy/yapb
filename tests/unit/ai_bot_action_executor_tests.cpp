@@ -2291,3 +2291,66 @@ AI_TEST(testConsumedHuntRequiresNewEvidenceBeforeRetry) {
          112.0f, 118.0f, -1.0f, -1.0f),
          "no consumed hunt leaves first approach available");
 }
+
+AI_TEST(testTrainingRoundEndCancelsActiveAttackWithoutExtraDecisions) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+  ai::ActionRuntime runtime { executor };
+  ai::GoalNavigationPolicy policy {};
+  runtime.setMode(ai::ControlMode::Training);
+  runtime.setPolicy(&policy);
+  ai::TrainingBuffer buffer {};
+  ai::TrainingRecorder recorder { buffer };
+  ai::ActionOutcomeRewardProvider rewards {};
+  ai::TrainingCollector collector { recorder, rewards };
+
+  auto observation = attackObservation(9);
+  observation.gameTime = 30.0f;
+  observation.bot.currentTask = ai::TaskType::Attack;
+  expect(collector.step(runtime, observation).type == ai::ActionResultType::Accepted,
+         "attack begins while the round is active");
+  expect(runtime.isActive(), "attack owns the action before round end");
+
+  observation.gameTime = 35.0f;
+  expect(collector.cancel(runtime), "round-end cancellation stops the ongoing attack");
+  expect(collector.finalizeTerminal(observation), "round-end observation records the terminal action");
+  expect(!runtime.isActive() && context.cancelAttackTargetCalls == 1,
+         "round-end cancellation releases attack ownership exactly once");
+  expect(buffer.size() == 1 && buffer.at(0).result.type == ai::ActionResultType::Interrupted,
+         "round end produces exactly one interrupted attack sample");
+  expectNear(buffer.at(0).result.elapsedTime, 5.0f, 0.001f,
+             "action duration ends at the round boundary");
+  expect(collector.step(runtime, observation, false).type == ai::ActionResultType::None,
+         "without new decisions no post-round attack is started");
+}
+
+AI_TEST(testTrainingRoundEndCancelsActiveBombDefense) {
+  MockActionExecutionContext context {};
+  ai::BotActionExecutor executor(context);
+  ai::ActionRuntime runtime { executor };
+  ai::GoalNavigationPolicy policy {};
+  runtime.setMode(ai::ControlMode::Training);
+  runtime.setPolicy(&policy);
+  ai::TrainingBuffer buffer {};
+  ai::TrainingRecorder recorder { buffer };
+  ai::ActionOutcomeRewardProvider rewards {};
+  ai::TrainingCollector collector { recorder, rewards };
+
+  auto observation = aliveObservation();
+  observation.gameTime = 40.0f;
+  observation.bot.team = 0;
+  observation.bot.currentTask = ai::TaskType::Camp;
+  observation.bot.objectiveFlags = ai::ObjectiveFlag::BombPlanted;
+  expect(collector.step(runtime, observation).type == ai::ActionResultType::Accepted,
+         "C4 protection remains active before round end");
+
+  observation.gameTime = 44.0f;
+  observation.bot.objectiveFlags = 0;
+  expect(collector.cancel(runtime), "round-end cancellation releases C4 protection");
+  expect(collector.finalizeTerminal(observation), "C4 protection transition closes at round end");
+  expect(context.cancelProtectObjectiveCalls == 1, "bomb defense cleanup happens exactly once");
+  expect(buffer.size() == 1 && buffer.at(0).result.type == ai::ActionResultType::Interrupted,
+         "a terminated round interrupts unfinished objective defense");
+  expectNear(buffer.at(0).result.elapsedTime, 4.0f, 0.001f,
+             "C4 defense duration does not include post-round spectator time");
+}

@@ -839,6 +839,15 @@ void BotManager::setLastWinner (int winner) {
    m_lastWinner = winner;
    gameState.setRoundOver (true);
 
+   // A round may end while a semantic attack or planted-C4 defense is still
+   // active. Finalize each bot's transition at the round boundary, rather
+   // than attributing the post-round delay to the combat/objective action.
+   for (const auto &bot : bots) {
+      if (bot) {
+         bot->cancelAIAction ();
+      }
+   }
+
    if (cv_radio_mode.as <int> () != 2) {
       return;
    }

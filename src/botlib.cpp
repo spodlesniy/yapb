@@ -3693,7 +3693,14 @@ void Bot::logic () {
 
    const bool aiControlActive = m_aiRuntime.isControlEnabled ();
 
-   if (aiControlActive) {
+   if (aiControlActive && gameState.isRoundOver ()) {
+      // No policy decision can start a new action after the round's winner is
+      // known. The terminal transition is recorded by setLastWinner().
+      if (m_aiRuntime.isActive ()) {
+         cancelAIAction ();
+      }
+   }
+   else if (aiControlActive) {
       const float currentTime = game.time ();
       const bool allowInference = currentTime >= m_aiNextInferenceTime;
 
