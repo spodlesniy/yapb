@@ -439,14 +439,13 @@ void MessageDispatcher::netMsgBarTime () {
 
    // check if has progress bar
    if (m_args[enabled].long_ > 0) {
+      m_bot->m_hasProgressBar = true; // snapshot must reflect positive BarTime
       if (game.mapIs (MapFlags::Demolition) && gameState.isBombPlanted ()
           && m_bot->m_team == Team::CT
           && m_bot->m_aiDefuseTracker.confirmProgress (game.time ())) {
          m_bot->recordDefuseEvent (ai::DefuseEventType::Start, ai::DefuseEventReason::None,
                                    ai::DefuseEvidence::BarTimePositive);
       }
-      m_bot->m_hasProgressBar = true; // the progress bar on a hud
-
       // notify bots about defusing has started
       if (game.mapIs (MapFlags::Demolition) && gameState.isBombPlanted () && m_bot->m_team == Team::CT) {
          bots.notifyBombDefuse ();
