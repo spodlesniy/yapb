@@ -92,6 +92,32 @@ class TrainingDatasetValidatorTests(unittest.TestCase):
         ]
         self.assertEqual(validate_dataset(self.write_dataset([METADATA, make_sample(), *events])), 1)
 
+    def test_defuse_interruption_accepts_observed_state_without_callback_claim(self) -> None:
+        for source in ("observed_dead", "game_state"):
+            event = {"type": "defuse_event", "event": "defuse_interrupted",
+                     "game_time": 3.0, "bot_id": 3, "attempt_id": 2,
+                     "evidence_source": source}
+            self.assertEqual(validate_dataset(self.write_dataset([METADATA, event])), 0)
+
+    def test_defuse_start_rejects_non_authoritative_evidence(self) -> None:
+        event = {"type": "defuse_event", "event": "defuse_start",
+                 "game_time": 3.0, "bot_id": 3, "evidence_source": "in_use"}
+        with self.assertRaises(DatasetValidationError):
+            validate_dataset(self.write_dataset([METADATA, event]))
+
+    def test_defuse_attempt_rejects_bar_time_as_input_evidence(self) -> None:
+        event = {"type": "defuse_event", "event": "defuse_attempt",
+                 "game_time": 3.0, "bot_id": 3, "evidence_source": "bar_time_positive"}
+        with self.assertRaises(DatasetValidationError):
+            validate_dataset(self.write_dataset([METADATA, event]))
+
+    def test_defuse_rejects_invalid_attempt_id(self) -> None:
+        event = {"type": "defuse_event", "event": "defuse_interrupted",
+                 "game_time": 3.0, "bot_id": 3, "attempt_id": True,
+                 "evidence_source": "game_state"}
+        with self.assertRaises(DatasetValidationError):
+            validate_dataset(self.write_dataset([METADATA, event]))
+
     def test_v2_rejects_defuse_events(self) -> None:
         event = {"type": "defuse_event", "event": "defuse_start",
                  "game_time": 3.0, "bot_id": 3, "evidence_source": "bar_time_positive"}

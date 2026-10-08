@@ -541,6 +541,15 @@ AI_TEST(testDefuseAttemptTrackerDeduplicatesEngineMessages) {
    expect(!tracker.active() && tracker.attemptId() == 0, "new round resets tracking");
 }
 
+AI_TEST(testDefuseFallbackEvidenceNamesAreDistinctFromEngineMessages) {
+   expect(std::strcmp(ai::defuseEvidenceName(ai::DefuseEvidence::AliveState),
+                      "observed_dead") == 0, "observed death is not a DeathMsg");
+   expect(std::strcmp(ai::defuseEvidenceName(ai::DefuseEvidence::GameState),
+                      "game_state") == 0, "game-state exit is not a TextMsg");
+   expect(std::strcmp(ai::defuseEvidenceName(ai::DefuseEvidence::DeathMessage),
+                      "death_message") == 0, "actual DeathMsg remains distinct");
+}
+
 AI_TEST(testDefuseDiagnosticBufferIsBounded) {
    ai::TrainingBuffer buffer {};
    ai::DefuseEvent e {};

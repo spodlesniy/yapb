@@ -3665,10 +3665,15 @@ void Bot::endDefuseAttempt (ai::DefuseEventReason reason, ai::DefuseEvidence evi
 void Bot::updateDefuseDiagnostics () {
    if (!m_aiDefuseTracker.active ()) return;
    if (!m_isAlive) {
-      endDefuseAttempt (ai::DefuseEventReason::BotDied, ai::DefuseEvidence::DeathMessage);
+      // This fallback observes the bot's live state, not a DeathMsg callback.
+      endDefuseAttempt (ai::DefuseEventReason::BotDied, ai::DefuseEvidence::AliveState);
    }
-   else if (gameState.isRoundOver () || !gameState.isBombPlanted ()) {
+   else if (gameState.isRoundOver ()) {
       endDefuseAttempt (ai::DefuseEventReason::RoundEnded, ai::DefuseEvidence::RoundMessage);
+   }
+   else if (!gameState.isBombPlanted ()) {
+      // Do not claim that a round message was received when only game state changed.
+      endDefuseAttempt (ai::DefuseEventReason::RoundEnded, ai::DefuseEvidence::GameState);
    }
    else if (m_aiDefuseTracker.progressLossExpired (game.time ())) {
       endDefuseAttempt (ai::DefuseEventReason::BarTimeCleared, ai::DefuseEvidence::BarTimeZero);

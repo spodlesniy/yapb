@@ -81,6 +81,16 @@ The main responsibilities are split as follows:
 
 Ending an episode clears the recorder's pending action and episode identifier but does not erase the already collected buffer.
 
+## Defuse diagnostics evidence contract
+
+Defuse events in JSONL v3 are diagnostic records, not training transitions.
+`defuse_attempt` records observed `IN_USE` intent, while `defuse_start` requires positive GoldSrc `BarTime`.
+`defuse_complete` requires the exact `#Bomb_Defused` TextMsg and remains unattributed (`bot_id = -1`) when the authoritative message does not identify a player.
+An interrupted attempt records its actual evidence source rather than claiming an engine callback when none was observed.
+`death_message` means the `DeathMsg` handler ran, while `observed_dead` means a separate alive-state check detected death.
+Likewise, `round_message` refers to the round message path, whereas `game_state` means the code observed that C4 was no longer marked as planted.
+The Python validator checks evidence compatibility without counting diagnostic records as model-training samples.
+
 ## Dataset and offline training pipeline
 
 The C++ runtime exports the collected transitions as `aipb-training-jsonl`.

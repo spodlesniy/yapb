@@ -268,11 +268,23 @@ def iter_validated_samples(path: str | Path):
                 }, f"line {line_number}: unknown defuse event")
                 _require(_is_number(value.get("game_time")), f"line {line_number}: invalid defuse time")
                 _require(type(value.get("bot_id")) is int, f"line {line_number}: invalid defuse bot")
-                _require(isinstance(value.get("evidence_source"), str),
-                         f"line {line_number}: missing defuse evidence")
+                # Source evidence is event-specific: inferred state must never
+                # masquerade as a callback from the game engine.
+                allowed_evidence = {
+                    "defuse_attempt": {"in_use"},
+                    "defuse_start": {"bar_time_positive"},
+                    "defuse_interrupted": {
+                        "bar_time_zero", "unconfirmed_use_timeout", "task_lifecycle",
+                        "round_message", "death_message", "observed_dead", "game_state",
+                    },
+                    "defuse_complete": {"bomb_defused_text_message"},
+                }
+                _require(value.get("evidence_source") in allowed_evidence[value["event"]],
+                         f"line {line_number}: invalid defuse event evidence")
+                if "attempt_id" in value:
+                    _require(type(value["attempt_id"]) is int and value["attempt_id"] >= 0,
+                             f"line {line_number}: invalid defuse attempt id")
                 if value["event"] == "defuse_complete":
-                    _require(value["evidence_source"] == "bomb_defused_text_message",
-                             f"line {line_number}: unconfirmed defuse completion")
                     _require(value["bot_id"] == -1,
                              f"line {line_number}: completion cannot claim an unknown defuser")
                 continue

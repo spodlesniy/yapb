@@ -13,7 +13,7 @@ enum class DefuseEventReason : uint8_t {
 };
 enum class DefuseEvidence : uint8_t {
   UseButton, BarTimePositive, BarTimeZero, TaskLifecycle, UnconfirmedUseTimeout,
-  RoundMessage, DeathMessage, BombDefusedMessage
+  RoundMessage, DeathMessage, BombDefusedMessage, AliveState, GameState
 };
 
 constexpr const char *defuseEventName(DefuseEventType v) {
@@ -46,6 +46,8 @@ constexpr const char *defuseEvidenceName(DefuseEvidence v) {
   case DefuseEvidence::UnconfirmedUseTimeout: return "unconfirmed_use_timeout";
   case DefuseEvidence::RoundMessage: return "round_message";
   case DefuseEvidence::DeathMessage: return "death_message";
+  case DefuseEvidence::AliveState: return "observed_dead";
+  case DefuseEvidence::GameState: return "game_state";
   case DefuseEvidence::BombDefusedMessage: return "bomb_defused_text_message";
   }
   return "unknown";
