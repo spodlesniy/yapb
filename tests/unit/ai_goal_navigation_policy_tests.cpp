@@ -1121,3 +1121,47 @@ AI_TEST(testDistributedPlantedC4DefenseNodeSelection) {
            550.0f, false, 0.0f, 20),
          "equal options use deterministic node order");
 }
+
+AI_TEST(testBombDefenseConnectionCountSkipsUnusableRoutes) {
+  struct Link { int index; bool jump; bool ladder; };
+  const Link links[] { { 3, false, false }, { 7, false, false },
+                       { -1, false, false }, { 8, true, false },
+                       { 9, false, true } };
+  const int count = ai::countWalkableBombDefenseConnections(links, [](const Link &link) {
+    return link.index >= 0 && !link.jump && !link.ladder;
+  });
+  expect(count == 2, "only traversable waypoint exits count toward defense topology");
+}
+
+AI_TEST(testBombDefenseTopologyPreservesCoverPriority) {
+  expect(ai::bombDefenseConnectionPenalty(0, false) > ai::bombDefenseConnectionPenalty(2, false),
+         "isolated nodes are not preferred merely because they have zero exits");
+  expect(ai::bombDefenseConnectionPenalty(2, false) < ai::bombDefenseConnectionPenalty(4, false),
+         "dropped C4 CT favors a recess over a busy crossing");
+  expect(ai::bombDefenseConnectionPenalty(2, true) < ai::bombDefenseConnectionPenalty(1, true),
+         "planted C4 T values a second escape route");
+  expect(ai::bombDefenseConnectionPenalty(2, true) < ai::bombDefenseConnectionPenalty(4, true),
+         "planted C4 defense favors a controlled entrance over an open intersection");
+
+  expect(ai::isBetterBombDefenseCover(102, 100, 500.0f, 7,
+                                     100, 100, 300.0f, 8, 2, 5),
+         "similar cover exposure permits a topology-based preference");
+  expect(!ai::isBetterBombDefenseCover(120, 100, 500.0f, 7,
+                                      100, 100, 300.0f, 8, 2, 5),
+         "substantially worse exposure must not be compensated by fewer links");
+  expect(!ai::isBetterBombDefenseCover(100, 125, 500.0f, 7,
+                                      100, 100, 300.0f, 8, 2, 5),
+         "substantially higher damage must not be compensated by fewer links");
+}
+
+AI_TEST(testPlantedBombDefenseConnectionsHaveBoundedRoutePenalty) {
+  expect(ai::isBetterDistributedBombDefenseNode(530.0f, false, 0.0f, 10,
+            500.0f, false, 0.0f, 11, 2, 4),
+         "two ordinary exits can win over a small planted-C4 travel detour");
+  expect(!ai::isBetterDistributedBombDefenseNode(900.0f, false, 0.0f, 10,
+            500.0f, false, 0.0f, 11, 2, 4),
+         "topology bonus cannot justify arriving too late to reinforce");
+  expect(!ai::isBetterDistributedBombDefenseNode(500.0f, false, 512.0f, 10,
+            530.0f, false, 0.0f, 11, 2, 4),
+         "avoiding teammate crowding outweighs the topology benefit");
+}

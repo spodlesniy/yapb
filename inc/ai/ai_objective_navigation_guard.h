@@ -8,6 +8,8 @@
 
 #pragma once
 
+#include <ai/ai_bomb_defense_guard.h>
+
 namespace ai {
 
 // Keep graph navigation active until an objective can be interacted with directly.
@@ -137,10 +139,17 @@ constexpr float bombDefenseCrowdingCost(float distanceSq) {
 }
 
 constexpr bool isBetterDistributedBombDefenseNode(float route, bool camp, float crowdCost, int node,
-                                                  float bestRoute, bool bestCamp, float bestCrowdCost, int bestNode) {
+                                                  float bestRoute, bool bestCamp, float bestCrowdCost, int bestNode,
+                                                  int connections = -1, int bestConnections = -1) {
   if (bestNode < 0) return true;
-  const float score = route - (camp ? kPlantedBombReinforcementCampRouteAllowance : 0.0f) + crowdCost;
-  const float bestScore = bestRoute - (bestCamp ? kPlantedBombReinforcementCampRouteAllowance : 0.0f) + bestCrowdCost;
+  const float topologyCost = connections >= 0
+      ? bombDefenseConnectionPenalty(connections, true) * kBombDefenseConnectionRouteCost : 0.0f;
+  const float bestTopologyCost = bestConnections >= 0
+      ? bombDefenseConnectionPenalty(bestConnections, true) * kBombDefenseConnectionRouteCost : 0.0f;
+  const float score = route - (camp ? kPlantedBombReinforcementCampRouteAllowance : 0.0f)
+      + crowdCost + topologyCost;
+  const float bestScore = bestRoute - (bestCamp ? kPlantedBombReinforcementCampRouteAllowance : 0.0f)
+      + bestCrowdCost + bestTopologyCost;
   return score < bestScore || (score == bestScore && node < bestNode);
 }
 

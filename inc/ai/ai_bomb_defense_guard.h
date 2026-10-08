@@ -14,14 +14,49 @@ constexpr bool isBombDefenseNodeEligibleForPass(bool requireCamp, bool isCamp, b
   return (!requireCamp || isCamp) && !isLadder;
 }
 
+// Count ordinary outgoing connections. The caller validates graph nodes and
+// rejects jump and ladder links. YaPB graph creation already rejects duplicates.
+template <typename Links, typename IsWalkable>
+int countWalkableBombDefenseConnections(const Links &links, IsWalkable isWalkable) {
+  int count = 0;
+  for (const auto &link : links) {
+    if (isWalkable(link)) ++count;
+  }
+  return count;
+}
+
+// This is a weak topology preference, not a replacement for world visibility.
+// CT can defend from a recess; T preferably retain two ways to reposition.
+constexpr int bombDefenseConnectionPenalty(int count, bool plantedDefense) {
+  if (count <= 0) return 3;
+  if (plantedDefense) return count == 2 ? 0 : count == 3 ? 1 : 2;
+  return count <= 2 ? 0 : count == 3 ? 1 : 2;
+}
+constexpr int kBombDefenseExposureNearTie = 4;
+constexpr int kBombDefenseDamageNearTie = 8;
+constexpr float kBombDefenseConnectionRouteCost = 64.0f;
+
 // Dropped-C4 defense should prefer positions that expose the defender to fewer
 // graph locations. Historical damage and route cost are deterministic tie-breaks.
 constexpr bool isBetterBombDefenseCover(int candidateExposure, int candidateDamage,
                                         float candidateRouteDistance, int candidateNode,
                                         int bestExposure, int bestDamage,
-                                        float bestRouteDistance, int bestNode) {
+                                        float bestRouteDistance, int bestNode,
+                                        int candidateConnections = -1, int bestConnections = -1,
+                                        bool plantedDefense = false) {
   if (bestNode < 0) {
     return true;
+  }
+  // Only near-equivalent exposure/damage may be traded for better topology.
+  // Calls without link information preserve the exact historical ordering.
+  if (candidateConnections >= 0 && bestConnections >= 0) {
+    if (candidateExposure + kBombDefenseExposureNearTie < bestExposure) return true;
+    if (bestExposure + kBombDefenseExposureNearTie < candidateExposure) return false;
+    if (candidateDamage + kBombDefenseDamageNearTie < bestDamage) return true;
+    if (bestDamage + kBombDefenseDamageNearTie < candidateDamage) return false;
+    const int candidatePenalty = bombDefenseConnectionPenalty(candidateConnections, plantedDefense);
+    const int bestPenalty = bombDefenseConnectionPenalty(bestConnections, plantedDefense);
+    if (candidatePenalty != bestPenalty) return candidatePenalty < bestPenalty;
   }
   if (candidateExposure != bestExposure) {
     return candidateExposure < bestExposure;

@@ -2164,7 +2164,7 @@ int Bot::findBombNode () {
    return goal;
 }
 
-int Bot::findDefendNode (const Vector &origin, bool preferLowExposure) {
+int Bot::findDefendNode (const Vector &origin, bool preferLowExposure, bool plantedDefense) {
    // this function tries to find a good position which has a line of sight to a position,
    // provides enough cover point, and is far away from the defending position
 
@@ -2191,6 +2191,7 @@ int Bot::findDefendNode (const Vector &origin, bool preferLowExposure) {
          int bestExposure = 0;
          int bestDamage = 0;
          float bestRouteDistance = kInfiniteDistance;
+         int bestConnections = -1;
 
          for (const auto &path : graph) {
             if (!ai::isBombDefenseNodeEligibleForPass (
@@ -2218,15 +2219,22 @@ int Bot::findDefendNode (const Vector &origin, bool preferLowExposure) {
                : path.vis.crouch <= path.vis.stand;
             const int exposure = wouldCrouch ? path.vis.crouch : path.vis.stand;
             const int damage = practice.getDamage (m_team, path.number, path.number);
+            const int connections = ai::countWalkableBombDefenseConnections (path.links, [&] (const auto &link) {
+               return graph.exists (link.index) && link.index != path.number
+                  && !(link.flags & PathFlag::Jump)
+                  && !(graph[link.index].flags & NodeFlag::Ladder);
+            });
 
             if (ai::isBetterBombDefenseCover (
                exposure, damage, routeDistance, path.number,
-               bestExposure, bestDamage, bestRouteDistance, bestNode)) {
+               bestExposure, bestDamage, bestRouteDistance, bestNode,
+               connections, bestConnections, plantedDefense)) {
 
                bestNode = path.number;
                bestExposure = exposure;
                bestDamage = damage;
                bestRouteDistance = routeDistance;
+               bestConnections = connections;
             }
          }
          return bestNode;

@@ -1002,7 +1002,7 @@ bool YaPBActionExecutionContext::protectObjective() {
       // Preserve the legacy defense choice for nearby T bots. Its search
       // radius is relative to the bot and cannot serve distant reinforcements.
       if (routeTo(bombNode) <= kPlantedBombReinforcementFarRoute) {
-        const int localNode = m_bot->findDefendNode(bombOrigin);
+        const int localNode = m_bot->findDefendNode(bombOrigin, true, true);
         if (graph.exists(localNode)
             && !(graph[localNode].flags & (NodeFlag::Ladder | NodeFlag::CTOnly))
             && graph[localNode].origin.distanceSq(bombOrigin)
@@ -1021,6 +1021,7 @@ bool YaPBActionExecutionContext::protectObjective() {
           float bestRouteDistance = kPlantedBombReinforcementUnreachableRoute;
           bool bestCamp = false;
           float bestCrowdCost = 0.0f;
+          int bestConnections = -1;
 
           for (const auto &path : graph) {
             if ((path.flags & (NodeFlag::Ladder | NodeFlag::CTOnly))
@@ -1036,13 +1037,20 @@ bool YaPBActionExecutionContext::protectObjective() {
             }
             const bool isCamp = (path.flags & NodeFlag::Camp) != 0;
             const float crowding = crowdCost(path.number);
+            const int connections = countWalkableBombDefenseConnections(path.links, [&](const auto &link) {
+              return graph.exists(link.index) && link.index != path.number
+                  && !(link.flags & PathFlag::Jump)
+                  && !(graph[link.index].flags & NodeFlag::Ladder);
+            });
             if (isBetterDistributedBombDefenseNode(
                 distance, isCamp, crowding, path.number,
-                bestRouteDistance, bestCamp, bestCrowdCost, bestNode)) {
+                bestRouteDistance, bestCamp, bestCrowdCost, bestNode,
+                connections, bestConnections)) {
               bestNode = path.number;
               bestRouteDistance = distance;
               bestCamp = isCamp;
               bestCrowdCost = crowding;
+              bestConnections = connections;
             }
           }
           node = bestNode;
