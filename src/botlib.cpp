@@ -407,6 +407,66 @@ void Bot::updatePickups () {
    const auto &interesting = gameState.getInterestingEntities ();
    const float radiusSq = cr::sqrf (cv_object_pickup_radius.as <float> ());
 
+   // Decide planted-C4 kit detours before iterating entities. Otherwise the
+   // first visible kit/bomb in the entity list wins regardless of time budget.
+   edict_t *preferredDefuseKit = nullptr;
+   ai::DefuseRouteChoice defuseRouteChoice = ai::DefuseRouteChoice::None;
+   const bool compareDefuseRoutes = m_team == Team::CT
+      && game.mapIs (MapFlags::Demolition) && gameState.isBombPlanted ()
+      && !cv_ignore_objectives;
+   if (compareDefuseRoutes) {
+      const int botNode = graph.getNearest (pev->origin);
+      const int bombNode = graph.getNearest (gameState.getBombOrigin ());
+      const bool validBase = graph.exists (botNode) && graph.exists (bombNode);
+      const auto distanceLeg = [&] (int from, int to) -> ai::DefuseRouteLeg {
+         if (!graph.exists (from) || !graph.exists (to)) {
+            return { false, 0.0f };
+         }
+         const float distance = planner.preciseDistance (from, to);
+         return { distance >= 0.0f && distance < ai::kDefuseUnreachableDistance, distance };
+      };
+      const auto direct = validBase ? distanceLeg (botNode, bombNode) : ai::DefuseRouteLeg { false, 0.0f };
+      // Use a reduced nominal speed as an allowance for navigating graph turns.
+      // This is an estimate, not a guarantee of reaching the objective.
+      const float estimatedSpeed = pev->maxspeed * 0.75f;
+      const auto priorChoice = m_pickupType == Pickup::DefusalKit
+         ? ai::DefuseRouteChoice::ViaKit : ai::DefuseRouteChoice::Direct;
+      const float bombTimeLeft = gameState.getBombTimeLeft ();
+      const auto baseline = ai::chooseDefuseRoute (m_hasDefuser, bombTimeLeft, estimatedSpeed,
+         direct, { false, 0.0f }, { false, 0.0f }, -1, -1, priorChoice);
+      defuseRouteChoice = baseline.choice;
+
+      if (!m_hasDefuser && validBase) {
+         float bestSlack = -1.0f;
+         for (const auto &candidate : interesting) {
+            if ((candidate->v.effects & EF_NODRAW) || isIgnoredItem (candidate)
+               || !candidate->v.classname.str ().startsWith ("item_thighpack")) {
+               continue;
+            }
+            const auto &kitOrigin = game.getEntityOrigin (candidate);
+            if (pev->origin.distanceSq (kitOrigin) > radiusSq
+               || cr::abs (kitOrigin.z - pev->origin.z) > 96.0f
+               || !seesItem (kitOrigin, candidate->v.classname.str ())) {
+               continue;
+            }
+            const int kitNode = graph.getNearest (kitOrigin);
+            const auto assessment = ai::chooseDefuseRoute (false, bombTimeLeft, estimatedSpeed,
+               direct, distanceLeg (botNode, kitNode), distanceLeg (kitNode, bombNode),
+               -1, -1, priorChoice);
+            if (assessment.choice == ai::DefuseRouteChoice::ViaKit
+               && assessment.viaKit.slackSeconds > bestSlack) {
+               preferredDefuseKit = candidate;
+               bestSlack = assessment.viaKit.slackSeconds;
+               defuseRouteChoice = ai::DefuseRouteChoice::ViaKit;
+            }
+         }
+      }
+      // If no candidate is selected, revert to direct defuse or escape.
+      if (preferredDefuseKit == nullptr) {
+         defuseRouteChoice = baseline.choice;
+      }
+   }
+
    if (!game.isNullEntity (m_pickupItem)) {
       bool itemExists = false;
       auto pickupItem = m_pickupItem;
@@ -433,7 +493,14 @@ void Bot::updatePickups () {
       }
 
       if (itemExists) {
-         return;
+         // A kit route can become infeasible as the bomb timer decreases.
+         // Do not keep an obsolete kit merely because its entity still exists.
+         if (!compareDefuseRoutes
+            || (m_pickupType != Pickup::DefusalKit && m_pickupType != Pickup::PlantedC4)
+            || (m_pickupType == Pickup::DefusalKit && preferredDefuseKit == pickupItem)
+            || (m_pickupType == Pickup::PlantedC4 && preferredDefuseKit == nullptr)) {
+            return;
+         }
       }
       else {
          m_pickupItem = nullptr;
@@ -582,6 +649,17 @@ void Bot::updatePickups () {
          else if (cv_pickup_custom_items && game.isItemEntity (ent) && !classname.startsWith ("item_thighpack")) {
             allowPickup = true;
             pickupType = Pickup::Items;
+         }
+      }
+
+      // A single route decision governs kit and planted C4 eligibility,
+      // independent of their ordering in the entity array.
+      if (allowPickup && compareDefuseRoutes) {
+         if (pickupType == Pickup::DefusalKit) {
+            allowPickup = ent == preferredDefuseKit;
+         }
+         else if (pickupType == Pickup::PlantedC4 && preferredDefuseKit != nullptr) {
+            allowPickup = false;
          }
       }
 
