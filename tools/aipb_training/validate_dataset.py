@@ -39,7 +39,7 @@ _GRENADE_TYPES = {
 }
 
 EXPECTED_FORMAT = "aipb-training-jsonl"
-EXPECTED_DATASET_VERSION = 2
+EXPECTED_DATASET_VERSION = 3
 EXPECTED_FEATURE_SCHEMA_VERSION = MODEL_FEATURE_SCHEMA_VERSION
 EXPECTED_ACTION_SCHEMA_VERSION = MODEL_ACTION_SCHEMA_VERSION
 REQUIRED_OBSERVATION_KEYS = {"schema_version", "values"}
@@ -229,6 +229,9 @@ def iter_validated_samples(path: str | Path):
             "action_schema_version": EXPECTED_ACTION_SCHEMA_VERSION,
             "type": "metadata",
         }
+        _require(isinstance(metadata, dict), "line 1: metadata must be an object")
+        _require(metadata.get("version") in (2, 3), "line 1: unsupported dataset version")
+        expected_metadata["version"] = metadata["version"]
         _require(metadata == expected_metadata, "line 1: metadata does not match the supported dataset contract")
 
         for line_number, line in enumerate(stream, start=2):
@@ -239,6 +242,15 @@ def iter_validated_samples(path: str | Path):
                 value = json.loads(line)
             except json.JSONDecodeError as exc:
                 raise DatasetValidationError(f"line {line_number}: invalid JSON: {exc.msg}") from exc
+
+            if isinstance(value, dict) and value.get("type") == "combat_event":
+                _require(metadata["version"] == 3, f"line {line_number}: combat events require version 3")
+                _require(value.get("event") in {
+                    "flash_blind_start", "flash_blind_end", "weapon_fire", "damage", "kill"
+                }, f"line {line_number}: unknown combat event")
+                _require(_is_number(value.get("game_time")), f"line {line_number}: invalid event time")
+                _require(isinstance(value.get("bot_id"), int), f"line {line_number}: invalid bot id")
+                continue
 
             current_feature_count = _validate_sample(value, line_number)
             if feature_count is None:

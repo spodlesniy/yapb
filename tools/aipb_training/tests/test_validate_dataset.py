@@ -19,7 +19,7 @@ from tools.aipb_training.validate_dataset import DatasetValidationError, validat
 
 METADATA = {
     "format": "aipb-training-jsonl",
-    "version": 2,
+    "version": 3,
     "feature_schema_version": MODEL_FEATURE_SCHEMA_VERSION,
     "action_schema_version": MODEL_ACTION_SCHEMA_VERSION,
     "type": "metadata",
@@ -61,6 +61,16 @@ class TrainingDatasetValidatorTests(unittest.TestCase):
     def test_valid_metadata_only_dataset(self) -> None:
         path = self.write_dataset([METADATA])
         self.assertEqual(validate_dataset(path), 0)
+
+    def test_legacy_v2_dataset_still_valid(self) -> None:
+        path = self.write_dataset([dict(METADATA, version=2), make_sample()])
+        self.assertEqual(validate_dataset(path), 1)
+
+    def test_v3_ignores_diagnostic_events(self) -> None:
+        event = {"type": "combat_event", "event": "weapon_fire",
+                 "game_time": 12.5, "bot_id": 7, "evidence_source": "clip_decrease"}
+        path = self.write_dataset([METADATA, make_sample(), event])
+        self.assertEqual(validate_dataset(path), 1)
 
     def test_rejects_wrong_runtime_feature_count(self) -> None:
         path = self.write_dataset([METADATA, make_sample(230)])

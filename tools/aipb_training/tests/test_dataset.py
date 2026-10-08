@@ -26,7 +26,7 @@ from tools.aipb_training.model_contract import (
 
 METADATA = {
     "format": "aipb-training-jsonl",
-    "version": 2,
+    "version": 3,
     "feature_schema_version": MODEL_FEATURE_SCHEMA_VERSION,
     "action_schema_version": MODEL_ACTION_SCHEMA_VERSION,
     "type": "metadata",
