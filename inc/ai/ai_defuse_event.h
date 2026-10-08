@@ -7,13 +7,15 @@
 
 namespace ai {
 
-enum class DefuseEventType : uint8_t { Attempt, Start, Interrupted, Complete };
+enum class DefuseEventType : uint8_t { Attempt, Start, Interrupted, Complete, ApproachBlocked, ApproachFailed };
 enum class DefuseEventReason : uint8_t {
-  None, BarTimeCleared, UseNotConfirmed, TaskEnded, RoundEnded, BotDied, BombExploded
+  None, BarTimeCleared, UseNotConfirmed, TaskEnded, RoundEnded, BotDied, BombExploded,
+  DirectPathBlocked, NoReachableInteractionNode
 };
 enum class DefuseEvidence : uint8_t {
   UseButton, BarTimePositive, BarTimeZero, TaskLifecycle, UnconfirmedUseTimeout,
-  RoundMessage, DeathMessage, BombDefusedMessage, AliveState, GameState
+  RoundMessage, DeathMessage, BombDefusedMessage, AliveState, GameState,
+  GeometryReachability, GraphRouteUnavailable
 };
 
 constexpr const char *defuseEventName(DefuseEventType v) {
@@ -22,6 +24,8 @@ constexpr const char *defuseEventName(DefuseEventType v) {
   case DefuseEventType::Start: return "defuse_start";
   case DefuseEventType::Interrupted: return "defuse_interrupted";
   case DefuseEventType::Complete: return "defuse_complete";
+  case DefuseEventType::ApproachBlocked: return "defuse_approach_blocked";
+  case DefuseEventType::ApproachFailed: return "defuse_approach_failed";
   }
   return "unknown";
 }
@@ -34,6 +38,8 @@ constexpr const char *defuseReasonName(DefuseEventReason v) {
   case DefuseEventReason::RoundEnded: return "round_ended";
   case DefuseEventReason::BotDied: return "bot_died";
   case DefuseEventReason::BombExploded: return "bomb_exploded";
+  case DefuseEventReason::DirectPathBlocked: return "direct_path_blocked";
+  case DefuseEventReason::NoReachableInteractionNode: return "no_reachable_interaction_node";
   }
   return "unknown";
 }
@@ -49,6 +55,8 @@ constexpr const char *defuseEvidenceName(DefuseEvidence v) {
   case DefuseEvidence::AliveState: return "observed_dead";
   case DefuseEvidence::GameState: return "game_state";
   case DefuseEvidence::BombDefusedMessage: return "bomb_defused_text_message";
+  case DefuseEvidence::GeometryReachability: return "geometry_reachability";
+  case DefuseEvidence::GraphRouteUnavailable: return "graph_route_unavailable";
   }
   return "unknown";
 }

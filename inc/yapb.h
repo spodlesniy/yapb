@@ -340,6 +340,7 @@ private:
    bool m_duckDefuse {}; // should or not bot duck to defuse bomb
    bool m_defuseChangedStance {};
    bool m_defuseTighterApproach {};
+   ai::DefuseApproachDiagnosticGate m_aiDefuseApproachDiagnostics {};
    bool m_checkKnifeSwitch {}; // is time to check switch to knife action
    bool m_checkWeaponSwitch {}; // is time to check weapon switch
    bool m_isUsingGrenade {}; // bot currently using grenade??

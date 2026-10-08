@@ -91,6 +91,13 @@ An interrupted attempt records its actual evidence source rather than claiming a
 Likewise, `round_message` refers to the round message path, whereas `game_state` means the code observed that C4 was no longer marked as planted.
 The Python validator checks evidence compatibility without counting diagnostic records as model-training samples.
 
+## D181 — Obstacle-aware planted C4 approach
+
+If direct movement to a planted C4 is blocked even inside the strict 3D interaction radius, the CT searches for a reachable, in-range waypoint instead of repeatedly pressing into the side of a box.
+Zero-length routes require a physically traversable local segment to the node center; graph-reachable elevated positions remain eligible.
+With no usable waypoint inside the interaction radius, the bot holds movement instead of generating an unconfirmed USE.
+New rate-limited JSONL v3 events `defuse_approach_blocked` and `defuse_approach_failed` record the observed geometry and route outcomes, not a defuse attempt or training transition.
+
 ## D180 — Blind aiming has a global view-direction gate
 
 Active flash blindness fixes a once-jittered view direction at ScreenFade onset and prevents setAimDirection() and updateLookAngles() from following live, remembered, or entity target positions.

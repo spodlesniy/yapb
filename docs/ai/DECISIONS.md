@@ -1670,6 +1670,18 @@ No changes are made to the conservative graph travel budget for distant reinforc
 Reason: the existing arrival check rejects all paths once the bomb has fewer than four seconds left, including zero-length routes for bots already guarding the site.
 Such bots could then emit repeated rejected ProtectObjective attempts precisely when they should hold an established defense position.
 
+## D181 — Diagnose and route CT bomb approaches blocked by raised geometry
+
+A CT whose direct path to a planted C4 is blocked by a box or railing must use a reachable interaction-safe waypoint even if already inside the nominal 3D use radius. This includes the tighter retry radius after an unconfirmed USE.
+Interaction candidates are evaluated using graph route distance. A zero-length route does not establish physical reachability unless the waypoint center can actually be reached from the bot's current position.
+The fallback to an approximate bombsite waypoint for distant bots remains, but is not treated as evidence that the bot can use the C4.
+A blocked close bot without a reachable interaction waypoint stops pushing directly into the obstacle and does not fabricate a defuse attempt.
+The in-range node-center staging path of D159 is enabled for blocked close approaches.
+
+JSONL v3 adds `defuse_approach_blocked` with `geometry_reachability` and `defuse_approach_failed` with `graph_route_unavailable`, each subject to a separate five-second per-bot gate.
+These describe navigation failures prior to IN_USE; they are not BarTime confirmations or ML transitions.
+The validator accepts them only with correct evidence and a known bot identity. Older v2 data remains valid.
+
 ## D180 — Gate precise aiming throughout flash blindness, irrespective of task
 
 Every active ScreenFade blindness interval now prevents precise enemy and remembered-enemy tracking through the final view-angle path, even while an AI-controlled AttackTarget/AimAtTarget or a legacy task other than Blind is active.

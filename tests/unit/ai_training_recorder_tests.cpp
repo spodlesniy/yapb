@@ -550,6 +550,18 @@ AI_TEST(testDefuseFallbackEvidenceNamesAreDistinctFromEngineMessages) {
                       "death_message") == 0, "actual DeathMsg remains distinct");
 }
 
+AI_TEST(testDefuseApproachEventsDoNotImplyUseOrProgress) {
+   expect(std::strcmp(ai::defuseEventName(ai::DefuseEventType::ApproachBlocked),
+                      "defuse_approach_blocked") == 0,
+          "geometry-obstructed approach is not a use attempt");
+   expect(std::strcmp(ai::defuseEventName(ai::DefuseEventType::ApproachFailed),
+                      "defuse_approach_failed") == 0,
+          "missing interaction route is not a BarTime start");
+   expect(std::strcmp(ai::defuseEvidenceName(ai::DefuseEvidence::GraphRouteUnavailable),
+                      "graph_route_unavailable") == 0,
+          "evidence records graph failure rather than engine progress");
+}
+
 AI_TEST(testDefuseDiagnosticBufferIsBounded) {
    ai::TrainingBuffer buffer {};
    ai::DefuseEvent e {};

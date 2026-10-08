@@ -20,6 +20,34 @@ constexpr float kPlantedBombDefuseReadyDistance = 60.0f;
 constexpr float kPlantedBombDefuseRetryDistance = 42.0f;
 constexpr float kPlantedBombDefuseStanceRetrySeconds = 1.25f;
 constexpr float kPlantedBombDefuseReapproachSeconds = 3.0f;
+constexpr float kPlantedBombApproachDiagnosticInterval = 5.0f;
+
+class DefuseApproachDiagnosticGate final {
+  float m_nextBlockedReport {}, m_nextFailureReport {};
+public:
+  void reset() { m_nextBlockedReport = m_nextFailureReport = 0.0f; }
+  bool allow(float now, bool failure) {
+    auto &next = failure ? m_nextFailureReport : m_nextBlockedReport;
+    if (now < next) return false;
+    next = now + kPlantedBombApproachDiagnosticInterval;
+    return true;
+  }
+};
+
+// Physical obstruction requires a graph approach even when the bot is near C4.
+constexpr bool needsPlantedBombInteractionRoute(float distanceSq, float radiusSq, bool directReachable) {
+  return distanceSq >= radiusSq || !directReachable;
+}
+
+// A zero-length graph route cannot guarantee the bot is on the correct side
+// of a box; it must also reach the node center in physical space.
+constexpr bool hasUsablePlantedBombInteractionRoute(bool nodeValid, bool startValid,
+                                                    float routeDistance, float unreachableDistance,
+                                                    bool sameNode, bool centerReachable) {
+  return nodeValid && startValid && routeDistance >= 0.0f
+      && routeDistance < unreachableDistance && (!sameNode || centerReachable);
+}
+
 
 constexpr float plantedBombDefuseApproachRadius(bool tighterRetry) {
   return tighterRetry ? kPlantedBombDefuseRetryDistance : kPlantedBombDefuseReadyDistance;
@@ -63,10 +91,8 @@ constexpr bool shouldFinishObjectiveApproachDirectly(float distanceSq, float int
 constexpr bool shouldFinishObjectiveApproachViaInteractionNode(float distanceSq, float interactionDistanceSq,
                                                               bool interactionNodeExists, bool interactionNodeReached,
                                                               bool directApproachReachable) {
-  return distanceSq >= interactionDistanceSq
-      && interactionNodeExists
-      && interactionNodeReached
-      && !directApproachReachable;
+  return needsPlantedBombInteractionRoute(distanceSq, interactionDistanceSq, directApproachReachable)
+      && interactionNodeExists && interactionNodeReached && !directApproachReachable;
 }
 
 // Objective interaction range is a full 3D sphere. A node that is close in XY

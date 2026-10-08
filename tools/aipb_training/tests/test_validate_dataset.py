@@ -92,6 +92,27 @@ class TrainingDatasetValidatorTests(unittest.TestCase):
         ]
         self.assertEqual(validate_dataset(self.write_dataset([METADATA, make_sample(), *events])), 1)
 
+    def test_v3_accepts_approach_diagnostics_without_counting_samples(self) -> None:
+        blocked = {"type": "defuse_event", "event": "defuse_approach_blocked",
+                   "game_time": 15.0, "bot_id": 4, "attempt_id": 0,
+                   "evidence_source": "geometry_reachability"}
+        failed = {"type": "defuse_event", "event": "defuse_approach_failed",
+                  "game_time": 16.0, "bot_id": 4, "attempt_id": 0,
+                  "evidence_source": "graph_route_unavailable"}
+        self.assertEqual(validate_dataset(self.write_dataset([METADATA, make_sample(), blocked, failed])), 1)
+
+    def test_v3_rejects_incorrect_approach_evidence(self) -> None:
+        event = {"type": "defuse_event", "event": "defuse_approach_failed",
+                 "game_time": 17.0, "bot_id": 4, "evidence_source": "bar_time_positive"}
+        with self.assertRaises(DatasetValidationError):
+            validate_dataset(self.write_dataset([METADATA, event]))
+
+    def test_v3_rejects_unattributed_approach_failure(self) -> None:
+        event = {"type": "defuse_event", "event": "defuse_approach_failed",
+                 "game_time": 17.0, "bot_id": -1, "evidence_source": "graph_route_unavailable"}
+        with self.assertRaises(DatasetValidationError):
+            validate_dataset(self.write_dataset([METADATA, event]))
+
     def test_defuse_interruption_accepts_observed_state_without_callback_claim(self) -> None:
         for source in ("observed_dead", "game_state"):
             event = {"type": "defuse_event", "event": "defuse_interrupted",

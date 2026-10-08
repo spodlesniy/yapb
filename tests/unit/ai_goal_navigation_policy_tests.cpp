@@ -744,6 +744,41 @@ AI_TEST(testGoalNavigationPolicyExploresAtCurrentLegacyGoal) {
   expect(action.type == ai::ActionType::Explore, "normal task explores independently of the legacy goal");
 }
 
+AI_TEST(testBlockedC4InsideUseRadiusStillNeedsGraphStaging) {
+  expect(ai::needsPlantedBombInteractionRoute(35.0f * 35.0f, 60.0f * 60.0f, false),
+         "box blocks direct C4 approach even inside the 3D use sphere");
+  expect(!ai::needsPlantedBombInteractionRoute(35.0f * 35.0f, 60.0f * 60.0f, true),
+         "clear local approach needs no detour");
+  expect(ai::needsPlantedBombInteractionRoute(90.0f * 90.0f, 60.0f * 60.0f, true),
+         "distant C4 still requires graph navigation");
+  expect(ai::shouldFinishObjectiveApproachViaInteractionNode(
+         35.0f * 35.0f, 60.0f * 60.0f, true, true, false),
+         "blocked local finish uses reachable in-range waypoint center");
+}
+
+AI_TEST(testC4InteractionNodeRequiresPhysicalReachabilityWhenRouteIsZero) {
+  expect(ai::hasUsablePlantedBombInteractionRoute(true, true, 160.0f, 32767.0f, false, false),
+         "graph can climb to elevated approach waypoint");
+  expect(!ai::hasUsablePlantedBombInteractionRoute(true, true, 0.0f, 32767.0f, true, false),
+         "zero-length graph route cannot cross the side of a box");
+  expect(ai::hasUsablePlantedBombInteractionRoute(true, true, 0.0f, 32767.0f, true, true),
+         "zero-length path is valid when waypoint center is physically accessible");
+  expect(!ai::hasUsablePlantedBombInteractionRoute(true, true, 32767.0f, 32767.0f, false, true),
+         "unreachable graph route is rejected");
+}
+
+AI_TEST(testDefuseApproachDiagnosticThrottle) {
+  ai::DefuseApproachDiagnosticGate gate {};
+  expect(gate.allow(10.0f, false), "first blocked approach reported");
+  expect(!gate.allow(11.0f, false), "rapid repeats suppressed");
+  expect(gate.allow(11.0f, true), "separate no-route result reported");
+  expect(!gate.allow(12.0f, true), "rapid no-route repeats suppressed");
+  expect(gate.allow(15.0f, false) && gate.allow(16.0f, true),
+         "long-running failures remain observable");
+  gate.reset();
+  expect(gate.allow(0.0f, false), "new round resets diagnostic gate");
+}
+
 AI_TEST(testObjectiveApproachUsesGraphUntilInteractionRange) {
   constexpr float interactionDistanceSq = 80.0f * 80.0f;
 
@@ -775,9 +810,9 @@ AI_TEST(testObjectiveApproachUsesGraphUntilInteractionRange) {
   expect(!ai::shouldFinishObjectiveApproachViaInteractionNode(
              90.0f * 90.0f, interactionDistanceSq, true, true, true),
          "clear direct finish keeps the D151 short approach");
-  expect(!ai::shouldFinishObjectiveApproachViaInteractionNode(
+  expect(ai::shouldFinishObjectiveApproachViaInteractionNode(
              79.0f * 79.0f, interactionDistanceSq, true, true, false),
-         "node-center fallback stops once the bot is already inside interaction range");
+         "blocked local approach still needs node-center fallback inside interaction range");
   expect(!ai::shouldFinishObjectiveApproachViaInteractionNode(
              90.0f * 90.0f, interactionDistanceSq, true, false, false),
          "node-center fallback requires the interaction-safe node to be reached first");

@@ -264,7 +264,8 @@ def iter_validated_samples(path: str | Path):
             if isinstance(value, dict) and value.get("type") == "defuse_event":
                 _require(metadata["version"] == 3, f"line {line_number}: defuse events require version 3")
                 _require(value.get("event") in {
-                    "defuse_attempt", "defuse_start", "defuse_interrupted", "defuse_complete"
+                    "defuse_attempt", "defuse_start", "defuse_interrupted", "defuse_complete",
+                    "defuse_approach_blocked", "defuse_approach_failed"
                 }, f"line {line_number}: unknown defuse event")
                 _require(_is_number(value.get("game_time")), f"line {line_number}: invalid defuse time")
                 _require(type(value.get("bot_id")) is int, f"line {line_number}: invalid defuse bot")
@@ -278,12 +279,17 @@ def iter_validated_samples(path: str | Path):
                         "round_message", "death_message", "observed_dead", "game_state",
                     },
                     "defuse_complete": {"bomb_defused_text_message"},
+                    "defuse_approach_blocked": {"geometry_reachability"},
+                    "defuse_approach_failed": {"graph_route_unavailable"},
                 }
                 _require(value.get("evidence_source") in allowed_evidence[value["event"]],
                          f"line {line_number}: invalid defuse event evidence")
                 if "attempt_id" in value:
                     _require(type(value["attempt_id"]) is int and value["attempt_id"] >= 0,
                              f"line {line_number}: invalid defuse attempt id")
+                if value["event"] in {"defuse_approach_blocked", "defuse_approach_failed"}:
+                    _require(value["bot_id"] > 0,
+                             f"line {line_number}: approach event requires a known bot")
                 if value["event"] == "defuse_complete":
                     _require(value["bot_id"] == -1,
                              f"line {line_number}: completion cannot claim an unknown defuser")

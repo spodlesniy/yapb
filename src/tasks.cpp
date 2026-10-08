@@ -1806,41 +1806,75 @@ void Bot::pickupItem_ () {
                delta.x, delta.y, delta.z, kDefuseInteractionDistance);
          };
 
+         const bool directApproachReachable = graph.isNodeReacheable (pev->origin, dest);
+         const bool needRoute = ai::needsPlantedBombInteractionRoute (
+            itemDistanceSq, interactionDistanceSq, directApproachReachable);
          int bombNode = getTask ()->data;
          bool hasInteractionNode = isInteractionNode (bombNode);
 
-         if (itemDistanceSq >= interactionDistanceSq && !hasInteractionNode) {
+         if (needRoute) {
             const int routeStartNode = findNearestNode ();
-            float bestRouteDistance = kInfiniteDistance;
 
-            for (const auto &node : graph.getNearestInRadius (kDefuseInteractionDistance, dest)) {
-               if (!isInteractionNode (node)) {
-                  continue;
+            // An in-range waypoint on the wrong side of a box is not usable.
+            // The graph route must exist; same-node routes also require a
+            // physically reachable bot-to-waypoint-center segment.
+            auto usableNode = [&] (int node, float &routeDistance) {
+               if (!isInteractionNode (node) || !graph.exists (routeStartNode)) {
+                  return false;
                }
+               routeDistance = planner.preciseDistance (routeStartNode, node);
+               return ai::hasUsablePlantedBombInteractionRoute (
+                  true, true, routeDistance, kInfiniteDistanceLong,
+                  routeStartNode == node, graph.isNodeReacheable (pev->origin, graph[node].origin));
+            };
 
-               const float routeDistance = graph.exists (routeStartNode)
-                  ? planner.preciseDistance (routeStartNode, node)
-                  : pev->origin.distanceSq (graph[node].origin);
-
-               if (routeDistance >= kInfiniteDistanceLong) {
-                  continue;
+            float cachedRouteDistance = kInfiniteDistance;
+            hasInteractionNode = usableNode (bombNode, cachedRouteDistance);
+            if (!hasInteractionNode) {
+               bombNode = kInvalidNodeIndex;
+               float bestRouteDistance = kInfiniteDistance;
+               for (const auto &node : graph.getNearestInRadius (kDefuseInteractionDistance, dest)) {
+                  float routeDistance = kInfiniteDistance;
+                  if (!usableNode (node, routeDistance)) {
+                     continue;
+                  }
+                  if (ai::isBetterObjectiveApproachNode (
+                     routeDistance, node, bestRouteDistance, bombNode)) {
+                     bombNode = node;
+                     bestRouteDistance = routeDistance;
+                     hasInteractionNode = true;
+                  }
                }
-
-               if (ai::isBetterObjectiveApproachNode (
-                  routeDistance, node, bestRouteDistance, bombNode)) {
-
-                  bombNode = node;
-                  bestRouteDistance = routeDistance;
-                  hasInteractionNode = true;
+               if (!hasInteractionNode && itemDistanceSq >= interactionDistanceSq) {
+                  // Distant bombsite fallback: not an interaction-safe node.
+                  bombNode = graph.getNearest (dest, 512.0f);
                }
             }
 
-            if (!hasInteractionNode) {
-               bombNode = graph.getNearest (dest, 512.0f);
+            if (!directApproachReachable && itemDistanceSq < cr::sqrf (120.0f)
+               && m_aiDefuseApproachDiagnostics.allow (game.time (), false)) {
+               recordDefuseEvent (ai::DefuseEventType::ApproachBlocked,
+                  ai::DefuseEventReason::DirectPathBlocked, ai::DefuseEvidence::GeometryReachability);
+            }
+
+            if (!directApproachReachable && !hasInteractionNode
+               && itemDistanceSq < interactionDistanceSq) {
+               // Do not walk into the obstruction or claim an IN_USE attempt.
+               if (m_aiDefuseApproachDiagnostics.allow (game.time (), true)) {
+                  recordDefuseEvent (ai::DefuseEventType::ApproachFailed,
+                     ai::DefuseEventReason::NoReachableInteractionNode,
+                     ai::DefuseEvidence::GraphRouteUnavailable);
+               }
+               m_aimFlags &= ~AimFlags::Entity;
+               m_moveToGoal = false;
+               m_checkTerrain = false;
+               m_moveSpeed = 0.0f;
+               m_strafeSpeed = 0.0f;
+               break;
             }
          }
 
-         if (itemDistanceSq >= interactionDistanceSq && graph.exists (bombNode)) {
+         if (needRoute && graph.exists (bombNode)) {
             if (getTask ()->data != bombNode) {
                clearSearchNodes ();
 
@@ -1877,7 +1911,8 @@ void Bot::pickupItem_ () {
          }
 
          const bool useGraphApproach = ai::shouldUseGraphObjectiveApproach (
-            itemDistanceSq, interactionDistanceSq, graph.exists (bombNode), m_currentNodeIndex == bombNode);
+            needRoute ? interactionDistanceSq : itemDistanceSq, interactionDistanceSq,
+            graph.exists (bombNode), m_currentNodeIndex == bombNode);
 
          if (useGraphApproach) {
             m_aimFlags &= ~AimFlags::Entity;
@@ -1888,8 +1923,6 @@ void Bot::pickupItem_ () {
             updateNavigation ();
             break;
          }
-
-         const bool directApproachReachable = graph.isNodeReacheable (pev->origin, dest);
 
          // Reaching an interaction-safe waypoint normally hands off to the short
          // direct approach introduced by D151. Keep that fast path only while the
