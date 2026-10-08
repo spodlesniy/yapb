@@ -15,6 +15,7 @@
 #include <ai/ai_objective_navigation_guard.h>
 
 using ai::test::expect;
+using ai::test::expectNear;
 
 namespace {
 
