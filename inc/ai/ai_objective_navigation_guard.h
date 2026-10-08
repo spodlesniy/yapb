@@ -129,6 +129,21 @@ constexpr bool isBetterPlantedBombReinforcementNode(float routeDistance, bool ca
       || (adjustedDistance == bestAdjustedDistance && node < bestNode);
 }
 
+constexpr float kBombDefenseSeparationSq = 224.0f * 224.0f;
+constexpr float kBombDefenseCrowdingCost = 512.0f;
+
+constexpr float bombDefenseCrowdingCost(float distanceSq) {
+  return distanceSq < kBombDefenseSeparationSq ? kBombDefenseCrowdingCost : 0.0f;
+}
+
+constexpr bool isBetterDistributedBombDefenseNode(float route, bool camp, float crowdCost, int node,
+                                                  float bestRoute, bool bestCamp, float bestCrowdCost, int bestNode) {
+  if (bestNode < 0) return true;
+  const float score = route - (camp ? kPlantedBombReinforcementCampRouteAllowance : 0.0f) + crowdCost;
+  const float bestScore = bestRoute - (bestCamp ? kPlantedBombReinforcementCampRouteAllowance : 0.0f) + bestCrowdCost;
+  return score < bestScore || (score == bestScore && node < bestNode);
+}
+
 // A dropped-C4 defender must be able to act on the objective without abandoning
 // immediate combat or another emergency traversal state.
 constexpr bool isDroppedBombDefenderEligible(bool alive, bool counterTerrorist, bool seesBomb,
