@@ -1632,3 +1632,23 @@ If no valid authored camp node exists, the same cover ranking is applied to the 
 Reason: the format-v2 capture `2026_10_08__09_55_21__ai_training.jsonl` shows the D153 ownership mechanism working, but the assigned CT can still spend a long `Camp` lifecycle at a position that is visibly exposed in play.
 The legacy `findDefendNode()` comment promises a covered defensive position, but its candidate ranking does not use the graph's existing stand/crouch visibility counts at all; it mainly keeps distant candidates and later mixes historical damage with random selection.
 D161 makes dropped-C4 guarding prefer measurable cover without changing which CT owns the role or broadening the behavior of unrelated defensive tasks.
+
+## D162.2 — Compare full planted-C4 defuse budgets before choosing a kit detour
+
+Introduce a pure, unit-tested planning helper for CT direct-to-C4 versus CT-to-defuse-kit-to-C4.
+Both routes must have validated connected graph legs; the helper conservatively rejects
+Floyd-Warshall's unreachable-distance sentinel and invalid speeds. Its caller must supply
+shortest graph-route distances and a conservative estimated travel speed, not Euclidean
+distance divided uncritically by max speed.
+
+A route is feasible only if its estimated travel, interaction approach, full defuse time
+(7 seconds with kit; 12 without), kit pickup time when applicable, and 2-second safety
+margin all fit before the C4 explodes. An already-equipped CT never detours for a kit.
+Between feasible choices the planner prefers additional defuse-time slack, using lower
+route risk for near-equal slack and a small hysteresis to prevent route thrashing.
+An active kit detour becomes ineligible immediately when its remaining budget runs out.
+
+This commit adds the pure helper and tests only. D162.3 will connect real graph distances,
+risk estimates, and dynamic reassessment to updatePickups(), including its sticky pickup
+retention and entity-order priority. Until that integration, runtime pickup behavior
+remains unchanged.

@@ -848,3 +848,66 @@ AI_TEST(testDroppedBombDefenseCoverRankingPrefersLowerExposure) {
   expect(!ai::isBetterBombDefenseCover(80, 0, 50.0f, 1, 20, 100, 500.0f, 9),
          "an exposed node cannot win merely because it is closer or historically safer");
 }
+
+
+AI_TEST(testDefuseRouteComparisonPrefersLargerSafetySlack) {
+  using Choice = ai::DefuseRouteChoice;
+  const auto direct = ai::chooseDefuseRoute(false, 40.0f, 200.0f,
+    { true, 400.0f }, { true, 1000.0f }, { true, 1000.0f }, 10, 0);
+  expect(direct.choice == Choice::Direct, "larger completion-time slack outranks low-risk detour");
+  expectNear(direct.direct.slackSeconds, 23.0f, 0.001f, "direct route includes defuse, approach and safety margin");
+  expectNear(direct.viaKit.slackSeconds, 19.0f, 0.001f, "kit route includes both legs and kit pickup time");
+
+  const auto kit = ai::chooseDefuseRoute(false, 40.0f, 200.0f,
+    { true, 1000.0f }, { true, 100.0f }, { true, 100.0f }, 0, 10);
+  expect(kit.choice == Choice::ViaKit, "kit route wins if it finishes much sooner even at greater risk");
+}
+
+AI_TEST(testDefuseRouteComparisonPrefersLowerRiskForSimilarSlack) {
+  using Choice = ai::DefuseRouteChoice;
+  const auto choice = ai::chooseDefuseRoute(false, 40.0f, 200.0f,
+    { true, 400.0f }, { true, 700.0f }, { true, 700.0f }, 20, 2);
+  expect(choice.choice == Choice::ViaKit, "lower risk wins when both routes have similar safety margins");
+  expect(ai::chooseDefuseRoute(false, 40.0f, 200.0f,
+    { true, 400.0f }, { true, 700.0f }, { true, 700.0f }, -1, -1).choice == Choice::Direct,
+    "unknown route risks fall back to larger remaining safety margin");
+}
+
+AI_TEST(testDefuseRouteComparisonRejectsUnavailableAndInvalidPaths) {
+  using Choice = ai::DefuseRouteChoice;
+  expect(ai::chooseDefuseRoute(true, 40.0f, 200.0f,
+    { true, 400.0f }, { true, 50.0f }, { true, 50.0f }, 0, 0).choice == Choice::Direct,
+    "CT with an existing kit always ignores dropped kits");
+  expect(ai::chooseDefuseRoute(false, 40.0f, 200.0f,
+    { false, 400.0f }, { true, 50.0f }, { true, 50.0f }, 0, 0).choice == Choice::ViaKit,
+    "only the reachable kit path can win when direct graph route is unavailable");
+  expect(ai::chooseDefuseRoute(false, 40.0f, 200.0f,
+    { true, 400.0f }, { true, 32767.0f }, { true, 50.0f }, 0, 0).choice == Choice::Direct,
+    "Floyd unreachable sentinel cannot authorize a kit detour");
+  expect(ai::chooseDefuseRoute(false, 40.0f, 200.0f,
+    { true, 400.0f }, { true, -2.0f }, { true, 50.0f }, 0, 0).choice == Choice::Direct,
+    "negative graph distance cannot authorize a kit detour");
+  expect(ai::chooseDefuseRoute(false, 40.0f, 0.0f,
+    { true, 400.0f }, { true, 50.0f }, { true, 50.0f }, 0, 0).choice == Choice::None,
+    "zero travel speed makes both options infeasible");
+  expect(ai::chooseDefuseRoute(false, 10.0f, 200.0f,
+    { true, 400.0f }, { true, 50.0f }, { true, 50.0f }, 0, 0).choice == Choice::None,
+    "neither route is selected if a full safe defuse is impossible");
+}
+
+AI_TEST(testDefuseRouteComparisonAbandonsUnviableKitAndPreventsChurn) {
+  using Choice = ai::DefuseRouteChoice;
+  const auto stable = ai::chooseDefuseRoute(false, 40.0f, 200.0f,
+    { true, 400.0f }, { true, 700.0f }, { true, 700.0f }, 20, 2, Choice::Direct);
+  expect(stable.choice == Choice::Direct, "small apparent risk advantage does not churn an active direct route");
+
+  const auto abandoned = ai::chooseDefuseRoute(false, 17.5f, 200.0f,
+    { true, 400.0f }, { true, 700.0f }, { true, 700.0f }, 20, 2, Choice::ViaKit);
+  expect(abandoned.choice == Choice::Direct, "kit route is abandoned as soon as its defuse budget expires");
+  expect(!abandoned.viaKit.feasible && abandoned.direct.feasible,
+    "the route switch is driven by actual feasibility, not kit proximity");
+
+  expect(ai::chooseDefuseRoute(false, 17.0f, 200.0f,
+    { true, 400.0f }, { true, 700.0f }, { true, 700.0f }, 20, 2, Choice::Direct).choice == Choice::None,
+    "exact safety margin boundary does not claim guaranteed defuse");
+}
