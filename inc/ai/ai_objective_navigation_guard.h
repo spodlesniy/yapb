@@ -77,6 +77,24 @@ constexpr bool preservesFirearmForPlantedBombApproach(bool counterTerrorist, boo
   return counterTerrorist && demolitionMap && bombPlanted && enemiesAlive && objectivesEnabled;
 }
 
+
+// Retain planted-bomb defense ownership during short legacy combat overrides.
+ // The legacy task must still run; protection resumes when that task ends.
+template <typename Task>
+constexpr bool isTransientPlantedBombDefenseTask(Task currentTask, Task attackTask,
+                                                 Task seekCoverTask, Task blindTask) {
+  return currentTask == attackTask || currentTask == seekCoverTask || currentTask == blindTask;
+}
+
+// Prevent stale or interrupted movement from turning into camping far away
+// from the actual planted-C4 defense waypoint.
+constexpr bool hasReachedPlantedBombDefenseNode(int currentNode, int defenseNode,
+                                                float distanceSq, float reachDistanceSq) {
+  return defenseNode >= 0 && currentNode == defenseNode
+      && distanceSq >= 0.0f && reachDistanceSq >= 0.0f
+      && distanceSq <= reachDistanceSq;
+}
+
 // A dropped-C4 defender must be able to act on the objective without abandoning
 // immediate combat or another emergency traversal state.
 constexpr bool isDroppedBombDefenderEligible(bool alive, bool counterTerrorist, bool seesBomb,

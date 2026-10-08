@@ -1041,3 +1041,33 @@ AI_TEST(testSilentBombsiteRequiresCompleteAudibleBrushBounds) {
             0.0f, 0.0f, 128.0f, 128.0f),
          "all bomb brushes near the candidate goal must be checked");
 }
+
+
+AI_TEST(testPlantedBombDefensePreservesOwnershipAcrossTemporaryCombat) {
+  using Task = ai::TaskType;
+  expect(ai::isTransientPlantedBombDefenseTask(Task::Attack, Task::Attack, Task::SeekCover, Task::Blind),
+         "legacy attack may temporarily take precedence without abandoning planted bomb defense");
+  expect(ai::isTransientPlantedBombDefenseTask(Task::SeekCover, Task::Attack, Task::SeekCover, Task::Blind),
+         "temporary cover movement retains the existing bomb defense destination");
+  expect(ai::isTransientPlantedBombDefenseTask(Task::Blind, Task::Attack, Task::SeekCover, Task::Blind),
+         "flash blindness does not discard a previously accepted protection task");
+  expect(!ai::isTransientPlantedBombDefenseTask(Task::Hunt, Task::Attack, Task::SeekCover, Task::Blind),
+         "stale Hunt should yield to objective defense rather than preserve its target");
+  expect(!ai::isTransientPlantedBombDefenseTask(Task::MoveToPosition, Task::Attack, Task::SeekCover, Task::Blind),
+         "defense movement itself should continue through the normal objective handler");
+}
+
+AI_TEST(testPlantedBombDefenseOnlyCampsAfterReachingSelectedNode) {
+  expect(ai::hasReachedPlantedBombDefenseNode(12, 12, 100.0f, 2304.0f),
+         "defender inside the selected node reach radius may start camping");
+  expect(!ai::hasReachedPlantedBombDefenseNode(12, 13, 100.0f, 2304.0f),
+         "being close to an unrelated node does not complete the defense route");
+  expect(!ai::hasReachedPlantedBombDefenseNode(12, 12, 10000.0f, 2304.0f),
+         "interrupted movement cannot start camping far from the selected node");
+  expect(ai::hasReachedPlantedBombDefenseNode(12, 12, 2304.0f, 2304.0f),
+         "reach radius boundary is accepted");
+  expect(!ai::hasReachedPlantedBombDefenseNode(-1, 12, 100.0f, 2304.0f),
+         "invalid current node must not be considered a completed route");
+  expect(!ai::hasReachedPlantedBombDefenseNode(12, -1, 100.0f, 2304.0f),
+         "invalid defense destination must not authorize camping");
+}

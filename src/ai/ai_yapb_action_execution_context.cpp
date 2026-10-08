@@ -947,6 +947,14 @@ bool YaPBActionExecutionContext::protectObjective() {
   const auto &bombOrigin = gameState.getBombOrigin();
   auto currentTask = m_bot->getCurrentTaskId();
 
+  // Legacy combat/cover/blind tasks temporarily preempt movement. Keep the
+  // chosen bomb-defense waypoint and let the legacy task finish rather than
+  // reporting an interrupted semantic objective and discarding its route.
+  if (m_protectObjectiveActive
+      && isTransientPlantedBombDefenseTask(currentTask, Task::Attack, Task::SeekCover, Task::Blind)) {
+    return true;
+  }
+
   if (currentTask != Task::Normal && currentTask != Task::MoveToPosition
       && currentTask != Task::Camp && currentTask != Task::Hunt) {
     return false;
@@ -995,14 +1003,38 @@ bool YaPBActionExecutionContext::protectObjective() {
       m_bot->clearSearchNodes();
     }
   }
-  else if (currentTask == Task::Normal) {
-    const float bombTimeLeft = gameState.getBombTimeLeft();
-    if (bombTimeLeft > 0.0f) {
-      m_bot->startTask(Task::Camp, TaskPri::Camp, kInvalidNodeIndex, game.time() + bombTimeLeft, true);
-      currentTask = Task::Camp;
+  else if (currentTask == Task::Normal || currentTask == Task::Camp) {
+    if (!graph.exists(m_protectObjectiveNode)) {
+      return false;
+    }
+
+    const float reachDistance = cr::max(kNavigationReachDistance, graph[m_protectObjectiveNode].radius);
+    const bool defenseNodeReached = hasReachedPlantedBombDefenseNode(
+      m_bot->m_currentNodeIndex, m_protectObjectiveNode,
+      m_bot->pev->origin.distanceSq(graph[m_protectObjectiveNode].origin),
+      cr::sqrf(reachDistance));
+
+    if (!defenseNodeReached) {
+      // A combat interruption can end in Normal or an unrelated Camp. Resume
+      // the original defense route; do not defend the bomb from a random spot.
+      if (currentTask == Task::Camp) {
+        m_bot->clearTask(Task::Camp);
+      }
+      m_bot->clearSearchNodes();
+      m_bot->startTask(Task::MoveToPosition, TaskPri::MoveToPosition,
+                       m_protectObjectiveNode, 0.0f, true);
+      m_protectObjectiveNavigationTaskCreated = true;
+      currentTask = Task::MoveToPosition;
+    }
+    else if (currentTask == Task::Normal) {
+      const float bombTimeLeft = gameState.getBombTimeLeft();
+      if (bombTimeLeft > 0.0f) {
+        m_bot->startTask(Task::Camp, TaskPri::Camp, kInvalidNodeIndex, game.time() + bombTimeLeft, true);
+        currentTask = Task::Camp;
+      }
     }
   }
-  else if (currentTask != Task::MoveToPosition && currentTask != Task::Camp) {
+  else if (currentTask != Task::MoveToPosition) {
     return false;
   }
 
