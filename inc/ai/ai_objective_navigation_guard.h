@@ -95,6 +95,40 @@ constexpr bool hasReachedPlantedBombDefenseNode(int currentNode, int defenseNode
       && distanceSq <= reachDistanceSq;
 }
 
+
+constexpr float kPlantedBombReinforcementRadius = 768.0f;
+constexpr float kPlantedBombReinforcementFarRoute = 1024.0f;
+constexpr float kPlantedBombReinforcementUnreachableRoute = 32767.0f;
+constexpr float kPlantedBombReinforcementSpeedFactor = 0.75f;
+constexpr float kPlantedBombReinforcementArrivalReserve = 4.0f;
+// Author-placed camp nodes can justify a small detour, but not a long delay.
+constexpr float kPlantedBombReinforcementCampRouteAllowance = 192.0f;
+
+// Evaluate actual graph distance rather than straight-line distance.
+// An estimated arrival must leave time to hold the bomb before detonation.
+constexpr bool canArriveAtPlantedBombDefenseInTime(float routeDistance, float maxSpeed,
+                                                   float bombSecondsLeft) {
+  return routeDistance >= 0.0f && routeDistance < kPlantedBombReinforcementUnreachableRoute
+      && maxSpeed > 0.0f && maxSpeed < kPlantedBombReinforcementUnreachableRoute
+      && bombSecondsLeft > kPlantedBombReinforcementArrivalReserve
+      && routeDistance / (maxSpeed * kPlantedBombReinforcementSpeedFactor)
+           + kPlantedBombReinforcementArrivalReserve < bombSecondsLeft;
+}
+
+// Rank eligible reinforcement positions by time to arrive. Prefer authored
+// camp points only when the resulting detour is short.
+constexpr bool isBetterPlantedBombReinforcementNode(float routeDistance, bool camp, int node,
+                                                    float bestRouteDistance, bool bestCamp, int bestNode) {
+  if (bestNode < 0) {
+    return true;
+  }
+  const float adjustedDistance = routeDistance - (camp ? kPlantedBombReinforcementCampRouteAllowance : 0.0f);
+  const float bestAdjustedDistance = bestRouteDistance
+      - (bestCamp ? kPlantedBombReinforcementCampRouteAllowance : 0.0f);
+  return adjustedDistance < bestAdjustedDistance
+      || (adjustedDistance == bestAdjustedDistance && node < bestNode);
+}
+
 // A dropped-C4 defender must be able to act on the objective without abandoning
 // immediate combat or another emergency traversal state.
 constexpr bool isDroppedBombDefenderEligible(bool alive, bool counterTerrorist, bool seesBomb,

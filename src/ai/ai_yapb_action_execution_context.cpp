@@ -962,9 +962,83 @@ bool YaPBActionExecutionContext::protectObjective() {
 
   if (!m_protectObjectiveActive) {
     m_bot->ensureCurrentNodeIndex();
-    const int node = m_bot->m_defuseNotified ? graph.getNearest(bombOrigin) : m_bot->findDefendNode(bombOrigin);
+    const int fromNode = graph.exists(m_bot->m_currentNodeIndex)
+        ? m_bot->m_currentNodeIndex : graph.getNearest(m_bot->pev->origin);
+    const int bombNode = graph.getNearest(bombOrigin);
+    if (!graph.exists(fromNode) || !graph.exists(bombNode)) {
+      return false;
+    }
 
-    if (!graph.exists(node)) {
+    const float secondsLeft = gameState.getBombTimeLeft();
+    const float maxSpeed = m_bot->pev->maxspeed;
+    const auto routeTo = [&](int node) {
+      return graph.exists(node) ? planner.preciseDistance(fromNode, node)
+                                : kPlantedBombReinforcementUnreachableRoute;
+    };
+    const auto canArriveAt = [&](int node) {
+      return canArriveAtPlantedBombDefenseInTime(routeTo(node), maxSpeed, secondsLeft);
+    };
+
+    int node = kInvalidNodeIndex;
+    if (m_bot->m_defuseNotified) {
+      // When CTs are defusing, the bomb itself takes precedence over a flank.
+      node = bombNode;
+    }
+    else {
+      // Preserve the legacy defense choice for nearby T bots. Its search
+      // radius is relative to the bot and cannot serve distant reinforcements.
+      if (routeTo(bombNode) <= kPlantedBombReinforcementFarRoute) {
+        const int localNode = m_bot->findDefendNode(bombOrigin);
+        if (graph.exists(localNode)
+            && !(graph[localNode].flags & (NodeFlag::Ladder | NodeFlag::CTOnly))
+            && graph[localNode].origin.distanceSq(bombOrigin)
+                <= cr::sqrf(kPlantedBombReinforcementRadius)
+            && canArriveAt(localNode)) {
+          node = localNode;
+        }
+      }
+
+      if (!graph.exists(node)) {
+        // Reinforcements choose destinations AROUND the planted C4, not random
+        // nodes near their current position. First prefer C4-visible points;
+        // on sparse maps fall back to nearby reachable flanking positions.
+        for (int pass = 0; pass < 2 && !graph.exists(node); ++pass) {
+          int bestNode = kInvalidNodeIndex;
+          float bestRouteDistance = kPlantedBombReinforcementUnreachableRoute;
+          bool bestCamp = false;
+
+          for (const auto &path : graph) {
+            if ((path.flags & (NodeFlag::Ladder | NodeFlag::CTOnly))
+                || path.number == bombNode || m_bot->isOccupiedNode(path.number)
+                || path.origin.distanceSq(bombOrigin) > cr::sqrf(kPlantedBombReinforcementRadius)
+                || (pass == 0 && !vistab.visible(path.number, bombNode))) {
+              continue;
+            }
+
+            const float distance = routeTo(path.number);
+            if (!canArriveAtPlantedBombDefenseInTime(distance, maxSpeed, secondsLeft)) {
+              continue;
+            }
+            const bool isCamp = (path.flags & NodeFlag::Camp) != 0;
+            if (isBetterPlantedBombReinforcementNode(
+                distance, isCamp, path.number, bestRouteDistance, bestCamp, bestNode)) {
+              bestNode = path.number;
+              bestRouteDistance = distance;
+              bestCamp = isCamp;
+            }
+          }
+          node = bestNode;
+        }
+      }
+
+      // If map waypoints offer no suitable side position, reaching the bomb
+      // is still better than using a disconnected or random defense node.
+      if (!graph.exists(node)) {
+        node = bombNode;
+      }
+    }
+
+    if (!graph.exists(node) || !canArriveAt(node)) {
       return false;
     }
 

@@ -1071,3 +1071,34 @@ AI_TEST(testPlantedBombDefenseOnlyCampsAfterReachingSelectedNode) {
   expect(!ai::hasReachedPlantedBombDefenseNode(12, -1, 100.0f, 2304.0f),
          "invalid defense destination must not authorize camping");
 }
+
+
+AI_TEST(testPlantedBombReinforcementUsesGraphTravelBudget) {
+  expect(ai::canArriveAtPlantedBombDefenseInTime(1500.0f, 250.0f, 20.0f),
+         "reinforcement can defend when graph travel time leaves a setup reserve");
+  expect(!ai::canArriveAtPlantedBombDefenseInTime(3300.0f, 250.0f, 20.0f),
+         "distant T must not claim a bomb defense position after its arrival deadline");
+  expect(!ai::canArriveAtPlantedBombDefenseInTime(1500.0f, 250.0f, 12.0f),
+         "short remaining bomb timer prevents late reinforcement");
+  expect(!ai::canArriveAtPlantedBombDefenseInTime(0.0f, 250.0f, 4.0f),
+         "arrival with no time to hold the bomb is not useful");
+  expect(!ai::canArriveAtPlantedBombDefenseInTime(32767.0f, 250.0f, 40.0f),
+         "disconnected graph paths cannot be used as reinforcement estimates");
+  expect(!ai::canArriveAtPlantedBombDefenseInTime(-1.0f, 250.0f, 40.0f),
+         "negative route distances cannot authorize defense");
+  expect(!ai::canArriveAtPlantedBombDefenseInTime(100.0f, 0.0f, 40.0f),
+         "invalid player speed does not authorize a defense route");
+}
+
+AI_TEST(testPlantedBombReinforcementPrefersPromptCampRoutes) {
+  expect(ai::isBetterPlantedBombReinforcementNode(500.0f, true, 12, 460.0f, false, 13),
+         "authored camp node wins when its route detour is small");
+  expect(!ai::isBetterPlantedBombReinforcementNode(900.0f, true, 12, 460.0f, false, 13),
+         "camp preference must not outweigh an excessive travel delay");
+  expect(ai::isBetterPlantedBombReinforcementNode(300.0f, false, 12, 500.0f, true, 13),
+         "a significantly faster route outranks a distant camp");
+  expect(ai::isBetterPlantedBombReinforcementNode(500.0f, false, 8, 500.0f, false, 9),
+         "ties choose stable lowest waypoint id rather than random targets");
+  expect(!ai::isBetterPlantedBombReinforcementNode(500.0f, false, 9, 500.0f, false, 8),
+         "higher-id equal cost node must not trigger route churn");
+}
