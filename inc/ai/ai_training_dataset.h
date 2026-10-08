@@ -15,7 +15,7 @@
 
 namespace ai {
 
-constexpr uint32_t kTrainingDatasetFormatVersion = 2;
+constexpr uint32_t kTrainingDatasetFormatVersion = 3;
 constexpr const char kTrainingDatasetDirectory[] = "training";
 constexpr const char kTrainingDatasetFilePrefix[] = "ai_training";
 
@@ -29,6 +29,7 @@ enum class TrainingDatasetWriteError : uint8_t {
 
 struct TrainingDatasetWriteResult {
   size_t count {};
+  size_t combatEventCount {};
   size_t failedIndex {};
   TrainingDatasetWriteError error { TrainingDatasetWriteError::None };
 

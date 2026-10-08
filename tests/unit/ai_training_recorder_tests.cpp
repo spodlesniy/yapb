@@ -9,6 +9,7 @@
 #include "ai_test.h"
 
 #include <cstdio>
+#include <cstring>
 
 #include <ai/ai_training_recorder.h>
 #include <ai/ai_training_sample.h>
@@ -517,5 +518,56 @@ AI_TEST(testTrainingDatasetWriterRejectsUnsupportedTransition) {
          "dataset writer reports unsupported action encoding");
   expect(written.count == 0, "dataset writer reports no samples after the first encoding failure");
 
+  std::remove(path);
+}
+
+AI_TEST(testTrainingBufferStoresCombatEventsIndependentlyOfSamples) {
+  ai::TrainingBuffer buffer {};
+  ai::CombatEvent event {};
+  event.type = ai::CombatEventType::FlashStart;
+  event.botId = 7;
+  event.gameTime = 19.5f;
+  event.roundId = 2;
+  expect(buffer.appendCombatEvent(event), "combat event is recorded without a training transition");
+  expect(buffer.size() == 0 && buffer.combatEventCount() == 1,
+         "diagnostic combat data is separate from training samples");
+  expect(buffer.combatEventAt(0).botId == 7 && buffer.combatEventAt(0).roundId == 2,
+         "combat record retains its precise attribution");
+  expect(ai::combatEventName(event.type)[0] == 'f', "flash event has a stable name");
+  expect(ai::combatEventEvidence(ai::CombatEventType::WeaponFire)[0] == 'c',
+         "weapon event documents its clip-decrease evidence");
+  buffer.clear();
+  expect(buffer.combatEventCount() == 0 && buffer.size() == 0,
+         "clear removes diagnostic and training buffers together");
+}
+
+AI_TEST(testCombatEventWriterPreservesOriginalTransitionCount) {
+  const char *path = "aipb-combat-events-test.jsonl";
+  ai::TrainingBuffer buffer {};
+  ai::CombatEvent event {};
+  event.type = ai::CombatEventType::WeaponFire;
+  event.gameTime = 22.25f;
+  event.botId = 9;
+  event.ammoBefore = 20;
+  event.ammoAfter = 19;
+  event.blindTimeRemaining = 1.25f;
+  expect(buffer.appendCombatEvent(event), "sample-free diagnostic event can be captured");
+  const auto written = ai::writeTrainingDataset(buffer, path);
+  expect(written.isValid(), "combat event exporter succeeds");
+  expect(written.count == 0 && written.combatEventCount == 1,
+         "combat event does not count as an ML transition");
+  std::FILE *file = std::fopen(path, "rb");
+  expect(file != nullptr, "diagnostic JSONL file exists");
+  if (file) {
+    char line[2048] {};
+    std::fgets(line, sizeof(line), file);
+    expect(std::strstr(line, "\"version\":3") != nullptr, "dataset metadata declares version 3");
+    std::fgets(line, sizeof(line), file);
+    expect(std::strstr(line, "\"type\":\"combat_event\"") != nullptr,
+           "combat event is tagged so training tools can skip it");
+    expect(std::strstr(line, "\"blind_time_remaining\":1.25") != nullptr,
+           "combat record includes flash status when ammo decreases");
+    std::fclose(file);
+  }
   std::remove(path);
 }

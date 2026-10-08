@@ -96,6 +96,41 @@ bool writeAction(cr::File &file, const InferenceActionOutput &action) {
          writeString(file, "}");
 }
 
+bool writeCombatEvent(cr::File &file, const CombatEvent &event) {
+  return writeString(file, "{\"type\":\"combat_event\",\"event\":\"")
+      && writeString(file, combatEventName(event.type))
+      && writeString(file, "\",\"evidence_source\":\"")
+      && writeString(file, combatEventEvidence(event.type))
+      && writeString(file, "\",\"game_time\":") && writeFloat(file, event.gameTime)
+      && writeString(file, ",\"round_start_time\":") && writeFloat(file, event.roundStartTime)
+      && writeString(file, ",\"round_id\":") && writeUnsigned(file, event.roundId)
+      && writeString(file, ",\"episode_id\":") && writeUnsigned(file, event.episodeId)
+      && writeString(file, ",\"bot_id\":") && writeInt(file, event.botId)
+      && writeString(file, ",\"team\":") && writeInt(file, event.team)
+      && writeString(file, ",\"task\":") && writeInt(file, event.task)
+      && writeString(file, ",\"ai_action\":") && writeInt(file, event.aiAction)
+      && writeString(file, ",\"position\":") && writeVec3(file, event.position)
+      && writeString(file, ",\"aim_direction\":") && writeVec3(file, event.aimDirection)
+      && writeString(file, ",\"weapon_id\":") && writeInt(file, event.weaponId)
+      && writeString(file, ",\"target_id\":") && writeInt(file, event.targetId)
+      && writeString(file, ",\"attacker_id\":") && writeInt(file, event.attackerId)
+      && writeString(file, ",\"victim_id\":") && writeInt(file, event.victimId)
+      && writeString(file, ",\"source_entity_id\":") && writeInt(file, event.sourceEntityId)
+      && writeString(file, ",\"ammo_before\":") && writeInt(file, event.ammoBefore)
+      && writeString(file, ",\"ammo_after\":") && writeInt(file, event.ammoAfter)
+      && writeString(file, ",\"health_damage\":") && writeInt(file, event.healthDamage)
+      && writeString(file, ",\"armor_damage\":") && writeInt(file, event.armorDamage)
+      && writeString(file, ",\"flash_alpha\":") && writeInt(file, event.flashAlpha)
+      && writeString(file, ",\"blind_time_remaining\":") && writeFloat(file, event.blindTimeRemaining)
+      && writeString(file, ",\"attack_button_pressed\":")
+      && writeString(file, event.attackPressed ? "true" : "false")
+      && writeString(file, ",\"enemy_visible\":")
+      && writeString(file, event.enemyVisible ? "true" : "false")
+      && writeString(file, ",\"enemy_heard\":")
+      && writeString(file, event.enemyHeard ? "true" : "false")
+      && writeString(file, "}\n");
+}
+
 bool writeSample(cr::File &file, const TrainingSample &sample) {
   return writeString(file, "{\"episode_id\":") &&
          writeUnsigned(file, sample.episodeId) &&
@@ -161,6 +196,16 @@ TrainingDatasetWriteResult writeTrainingDataset(const TrainingBuffer &buffer, co
     }
 
     result.count = i + 1;
+  }
+
+  // Diagnostics follow transitions; game_time and round_id allow merging
+  // them into a single timeline without altering the training sample schema.
+  for (size_t i = 0; i < buffer.combatEventCount(); ++i) {
+    if (!writeCombatEvent(file, buffer.combatEventAt(i))) {
+      result.error = TrainingDatasetWriteError::IoError;
+      return result;
+    }
+    ++result.combatEventCount;
   }
 
   if (file.flush()) {

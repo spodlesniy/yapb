@@ -12,10 +12,12 @@
 #include <cstdint>
 
 #include <ai/ai_action_result.h>
+#include <ai/ai_combat_event.h>
 
 namespace ai {
 
 constexpr size_t kTrainingTransitionCapacity = 1024;
+constexpr size_t kTrainingCombatEventCapacity = 4096;
 
 enum class TrainingRecordResult : uint8_t {
   Recorded,
@@ -37,6 +39,9 @@ struct TrainingTransition {
 class TrainingBuffer final {
 private:
   TrainingTransition m_transitions[kTrainingTransitionCapacity] {};
+  CombatEvent m_combatEvents[kTrainingCombatEventCapacity] {};
+  size_t m_combatEventCount {};
+  size_t m_droppedCombatEvents {};
   size_t m_size {};
   size_t m_droppedTransitions {};
   size_t m_episodeCount {};
@@ -83,11 +88,26 @@ public:
     return true;
   }
 
+  bool appendCombatEvent(const CombatEvent &event) {
+    if (m_combatEventCount >= kTrainingCombatEventCapacity) {
+      ++m_droppedCombatEvents;
+      return false;
+    }
+    m_combatEvents[m_combatEventCount++] = event;
+    return true;
+  }
+
+  size_t combatEventCount() const { return m_combatEventCount; }
+  size_t droppedCombatEvents() const { return m_droppedCombatEvents; }
+  const CombatEvent &combatEventAt(size_t index) const { return m_combatEvents[index]; }
+
   void clear() {
     for (size_t i = 0; i < kTrainingTransitionCapacity; ++i) {
       m_transitions[i] = {};
     }
     m_size = 0;
+    m_combatEventCount = 0;
+    m_droppedCombatEvents = 0;
     m_droppedTransitions = 0;
     m_episodeCount = 0;
   }
