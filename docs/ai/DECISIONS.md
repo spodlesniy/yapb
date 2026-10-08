@@ -1618,3 +1618,17 @@ D147 reduced blind-fire during the strongest flash phase but intentionally resto
 The format-v2 gameplay capture still shows rifle ammunition being consumed while the bot is observably blind, including a case reported as a blind kill.
 A separate legacy `Pause` path can also set `m_wantsToFire` while view distance is flash-limited, so changing `blind_()` alone would not guarantee the intended invariant.
 D160 therefore enforces the rule at the final weapon-fire gate: active flash blindness cannot fire, independent of task transitions or remembered targets.
+
+## D161 — Rank dropped-C4 defense positions by actual graph exposure
+
+The single Counter-Terrorist assigned by D153 to guard a dropped C4 now asks `findDefendNode()` for a low-exposure position.
+This mode remains scoped to dropped-C4 defense; all other callers retain the legacy defend-node ranking.
+
+D146's authored-`Camp` preference is preserved.
+Among otherwise valid camp nodes that have line of sight to the dropped C4, are reachable within the existing defense radius, are not ladders, and are not occupied, the selector now ranks the stance the bot will actually use by its precomputed `PathVis` exposure count.
+Fewer visible graph nodes wins first, then lower historical practice damage, then shorter route distance, then node index.
+If no valid authored camp node exists, the same cover ranking is applied to the generic-node fallback.
+
+Reason: the format-v2 capture `2026_10_08__09_55_21__ai_training.jsonl` shows the D153 ownership mechanism working, but the assigned CT can still spend a long `Camp` lifecycle at a position that is visibly exposed in play.
+The legacy `findDefendNode()` comment promises a covered defensive position, but its candidate ranking does not use the graph's existing stand/crouch visibility counts at all; it mainly keeps distant candidates and later mixes historical damage with random selection.
+D161 makes dropped-C4 guarding prefer measurable cover without changing which CT owns the role or broadening the behavior of unrelated defensive tasks.

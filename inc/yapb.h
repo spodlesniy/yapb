@@ -416,7 +416,7 @@ private:
    int findNearestNode ();
    int findBombNode ();
    int findCoverNode (float maxDistance);
-   int findDefendNode (const Vector &origin);
+   int findDefendNode (const Vector &origin, bool preferLowExposure = false);
    int findBestGoal ();
    int findBestGoalWhenBombAction ();
    int findGoalPost (int tactic, IntArray *defensive, IntArray *offensive);

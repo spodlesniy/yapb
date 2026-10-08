@@ -822,7 +822,7 @@ void Bot::updatePickups () {
                }
 
                if (assignedDefender == this) {
-                  const int index = findDefendNode (origin);
+                  const int index = findDefendNode (origin, true);
 
                   m_ignoredItems.push (ent);
                   startTask (Task::Camp, TaskPri::Camp, kInvalidNodeIndex, game.time () + rg (cv_camping_time_min.as <float> (), cv_camping_time_max.as <float> ()), true); // push camp task on to stack

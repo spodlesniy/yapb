@@ -835,3 +835,16 @@ AI_TEST(testBombDefensePrefersCampNodesBeforeGenericFallback) {
   expect(!ai::isBombDefenseNodeEligibleForPass(false, true, true),
          "ladder waypoint is excluded from both bomb-defense passes");
 }
+
+AI_TEST(testDroppedBombDefenseCoverRankingPrefersLowerExposure) {
+  expect(ai::isBetterBombDefenseCover(20, 100, 500.0f, 8, 60, 5, 200.0f, 4),
+         "lower world-visibility exposure outranks route length and historical damage");
+  expect(ai::isBetterBombDefenseCover(20, 10, 500.0f, 8, 20, 30, 200.0f, 4),
+         "lower historical damage breaks equal-exposure ties");
+  expect(ai::isBetterBombDefenseCover(20, 10, 150.0f, 8, 20, 10, 300.0f, 4),
+         "shorter route breaks equal exposure and damage ties");
+  expect(ai::isBetterBombDefenseCover(20, 10, 150.0f, 2, 20, 10, 150.0f, 4),
+         "node index deterministically breaks a complete cover-ranking tie");
+  expect(!ai::isBetterBombDefenseCover(80, 0, 50.0f, 1, 20, 100, 500.0f, 9),
+         "an exposed node cannot win merely because it is closer or historically safer");
+}

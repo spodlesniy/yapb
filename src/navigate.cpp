@@ -2164,7 +2164,7 @@ int Bot::findBombNode () {
    return goal;
 }
 
-int Bot::findDefendNode (const Vector &origin) {
+int Bot::findDefendNode (const Vector &origin, bool preferLowExposure) {
    // this function tries to find a good position which has a line of sight to a position,
    // provides enough cover point, and is far away from the defending position
 
@@ -2183,6 +2183,65 @@ int Bot::findDefendNode (const Vector &origin) {
    // some of points not found, return random one
    if (srcIndex == kInvalidNodeIndex || posIndex == kInvalidNodeIndex) {
       return graph.random ();
+   }
+
+   if (preferLowExposure) {
+      auto selectLeastExposed = [&] (bool requireCamp) {
+         int bestNode = kInvalidNodeIndex;
+         int bestExposure = 0;
+         int bestDamage = 0;
+         float bestRouteDistance = kInfiniteDistance;
+
+         for (const auto &path : graph) {
+            if (!ai::isBombDefenseNodeEligibleForPass (
+               requireCamp, (path.flags & NodeFlag::Camp) != 0, (path.flags & NodeFlag::Ladder) != 0)) {
+               continue;
+            }
+
+            if (path.number == srcIndex || !vistab.visible (path.number, posIndex) || isOccupiedNode (path.number)) {
+               continue;
+            }
+
+            const float routeDistance = planner.dist (srcIndex, path.number);
+            if (routeDistance >= kInfiniteHeuristic || routeDistance > kMaxDistance) {
+               continue;
+            }
+
+            game.testLine (path.origin, graph[posIndex].origin, TraceIgnore::Glass, ent (), &tr);
+            if (!cr::fequal (tr.flFraction, 1.0f)) {
+               continue;
+            }
+
+            const bool healthyOrRusher = m_personality == Personality::Rusher || pev->health >= 90.0f;
+            const bool wouldCrouch = healthyOrRusher
+               ? path.vis.crouch < path.vis.stand && m_fearLevel > m_agressionLevel
+               : path.vis.crouch <= path.vis.stand;
+            const int exposure = wouldCrouch ? path.vis.crouch : path.vis.stand;
+            const int damage = practice.getDamage (m_team, path.number, path.number);
+
+            if (ai::isBetterBombDefenseCover (
+               exposure, damage, routeDistance, path.number,
+               bestExposure, bestDamage, bestRouteDistance, bestNode)) {
+
+               bestNode = path.number;
+               bestExposure = exposure;
+               bestDamage = damage;
+               bestRouteDistance = routeDistance;
+            }
+         }
+         return bestNode;
+      };
+
+      // Preserve D146's authored-camp preference, but choose the least exposed
+      // usable camp point instead of a distance/random candidate.
+      int coveredNode = selectLeastExposed (true);
+      if (!graph.exists (coveredNode)) {
+         coveredNode = selectLeastExposed (false);
+      }
+
+      if (graph.exists (coveredNode)) {
+         return coveredNode;
+      }
    }
 
    auto collectCandidates = [&] (bool requireCamp) {
