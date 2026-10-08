@@ -1501,6 +1501,8 @@ void Bot::newRound () {
 
    cancelAIAction ();
    m_aiObservationState.invalidate ();
+   ++m_aiCombatRoundId;
+   m_aiFlashEventActive = false;
    m_aiRuntime.beginTrainingEpisode ();
 
    // delete all allocated path nodes

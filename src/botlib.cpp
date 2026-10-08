@@ -3621,6 +3621,38 @@ void Bot::checkSpawnConditions () {
    }
 }
 
+void Bot::recordCombatEvent (ai::CombatEventType type, int weaponId, int targetId,
+                             int ammoBefore, int ammoAfter, int sourceEntityId,
+                             int healthDamage, int armorDamage, int flashAlpha) {
+   if (m_aiRuntime.controller ().getMode () != ai::ControlMode::Training || pev == nullptr) return;
+   ai::CombatEvent e {};
+   e.type = type;
+   e.gameTime = game.time ();
+   e.roundStartTime = gameState.getRoundStartTime ();
+   e.roundId = m_aiCombatRoundId;
+   e.episodeId = m_aiRuntime.trainingRecorder ().episodeId ();
+   e.botId = entindex ();
+   e.team = static_cast <int> (m_team);
+   e.task = static_cast <int> (getCurrentTaskId ());
+   e.aiAction = m_aiRuntime.isActive () ? static_cast <int> (m_aiRuntime.activeAction ().type) : -1;
+   e.position = { pev->origin.x, pev->origin.y, pev->origin.z };
+   const auto direction = pev->v_angle.forward ();
+   e.aimDirection = { direction.x, direction.y, direction.z };
+   e.weaponId = weaponId >= 0 ? weaponId : m_currentWeapon;
+   e.targetId = targetId;
+   e.sourceEntityId = sourceEntityId;
+   e.ammoBefore = ammoBefore;
+   e.ammoAfter = ammoAfter;
+   e.healthDamage = healthDamage;
+   e.armorDamage = armorDamage;
+   e.flashAlpha = flashAlpha;
+   e.blindTimeRemaining = cr::max (0.0f, m_blindTime - game.time ());
+   e.attackPressed = (pev->button & IN_ATTACK) != 0;
+   e.enemyVisible = (m_states & Sense::SeeingEnemy) != 0;
+   e.enemyHeard = (m_states & Sense::HearingEnemy) != 0;
+   m_aiRuntime.trainingBuffer ().appendCombatEvent (e);
+}
+
 void Bot::updateAIObservation () {
    if (pev == nullptr) {
       m_aiObservationState.invalidate ();
@@ -3642,6 +3674,11 @@ void Bot::logic () {
 
    if (m_actualReactionTime > m_idealReactionTime) {
       m_actualReactionTime = m_idealReactionTime;
+   }
+
+   if (m_aiFlashEventActive && m_blindTime <= game.time ()) {
+      recordCombatEvent (ai::CombatEventType::FlashEnd);
+      m_aiFlashEventActive = false;
    }
 
    // bot could be blinded by flashbang or smoke, recover from it
@@ -4080,6 +4117,10 @@ void Bot::takeBlind (int alpha) {
       m_viewDistance = m_maxViewDistance;
    }
    m_blindTime = game.time () + static_cast <float> (alpha - 180) / 16.0f;
+   m_aiFlashEventActive = m_blindTime > game.time ();
+   if (m_aiFlashEventActive) {
+      recordCombatEvent (ai::CombatEventType::FlashStart, -1, -1, -1, -1, -1, -1, -1, alpha);
+   }
 
    if (m_blindTime < game.time ()) {
       return;

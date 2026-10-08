@@ -162,6 +162,8 @@ void MessageDispatcher::netMsgCurWeapon () {
       // ammo amount decreased ? must have fired a bullet...
       if (m_args[id].long_ == m_bot->m_currentWeapon && m_bot->m_ammoInClip[m_args[id].long_] > m_args[clip].long_) {
          m_bot->m_timeLastFired = game.time (); // remember the last bullet time
+         m_bot->recordCombatEvent (ai::CombatEventType::WeaponFire, m_args[id].long_, -1,
+                                    m_bot->m_ammoInClip[m_args[id].long_], m_args[clip].long_);
       }
       m_bot->m_ammoInClip[m_args[id].long_] = m_args[clip].long_;
    }
@@ -209,7 +211,11 @@ void MessageDispatcher::netMsgDamage () {
 
    // handle damage if any
    if (m_args[armor].long_ > 0 || m_args[health].long_) {
-      m_bot->takeDamage (m_bot->pev->dmg_inflictor, m_args[health].long_, m_args[armor].long_, m_args[bits].long_);
+      const auto inflictor = m_bot->pev->dmg_inflictor;
+      m_bot->recordCombatEvent (ai::CombatEventType::Damage, -1, -1, -1, -1,
+                                game.isNullEntity (inflictor) ? -1 : game.indexOfEntity (inflictor),
+                                m_args[health].long_, m_args[armor].long_);
+      m_bot->takeDamage (inflictor, m_args[health].long_, m_args[armor].long_, m_args[bits].long_);
    }
 }
 
@@ -287,6 +293,9 @@ void MessageDispatcher::netMsgDeathMsg () {
 
    if (game.isNullEntity (killerEntity) || game.isNullEntity (victimEntity) || victimEntity == killerEntity) {
       return;
+   }
+   if (auto *killerBot = bots[killerEntity]) {
+      killerBot->recordCombatEvent (ai::CombatEventType::Kill, -1, game.indexOfEntity (victimEntity));
    }
    bots.handleDeath (killerEntity, victimEntity);
 }

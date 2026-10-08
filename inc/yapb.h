@@ -765,6 +765,8 @@ public:
    ai::Observation m_aiObservation {};
    ai::ObservationState m_aiObservationState {};
    float m_aiNextInferenceTime {};
+   bool m_aiFlashEventActive {};
+   uint32_t m_aiCombatRoundId {};
    ai::BotRuntime m_aiRuntime;
 
 public:
@@ -774,6 +776,9 @@ public:
 public:
    void logic (); /// the things that can be executed while skipping frames
    void spawned ();
+   void recordCombatEvent (ai::CombatEventType type, int weaponId = -1, int targetId = -1,
+                           int ammoBefore = -1, int ammoAfter = -1, int sourceEntityId = -1,
+                           int healthDamage = -1, int armorDamage = -1, int flashAlpha = -1);
    void takeBlind (int alpha);
    void takeDamage (edict_t *inflictor, int damage, int armor, int bits);
    void showDebugOverlay ();
