@@ -63,6 +63,13 @@ void MessageDispatcher::netMsgTextMsg () {
       }
    }
 
+   if (std::strcmp (m_args[msg].chars_, "#Target_Bombed") == 0) {
+      for (const auto &bot : bots) {
+         bot->endDefuseAttempt (ai::DefuseEventReason::BombExploded,
+                                ai::DefuseEvidence::RoundMessage);
+      }
+   }
+
    if (cached & TextMsgCache::Commencing) {
       util.setNeedForWelcome (true);
    }
@@ -329,6 +336,10 @@ void MessageDispatcher::netMsgDeathMsg () {
    }
    if (auto *killerBot = bots[killerEntity]) {
       killerBot->recordCombatEvent (ai::CombatEventType::Kill, -1, game.indexOfEntity (victimEntity));
+   }
+   if (auto *victimBot = bots[victimEntity]) {
+      victimBot->endDefuseAttempt (ai::DefuseEventReason::BotDied,
+                                   ai::DefuseEvidence::DeathMessage);
    }
    bots.handleDeath (killerEntity, victimEntity);
 }
