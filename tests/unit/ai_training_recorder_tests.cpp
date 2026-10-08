@@ -541,6 +541,20 @@ AI_TEST(testDefuseAttemptTrackerDeduplicatesEngineMessages) {
    expect(!tracker.active() && tracker.attemptId() == 0, "new round resets tracking");
 }
 
+AI_TEST(testDefuseDiagnosticBufferIsBounded) {
+   ai::TrainingBuffer buffer {};
+   ai::DefuseEvent e {};
+   for (size_t i = 0; i < ai::kTrainingDefuseEventCapacity; ++i) {
+      expect(buffer.appendDefuseEvent(e), "defuse event fits in reserved capacity");
+   }
+   expect(!buffer.appendDefuseEvent(e), "excess diagnostic events are rejected");
+   expect(buffer.droppedDefuseEvents() == 1, "overflow is counted");
+   expect(buffer.size() == 0, "diagnostic overflow does not affect ML samples");
+   buffer.clear();
+   expect(buffer.defuseEventCount() == 0 && buffer.droppedDefuseEvents() == 0,
+          "clear resets defuse diagnostic counters");
+}
+
 AI_TEST(testDefuseDiagnosticWriterDoesNotProduceTrainingSamples) {
    const char *path = "aipb-defuse-events-test.jsonl";
    ai::TrainingBuffer buffer {};
