@@ -928,3 +928,19 @@ AI_TEST(testDefuseKitCandidatePrefersStableCurrentKit) {
   expect(!ai::isBetterDefuseKitCandidate(-1.0f, false, -1.0f, false),
          "invalid kit is not selected when none exists");
 }
+
+
+AI_TEST(testPlantedBombPickupAllowsReachableGraphApproach) {
+  expect(ai::isReachablePlantedBombGraphApproach(true, false, -1.0f, 32767.0f),
+         "short unobstructed bomb approach remains allowed without a graph route");
+  expect(ai::isReachablePlantedBombGraphApproach(false, true, 420.0f, 32767.0f),
+         "blocked direct approach is accepted when a valid interaction node has a graph route");
+  expect(ai::isReachablePlantedBombGraphApproach(false, true, 0.0f, 32767.0f),
+         "bot already at an interaction-safe node remains eligible");
+  expect(!ai::isReachablePlantedBombGraphApproach(false, false, 100.0f, 32767.0f),
+         "a nearby waypoint outside the interaction sphere cannot rescue eligibility");
+  expect(!ai::isReachablePlantedBombGraphApproach(false, true, 32767.0f, 32767.0f),
+         "unreachable Floyd sentinel rejects graph approach");
+  expect(!ai::isReachablePlantedBombGraphApproach(false, true, -1.0f, 32767.0f),
+         "invalid negative graph distance does not rescue blocked direct approach");
+}

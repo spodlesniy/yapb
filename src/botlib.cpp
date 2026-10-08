@@ -839,10 +839,40 @@ void Bot::updatePickups () {
                   }
                }
 
+               // A blocked direct segment does not make planted C4 unreachable:
+               // the defuse task can approach through a waypoint inside its
+               // interaction sphere. Require an actual graph route to that node.
                if (pev->origin.distanceSq (origin) > cr::sqrf (60.0f)) {
-                  if (!graph.isNodeReacheable (pev->origin, origin)) {
-                     allowPickup = false;
+                  const bool directlyReachable = graph.isNodeReacheable (pev->origin, origin);
+                  bool reachableViaGraph = false;
+
+                  if (!directlyReachable) {
+                     const int sourceNode = graph.getNearest (pev->origin);
+                     if (graph.exists (sourceNode)) {
+                        constexpr float kDefuseInteractionRadius = 80.0f;
+                        const auto approachNodes = graph.getNearestInRadius (kDefuseInteractionRadius, origin);
+
+                        for (const auto node : approachNodes) {
+                           if (!graph.exists (node)) {
+                              continue;
+                           }
+                           const auto &target = graph[node].origin;
+                           if (!ai::isWithinObjectiveInteractionRange (
+                              target.x - origin.x, target.y - origin.y, target.z - origin.z,
+                              kDefuseInteractionRadius)) {
+                              continue;
+                           }
+                           const float routeDistance = planner.preciseDistance (sourceNode, node);
+                           if (ai::isReachablePlantedBombGraphApproach (
+                              directlyReachable, true, routeDistance, ai::kDefuseUnreachableDistance)) {
+                              reachableViaGraph = true;
+                              break;
+                           }
+                        }
+                     }
                   }
+                  allowPickup = ai::isReachablePlantedBombGraphApproach (
+                     directlyReachable, reachableViaGraph, 0.0f, ai::kDefuseUnreachableDistance);
                }
             }
             else if (pickupType == Pickup::DroppedC4) {

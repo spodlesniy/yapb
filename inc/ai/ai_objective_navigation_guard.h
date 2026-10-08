@@ -51,6 +51,16 @@ constexpr bool isBetterObjectiveApproachNode(float candidateRouteDistance, int c
       || (candidateRouteDistance == bestRouteDistance && (bestNode < 0 || candidateNode < bestNode));
 }
 
+
+constexpr bool isReachablePlantedBombGraphApproach(bool directlyReachable,
+                                                    bool graphDestinationValid,
+                                                    float graphRouteDistance,
+                                                    float unreachableDistance) {
+  return directlyReachable
+      || (graphDestinationValid && graphRouteDistance >= 0.0f
+          && graphRouteDistance < unreachableDistance);
+}
+
 // While carrying C4, side pickups must not take ownership away from the active
 // demolition objective unless objectives are explicitly disabled.
 constexpr bool blocksBombCarrierSidePickups(bool hasC4, bool objectivesEnabled) {
