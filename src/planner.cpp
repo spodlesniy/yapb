@@ -318,7 +318,8 @@ AStarResult AStarAlgo::find (int botTeam, int srcIndex, int destIndex, NodeAdder
          auto childRoute = &m_routes[child.index];
 
          // calculate the F value as F = G + H
-         const float g = curRoute->g + m_gcalc (botTeam, child.index, currentIndex) * rsRandomizer;
+         const float g = curRoute->g + m_gcalc (botTeam, child.index, currentIndex) * rsRandomizer
+            + ctRouteTrafficCost (child.index);
          const float h = m_hcalc (child.index, kInvalidNodeIndex, destIndex);
          const float f = plat.simd ? g + h : cr::ceilf (g + h + 0.5f);
 

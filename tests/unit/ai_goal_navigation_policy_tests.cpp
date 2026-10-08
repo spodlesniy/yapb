@@ -1264,3 +1264,37 @@ AI_TEST(testCtDefuseRouteValidatesActualAStarDetour) {
   expect(!ai::canAffordRiskAwareCtBombRoute(1600.0f, 1850.0f, 0.0f, 40.0f, true),
          "invalid movement speed must not authorize a detour");
 }
+
+AI_TEST(testCtBombRouteCrowdingUsesPredictedAllyIntentNotSharedDestination) {
+  expect(ai::isRelevantCtBombRouteAlly(true, true, 100.0f * 100.0f, true),
+         "live CT heading near the same planted C4 may reserve approach nodes");
+  expect(!ai::isRelevantCtBombRouteAlly(false, true, 100.0f, true),
+         "dead teammate cannot reserve an approach");
+  expect(!ai::isRelevantCtBombRouteAlly(true, false, 100.0f, true),
+         "unknown bomb location cannot reserve planted-C4 routes");
+  expect(!ai::isRelevantCtBombRouteAlly(true, true, 400.0f * 400.0f, true),
+         "CT searching another bombsite must not affect this route");
+  expect(!ai::isRelevantCtBombRouteAlly(true, true, 0.0f, false),
+         "invalid graph goal or origin cannot be reserved");
+  expect(ai::shouldReserveCtBombApproachNode(20, 10, 30),
+         "shared intermediate hallway receives a route penalty");
+  expect(!ai::shouldReserveCtBombApproachNode(30, 10, 30),
+         "all CT routes may join at the planted C4 endpoint");
+  expect(!ai::shouldReserveCtBombApproachNode(10, 10, 30),
+         "own starting waypoint is not a meaningful crowding signal");
+}
+
+AI_TEST(testCtBombRouteCongestionPenaltyIsBounded) {
+  expectNear(ai::ctBombRouteTrafficPenalty(0), 0.0f, 0.001f,
+             "unshared approach has no penalty");
+  expectNear(ai::ctBombRouteTrafficPenalty(1), 160.0f, 0.001f,
+             "first overlapping CT encourages an alternative entry");
+  expectNear(ai::ctBombRouteTrafficPenalty(3), 320.0f, 0.001f,
+             "overcrowding penalty remains bounded even with many CTs");
+  expect(ai::canAffordRiskAwareCtBombRoute(1500.0f, 1725.0f, 250.0f, 30.0f, false),
+         "a moderate alternative remains acceptable if defuse time allows");
+  expect(!ai::canAffordRiskAwareCtBombRoute(1500.0f, 2400.0f, 250.0f, 40.0f, false),
+         "route diversity cannot outweigh excessive travel length");
+  expect(!ai::canAffordRiskAwareCtBombRoute(1500.0f, 1725.0f, 250.0f, 21.0f, false),
+         "bomb timer still vetoes shared-route detours that cannot finish defuse");
+}

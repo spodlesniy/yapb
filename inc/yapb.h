@@ -24,6 +24,7 @@ using namespace cr;
 #include <ai/ai_observation.h>
 #include <ai/ai_observation_state.h>
 #include <ai/ai_bot_runtime.h>
+#include <ai/ai_ct_defuse_path_guard.h>
 
 namespace ai {
 
@@ -533,7 +534,8 @@ private:
    void updatePracticeDamage (edict_t *attacker, int damage);
    void findShortestPath (int srcIndex, int destIndex);
    void findPath (int srcIndex, int destIndex, FindPath pathType = FindPath::Fast);
-   void syncFindPath (int srcIndex, int destIndex, FindPath pathType);
+   void syncFindPath (int srcIndex, int destIndex, FindPath pathType,
+                      const ai::CtBombAllyRouteSnapshot &allies);
    void debugMsgInternal (StringRef str);
    void frame ();
    void resetCollision ();

@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <ai/ai_ct_defuse_path_guard.h>
+
 const float kInfiniteHeuristic = 65535.0f; // max out heuristic value
 
 // a* route state
@@ -98,6 +100,7 @@ public:
 private:
    BinaryHeap <RouteTwin <float>> m_routeQue {};
    Array <Route> m_routes {};
+   Array <uint8_t> m_ctRouteCongestion {};
 
    HeuristicFn m_hcalc {};
    HeuristicFn m_gcalc {};
@@ -137,6 +140,27 @@ public:
 
       m_constructedPath.shrink ();
       m_smoothedPath.shrink ();
+   }
+
+   // These nodes come from immutable snapshots of nearby allies' intended
+   // bomb approaches. Each A* instance belongs to exactly one bot.
+   void resetCtRouteCongestion () {
+      m_ctRouteCongestion.resize (static_cast <size_t> (m_length));
+      for (int i = 0; i < m_length; ++i) {
+         m_ctRouteCongestion[i] = 0;
+      }
+   }
+
+   void reserveCtRouteNode (int index) {
+      if (index >= 0 && index < m_length
+         && m_ctRouteCongestion[index] < ai::kCtBombMaxRouteCongestion) {
+         ++m_ctRouteCongestion[index];
+      }
+   }
+
+   float ctRouteTrafficCost (int index) const {
+      return index >= 0 && index < m_length && !m_ctRouteCongestion.empty ()
+         ? ai::ctBombRouteTrafficPenalty (m_ctRouteCongestion[index]) : 0.0f;
    }
 
    // set the g heuristic

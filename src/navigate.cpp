@@ -3539,7 +3539,8 @@ void Bot::findShortestPath (int srcIndex, int destIndex) {
    }
 }
 
-void Bot::syncFindPath (int srcIndex, int destIndex, FindPath pathType) {
+void Bot::syncFindPath (int srcIndex, int destIndex, FindPath pathType,
+                        const ai::CtBombAllyRouteSnapshot &allies) {
    // this function finds a path from srcIndex to destIndex;
 
    if (!m_pathFindLock.tryLock ()) {
@@ -3583,6 +3584,29 @@ void Bot::syncFindPath (int srcIndex, int destIndex, FindPath pathType) {
    if (planner.isPathsCheckFailed ()) {
       findShortestPath (srcIndex, destIndex);
       return;
+   }
+
+   // An A* bot instance is per-bot; reset the optional traffic estimate
+   // on every search so it never leaks into ordinary navigation.
+   m_planner->resetCtRouteCongestion ();
+
+   if (pathType == FindPath::Optimal && m_team == Team::CT
+      && game.mapIs (MapFlags::Demolition) && gameState.isBombPlanted ()) {
+      // Predict shared corridor nodes using shortest graph routes from the
+      // *captured* ally intentions. Do not inspect other bots' mutable
+      // movement/path buffers from the asynchronous path worker.
+      for (int i = 0; i < allies.count; ++i) {
+         const auto &ally = allies.allies[i];
+         if (!graph.exists (ally.currentNode) || !graph.exists (ally.goalNode)) {
+            continue;
+         }
+         planner.find (ally.currentNode, ally.goalNode, [&] (int node) {
+            if (ai::shouldReserveCtBombApproachNode (node, srcIndex, destIndex)) {
+               m_planner->reserveCtRouteNode (node);
+            }
+            return true;
+         });
+      }
    }
 
    // get correct calculation for heuristic
@@ -3687,7 +3711,37 @@ void Bot::findPath (int srcIndex, int destIndex, FindPath pathType /*= FindPath:
       return;
    }
 
-   worker.enqueue ([this, srcIndex, destIndex, pathType] () {
-      syncFindPath (srcIndex, destIndex, pathType);
+   ai::CtBombAllyRouteSnapshot allies {};
+
+   if (pathType == FindPath::Optimal && m_team == Team::CT
+      && game.mapIs (MapFlags::Demolition) && gameState.isBombPlanted ()
+      && graph.exists (destIndex)) {
+      // Running on the game thread: copy only stable node ids. Reconstruct
+      // approximate ally shortest routes later; PathWalk is not thread-safe.
+      for (const auto &bot : bots) {
+         if (allies.count >= ai::kCtBombMaxRouteAllies) {
+            break;
+         }
+         if (!bot || bot.get () == this || bot->m_team != Team::CT) {
+            continue;
+         }
+         const int allyNode = bot->m_currentNodeIndex;
+         const int allyGoal = bot->getTask ()->data;
+
+         if (!ai::isRelevantCtBombRouteAlly (
+            bot->m_isAlive, bot->m_bombSearchOverridden || bot->m_pickupType == Pickup::PlantedC4,
+            graph.exists (allyGoal)
+               ? graph[allyGoal].origin.distanceSq (graph[destIndex].origin)
+               : kInfiniteDistance,
+            graph.exists (allyNode) && graph.exists (allyGoal))) {
+            continue;
+         }
+
+         allies.allies[allies.count++] = { allyNode, allyGoal };
+      }
+   }
+
+   worker.enqueue ([this, srcIndex, destIndex, pathType, allies] () {
+      syncFindPath (srcIndex, destIndex, pathType, allies);
    });
 }

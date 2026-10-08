@@ -9,6 +9,41 @@ namespace ai {
 
 // This is only an ETA estimate, not an assumption that the bomb can be
 // reached or defused. Defuse always takes priority over route diversity.
+
+constexpr int kCtBombMaxRouteAllies = 4;
+constexpr int kCtBombMaxRouteCongestion = 2;
+constexpr float kCtBombAllyGoalNearDistanceSq = 320.0f * 320.0f;
+constexpr float kCtBombRouteTrafficCostPerNode = 160.0f;
+
+// Capture ally movement intentions on the game thread before asynchronous
+// pathfinding. The worker must never read another bot's mutable PathWalk.
+struct CtBombAllyRouteIntent {
+  int currentNode { -1 };
+  int goalNode { -1 };
+};
+
+struct CtBombAllyRouteSnapshot {
+  CtBombAllyRouteIntent allies[kCtBombMaxRouteAllies] {};
+  int count {};
+};
+
+constexpr bool isRelevantCtBombRouteAlly(bool teammateAlive, bool localizedC4,
+                                         float allyGoalDistanceSq, bool validNodes) {
+  return teammateAlive && localizedC4 && validNodes
+      && allyGoalDistanceSq <= kCtBombAllyGoalNearDistanceSq;
+}
+
+// Only intermediate path nodes count: sharing the C4 endpoint is unavoidable.
+constexpr bool shouldReserveCtBombApproachNode(int node, int src, int dest) {
+  return node >= 0 && node != src && node != dest;
+}
+
+constexpr float ctBombRouteTrafficPenalty(int sharedAllyCount) {
+  return sharedAllyCount <= 0 ? 0.0f
+       : (sharedAllyCount > kCtBombMaxRouteCongestion
+           ? kCtBombMaxRouteCongestion : sharedAllyCount) * kCtBombRouteTrafficCostPerNode;
+}
+
 constexpr float kCtBombRouteUnreachable = 32767.0f;
 constexpr float kCtBombRouteEffectiveSpeed = 0.75f;
 constexpr float kCtBombRouteArrivalReserve = 4.0f;
