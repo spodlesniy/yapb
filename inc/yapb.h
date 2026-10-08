@@ -277,7 +277,8 @@ private:
    float m_lastChatTime {}; // time bot last chatted
    float m_timeLogoSpray {}; // time bot last spray logo
    float m_knifeAttackTime {}; // time to rush with knife (at the beginning of the round)
-   float m_duckDefuseCheckTime {}; // time to check for ducking for defuse
+   float m_duckDefuseCheckTime {};
+   float m_defuseUseStartTime {}; // time to check for ducking for defuse
    float m_frameInterval {}; // bot's frame interval
    float m_previousThinkTime {}; // time bot last thinked
    float m_reloadCheckTime {}; // time to check reloading
@@ -335,6 +336,8 @@ private:
    bool m_defendedBomb {}; // defend action issued
    bool m_defendHostage {}; // defend action issued
    bool m_duckDefuse {}; // should or not bot duck to defuse bomb
+   bool m_defuseChangedStance {};
+   bool m_defuseTighterApproach {};
    bool m_checkKnifeSwitch {}; // is time to check switch to knife action
    bool m_checkWeaponSwitch {}; // is time to check weapon switch
    bool m_isUsingGrenade {}; // bot currently using grenade??

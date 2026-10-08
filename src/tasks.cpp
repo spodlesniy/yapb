@@ -1062,6 +1062,42 @@ void Bot::defuseBomb_ () {
       return;
    }
 
+   // The BarTime message is the only authoritative confirmation that USE
+   // actually started a defuse. Recover instead of standing immobile with
+   // IN_USE held forever when the bomb is slightly out of reach.
+   if (m_hasProgressBar) {
+      m_defuseUseStartTime = 0.0f;
+      m_defuseChangedStance = false;
+      m_defuseTighterApproach = false;
+   }
+   else {
+      if (m_defuseUseStartTime <= 0.0f) {
+         m_defuseUseStartTime = game.time ();
+         m_defuseChangedStance = false;
+      }
+      const float elapsed = game.time () - m_defuseUseStartTime;
+      if (ai::shouldReapproachUnconfirmedDefuse (elapsed, m_hasProgressBar)) {
+         // Keep the planted-C4 entity and return to PickupItem. A tighter
+         // interaction sphere is now required, avoiding repeat failed USE
+         // at the exact same position.
+         m_defuseTighterApproach = true;
+         m_defuseUseStartTime = 0.0f;
+         m_defuseChangedStance = false;
+         m_duckDefuseCheckTime = 0.0f;
+         clearSearchNodes ();
+         clearTask (Task::DefuseBomb);
+         if (m_pickupType == Pickup::PlantedC4 && !game.isNullEntity (m_pickupItem)) {
+            startTask (Task::PickupItem, TaskPri::PickupItem, kInvalidNodeIndex, 0.0f, true);
+         }
+         return;
+      }
+      if (ai::shouldChangeUnconfirmedDefuseStance (elapsed, m_hasProgressBar, m_defuseChangedStance)) {
+         m_duckDefuse = !m_duckDefuse;
+         m_defuseChangedStance = true;
+         m_duckDefuseCheckTime = game.time () + ai::kPlantedBombDefuseReapproachSeconds;
+      }
+   }
+
    // to revert from pause after reload  ting && just to be sure
    m_moveToGoal = false;
    m_checkTerrain = false;
