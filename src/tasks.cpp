@@ -1049,6 +1049,7 @@ void Bot::defuseBomb_ () {
 
    // one of exceptions is thrown. finish task.
    if (defuseError) {
+      endDefuseAttempt (ai::DefuseEventReason::TaskEnded, ai::DefuseEvidence::TaskLifecycle);
       m_entity.clear ();
 
       m_pickupItem = nullptr;
@@ -1080,6 +1081,7 @@ void Bot::defuseBomb_ () {
          // Keep the planted-C4 entity and return to PickupItem. A tighter
          // interaction sphere is now required, avoiding repeat failed USE
          // at the exact same position.
+         endDefuseAttempt (ai::DefuseEventReason::UseNotConfirmed, ai::DefuseEvidence::UnconfirmedUseTimeout);
          m_defuseTighterApproach = true;
          m_defuseUseStartTime = 0.0f;
          m_defuseChangedStance = false;
@@ -1134,6 +1136,10 @@ void Bot::defuseBomb_ () {
    m_entity = bombPos;
 
    pev->button |= IN_USE;
+   if (m_aiDefuseTracker.beginUse (game.time ())) {
+      recordDefuseEvent (ai::DefuseEventType::Attempt, ai::DefuseEventReason::None,
+                         ai::DefuseEvidence::UseButton);
+   }
 
    // if defusing is not already started, maybe crouch before
    if (!m_hasProgressBar && m_duckDefuseCheckTime < game.time ()) {
