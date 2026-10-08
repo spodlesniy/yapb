@@ -13,6 +13,7 @@
 #include <ai/ai_goal_navigation_policy.h>
 #include <ai/ai_navigation_task_guard.h>
 #include <ai/ai_objective_navigation_guard.h>
+#include <ai/ai_perception_guard.h>
 
 using ai::test::expect;
 using ai::test::expectNear;
