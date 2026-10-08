@@ -154,6 +154,13 @@ void Bot::updateLookAngles () {
    const float delta = cr::clamp (game.time () - m_lookUpdateTime, cr::kFloatEqualEpsilon, kViewFrameUpdate);
    m_lookUpdateTime = game.time ();
 
+   const bool flashBlind = ai::suppressPreciseBlindAim (m_blindTime - game.time ());
+   if (flashBlind) {
+      // This is the final aim gate, including freezetime and tasks that call
+      // focusEnemy() directly. Never track fresh or remembered enemy positions.
+      m_lookAt = getEyesPos () + m_blindLookDirection * 512.0f;
+   }
+
    // adjust all body and view angles to face an absolute vector
    Vector direction = (m_lookAt - getEyesPos ()).angles ();
    direction.x = -direction.x; // invert for engine
@@ -172,7 +179,8 @@ void Bot::updateLookAngles () {
    if (m_difficulty == Difficulty::Expert
       && (m_aimFlags & AimFlags::Enemy)
       && (m_wantsToFire || usesSniper ())
-      && cv_whose_your_daddy) {
+      && cv_whose_your_daddy
+      && !flashBlind) {
 
       pev->v_angle = direction;
       pev->v_angle.clampAngles ();
@@ -180,7 +188,7 @@ void Bot::updateLookAngles () {
       updateBodyAngles ();
       return;
    }
-   const bool importantAimFlags = (m_aimFlags & (AimFlags::Enemy | AimFlags::Grenade));
+   const bool importantAimFlags = !flashBlind && (m_aimFlags & (AimFlags::Enemy | AimFlags::Grenade));
 
    float accelerate = 3000.0f;
    float stiffness = 200.0f;
@@ -263,7 +271,8 @@ void Bot::updateLookAnglesNewbie (const Vector &direction, float delta) {
    m_idealAngles = direction.get2d ();
    m_idealAngles.clampAngles ();
 
-   if (m_aimFlags & (AimFlags::Enemy | AimFlags::Entity)) {
+   if ((m_aimFlags & (AimFlags::Enemy | AimFlags::Entity))
+      && !ai::suppressPreciseBlindAim (m_blindTime - game.time ())) {
       m_playerTargetTime = game.time ();
       m_randomizedIdealAngles = m_idealAngles;
 
@@ -392,8 +401,10 @@ bool Frustum::check (const Planes &planes, edict_t *ent) const {
 }
 
 void Bot::setAimDirection () {
-   // The blind task owns its uncertain aim; ordinary aiming must not restore an exact target.
-   if (getCurrentTaskId () == Task::Blind && m_blindTime > game.time ()) {
+   // Every active flash blocks precise enemy, remembered-enemy, or entity aim,
+   // regardless of whether legacy Task::Blind is allowed to execute this tick.
+   if (ai::suppressPreciseBlindAim (m_blindTime - game.time ())) {
+      m_wantsToFire = false;
       return;
    }
    uint32_t flags = m_aimFlags;

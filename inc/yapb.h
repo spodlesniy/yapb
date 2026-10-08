@@ -387,6 +387,7 @@ private:
    Vector m_aimLastError {}; // last calculated aim error
    Vector m_prevOrigin {}; // origin some frames before
    Vector m_lookAt {}; // vector bot should look at
+   Vector m_blindLookDirection {}; // flash-onset aim direction, without live enemy tracking
    Vector m_throw {}; // origin of node to throw grenades
    Vector m_enemyOrigin {}; // target origin chosen for shooting
    Vector m_grenade {}; // calculated vector for grenades

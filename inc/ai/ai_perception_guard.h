@@ -62,6 +62,12 @@ constexpr bool suppressBlindFire(float blindTimeRemaining) {
   return blindTimeRemaining > 0.0f;
 }
 
+// Precise aiming must be disabled for every action and legacy task while the
+// ScreenFade blind timer is active, not only while Task::Blind owns execution.
+constexpr bool suppressPreciseBlindAim(float blindTimeRemaining) {
+  return blindTimeRemaining > 0.0f;
+}
+
 // Grenades may use remembered enemy state only while that exact target still has
 // fresh sensory support. Sticky global perception flags alone are insufficient.
 constexpr bool hasFreshGrenadeTarget(bool visibleTarget, bool heardTargetMatches,

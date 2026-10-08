@@ -1670,6 +1670,20 @@ No changes are made to the conservative graph travel budget for distant reinforc
 Reason: the existing arrival check rejects all paths once the bomb has fewer than four seconds left, including zero-length routes for bots already guarding the site.
 Such bots could then emit repeated rejected ProtectObjective attempts precisely when they should hold an established defense position.
 
+## D180 — Gate precise aiming throughout flash blindness, irrespective of task
+
+Every active ScreenFade blindness interval now prevents precise enemy and remembered-enemy tracking through the final view-angle path, even while an AI-controlled AttackTarget/AimAtTarget or a legacy task other than Blind is active.
+At the beginning of blindness, the bot snapshots its current view direction with a small one-time pitch/yaw uncertainty.
+The view-angle update uses that fixed direction while blinded and retains smooth turning; repeated ScreenFade messages do not resample the aim and cause sudden changes.
+The precise-target resolver returns early for the whole flash interval, and expert fast-snap and newbie player-target aiming do not bypass that final gate.
+The existing global weapon-fire suppression from D160 remains unchanged, as do movement and cover navigation.
+Once the blind timer expires, ordinary aiming and target switching resume immediately.
+The snapshot is cleared on new rounds.
+This broadens the Task::Blind-only aim preservation in D133 to all runtime tasks and semantic actions.
+
+Reason: the observed CT bot appeared to track a target precisely during a flash even though no weapon_fire events were recorded during active blindness.
+The previous Task::Blind-specific return in setAimDirection() did not prevent focusEnemy() from selecting a precise target when another task or AI action owned the frame.
+
 ## D179 — Keep visible combat targets until a challenger is meaningfully better
 
 A bot that is still tracking a live, visible, non-shielded enemy does not replace it on each scan with a merely marginally closer visible enemy.

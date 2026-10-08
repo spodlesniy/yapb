@@ -4276,9 +4276,19 @@ void Bot::takeBlind (int alpha) {
    if (gameState.getRoundStartTime () + 5.0f < game.time ()) {
       m_viewDistance = m_maxViewDistance;
    }
+   const bool wasBlinded = ai::suppressPreciseBlindAim (m_blindTime - game.time ());
    m_blindTime = game.time () + static_cast <float> (alpha - 180) / 16.0f;
    m_aiFlashEventActive = m_blindTime > game.time ();
    if (m_aiFlashEventActive) {
+      if (!wasBlinded) {
+         // Fix the view direction once at flash onset with limited uncertainty.
+         // Repeated ScreenFade messages must not randomly snap the view again.
+         Vector blindAngles = pev->v_angle;
+         blindAngles.x = cr::clamp (blindAngles.x + rg (-8.0f, 8.0f), -89.0f, 89.0f);
+         blindAngles.y += rg (-18.0f, 18.0f);
+         blindAngles.clampAngles ();
+         m_blindLookDirection = blindAngles.forward ();
+      }
       recordCombatEvent (ai::CombatEventType::FlashStart, -1, -1, -1, -1, -1, -1, -1, alpha);
    }
 

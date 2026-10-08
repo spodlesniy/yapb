@@ -85,6 +85,29 @@ AI_TEST(testGoalNavigationPolicyStillRetreatsLowHealthNonCarrier) {
          "low-health visible combat still starts retreat for a bot without C4");
 }
 
+AI_TEST(testFlashBlindBlocksPreciseAimIndependentOfTask) {
+  expect(ai::suppressPreciseBlindAim(0.01f),
+         "active flash always suppresses precise aiming");
+  expect(ai::suppressPreciseBlindAim(3.0f),
+         "strong flash suppresses precision throughout the timer");
+  expect(!ai::suppressPreciseBlindAim(0.0f),
+         "precision may recover at the exact end of blindness");
+  expect(!ai::suppressPreciseBlindAim(-0.01f),
+         "expired flash must not suppress ordinary aiming");
+
+  // Blind task ownership is deliberately irrelevant to the global guard:
+  // this also covers Attack, AimAtTarget, Pause, and other active actions.
+  const ai::TaskType tasks[] = {
+    ai::TaskType::Blind, ai::TaskType::Attack, ai::TaskType::Pause,
+    ai::TaskType::Normal, ai::TaskType::Camp
+  };
+  for (const auto task : tasks) {
+    (void) task;
+    expect(ai::suppressPreciseBlindAim(2.0f),
+           "flash aim suppression is not conditional on legacy task");
+  }
+}
+
 AI_TEST(testVisibleEnemyTargetHysteresisPreventsEqualDistanceOscillation) {
   // Squared distances match lookupEnemies() and preserve its visibility range.
   const float current = 400.0f * 400.0f;

@@ -91,6 +91,13 @@ An interrupted attempt records its actual evidence source rather than claiming a
 Likewise, `round_message` refers to the round message path, whereas `game_state` means the code observed that C4 was no longer marked as planted.
 The Python validator checks evidence compatibility without counting diagnostic records as model-training samples.
 
+## D180 — Blind aiming has a global view-direction gate
+
+Active flash blindness fixes a once-jittered view direction at ScreenFade onset and prevents setAimDirection() and updateLookAngles() from following live, remembered, or entity target positions.
+The guard applies across legacy tasks and semantic AI actions (including AttackTarget and AimAtTarget), not only Task::Blind; repeated ScreenFade messages preserve the current blind direction.
+Movement/cover pathfinding and D160's global weapon-fire block remain unchanged.
+Once blindness expires, ordinary aim interpolation resumes.
+
 ## D179 — Stable visible-enemy selection
 
 The legacy `lookupEnemies()` scan retains a current live, visible, shield-clear player when another ordinary player is only marginally closer.

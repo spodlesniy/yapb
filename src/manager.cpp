@@ -1530,6 +1530,7 @@ void Bot::newRound () {
    m_duckDefuseCheckTime = 0.0f;
    m_defuseUseStartTime = 0.0f;
    m_aiDefuseTracker.reset ();
+   m_blindLookDirection.clear ();
    m_defuseChangedStance = false;
    m_defuseTighterApproach = false;
    m_timeDebugUpdateTime = 0.0f;
