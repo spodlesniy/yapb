@@ -9,14 +9,16 @@ The upstream `yapb/yapb` repository is not a development target.
 
 Reason: preserve a clean boundary between the user's fork and upstream.
 
-## D002 — One primary commit per logical development action
+## D002 — Exactly one commit per named development step
 
-One logical development action produces one primary commit.
-That commit may include the implementation, focused tests, and documentation changes required to complete the action.
-One action should not be split into multiple micro-commits.
-If testing, review, or later discussion identifies a correction after publication, the correction is made in a new ordinary commit rather than by rewriting or force-updating the earlier commit.
+A completed named development step (for example `D176.3`) creates **exactly one new ordinary Git commit** containing all code, focused tests, and documentation for that step.
+Intermediate, per-file, preparatory, checkpoint, and additional corrective commits within the same step are forbidden.
+Prepare the entire step before publication; create Git blobs and a tree, create one commit, and advance the branch once with `force=false` and a verified `expected_sha`.
+Individual GitHub Contents API file writes each create a commit and must not be used to publish a multi-file step.
+After-publication fixes require new, separately named corrective steps, each with exactly one ordinary commit.
+Never rewrite published history using force-push, force-update, force-with-lease, amend, rebase, reset, squash, or an equivalent.
 
-Reason: this keeps each implementation unit coherent without hiding subsequent corrections from the project history or relying on history rewrites for routine fixes.
+Reason: every named step remains atomic and auditable without hiding corrections or rewriting history.
 
 ## D003 — Use fixed C arrays instead of std::array
 
@@ -310,13 +312,15 @@ The action completes when the safe waypoint is reached or when the bomb is no lo
 Reason: the high-level decision to escape is AI-owned, while waypoint selection and movement reuse the established objective/navigation mechanics without introducing a second pathfinding implementation.
 
 
-## D040 — Respect GitHub interaction limits without fragmenting work or rewriting history
+## D040 — GitHub operation budgets never override commit discipline
 
-GitHub API and interaction limits are an operational constraint, not a reason to fragment one logical development action into micro-commits.
-Prepare the complete action through batched inspection and atomic publication, then publish one primary commit for that action.
-If a problem is discovered after publication, make the correction in a new ordinary commit; do not force-update or otherwise rewrite the published history for routine fixes.
+GitHub API and interaction limits are operational constraints, not permission to fragment a named step into multiple commits.
+Batch inspection and preparation, create blobs and one tree, publish exactly one commit, and advance the branch once using `force=false` and the verified `expected_sha`.
+If the budget is insufficient, plan separately named, independently complete steps **before publication**; never turn individual file edits into commits for the same step.
+A post-publication fix is a new separately named corrective step with exactly one ordinary commit.
+Force-push, force-update, force-with-lease, and all other published-history rewrites are forbidden.
 
-Reason: operation limits should influence how efficiently a change is prepared and published, not force history fragmentation or encourage hidden history rewrites.
+Reason: resource limits shape the execution plan, not the atomicity of commits or validation.
 The resulting history should show both the original action and any later correction.
 
 ## D041 — Make PlantBomb a direct AI-owned objective action

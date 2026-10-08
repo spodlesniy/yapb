@@ -2,8 +2,11 @@
 
 ## Iteration model
 
-Each logical development action is a coherent, reviewable unit.
-One primary commit may include the implementation, focused tests, and documentation needed to complete that action.
+Each named development step (for example `D176.3`) is one coherent, reviewable logical change.
+**One completed named step = exactly one new ordinary Git commit.**
+That commit contains all intended code, focused tests, and documentation for the step.
+No intermediate, per-file, checkpoint, preparatory, or additional commits are permitted within that same named step.
+Do not publish any part of the step until the complete change has been prepared and reviewed.
 
 One iteration should:
 
@@ -13,9 +16,10 @@ One iteration should:
 4. Implement only that change.
 5. Run focused validation locally when available.
 6. Inspect the complete diff.
-7. Publish one primary commit for exactly that logical development action.
-8. Push the commit and use the automatic unit-test CI result as the normal gate for the next action.
-   If the published action later needs a correction, make it in a new ordinary corrective commit.
+7. Publish exactly one commit for the completed named step via the atomic procedure below.
+8. Verify that branch HEAD equals that commit, and check automatic unit-test CI for its exact SHA before starting the next step.
+   Pending, skipped, missing, or inaccessible results are not passed CI.
+   A correction discovered after publication becomes a new separately named corrective step, with its own single ordinary commit.
 
 When an iteration changes a durable architecture, workflow, or engineering decision, update the corresponding `docs/ai` document in the same logical iteration.
 
@@ -24,12 +28,32 @@ This cleanup rule does not apply to permanent development branches.
 
 Do not accumulate multiple unrelated fixes before committing.
 
+## Atomic GitHub publication (mandatory)
+
+The publication procedure for a completed named step is:
+
+1. Read and verify the fork's target branch HEAD commit SHA and its tree SHA.
+2. Prepare the full change, its tests, and documentation without moving the branch or creating intermediate commits.
+3. Run available checks and review the complete diff; correct all identified pre-publication errors in the unpublished files.
+4. Create Git blobs for the finalized files and one Git tree based on the verified HEAD tree, preserving untouched paths.
+   Git blobs and trees are staging objects, not commits.
+5. Create **exactly one commit** whose single parent is the verified HEAD and whose tree contains the complete step.
+6. Update the branch ref **once** by non-forced fast-forward with `force=false` and `expected_sha=<verified HEAD>`.
+7. Verify the new HEAD and published diff; check the automatic CI results for that exact commit SHA.
+
+Do **not** use GitHub Contents API `create_file` or `update_file` for multi-file publication: each call creates its own commit.
+Do not commit one file at a time merely because tool calls are limited.
+If the expected HEAD changed, stop, inspect the new state, and rebuild the change without forcing a branch update.
+**Never force-push, force-update, force-with-lease, amend, rebase, reset, squash, or otherwise rewrite published history.**
+This prohibition also applies to consolidating mistakes and fixing failed CI.
+
 ## Verification failure handling
 
-When a test or CI job fails, inspect the actual failing test or workflow logs first.
-Treat the log output as the primary source for the failure diagnosis; do not speculate about the cause or modify code until the concrete failure is identified.
-After identifying the failure, make the smallest necessary correction in a new ordinary corrective commit and re-run the relevant validation.
-Do not rewrite or force-update the published commit to apply the correction.
+If validation fails **before publication**, diagnose the failure and correct the unpublished files without creating another commit.
+If CI fails **after publication**, inspect the exact failing workflow and logs before changing code.
+Use the actual compiler or test error to diagnose the problem, not assumptions.
+Then define a **separately named corrective step**, prepare its complete fix and tests, and publish exactly one new ordinary commit for that new step.
+Never append extra commits to the original step or rewrite its published commit.
 
 ## Pre-commit checks
 
@@ -63,7 +87,7 @@ For tests, pay particular attention to fixture state, object lifecycle, braces, 
 
 The normal cycle is:
 
-`small change -> one commit -> automatic unit-test CI -> next change`
+`complete named step -> exactly one commit -> automatic unit-test CI -> next named step`
 
 The C++ AI unit-test build links the production `src/ai/ai_bot_action_executor.cpp` directly into the standalone AI test executable.
 The executor depends only on the engine-independent `ActionExecutionContext`, so unit tests provide a mock context and exercise the production implementation without linking the game DLL.
@@ -158,8 +182,9 @@ For each iteration:
 - Prepare the complete logical change before publishing it, so the publication phase does not consume operations on repeated discovery or corrective micro-edits.
 - Prefer atomic Git Data publication for a multi-file logical change: build from the verified current parent tree, create the required objects, create one commit, and move the target branch once.
 - Keep each implementation substep small enough to fit the currently available tool-operation budget, including the reads, edits, tests, documentation, and verification needed for that substep.
-- When a larger logical task would exceed the available operation budget, split it at a real semantic or testable boundary into multiple complete iterations.
-  Each substep must leave the repository in a coherent state and may have its own single commit; do not split solely to create micro-commits or to repeat the same work.
+- When a task exceeds the available operation budget, plan **distinctly named and independently testable steps before publication**.
+  Each step has its own coherent scope and exactly one commit.
+  Never relabel file-by-file writes, partial implementations, or after-the-fact patches as substeps of an existing named step.
 - Do not begin a publication sequence that is already likely to exceed the remaining operation budget.
   Reduce the number of files/operations through batching or move the next coherent substep to a new iteration.
 - After publication, perform only the verification needed for that commit: confirm the branch head and inspect the resulting diff/status instead of repeating full discovery.
@@ -171,9 +196,10 @@ The development plan should therefore optimize for low operation count and bound
 
 Current GitHub interaction limits are treated as an execution constraint, not as a reason to fragment the repository history.
 Before editing, batch the required reads and avoid re-fetching unchanged files.
-For a completed logical development action, prepare the full implementation, focused tests, and required documentation together, then publish one primary commit.
-Do not split one action into multiple micro-commits merely to reduce the size of individual API operations.
-Corrective changes discovered after publication are separate ordinary commits; do not rewrite or force-update the earlier commit for routine fixes.
+For a completed named development step, prepare implementation, tests, and documentation together and publish **exactly one commit**.
+Never divide a step into intermediate or per-file commits to reduce API operations.
+Use the atomic Git Data procedure above for all multi-file publications.
+Corrections after publication are new separately named steps, each with one ordinary commit; published history cannot be rewritten.
 
 When a larger validation checkpoint is required, use the resulting CI status to validate the single published commit rather than creating an extra checkpoint commit with no independent semantic change.
 

@@ -12,10 +12,16 @@ This repository is the AiPB development fork of YaPB.
 
 ## Development workflow
 
-- One completed logical iteration must produce one commit.
-- Keep iterations small, focused, and deeply checked.
-- Do not combine unrelated changes into the same iteration or commit.
-- After a commit is pushed, use the automatic unit-test CI result as the normal validation gate before starting the next iteration.
+- **Exactly one new ordinary commit for each completed, named logical development step** (for example `D176.3`).
+  Include every intended code, test, and documentation change in that single commit; prohibit intermediate, per-file, preparatory, checkpoint, and additional commits under the same step name.
+- Keep steps small, coherent, and deeply checked; do not combine unrelated changes.
+- Prepare and review the complete diff **before** publishing the step.
+  For a multi-file change, create Git blobs and one tree from the verified HEAD, create exactly one commit with that HEAD as parent, and move the branch once using `force=false` and `expected_sha` set to that HEAD.
+  Do not publish via individual GitHub Contents API `create_file`/`update_file` calls because each one produces its own commit.
+- **Never rewrite published history**: prohibit force-push, force-update, force-with-lease, amend, rebase, reset, squash, and equivalent operations, even when fixing CI or earlier commit fragmentation.
+- A post-publication correction must be a **new, separately named corrective step**, with its own exactly one ordinary commit; it is not a second commit for the original step.
+- After publication, verify the exact branch HEAD and check automatic unit-test CI for that SHA as the normal validation gate.
+  Pending, skipped, absent, or inaccessible checks do not count as a successful build.
 - When CI fails, inspect the exact current CI logs and fix the root cause.
   Do not guess.
 - Only the user manually starts the full multi-platform build (`build_target=full`).
@@ -79,5 +85,5 @@ Before finalizing a change:
 4. Confirm all new or changed source-code comments are in English.
 5. Confirm tests are syntactically balanced and do not contain duplicate test cases.
 6. Confirm the relevant unit-test target includes the changed tests.
-7. Push the commit and wait for the automatic unit-test CI result before beginning the next iteration.
-8. For CI failures, use the exact failing log output to determine the fix.
+7. Publish exactly one commit for the completed named step using a single expected-HEAD-checked, non-forced ref update.
+8. Verify the published SHA and actual automatic CI result; correct failures in a separately named step without rewriting history.
