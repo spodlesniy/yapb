@@ -252,6 +252,15 @@ def iter_validated_samples(path: str | Path):
                 _require(isinstance(value.get("bot_id"), int), f"line {line_number}: invalid bot id")
                 continue
 
+            if isinstance(value, dict) and value.get("type") == "navigation_event":
+                _require(metadata["version"] == 3, f"line {line_number}: navigation events require version 3")
+                _require(value.get("event") in {
+                    "task_change", "route_request", "route_observed", "waypoint_changed", "low_displacement"
+                }, f"line {line_number}: unknown navigation event")
+                _require(_is_number(value.get("game_time")), f"line {line_number}: invalid navigation time")
+                _require(isinstance(value.get("bot_id"), int), f"line {line_number}: invalid navigation bot")
+                continue
+
             current_feature_count = _validate_sample(value, line_number)
             if feature_count is None:
                 feature_count = current_feature_count

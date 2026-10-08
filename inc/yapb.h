@@ -503,6 +503,10 @@ private:
 
    void doPlayerAvoidance (const Vector &normal);
    void updateAIObservation ();
+   void recordNavigationEvent (ai::NavigationEventType type, ai::NavigationEventReason reason,
+                               int source = -1, int destination = -1, int pathType = -1);
+   void updateNavigationDiagnostics ();
+
    void cancelAIAction ();
    void selectCampButtons (int index);
    void instantChatter (int type) const;
@@ -767,6 +771,18 @@ public:
    ai::Observation m_aiObservation {};
    ai::ObservationState m_aiObservationState {};
    float m_aiNextInferenceTime {};
+   int m_aiNavPreviousTask { -1 };
+   int m_aiNavPreviousNode { -1 };
+   int m_aiNavPreviousGoal { -1 };
+   int m_aiNavPreviousPathCount { -1 };
+   int m_aiNavPendingRouteSource { -1 };
+   int m_aiNavPendingRouteGoal { -1 };
+   int m_aiNavPendingPathType { -1 };
+   float m_aiNavProgressTime {};
+   Vector m_aiNavProgressOrigin {};
+   bool m_aiNavInitialized {};
+   bool m_aiNavPendingRoute {};
+
    bool m_aiFlashEventActive {};
    uint32_t m_aiCombatRoundId {};
    ai::BotRuntime m_aiRuntime;

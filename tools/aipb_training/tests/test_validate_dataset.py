@@ -72,6 +72,19 @@ class TrainingDatasetValidatorTests(unittest.TestCase):
         path = self.write_dataset([METADATA, make_sample(), event])
         self.assertEqual(validate_dataset(path), 1)
 
+    def test_v3_accepts_navigation_events_without_counting_samples(self) -> None:
+        event = {"type": "navigation_event", "event": "route_observed",
+                 "game_time": 30.0, "bot_id": 7, "path_nodes": [1, 5, 9]}
+        path = self.write_dataset([METADATA, make_sample(), event])
+        self.assertEqual(validate_dataset(path), 1)
+
+    def test_v2_rejects_navigation_events(self) -> None:
+        event = {"type": "navigation_event", "event": "task_change",
+                 "game_time": 30.0, "bot_id": 7}
+        path = self.write_dataset([dict(METADATA, version=2), make_sample(), event])
+        with self.assertRaises(DatasetValidationError):
+            validate_dataset(path)
+
     def test_rejects_wrong_runtime_feature_count(self) -> None:
         path = self.write_dataset([METADATA, make_sample(230)])
 

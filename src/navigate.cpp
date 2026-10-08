@@ -3816,6 +3816,16 @@ void Bot::findPath (int srcIndex, int destIndex, FindPath pathType /*= FindPath:
       }
    }
 
+   // Capture the request before the worker receives it. Record observed
+   // path after the worker finishes, in the normal bot logic thread.
+   recordNavigationEvent(ai::NavigationEventType::RouteRequest,
+      m_aiNavPreviousGoal != destIndex ? ai::NavigationEventReason::GoalChanged
+                                       : ai::NavigationEventReason::SameGoalRepath,
+      srcIndex, destIndex, static_cast<int>(pathType));
+   m_aiNavPendingRouteSource = srcIndex;
+   m_aiNavPendingRouteGoal = destIndex;
+   m_aiNavPendingPathType = static_cast<int>(pathType);
+   m_aiNavPendingRoute = true;
    worker.enqueue ([this, srcIndex, destIndex, pathType, allies] () {
       syncFindPath (srcIndex, destIndex, pathType, allies);
    });
