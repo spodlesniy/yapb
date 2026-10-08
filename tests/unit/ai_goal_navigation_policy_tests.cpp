@@ -1102,3 +1102,22 @@ AI_TEST(testPlantedBombReinforcementPrefersPromptCampRoutes) {
   expect(!ai::isBetterPlantedBombReinforcementNode(500.0f, false, 9, 500.0f, false, 8),
          "higher-id equal cost node must not trigger route churn");
 }
+
+AI_TEST(testDistributedPlantedC4DefenseNodeSelection) {
+  expect(ai::bombDefenseCrowdingCost(100.0f * 100.0f) > 0.0f,
+         "another assigned nearby defender incurs crowding penalty");
+  expect(ai::bombDefenseCrowdingCost(224.0f * 224.0f) == 0.0f,
+         "spaced defense positions remain unpenalized");
+  expect(ai::isBetterDistributedBombDefenseNode(550.0f, false, 0.0f, 21,
+           350.0f, false, 512.0f, 20),
+         "a modest detour is preferable to stacking defenders");
+  expect(!ai::isBetterDistributedBombDefenseNode(1200.0f, false, 0.0f, 21,
+           350.0f, false, 512.0f, 20),
+         "very late reinforcement should not be chosen only for separation");
+  expect(ai::isBetterDistributedBombDefenseNode(550.0f, true, 0.0f, 21,
+           550.0f, false, 0.0f, 20),
+         "authored camp node keeps its bounded preference");
+  expect(ai::isBetterDistributedBombDefenseNode(550.0f, false, 0.0f, 19,
+           550.0f, false, 0.0f, 20),
+         "equal options use deterministic node order");
+}

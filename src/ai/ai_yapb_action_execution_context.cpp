@@ -979,6 +979,20 @@ bool YaPBActionExecutionContext::protectObjective() {
       return canArriveAtPlantedBombDefenseInTime(routeTo(node), maxSpeed, secondsLeft);
     };
 
+    // Reserve positions teammates are already approaching, not only occupied ones.
+    const auto crowdCost = [&](int candidate) {
+      float cost = 0.0f;
+      for (const auto &ally : bots) {
+        if (!ally || ally == m_bot || !ally->m_isAlive || ally->m_team != Team::Terrorist) continue;
+        const auto task = ally->getCurrentTaskId();
+        const int goal = ally->m_chosenGoalIndex;
+        if ((task != Task::MoveToPosition && task != Task::Camp) || !graph.exists(goal)
+            || graph[goal].origin.distanceSq(bombOrigin) > cr::sqrf(kPlantedBombReinforcementRadius)) continue;
+        cost += bombDefenseCrowdingCost(graph[candidate].origin.distanceSq(graph[goal].origin));
+      }
+      return cost;
+    };
+
     int node = kInvalidNodeIndex;
     if (m_bot->m_defuseNotified) {
       // When CTs are defusing, the bomb itself takes precedence over a flank.
@@ -993,7 +1007,7 @@ bool YaPBActionExecutionContext::protectObjective() {
             && !(graph[localNode].flags & (NodeFlag::Ladder | NodeFlag::CTOnly))
             && graph[localNode].origin.distanceSq(bombOrigin)
                 <= cr::sqrf(kPlantedBombReinforcementRadius)
-            && canArriveAt(localNode)) {
+            && canArriveAt(localNode) && crowdCost(localNode) == 0.0f) {
           node = localNode;
         }
       }
@@ -1006,6 +1020,7 @@ bool YaPBActionExecutionContext::protectObjective() {
           int bestNode = kInvalidNodeIndex;
           float bestRouteDistance = kPlantedBombReinforcementUnreachableRoute;
           bool bestCamp = false;
+          float bestCrowdCost = 0.0f;
 
           for (const auto &path : graph) {
             if ((path.flags & (NodeFlag::Ladder | NodeFlag::CTOnly))
@@ -1020,11 +1035,14 @@ bool YaPBActionExecutionContext::protectObjective() {
               continue;
             }
             const bool isCamp = (path.flags & NodeFlag::Camp) != 0;
-            if (isBetterPlantedBombReinforcementNode(
-                distance, isCamp, path.number, bestRouteDistance, bestCamp, bestNode)) {
+            const float crowding = crowdCost(path.number);
+            if (isBetterDistributedBombDefenseNode(
+                distance, isCamp, crowding, path.number,
+                bestRouteDistance, bestCamp, bestCrowdCost, bestNode)) {
               bestNode = path.number;
               bestRouteDistance = distance;
               bestCamp = isCamp;
+              bestCrowdCost = crowding;
             }
           }
           node = bestNode;
