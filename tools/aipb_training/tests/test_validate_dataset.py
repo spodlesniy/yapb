@@ -78,6 +78,32 @@ class TrainingDatasetValidatorTests(unittest.TestCase):
         path = self.write_dataset([METADATA, make_sample(), event])
         self.assertEqual(validate_dataset(path), 1)
 
+
+    def test_v3_accepts_defuse_events_without_counting_them(self) -> None:
+        events = [
+            {"type": "defuse_event", "event": "defuse_attempt",
+             "game_time": 1.0, "bot_id": 3, "evidence_source": "in_use"},
+            {"type": "defuse_event", "event": "defuse_start",
+             "game_time": 2.0, "bot_id": 3, "evidence_source": "bar_time_positive"},
+            {"type": "defuse_event", "event": "defuse_interrupted",
+             "game_time": 3.0, "bot_id": 3, "evidence_source": "bar_time_zero"},
+            {"type": "defuse_event", "event": "defuse_complete",
+             "game_time": 4.0, "bot_id": -1, "evidence_source": "bomb_defused_text_message"},
+        ]
+        self.assertEqual(validate_dataset(self.write_dataset([METADATA, make_sample(), *events])), 1)
+
+    def test_v2_rejects_defuse_events(self) -> None:
+        event = {"type": "defuse_event", "event": "defuse_start",
+                 "game_time": 3.0, "bot_id": 3, "evidence_source": "bar_time_positive"}
+        with self.assertRaises(DatasetValidationError):
+            validate_dataset(self.write_dataset([dict(METADATA, version=2), event]))
+
+    def test_defuse_complete_needs_authoritative_evidence_and_unknown_actor(self) -> None:
+        event = {"type": "defuse_event", "event": "defuse_complete",
+                 "game_time": 3.0, "bot_id": 3, "evidence_source": "round_message"}
+        with self.assertRaises(DatasetValidationError):
+            validate_dataset(self.write_dataset([METADATA, event]))
+
     def test_v2_rejects_navigation_events(self) -> None:
         event = {"type": "navigation_event", "event": "task_change",
                  "game_time": 30.0, "bot_id": 7}
