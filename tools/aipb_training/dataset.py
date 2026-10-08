@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterator
@@ -10,7 +11,6 @@ from typing import Iterator
 from .model_contract import MODEL_FEATURE_COUNT
 from .validate_dataset import (
     EXPECTED_ACTION_SCHEMA_VERSION,
-    EXPECTED_DATASET_VERSION,
     EXPECTED_FEATURE_SCHEMA_VERSION,
     EXPECTED_FORMAT,
     iter_validated_samples,
@@ -63,10 +63,10 @@ class TrainingBatch:
         return len(self.samples)
 
 
-def _metadata() -> TrainingDatasetMetadata:
+def _metadata(version: int) -> TrainingDatasetMetadata:
     return TrainingDatasetMetadata(
         format=EXPECTED_FORMAT,
-        version=EXPECTED_DATASET_VERSION,
+        version=version,
         feature_schema_version=EXPECTED_FEATURE_SCHEMA_VERSION,
         action_schema_version=EXPECTED_ACTION_SCHEMA_VERSION,
     )
@@ -117,8 +117,16 @@ def iter_training_samples(path: str | Path) -> Iterator[TrainingSample]:
 
 
 def load_training_dataset(path: str | Path) -> tuple[TrainingDatasetMetadata, tuple[TrainingSample, ...]]:
-    """Load a complete validated dataset into immutable Python structures."""
-    return _metadata(), tuple(iter_training_samples(path))
+    """Load validated samples and preserve the source file's dataset version."""
+    samples = tuple(iter_training_samples(path))
+
+    # iter_training_samples has already validated the file's entire contract,
+    # including metadata. Preserve the actual v2/v3 header rather than falsely
+    # reporting the latest supported version for legacy training files.
+    with Path(path).open("r", encoding="utf-8") as stream:
+        version = json.loads(stream.readline())["version"]
+
+    return _metadata(version), samples
 
 
 def iter_training_batches(

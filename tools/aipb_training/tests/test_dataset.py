@@ -119,6 +119,26 @@ class TrainingDatasetLoaderTests(unittest.TestCase):
         self.assertEqual(len(samples), 1)
         self.assertIsInstance(samples, tuple)
 
+    def test_load_legacy_v2_dataset_reports_its_actual_version(self) -> None:
+        legacy_metadata = dict(METADATA, version=2)
+        path = self.write_dataset([legacy_metadata, make_sample(4)])
+
+        metadata, samples = load_training_dataset(path)
+
+        self.assertEqual(metadata.version, 2)
+        self.assertEqual(len(samples), 1)
+        self.assertEqual(samples[0].episode_id, 4)
+
+    def test_v3_combat_events_do_not_enter_training_samples(self) -> None:
+        event = {"type": "combat_event", "event": "weapon_fire",
+                 "game_time": 10.5, "bot_id": 7, "evidence_source": "clip_decrease"}
+        path = self.write_dataset([METADATA, make_sample(4), event, make_sample(5)])
+
+        metadata, samples = load_training_dataset(path)
+
+        self.assertEqual(metadata.version, 3)
+        self.assertEqual([sample.episode_id for sample in samples], [4, 5])
+
     def test_invalid_dataset_is_rejected_before_sample_conversion(self) -> None:
         sample = make_sample(1)
         sample["action"]["confidence"] = 2.0
