@@ -532,7 +532,7 @@ AI_TEST(testDefuseAttemptTrackerDeduplicatesEngineMessages) {
    expect(tracker.loseProgress(11.0f), "zero BarTime marks pending interruption");
    expect(!tracker.progressLossExpired(11.5f), "transient loss is deferred");
    expect(!tracker.confirmProgress(11.6f), "recovered progress is not another defuse start");
-   expect(!tracker.loseProgress(11.7f) == false, "progress can be lost again after recovery");
+   expect(tracker.loseProgress(11.7f), "progress can be lost again after recovery");
    expect(tracker.progressLossExpired(12.8f), "persistent loss is reported");
    expect(tracker.end(), "end closes the active attempt");
    expect(!tracker.end(), "end is idempotent");
