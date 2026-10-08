@@ -851,7 +851,7 @@ void Bot::updatePickups () {
                   if (!directlyReachable) {
                      const int sourceNode = graph.getNearest (pev->origin);
                      if (graph.exists (sourceNode)) {
-                        constexpr float kDefuseInteractionRadius = 80.0f;
+                        const float kDefuseInteractionRadius = ai::kPlantedBombDefuseReadyDistance;
                         const auto approachNodes = graph.getNearestInRadius (kDefuseInteractionRadius, origin);
 
                         for (const auto node : approachNodes) {

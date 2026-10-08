@@ -1743,7 +1743,7 @@ void Bot::pickupItem_ () {
       m_aimFlags |= AimFlags::Entity;
 
       if (m_team == Team::CT) {
-         constexpr float kDefuseInteractionDistance = 80.0f;
+         const float kDefuseInteractionDistance = ai::plantedBombDefuseApproachRadius (m_defuseTighterApproach);
          const float interactionDistanceSq = cr::sqrf (kDefuseInteractionDistance);
 
          auto isInteractionNode = [&] (int node) {
@@ -1868,7 +1868,14 @@ void Bot::pickupItem_ () {
             break;
          }
 
-         if (itemDistanceSq < interactionDistanceSq) {
+         // Proximity alone is insufficient: a box/wall or height difference
+         // can leave C4 inside the 3D sphere but not physically interactable.
+         // Do not freeze the bot in DefuseBomb until a usable position is
+         // reached. The engine BarTime message will confirm actual progress.
+         if (ai::canBeginPlantedBombUse (
+            itemDistanceSq, kDefuseInteractionDistance, directApproachReachable)) {
+            m_defuseUseStartTime = 0.0f;
+            m_defuseChangedStance = false;
             pushChatterMessage (Chatter::DefusingBomb);
 
             // notify team of defusing

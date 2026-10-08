@@ -12,6 +12,36 @@
 
 namespace ai {
 
+
+// Bomb acquisition and actual use are distinct stages. GoldSrc's interaction
+// range is shorter than the 80-unit coarse pickup radius previously used.
+// Use a conservative 60-unit 3D limit; after a failed USE, close to 42 units.
+constexpr float kPlantedBombDefuseReadyDistance = 60.0f;
+constexpr float kPlantedBombDefuseRetryDistance = 42.0f;
+constexpr float kPlantedBombDefuseStanceRetrySeconds = 1.25f;
+constexpr float kPlantedBombDefuseReapproachSeconds = 3.0f;
+
+constexpr float plantedBombDefuseApproachRadius(bool tighterRetry) {
+  return tighterRetry ? kPlantedBombDefuseRetryDistance : kPlantedBombDefuseReadyDistance;
+}
+
+constexpr bool canBeginPlantedBombUse(float distanceSq, float maxUseDistance, bool directReachable) {
+  return distanceSq >= 0.0f && maxUseDistance > 0.0f
+      && distanceSq < maxUseDistance * maxUseDistance && directReachable;
+}
+
+// A task/IN_USE alone is NOT evidence of defusing. Only the game's BarTime
+// message confirms it. A failed attempt must return to the C4 approach.
+constexpr bool shouldChangeUnconfirmedDefuseStance(float elapsedSeconds, bool hasProgressBar,
+                                                    bool alreadyChanged) {
+  return elapsedSeconds >= kPlantedBombDefuseStanceRetrySeconds
+      && !hasProgressBar && !alreadyChanged;
+}
+
+constexpr bool shouldReapproachUnconfirmedDefuse(float elapsedSeconds, bool hasProgressBar) {
+  return elapsedSeconds >= kPlantedBombDefuseReapproachSeconds && !hasProgressBar;
+}
+
 // Keep graph navigation active until an objective can be interacted with directly.
 // Reaching the objective's target node falls back to the final direct approach.
 constexpr bool shouldUseGraphObjectiveApproach(float distanceSq, float interactionDistanceSq,

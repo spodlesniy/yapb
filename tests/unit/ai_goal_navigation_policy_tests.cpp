@@ -730,6 +730,38 @@ AI_TEST(testObjectiveApproachUsesGraphUntilInteractionRange) {
          "node-center fallback requires the interaction-safe node to be reached first");
 }
 
+AI_TEST(testPlantedBombDefuseRequiresInteractionProximityAndClearApproach) {
+  expect(ai::canBeginPlantedBombUse(59.0f * 59.0f, 60.0f, true),
+         "CT starts USE inside the conservative interaction sphere");
+  expect(!ai::canBeginPlantedBombUse(79.0f * 79.0f, 60.0f, true),
+         "old 80-unit pickup range must not prematurely stop movement");
+  expect(!ai::canBeginPlantedBombUse(25.0f * 25.0f, 60.0f, false),
+         "C4 behind a crate or wall is not ready solely because it is nearby");
+  expect(!ai::canBeginPlantedBombUse(60.0f * 60.0f, 60.0f, true),
+         "edge of use sphere is not assumed safe");
+  expect(ai::canBeginPlantedBombUse(40.0f * 40.0f,
+         ai::plantedBombDefuseApproachRadius(true), true),
+         "recovery retries USE after taking a tighter approach");
+  expect(!ai::canBeginPlantedBombUse(55.0f * 55.0f,
+         ai::plantedBombDefuseApproachRadius(true), true),
+         "same distant position is not immediately retried after a failed USE");
+}
+
+AI_TEST(testUnconfirmedBombDefuseRecoveryNeverInterruptsBarTime) {
+  expect(!ai::shouldChangeUnconfirmedDefuseStance(1.0f, false, false),
+         "early USE attempt retains stance");
+  expect(ai::shouldChangeUnconfirmedDefuseStance(1.3f, false, false),
+         "missing progress switches stance once");
+  expect(!ai::shouldChangeUnconfirmedDefuseStance(1.9f, false, true),
+         "stance cannot toggle every frame");
+  expect(!ai::shouldChangeUnconfirmedDefuseStance(2.0f, true, false),
+         "confirmed BarTime prevents stance changes");
+  expect(ai::shouldReapproachUnconfirmedDefuse(3.1f, false),
+         "failed USE eventually returns to C4 approach instead of freezing");
+  expect(!ai::shouldReapproachUnconfirmedDefuse(6.0f, true),
+         "active defuse must never be interrupted by the retry watchdog");
+}
+
 AI_TEST(testPlantedBombPickupScannerYieldsToActiveDefuse) {
   expect(ai::preservesPlantedBombPickupDuringDefuse(ai::TaskType::DefuseBomb, ai::TaskType::DefuseBomb),
          "active defuse preserves the handed-off planted-C4 pickup binding");
