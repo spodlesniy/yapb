@@ -3384,6 +3384,7 @@ void Bot::update () {
 
    m_canSetAimDirection = true;
    m_isAlive = game.isAliveEntity (ent ());
+   updateDefuseDiagnostics ();
    m_team = game.getPlayerTeam (ent ());
    m_healthValue = cr::clamp (pev->health, 0.0f, 99999.9f);
 
@@ -3618,6 +3619,63 @@ void Bot::checkSpawnConditions () {
          runMovement ();
       }
       m_checkWeaponSwitch = false;
+   }
+}
+
+void Bot::recordDefuseEvent (ai::DefuseEventType type, ai::DefuseEventReason reason,
+                             ai::DefuseEvidence evidence) {
+   if (m_aiRuntime.controller ().getMode () != ai::ControlMode::Training || !pev) return;
+   ai::DefuseEvent e {};
+   e.type = type;
+   e.reason = reason;
+   e.evidence = evidence;
+   e.gameTime = game.time ();
+   e.roundStartTime = gameState.getRoundStartTime ();
+   e.roundId = m_aiCombatRoundId;
+   e.episodeId = m_aiRuntime.trainingRecorder ().episodeId ();
+   e.attemptId = m_aiDefuseTracker.attemptId ();
+   e.attemptElapsed = m_aiDefuseTracker.elapsed (e.gameTime);
+   e.botId = entindex ();
+   e.team = m_team;
+   e.task = getCurrentTaskId ();
+   e.aiAction = m_aiRuntime.isActive () ? static_cast <int> (m_aiRuntime.activeAction ().type) : -1;
+   e.hasDefuseKit = m_hasDefuser;
+   e.hasProgressBar = m_hasProgressBar;
+   e.isDucking = (pev->button & IN_DUCK) != 0;
+   e.botPosition = { pev->origin.x, pev->origin.y, pev->origin.z };
+   e.hasBotPosition = true;
+   if (game.mapIs (MapFlags::Demolition) && gameState.isBombPlanted ()) {
+      e.bombTimeRemaining = gameState.getBombTimeLeft ();
+      const auto &bomb = gameState.getBombOrigin ();
+      if (!bomb.empty ()) {
+         e.bombPosition = { bomb.x, bomb.y, bomb.z };
+         e.hasBombPosition = true;
+         e.distanceToBomb = bomb.distance (pev->origin);
+      }
+   }
+   m_aiRuntime.trainingBuffer ().appendDefuseEvent (e);
+}
+
+void Bot::endDefuseAttempt (ai::DefuseEventReason reason, ai::DefuseEvidence evidence) {
+   if (!m_aiDefuseTracker.active ()) return;
+   recordDefuseEvent (ai::DefuseEventType::Interrupted, reason, evidence);
+   m_aiDefuseTracker.end ();
+}
+
+void Bot::updateDefuseDiagnostics () {
+   if (!m_aiDefuseTracker.active ()) return;
+   if (!m_isAlive) {
+      endDefuseAttempt (ai::DefuseEventReason::BotDied, ai::DefuseEvidence::DeathMessage);
+   }
+   else if (gameState.isRoundOver () || !gameState.isBombPlanted ()) {
+      endDefuseAttempt (ai::DefuseEventReason::RoundEnded, ai::DefuseEvidence::RoundMessage);
+   }
+   else if (m_aiDefuseTracker.progressLossExpired (game.time ())) {
+      endDefuseAttempt (ai::DefuseEventReason::BarTimeCleared, ai::DefuseEvidence::BarTimeZero);
+   }
+   else if (m_aiDefuseTracker.phase () == ai::DefuseAttemptTracker::Phase::Attempt
+            && getCurrentTaskId () != Task::DefuseBomb) {
+      endDefuseAttempt (ai::DefuseEventReason::TaskEnded, ai::DefuseEvidence::TaskLifecycle);
    }
 }
 
