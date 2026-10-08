@@ -25,6 +25,7 @@ using namespace cr;
 #include <ai/ai_observation_state.h>
 #include <ai/ai_bot_runtime.h>
 #include <ai/ai_ct_defuse_path_guard.h>
+#include <ai/ai_defuse_event.h>
 #include <ai/ai_semiclip_navigation_guard.h>
 
 namespace ai {
@@ -788,6 +789,7 @@ public:
    bool m_aiNavInitialized {};
    bool m_aiNavPendingRoute {};
 
+   ai::DefuseAttemptTracker m_aiDefuseTracker {};
    bool m_aiFlashEventActive {};
    uint32_t m_aiCombatRoundId {};
    ai::BotRuntime m_aiRuntime;
@@ -799,6 +801,9 @@ public:
 public:
    void logic (); /// the things that can be executed while skipping frames
    void spawned ();
+   void recordDefuseEvent (ai::DefuseEventType type, ai::DefuseEventReason reason, ai::DefuseEvidence evidence);
+   void endDefuseAttempt (ai::DefuseEventReason reason, ai::DefuseEvidence evidence);
+   void updateDefuseDiagnostics ();
    void recordCombatEvent (ai::CombatEventType type, int weaponId = -1, int targetId = -1,
                            int ammoBefore = -1, int ammoAfter = -1, int sourceEntityId = -1,
                            int healthDamage = -1, int armorDamage = -1, int flashAlpha = -1);
