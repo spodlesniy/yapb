@@ -556,10 +556,11 @@ void Bot::ignoreCollision () {
 }
 
 void Bot::doPlayerAvoidance (const Vector &normal) {
+   // Clear stale avoidance targets even if semiclip is toggled at runtime.
+   m_hindrance = nullptr;
    if (isOnLadder () || pev->solid == SOLID_NOT || cv_has_team_semiclip || game.is (GameFlags::FreeForAll)) {
       return; // no player avoiding when with semiclip plugin
    }
-   m_hindrance = nullptr;
    float distanceSq = cr::sqrf (pev->maxspeed);
 
    auto clearCamp = [&] (edict_t *ent) {
@@ -1492,7 +1493,7 @@ bool Bot::updateNavigation () {
    // will go in cycle, and forcing bot to re-create new route.
    if (m_pathWalk.hasNext ()
       && m_pathWalk.next () == m_pathWalk.last ()
-      && isOccupiedNode (m_pathWalk.next (), pathHasFlags)) {
+      && isOccupiedNode (m_pathWalk.next (), pathHasFlags, ai::NodeOccupancyPurpose::Traversal)) {
 
       getTask ()->data = kInvalidNodeIndex;
 
@@ -2575,7 +2576,7 @@ bool Bot::selectBestNextNode () {
    const auto currentNodeIndex = m_pathWalk.first ();
    const auto prevNodeIndex = m_currentNodeIndex;
 
-   if (isOnLadder () || !isOccupiedNode (currentNodeIndex)) {
+   if (isOnLadder () || !isOccupiedNode (currentNodeIndex, false, ai::NodeOccupancyPurpose::Traversal)) {
       return false;
    }
 
@@ -2608,7 +2609,7 @@ bool Bot::selectBestNextNode () {
       }
 
       // if not occupied, just set advance
-      if (!isOccupiedNode (link.index)) {
+      if (!isOccupiedNode (link.index, false, ai::NodeOccupancyPurpose::Traversal)) {
          m_pathWalk.first () = link.index;
          return true;
       }
@@ -3467,12 +3468,18 @@ int Bot::getNearestToPlantedBomb () {
    return result;
 }
 
-bool Bot::isOccupiedNode (int index, bool needZeroVelocity) {
+bool Bot::isOccupiedNode (int index, bool needZeroVelocity, ai::NodeOccupancyPurpose purpose) {
    if (!graph.exists (index)) {
       return true;
    }
 
-   if (pev->solid == SOLID_NOT) {
+   // Semiclip allows teammates to occupy the same ordinary traversal node.
+   // Preserve tactical positioning checks and explicit double-jump boosts:
+   // crouching teammates can still act as a step for deliberate jumps.
+   if (pev->solid == SOLID_NOT
+      || ai::shouldIgnoreTeammateOccupancy (
+         cv_has_team_semiclip.as <int> () != 0, purpose,
+         getCurrentTaskId () == Task::DoubleJump)) {
       return false;
    }
 
@@ -3499,7 +3506,11 @@ bool Bot::isOccupiedNode (int index, bool needZeroVelocity) {
       if (bot == nullptr || bot == this || !bot->m_isAlive) {
          continue;
       }
-      return bot->m_currentNodeIndex == index || bot->m_previousNodes[0] == index;
+      if (ai::hasTeammateWaypointReservation (
+         index, bot->m_currentNodeIndex, bot->m_previousNodes[0])) {
+         return true;
+      }
+      // Check the remaining teammates instead of returning false early.
    }
    return false;
 }
@@ -3573,8 +3584,8 @@ bool Bot::isReachableNode (int index) {
    }
 
    // some one seems to camp at this node
-   if (isOccupiedNode (index, true)) {
-      return false; // can't reach this one
+   if (isOccupiedNode (index, true, ai::NodeOccupancyPurpose::Traversal)) {
+      return false; // a solid teammate blocks this traversal node
    }
 
    TraceResult tr {};

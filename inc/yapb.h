@@ -25,6 +25,7 @@ using namespace cr;
 #include <ai/ai_observation_state.h>
 #include <ai/ai_bot_runtime.h>
 #include <ai/ai_ct_defuse_path_guard.h>
+#include <ai/ai_semiclip_navigation_guard.h>
 
 namespace ai {
 
@@ -460,7 +461,8 @@ private:
    bool hasActiveGoal ();
    bool advanceMovement ();
    bool isBombDefusing (const Vector &bombOrigin) const;
-   bool isOccupiedNode (int index, bool needZeroVelocity = false);
+   bool isOccupiedNode (int index, bool needZeroVelocity = false,
+                        ai::NodeOccupancyPurpose purpose = ai::NodeOccupancyPurpose::Tactical);
    bool seesItem (const Vector &dest, StringRef classname);
    bool lastEnemyShootable ();
    bool rateGroundWeapon (edict_t *ent);

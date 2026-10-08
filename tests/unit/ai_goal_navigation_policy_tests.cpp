@@ -17,6 +17,7 @@
 #include <ai/ai_navigation_task_guard.h>
 #include <ai/ai_objective_navigation_guard.h>
 #include <ai/ai_perception_guard.h>
+#include <ai/ai_semiclip_navigation_guard.h>
 
 using ai::test::expect;
 using ai::test::expectNear;
@@ -1349,4 +1350,30 @@ AI_TEST(testBombCarrierSiteOptionsCapAndStableTies) {
   ai::retainBombCarrierGoal(options, { 4, 200.0f, 200.0f, 2500.0f, 0.0f, 0.0f });
   expect(ai::chooseBombCarrierGoal(options) == 4,
          "equal scores are settled by stable waypoint index");
+}
+
+AI_TEST(testSemiclipNavigationAllowsSharedTraversalButPreservesTacticalPositions) {
+  using Purpose = ai::NodeOccupancyPurpose;
+  expect(ai::shouldIgnoreTeammateOccupancy(true, Purpose::Traversal, false),
+         "semiclip allows a bot to traverse a teammate's occupied waypoint");
+  expect(!ai::shouldIgnoreTeammateOccupancy(true, Purpose::Tactical, false),
+         "semiclip must not discard tactical/camping waypoint reservations");
+  expect(!ai::shouldIgnoreTeammateOccupancy(false, Purpose::Traversal, false),
+         "without semiclip the normal solid-body movement avoidance remains");
+  expect(!ai::shouldIgnoreTeammateOccupancy(false, Purpose::Tactical, false),
+         "without semiclip tactical occupancy is unchanged");
+  expect(!ai::shouldIgnoreTeammateOccupancy(true, Purpose::Traversal, true),
+         "deliberate teammate boost keeps collision-aware node treatment");
+}
+
+AI_TEST(testSemiclipDoesNotMaskRealNodeOccupancyAmongSeveralTeammates) {
+  expect(ai::hasTeammateWaypointReservation(42, 42, 13),
+         "teammate at the current waypoint reserves its tactical position");
+  expect(ai::hasTeammateWaypointReservation(42, 17, 42),
+         "recent waypoint is still reserved for tactical positioning");
+  expect(!ai::hasTeammateWaypointReservation(42, 17, 13),
+         "unrelated teammate does not reserve the requested waypoint");
+  const bool occupied = ai::hasTeammateWaypointReservation(42, 17, 13)
+      || ai::hasTeammateWaypointReservation(42, 42, 29);
+  expect(occupied, "later teammate cannot be hidden by an earlier unrelated one");
 }
