@@ -30,6 +30,38 @@ void MessageDispatcher::netMsgTextMsg () {
       }
    };
 
+   // Exact TextMsg, not merely CounterWin: the winner cannot prove a defuse.
+   if (cr::StringRef (m_args[msg].chars_) == "#Bomb_Defused") {
+      // Global event: TextMsg carries no trustworthy defuser identity.
+      // Never attribute this completion to an arbitrary nearby bot.
+      if (game.mapIs (MapFlags::Demolition) && gameState.isBombPlanted () && !gameState.isRoundOver ()) {
+         ai::DefuseEvent e {};
+         e.type = ai::DefuseEventType::Complete;
+         e.evidence = ai::DefuseEvidence::BombDefusedMessage;
+         e.gameTime = game.time ();
+         e.roundStartTime = gameState.getRoundStartTime ();
+         e.team = Team::CT;
+         e.bombTimeRemaining = gameState.getBombTimeLeft ();
+         const auto &bomb = gameState.getBombOrigin ();
+         if (!bomb.empty ()) {
+            e.hasBombPosition = true;
+            e.bombPosition = { bomb.x, bomb.y, bomb.z };
+         }
+         // Only record during training sessions.
+         bool training = false;
+         for (const auto &bot : bots) {
+            if (bot->getAIController ().getMode () == ai::ControlMode::Training) {
+               training = true;
+               break;
+            }
+         }
+         if (training) ai::getTrainingBuffer ().appendDefuseEvent (e);
+      }
+      for (const auto &bot : bots) {
+         bot->m_aiDefuseTracker.end ();
+      }
+   }
+
    if (cached & TextMsgCache::Commencing) {
       util.setNeedForWelcome (true);
    }
@@ -395,6 +427,12 @@ void MessageDispatcher::netMsgBarTime () {
 
    // check if has progress bar
    if (m_args[enabled].long_ > 0) {
+      if (game.mapIs (MapFlags::Demolition) && gameState.isBombPlanted ()
+          && m_bot->m_team == Team::CT
+          && m_bot->m_aiDefuseTracker.confirmProgress (game.time ())) {
+         m_bot->recordDefuseEvent (ai::DefuseEventType::Start, ai::DefuseEventReason::None,
+                                   ai::DefuseEvidence::BarTimePositive);
+      }
       m_bot->m_hasProgressBar = true; // the progress bar on a hud
 
       // notify bots about defusing has started
@@ -403,6 +441,9 @@ void MessageDispatcher::netMsgBarTime () {
       }
    }
    else {
+      if (m_bot->m_team == Team::CT && gameState.isBombPlanted ()) {
+         m_bot->m_aiDefuseTracker.loseProgress (game.time ());
+      }
       m_bot->m_hasProgressBar = false; // no progress bar or disappeared
    }
 }
