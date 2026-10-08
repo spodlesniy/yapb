@@ -844,6 +844,7 @@ void BotManager::setLastWinner (int winner) {
    // than attributing the post-round delay to the combat/objective action.
    for (const auto &bot : bots) {
       if (bot) {
+         bot->updateDefuseDiagnostics ();
          bot->cancelAIAction ();
       }
    }
@@ -1525,6 +1526,7 @@ void Bot::newRound () {
    m_duckDefuse = false;
    m_duckDefuseCheckTime = 0.0f;
    m_defuseUseStartTime = 0.0f;
+   m_aiDefuseTracker.reset ();
    m_defuseChangedStance = false;
    m_defuseTighterApproach = false;
    m_timeDebugUpdateTime = 0.0f;
