@@ -7,6 +7,7 @@
 
 #include <ai/ai_perception_guard.h>
 #include <yapb.h>
+#include <ai/ai_attack_movement_guard.h>
 
 ConVar cv_shoots_thru_walls ("shoots_thru_walls", "2", "Specifies whether bots are able to fire at enemies behind the wall, if they hear or suspect them.", true, 0.0f, 3.0f);
 ConVar cv_ignore_enemies ("ignore_enemies", "0", "Enables or disables searching the world for enemies.");
@@ -1493,7 +1494,15 @@ void Bot::attackMovement (bool allowTaskChanges) {
          }
       }
       else if (approach < 50) {
-         m_moveSpeed = 0.0f;
+         // At medium aggression, do not freeze during distant visible combat
+         // if a straightforward, unobstructed approach is safe.
+         const bool advance = ai::shouldAdvanceWhileAttacking (
+            approach, (m_states & Sense::SeeingEnemy) != 0, m_isReloading,
+            usesSniper (), m_isVIP, isDucking (), isInNarrowPlace (), distanceSq);
+         const auto direction = (m_enemy->v.origin - pev->origin).normalize2d_apx ();
+         TraceResult movementTrace {};
+         m_moveSpeed = advance && !isBlockedForward (direction, &movementTrace)
+            ? pev->maxspeed * 0.5f : 0.0f;
       }
       else {
          m_moveSpeed = pev->maxspeed;

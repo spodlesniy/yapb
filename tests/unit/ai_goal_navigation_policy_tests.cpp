@@ -8,6 +8,7 @@
 
 #include "ai_test.h"
 
+#include <ai/ai_attack_movement_guard.h>
 #include <ai/ai_bomb_defense_guard.h>
 #include <ai/ai_bomb_search_guard.h>
 #include <ai/ai_goal_navigation_policy.h>
@@ -956,4 +957,25 @@ AI_TEST(testHearingExpiryDoesNotDependOnScanThrottle) {
          "stale hearing expires even if a fresh sound scan was just performed");
   expect(!ai::hasExpiredEnemyHearing(25.01f, 25.0f),
          "new sound immediately refreshes hearing expiration");
+}
+
+AI_TEST(testAttackMoveOnlyAdvancesOnDistantVisibleThreat) {
+  expect(ai::shouldAdvanceWhileAttacking(40, true, false, false, false, false, false, 700.0f * 700.0f),
+         "medium aggression can advance while engaging a distant visible enemy");
+  expect(!ai::shouldAdvanceWhileAttacking(40, false, false, false, false, false, false, 700.0f * 700.0f),
+         "suspected but unseen targets do not authorize an advance");
+  expect(!ai::shouldAdvanceWhileAttacking(40, true, false, false, false, false, false, 200.0f * 200.0f),
+         "near enemies retain legacy stop-or-strafe combat movement");
+  expect(!ai::shouldAdvanceWhileAttacking(20, true, false, false, false, false, false, 700.0f * 700.0f),
+         "low-aggression cover and retreat branch remains unchanged");
+  expect(!ai::shouldAdvanceWhileAttacking(40, true, true, false, false, false, false, 700.0f * 700.0f),
+         "reload remains a reason not to advance");
+  expect(!ai::shouldAdvanceWhileAttacking(40, true, false, true, false, false, false, 700.0f * 700.0f),
+         "sniper weapon preserves stand-off movement");
+  expect(!ai::shouldAdvanceWhileAttacking(40, true, false, false, true, false, false, 700.0f * 700.0f),
+         "VIP must not advance through distant combat");
+  expect(!ai::shouldAdvanceWhileAttacking(40, true, false, false, false, true, false, 700.0f * 700.0f),
+         "ducking remains stationary");
+  expect(!ai::shouldAdvanceWhileAttacking(40, true, false, false, false, false, true, 700.0f * 700.0f),
+         "narrow passages preserve legacy combat movement");
 }
