@@ -29,6 +29,14 @@ constexpr bool shouldReplaceRememberedEnemyWithHeard(float rememberedDistanceSq,
   return !recentlySeen && heardDistanceSq < rememberedDistanceSq;
 }
 
+constexpr float kEnemyHearingExpiration = 10.0f;
+
+// Expire sensory evidence regardless of the scan cadence. A sound heard on
+// this tick refreshes lastHeardTime before the guard is evaluated.
+constexpr bool hasExpiredEnemyHearing(float now, float lastHeardTime) {
+  return lastHeardTime + kEnemyHearingExpiration < now;
+}
+
 constexpr float kGrenadeTargetFreshness = 3.0f;
 
 constexpr bool suppressBlindFire(float blindTimeRemaining) {

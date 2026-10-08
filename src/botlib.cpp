@@ -2179,7 +2179,9 @@ void Bot::setConditions () {
       updateHearing ();
       m_soundUpdateTime = game.time () + 0.05f;
    }
-   else if (m_soundUpdateTime >= game.time () && m_heardSoundTime + 10.0f < game.time ()) {
+   // Hearing expiry must be independent of the sound scan throttle: the
+   // previous else-if could leave a stale HearingEnemy flag alive indefinitely.
+   if (ai::hasExpiredEnemyHearing (game.time (), m_heardSoundTime)) {
       m_states &= ~Sense::HearingEnemy;
 
       // clear the last enemy pointers if time has passed or enemy far away

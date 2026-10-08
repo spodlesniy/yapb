@@ -944,3 +944,15 @@ AI_TEST(testPlantedBombPickupAllowsReachableGraphApproach) {
   expect(!ai::isReachablePlantedBombGraphApproach(false, true, -1.0f, 32767.0f),
          "invalid negative graph distance does not rescue blocked direct approach");
 }
+
+
+AI_TEST(testHearingExpiryDoesNotDependOnScanThrottle) {
+  expect(!ai::hasExpiredEnemyHearing(20.0f, 15.0f),
+         "recent heard contact remains valid");
+  expect(!ai::hasExpiredEnemyHearing(25.0f, 15.0f),
+         "hearing expires only after its full ten second window");
+  expect(ai::hasExpiredEnemyHearing(25.01f, 15.0f),
+         "stale hearing expires even if a fresh sound scan was just performed");
+  expect(!ai::hasExpiredEnemyHearing(25.01f, 25.0f),
+         "new sound immediately refreshes hearing expiration");
+}
