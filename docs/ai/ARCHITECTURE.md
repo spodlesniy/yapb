@@ -91,6 +91,12 @@ An interrupted attempt records its actual evidence source rather than claiming a
 Likewise, `round_message` refers to the round message path, whereas `game_state` means the code observed that C4 was no longer marked as planted.
 The Python validator checks evidence compatibility without counting diagnostic records as model-training samples.
 
+## D178 — Persist actively owned planted-C4 Camp tasks
+
+When the server disables ordinary camping, the active Terrorist `ProtectObjective` action may still own the legacy `Camp` primitive while the C4 remains planted on a demolition map.
+Unrelated camps and knife-mode restrictions are unchanged.
+The compatibility contract in D148 also requires any production source that directly includes `<yapb.h>` to list it before every other header; the Training tools test suite audits this property.
+
 ## D177 — Hold local planted-C4 defenses when reinforcement is too late
 
 The 4-second reinforcement arrival reserve applies to movement toward a new defense waypoint.

@@ -1108,6 +1108,25 @@ AI_TEST(testPlantedBombDefenseOnlyCampsAfterReachingSelectedNode) {
 }
 
 
+AI_TEST(testPlantedBombProtectionCampIgnoresOrdinaryCampingBan) {
+   expect(ai::mayContinuePlantedBombDefenseCamp(true, false, false, false, false, false),
+          "ordinary camping stays allowed when camping cvar is on");
+   expect(ai::mayContinuePlantedBombDefenseCamp(false, false, true, true, true, true),
+          "active planted-C4 ProtectObjective may hold with ordinary camping disabled");
+   expect(!ai::mayContinuePlantedBombDefenseCamp(false, false, true, true, true, false),
+          "ordinary Terrorist camp cannot bypass the camping ban");
+   expect(!ai::mayContinuePlantedBombDefenseCamp(false, false, false, true, true, true),
+          "Counter-Terrorist cannot claim Terrorist C4 defense");
+   expect(!ai::mayContinuePlantedBombDefenseCamp(false, false, true, false, true, true),
+          "non-demolition game cannot claim planted-C4 protection");
+   expect(!ai::mayContinuePlantedBombDefenseCamp(false, false, true, true, false, true),
+          "disappeared objective ends camping exemption");
+   expect(!ai::mayContinuePlantedBombDefenseCamp(true, true, true, true, true, true),
+          "knife mode still forbids even objective camping");
+   expect(!ai::mayContinuePlantedBombDefenseCamp(false, true, true, true, true, true),
+          "knife mode cannot be bypassed by the camping cvar exception");
+}
+
 AI_TEST(testLatePlantedBombDefenderHoldsLocalPosition) {
    constexpr float radius = ai::kPlantedBombReinforcementRadius;
    const float insideRadiusSq = (radius - 1.0f) * (radius - 1.0f);

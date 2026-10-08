@@ -1471,6 +1471,8 @@ Reason: the manually triggered Windows x86 build for D147 failed only while comp
 D140 had reordered `<cmath>` ahead of `<yapb.h>`; the compiler then reported C2084/C3615 in `crlib/memory.h` because placement `operator new` already had a body.
 The same Windows x86 workflow succeeded on D139 with the historical `<yapb.h>`-first order.
 Restoring that proven include order avoids a wider crlib compatibility-mode change.
+This compatibility requirement applies to **every** production translation unit that includes `<yapb.h>`: it must be the first include directive, not merely precede `<cmath>` in the action context.
+It supersedes the usual standard-library-first style rule for those translation units.
 
 ## D149 — Consume exhausted remembered-enemy hunts
 
@@ -1667,3 +1669,17 @@ No changes are made to the conservative graph travel budget for distant reinforc
 
 Reason: the existing arrival check rejects all paths once the bomb has fewer than four seconds left, including zero-length routes for bots already guarding the site.
 Such bots could then emit repeated rejected ProtectObjective attempts precisely when they should hold an established defense position.
+
+## D178 — Preserve planted-C4 defense camping and enforce crlib-first includes
+
+An actively executing Terrorist `ProtectObjective` may continue its `Camp` task while a planted C4 is active even when the server's ordinary `camping_allowed` setting is disabled.
+This exception requires an active semantic ProtectObjective action, the Terrorist team, a demolition map, and a planted bomb; unrelated Camp tasks remain subject to the setting.
+Knife-mode still blocks Camp exactly as before.
+The objective action's existing path and task lifecycle are unchanged.
+
+The include-order audit found three production C++ translation units with includes before `<yapb.h>`: `src/message.cpp`, `src/combat.cpp`, and `src/tasks.cpp`.
+All three are restored to `<yapb.h>` as the first include, and an automated Python test checks production C++ translation units to prevent this regression.
+`AGENTS.md` and `docs/ai/DEVELOPMENT.md` now state the rule explicitly, consistent with D148.
+
+Reason: `ProtectObjective` could reach its defense point but `camp_()` immediately completed the hold because it unconditionally checked the ordinary camping CVAR.
+The same step closes the separately reported Windows x86 include-order regression risk without changing any API or relying on compatibility macros.

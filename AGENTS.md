@@ -37,7 +37,11 @@ This repository is the AiPB development fork of YaPB.
 
 - Do not use `std::array`.
 - Use ordinary fixed-size C-style arrays when a fixed-size array is required.
-- Put all standard-library includes before project and local includes, all else being equal.
+- **Mandatory first-include exception for MSVC x86/crlib:** in every production C++ translation unit that directly includes `<yapb.h>`, it MUST be the **first `#include` directive**, before any standard-library, AI, or local header (including `<cstring>`, `<cmath>`, and `<ai/...>`).
+  The pinned crlib supplies a placement `operator new` that must be defined before the STL's placement-new declaration on older MSVC.
+  Do not reorder `<yapb.h>` downward for style, alphabetical sorting, or automatic include cleanup; D148 records the Windows x86 failure.
+- For files that do not directly include `<yapb.h>`, put standard-library headers before project/local includes as usual.
+- When editing includes, verify the first `#include` in each touched production `.cpp` and run the repository-wide include-order check in `tools/aipb_training/tests/test_yapb_include_order.py`.
 - All comments written in source code must be in English.
 - In Markdown files, write each prose sentence on its own physical line; preserve blank lines, headings, list structure, tables, front matter, code blocks, link definitions, and other syntax-sensitive Markdown constructs. Do not use Markdown hard breaks solely for source formatting.
 - Preserve existing public APIs and architecture unless the current iteration explicitly requires an API or architectural change.

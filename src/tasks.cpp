@@ -5,11 +5,12 @@
 // SPDX-License-Identifier: MIT
 //
 
+#include <yapb.h>
+
 #include <ai/ai_bomb_search_guard.h>
 #include <ai/ai_ct_defuse_path_guard.h>
 #include <ai/ai_objective_navigation_guard.h>
 #include <ai/ai_perception_guard.h>
-#include <yapb.h>
 
 ConVar cv_walking_allowed ("walking_allowed", "1", "Specifies whether bots are able to use 'shift' if they think that an enemy is near.");
 ConVar cv_camping_allowed ("camping_allowed", "1", "Allows or disallows bots to camp. Doesn't affect bomb/hostage defending tasks.");
@@ -732,7 +733,14 @@ void Bot::blind_ () {
 }
 
 void Bot::camp_ () {
-   if (!cv_camping_allowed || isKnifeMode ()) {
+   const bool protectObjectiveOwned = m_aiRuntime.isActive ()
+      && m_aiRuntime.activeAction ().type == ai::ActionType::ProtectObjective;
+   // The camping CVAR must not cancel an active planted-C4 protection hold.
+   // Keep the original knife-mode restriction and ordinary-camp behavior.
+   if (!ai::mayContinuePlantedBombDefenseCamp (
+      cv_camping_allowed.as <int> () != 0, isKnifeMode (),
+      m_team == Team::Terrorist, game.mapIs (MapFlags::Demolition),
+      gameState.isBombPlanted (), protectObjectiveOwned)) {
       completeTask ();
       return;
    }

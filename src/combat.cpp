@@ -5,9 +5,10 @@
 // SPDX-License-Identifier: MIT
 //
 
-#include <ai/ai_perception_guard.h>
 #include <yapb.h>
+
 #include <ai/ai_attack_movement_guard.h>
+#include <ai/ai_perception_guard.h>
 
 ConVar cv_shoots_thru_walls ("shoots_thru_walls", "2", "Specifies whether bots are able to fire at enemies behind the wall, if they hear or suspect them.", true, 0.0f, 3.0f);
 ConVar cv_ignore_enemies ("ignore_enemies", "0", "Enables or disables searching the world for enemies.");

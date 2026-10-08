@@ -110,6 +110,16 @@ constexpr bool preservesFirearmForPlantedBombApproach(bool counterTerrorist, boo
 }
 
 
+// Honor the normal camp restriction except for an actively AI-owned planted
+// C4 defense. Knife-mode still blocks all camping as before. A generic T
+// Camp task, an expired objective, or unrelated action cannot bypass the CVAR.
+constexpr bool mayContinuePlantedBombDefenseCamp(bool campingAllowed, bool knifeMode,
+                                                  bool terrorist, bool demolitionMap,
+                                                  bool bombPlanted, bool protectObjectiveActive) {
+  return !knifeMode && (campingAllowed
+      || (terrorist && demolitionMap && bombPlanted && protectObjectiveActive));
+}
+
 // Retain planted-bomb defense ownership during short legacy combat overrides.
  // The legacy task must still run; protection resumes when that task ends.
 template <typename Task>

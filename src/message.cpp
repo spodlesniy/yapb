@@ -5,9 +5,9 @@
 // SPDX-License-Identifier: MIT
 //
 
-#include <cstring>
-
 #include <yapb.h>
+
+#include <cstring>
 
 void MessageDispatcher::netMsgTextMsg () {
    enum args { msg = 1, min = 2 };

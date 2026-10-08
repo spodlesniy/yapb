@@ -151,6 +151,16 @@ An agent may explain why an in-game check would be useful, identify the commit t
 A code change, a missing JSONL capture, or a request to investigate gameplay does not authorize an agent to launch this build.
 Keep successful compilation separate from actual gameplay validation and from obtaining the resulting capture.
 
+## Mandatory `yapb.h` first-include rule (Windows x86)
+
+Every production C++ source file that directly includes `<yapb.h>` must make it the **first `#include` directive**, ahead of both STL headers and other project headers.
+This is a compatibility requirement, not a style preference: the pinned crlib defines placement `operator new` and MSVC 18 can reject a second definition if another include first imports the STL placement-new implementation.
+D148 records the historical Windows x86 C2084/C3615 regression caused by placing `<cmath>` before `<yapb.h>`.
+The usual standard-library-first ordering applies **only when `<yapb.h>` is not included directly**.
+Review and retain this exception when adding standard headers, applying include sorters, or touching production translation units.
+The source audit is enforced by `tools/aipb_training/tests/test_yapb_include_order.py`, executed as part of the Training tools tests in automatic GitHub Actions.
+Passing Linux AI unit tests alone does not establish Windows x86 build compatibility; only a user-triggered Windows x86 job can verify the relevant platform build.
+
 ## History-first platform compatibility
 
 Before adding a compatibility macro, conditional compilation workaround, or platform-specific special case, search the repository history for prior attempts.
