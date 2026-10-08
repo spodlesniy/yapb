@@ -1108,6 +1108,48 @@ AI_TEST(testPlantedBombDefenseOnlyCampsAfterReachingSelectedNode) {
 }
 
 
+AI_TEST(testLatePlantedBombDefenderHoldsLocalPosition) {
+   constexpr float radius = ai::kPlantedBombReinforcementRadius;
+   const float insideRadiusSq = (radius - 1.0f) * (radius - 1.0f);
+   expect(!ai::canArriveAtPlantedBombDefenseInTime(0.0f, 250.0f, 3.0f),
+          "reinforcement travel reserve still rejects a three-second budget");
+   expect(ai::canHoldPlantedBombDefenseLocally(
+              false, true, 3.0f, insideRadiusSq, 100.0f, 400.0f, 2304.0f),
+          "bot already at a defense node may hold during final seconds");
+   expect(ai::canHoldPlantedBombDefenseLocally(
+              false, true, 0.1f, insideRadiusSq, insideRadiusSq, 0.0f, 0.0f),
+          "no movement is required for an already reached defense waypoint");
+   expect(ai::canHoldPlantedBombDefenseLocally(
+              false, true, 3.0f, radius * radius, radius * radius, 2304.0f, 2304.0f),
+          "exact defense and waypoint reach boundaries are allowed");
+}
+
+AI_TEST(testLatePlantedBombHoldRejectsInvalidOrThreatenedPositions) {
+   const auto canHold = [](bool alarm, bool valid, float seconds, float botDistanceSq,
+                           float waypointBombDistanceSq, float waypointDistanceSq,
+                           float waypointReachSq) {
+      return ai::canHoldPlantedBombDefenseLocally(
+         alarm, valid, seconds, botDistanceSq, waypointBombDistanceSq,
+         waypointDistanceSq, waypointReachSq);
+   };
+   const float outsideRadiusSq = ai::kPlantedBombReinforcementRadius
+       * ai::kPlantedBombReinforcementRadius + 1.0f;
+   expect(!canHold(true, true, 3.0f, 100.0f, 100.0f, 0.0f, 2304.0f),
+          "actual CT defuse alarm retains the urgent intercept path");
+   expect(!canHold(false, false, 3.0f, 100.0f, 100.0f, 0.0f, 2304.0f),
+          "invalid, CT-only or ladder waypoints cannot be chosen");
+   expect(!canHold(false, true, 0.0f, 100.0f, 100.0f, 0.0f, 2304.0f),
+          "expired C4 does not enter a defense hold");
+   expect(!canHold(false, true, 3.0f, outsideRadiusSq, 100.0f, 0.0f, 2304.0f),
+          "a distant bot cannot claim planted-C4 local defense");
+   expect(!canHold(false, true, 3.0f, 100.0f, outsideRadiusSq, 0.0f, 2304.0f),
+          "a distant waypoint cannot claim local defense");
+   expect(!canHold(false, true, 3.0f, 100.0f, 100.0f, 2305.0f, 2304.0f),
+          "being near a waypoint is insufficient until its reach radius is met");
+   expect(!canHold(false, true, 3.0f, 100.0f, 100.0f, -1.0f, 2304.0f),
+          "invalid negative graph-derived distances cannot authorize a hold");
+}
+
 AI_TEST(testPlantedBombReinforcementUsesGraphTravelBudget) {
   expect(ai::canArriveAtPlantedBombDefenseInTime(1500.0f, 250.0f, 20.0f),
          "reinforcement can defend when graph travel time leaves a setup reserve");

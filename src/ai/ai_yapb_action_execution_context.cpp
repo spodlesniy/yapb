@@ -1108,8 +1108,25 @@ bool YaPBActionExecutionContext::protectObjective() {
       }
     }
 
+    bool holdLocally = false;
     if (!graph.exists(node) || !canArriveAt(node)) {
-      return false;
+      // The travel-time reserve is for reinforcements. A nearby defender
+      // already standing at a safe waypoint can still protect C4 in the
+      // final seconds without pretending it has time to traverse a new route.
+      const bool usableLocalNode = graph.exists(fromNode)
+          && !(graph[fromNode].flags & (NodeFlag::Ladder | NodeFlag::CTOnly));
+      const float reachDistance = usableLocalNode
+          ? cr::max(kNavigationReachDistance, graph[fromNode].radius) : 0.0f;
+      holdLocally = canHoldPlantedBombDefenseLocally(
+          m_bot->m_defuseNotified, usableLocalNode, secondsLeft,
+          m_bot->pev->origin.distanceSq(bombOrigin),
+          usableLocalNode ? graph[fromNode].origin.distanceSq(bombOrigin) : -1.0f,
+          usableLocalNode ? m_bot->pev->origin.distanceSq(graph[fromNode].origin) : -1.0f,
+          cr::sqrf(reachDistance));
+      if (!holdLocally) {
+        return false;
+      }
+      node = fromNode;
     }
 
     m_protectObjectiveActive = true;
@@ -1120,9 +1137,18 @@ bool YaPBActionExecutionContext::protectObjective() {
       m_bot->clearTask(currentTask);
     }
 
-    m_bot->startTask(Task::MoveToPosition, TaskPri::MoveToPosition, node, 0.0f, true);
-    m_protectObjectiveNavigationTaskCreated = true;
-    currentTask = Task::MoveToPosition;
+    if (holdLocally) {
+      // Do not create a zero-time MoveToPosition when the defender is already
+      // in its hold radius. Keep the existing ProtectObjective lifecycle.
+      m_bot->startTask(Task::Camp, TaskPri::Camp, kInvalidNodeIndex,
+                       game.time() + secondsLeft, true);
+      currentTask = Task::Camp;
+    }
+    else {
+      m_bot->startTask(Task::MoveToPosition, TaskPri::MoveToPosition, node, 0.0f, true);
+      m_protectObjectiveNavigationTaskCreated = true;
+      currentTask = Task::MoveToPosition;
+    }
   }
   else if (m_bot->m_defuseNotified) {
     const int node = graph.getNearest(bombOrigin);

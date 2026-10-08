@@ -91,6 +91,15 @@ An interrupted attempt records its actual evidence source rather than claiming a
 Likewise, `round_message` refers to the round message path, whereas `game_state` means the code observed that C4 was no longer marked as planted.
 The Python validator checks evidence compatibility without counting diagnostic records as model-training samples.
 
+## D177 — Hold local planted-C4 defenses when reinforcement is too late
+
+The 4-second reinforcement arrival reserve applies to movement toward a new defense waypoint.
+It must not invalidate an already reached, legal defensive waypoint within 768 units of the planted C4.
+When no suitable defense route remains feasible, a Terrorist who is already within the waypoint reach radius enters Camp directly for the remaining bomb time under the existing ProtectObjective lifecycle.
+This local fallback excludes ladder and CT-only waypoints, bots outside the defense radius, and positions that have not actually been reached.
+It also yields to an active CT-defuse notification, preserving the urgent intercept response instead of letting a local hold hide the threat.
+The regular reinforcement search and its conservative time budget remain unchanged.
+
 ## D176.4 navigation telemetry and shared round identity
 
 Same-goal route requests are sampled every 12 seconds; changed goals or path types every 4 seconds.

@@ -1656,3 +1656,14 @@ This commit adds the pure helper and tests only. D162.3 will connect real graph 
 risk estimates, and dynamic reassessment to updatePickups(), including its sticky pickup
 retention and entity-order priority. Until that integration, runtime pickup behavior
 remains unchanged.
+
+## D177 — Hold planted-C4 defense locally when reinforcement travel is impossible
+
+A Terrorist who is already standing at a reachable, legal defense waypoint within the planted-C4 protection radius may continue protecting the bomb during the final seconds even when the four-second reinforcement-arrival reserve makes every new route infeasible.
+The runtime enters the existing Camp mechanic directly while keeping a single semantic ProtectObjective lifecycle instead of creating an impossible MoveToPosition or repeatedly rejecting the defense action.
+A valid T-accessible non-ladder waypoint, full 3D bot/bomb/waypoint range checks, the actual waypoint reach radius, and positive bomb time are mandatory.
+A notified CT defuse attempt always bypasses this fallback so the urgent interception path stays authoritative.
+No changes are made to the conservative graph travel budget for distant reinforcements.
+
+Reason: the existing arrival check rejects all paths once the bomb has fewer than four seconds left, including zero-length routes for bots already guarding the site.
+Such bots could then emit repeated rejected ProtectObjective attempts precisely when they should hold an established defense position.

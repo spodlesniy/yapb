@@ -133,6 +133,21 @@ constexpr float kPlantedBombReinforcementFarRoute = 1024.0f;
 constexpr float kPlantedBombReinforcementUnreachableRoute = 32767.0f;
 constexpr float kPlantedBombReinforcementSpeedFactor = 0.75f;
 constexpr float kPlantedBombReinforcementArrivalReserve = 4.0f;
+
+// A Terrorist already at a valid bomb-defense waypoint should not abandon
+// protection just because the remaining timer is shorter than the travel
+// reserve used for distant reinforcements. Never override a defuse alarm.
+constexpr bool canHoldPlantedBombDefenseLocally(bool defuseAlarm, bool validDefenseNode,
+                                                 float bombSecondsLeft, float botToBombDistanceSq,
+                                                 float nodeToBombDistanceSq, float botToNodeDistanceSq,
+                                                 float reachDistanceSq) {
+  constexpr float radiusSq = kPlantedBombReinforcementRadius * kPlantedBombReinforcementRadius;
+  return !defuseAlarm && validDefenseNode && bombSecondsLeft > 0.0f
+      && botToBombDistanceSq >= 0.0f && botToBombDistanceSq <= radiusSq
+      && nodeToBombDistanceSq >= 0.0f && nodeToBombDistanceSq <= radiusSq
+      && botToNodeDistanceSq >= 0.0f && reachDistanceSq >= 0.0f
+      && botToNodeDistanceSq <= reachDistanceSq;
+}
 // Author-placed camp nodes can justify a small detour, but not a long delay.
 constexpr float kPlantedBombReinforcementCampRouteAllowance = 192.0f;
 
