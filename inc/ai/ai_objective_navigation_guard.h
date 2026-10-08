@@ -140,16 +140,21 @@ constexpr float bombDefenseCrowdingCost(float distanceSq) {
 
 constexpr bool isBetterDistributedBombDefenseNode(float route, bool camp, float crowdCost, int node,
                                                   float bestRoute, bool bestCamp, float bestCrowdCost, int bestNode,
-                                                  int connections = -1, int bestConnections = -1) {
+                                                  int connections = -1, int bestConnections = -1,
+                                                  int sectors = -1, int bestSectors = -1) {
   if (bestNode < 0) return true;
   const float topologyCost = connections >= 0
       ? bombDefenseConnectionPenalty(connections, true) * kBombDefenseConnectionRouteCost : 0.0f;
   const float bestTopologyCost = bestConnections >= 0
       ? bombDefenseConnectionPenalty(bestConnections, true) * kBombDefenseConnectionRouteCost : 0.0f;
+  const float directionCost = sectors >= 0
+      ? bombDefenseDirectionPenalty(sectors, true) * kBombDefenseDirectionRouteCost : 0.0f;
+  const float bestDirectionCost = bestSectors >= 0
+      ? bombDefenseDirectionPenalty(bestSectors, true) * kBombDefenseDirectionRouteCost : 0.0f;
   const float score = route - (camp ? kPlantedBombReinforcementCampRouteAllowance : 0.0f)
-      + crowdCost + topologyCost;
+      + crowdCost + topologyCost + directionCost;
   const float bestScore = bestRoute - (bestCamp ? kPlantedBombReinforcementCampRouteAllowance : 0.0f)
-      + bestCrowdCost + bestTopologyCost;
+      + bestCrowdCost + bestTopologyCost + bestDirectionCost;
   return score < bestScore || (score == bestScore && node < bestNode);
 }
 

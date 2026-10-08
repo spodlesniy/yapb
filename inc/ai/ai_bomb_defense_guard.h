@@ -25,6 +25,44 @@ int countWalkableBombDefenseConnections(const Links &links, IsWalkable isWalkabl
   return count;
 }
 
+// Quantize outgoing WALKABLE links into eight horizontal approach directions.
+// Multiple links down the same corridor count as one direction; vertical-only
+// links carry no useful horizontal direction. This is only a topology heuristic.
+constexpr float kBombDefenseOctantEdge = 2.41421356f; // tan(67.5 degrees)
+constexpr int bombDefenseExitSector(float dx, float dy) {
+  if (dx == 0.0f && dy == 0.0f) return -1;
+  const float ax = dx < 0.0f ? -dx : dx;
+  const float ay = dy < 0.0f ? -dy : dy;
+  if (ax >= ay * kBombDefenseOctantEdge) return dx > 0.0f ? 0 : 4;
+  if (ay >= ax * kBombDefenseOctantEdge) return dy > 0.0f ? 2 : 6;
+  return dx > 0.0f ? (dy > 0.0f ? 1 : 7) : (dy > 0.0f ? 3 : 5);
+}
+
+template <typename Links, typename IsWalkable, typename DeltaX, typename DeltaY>
+int countBombDefenseExitSectors(const Links &links, IsWalkable isWalkable,
+                                DeltaX deltaX, DeltaY deltaY) {
+  unsigned int mask = 0;
+  for (const auto &link : links) {
+    if (!isWalkable(link)) continue;
+    const int sector = bombDefenseExitSector(deltaX(link), deltaY(link));
+    if (sector >= 0) mask |= 1u << sector;
+  }
+  int count = 0;
+  for (int i = 0; i < 8; ++i) {
+    if (mask & (1u << i)) ++count;
+  }
+  return count;
+}
+
+// A T needs at least two useful directions to reposition; a CT watching a
+// dropped bomb can exploit a one-direction recess. Busy crossings are costly.
+constexpr int bombDefenseDirectionPenalty(int sectors, bool plantedDefense) {
+  if (sectors <= 0) return 3;
+  if (plantedDefense && sectors == 1) return 1;
+  return sectors <= 2 ? 0 : sectors == 3 ? 1 : 2;
+}
+constexpr float kBombDefenseDirectionRouteCost = 80.0f;
+
 // This is a weak topology preference, not a replacement for world visibility.
 // CT can defend from a recess; T preferably retain two ways to reposition.
 constexpr int bombDefenseConnectionPenalty(int count, bool plantedDefense) {
@@ -43,7 +81,8 @@ constexpr bool isBetterBombDefenseCover(int candidateExposure, int candidateDama
                                         int bestExposure, int bestDamage,
                                         float bestRouteDistance, int bestNode,
                                         int candidateConnections = -1, int bestConnections = -1,
-                                        bool plantedDefense = false) {
+                                        bool plantedDefense = false,
+                                        int candidateSectors = -1, int bestSectors = -1) {
   if (bestNode < 0) {
     return true;
   }
@@ -56,7 +95,13 @@ constexpr bool isBetterBombDefenseCover(int candidateExposure, int candidateDama
     if (bestDamage + kBombDefenseDamageNearTie < candidateDamage) return false;
     const int candidatePenalty = bombDefenseConnectionPenalty(candidateConnections, plantedDefense);
     const int bestPenalty = bombDefenseConnectionPenalty(bestConnections, plantedDefense);
-    if (candidatePenalty != bestPenalty) return candidatePenalty < bestPenalty;
+    const int candidateDirectionPenalty = candidateSectors >= 0
+        ? bombDefenseDirectionPenalty(candidateSectors, plantedDefense) : 0;
+    const int bestDirectionPenalty = bestSectors >= 0
+        ? bombDefenseDirectionPenalty(bestSectors, plantedDefense) : 0;
+    const int candidateTotal = candidatePenalty + candidateDirectionPenalty;
+    const int bestTotal = bestPenalty + bestDirectionPenalty;
+    if (candidateTotal != bestTotal) return candidateTotal < bestTotal;
   }
   if (candidateExposure != bestExposure) {
     return candidateExposure < bestExposure;

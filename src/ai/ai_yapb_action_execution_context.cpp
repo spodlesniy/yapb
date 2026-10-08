@@ -1022,6 +1022,7 @@ bool YaPBActionExecutionContext::protectObjective() {
           bool bestCamp = false;
           float bestCrowdCost = 0.0f;
           int bestConnections = -1;
+          int bestSectors = -1;
 
           for (const auto &path : graph) {
             if ((path.flags & (NodeFlag::Ladder | NodeFlag::CTOnly))
@@ -1037,20 +1038,26 @@ bool YaPBActionExecutionContext::protectObjective() {
             }
             const bool isCamp = (path.flags & NodeFlag::Camp) != 0;
             const float crowding = crowdCost(path.number);
-            const int connections = countWalkableBombDefenseConnections(path.links, [&](const auto &link) {
+            const auto isWalkable = [&](const auto &link) {
               return graph.exists(link.index) && link.index != path.number
                   && !(link.flags & PathFlag::Jump)
                   && !(graph[link.index].flags & NodeFlag::Ladder);
-            });
+            };
+            const int connections = countWalkableBombDefenseConnections(path.links, isWalkable);
+            const int sectors = countBombDefenseExitSectors(
+                path.links, isWalkable,
+                [&](const auto &link) { return graph[link.index].origin.x - path.origin.x; },
+                [&](const auto &link) { return graph[link.index].origin.y - path.origin.y; });
             if (isBetterDistributedBombDefenseNode(
                 distance, isCamp, crowding, path.number,
                 bestRouteDistance, bestCamp, bestCrowdCost, bestNode,
-                connections, bestConnections)) {
+                connections, bestConnections, sectors, bestSectors)) {
               bestNode = path.number;
               bestRouteDistance = distance;
               bestCamp = isCamp;
               bestCrowdCost = crowding;
               bestConnections = connections;
+              bestSectors = sectors;
             }
           }
           node = bestNode;

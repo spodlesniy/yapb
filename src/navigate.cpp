@@ -2192,6 +2192,7 @@ int Bot::findDefendNode (const Vector &origin, bool preferLowExposure, bool plan
          int bestDamage = 0;
          float bestRouteDistance = kInfiniteDistance;
          int bestConnections = -1;
+         int bestSectors = -1;
 
          for (const auto &path : graph) {
             if (!ai::isBombDefenseNodeEligibleForPass (
@@ -2219,22 +2220,29 @@ int Bot::findDefendNode (const Vector &origin, bool preferLowExposure, bool plan
                : path.vis.crouch <= path.vis.stand;
             const int exposure = wouldCrouch ? path.vis.crouch : path.vis.stand;
             const int damage = practice.getDamage (m_team, path.number, path.number);
-            const int connections = ai::countWalkableBombDefenseConnections (path.links, [&] (const auto &link) {
+            const auto isWalkable = [&] (const auto &link) {
                return graph.exists (link.index) && link.index != path.number
                   && !(link.flags & PathFlag::Jump)
                   && !(graph[link.index].flags & NodeFlag::Ladder);
-            });
+            };
+            const int connections = ai::countWalkableBombDefenseConnections (path.links, isWalkable);
+            const int sectors = ai::countBombDefenseExitSectors (
+               path.links, isWalkable,
+               [&] (const auto &link) { return graph[link.index].origin.x - path.origin.x; },
+               [&] (const auto &link) { return graph[link.index].origin.y - path.origin.y; });
 
             if (ai::isBetterBombDefenseCover (
                exposure, damage, routeDistance, path.number,
                bestExposure, bestDamage, bestRouteDistance, bestNode,
-               connections, bestConnections, plantedDefense)) {
+               connections, bestConnections, plantedDefense,
+               sectors, bestSectors)) {
 
                bestNode = path.number;
                bestExposure = exposure;
                bestDamage = damage;
                bestRouteDistance = routeDistance;
                bestConnections = connections;
+               bestSectors = sectors;
             }
          }
          return bestNode;

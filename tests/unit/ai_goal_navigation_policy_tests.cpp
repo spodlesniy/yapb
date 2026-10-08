@@ -1165,3 +1165,46 @@ AI_TEST(testPlantedBombDefenseConnectionsHaveBoundedRoutePenalty) {
             530.0f, false, 0.0f, 11, 2, 4),
          "avoiding teammate crowding outweighs the topology benefit");
 }
+
+AI_TEST(testBombDefenseExitSectorsDistinguishCorridorAndCrossing) {
+  struct Exit { float dx; float dy; bool walkable; };
+  const Exit corridor[] { { 100.0f, 0.0f, true }, { 200.0f, 10.0f, true },
+                          { 250.0f, -12.0f, true }, { -100.0f, 0.0f, true } };
+  const Exit crossing[] { { 100.0f, 0.0f, true }, { 0.0f, 100.0f, true },
+                          { -100.0f, 0.0f, true }, { 0.0f, -100.0f, true } };
+  const Exit ignored[] { { 100.0f, 0.0f, true }, { 0.0f, 100.0f, false },
+                         { 0.0f, 0.0f, true } };
+  const auto walkable = [](const Exit &e) { return e.walkable; };
+  const auto x = [](const Exit &e) { return e.dx; };
+  const auto y = [](const Exit &e) { return e.dy; };
+  expect(ai::countBombDefenseExitSectors(corridor, walkable, x, y) == 2,
+         "several links along one corridor count as two horizontal approach directions");
+  expect(ai::countBombDefenseExitSectors(crossing, walkable, x, y) == 4,
+         "four-way intersection exposes the defender to four distinct approach directions");
+  expect(ai::countBombDefenseExitSectors(ignored, walkable, x, y) == 1,
+         "unwalkable links and vertical-only links do not add approach directions");
+  expect(ai::bombDefenseExitSector(1.0f, 1.0f) != ai::bombDefenseExitSector(-1.0f, -1.0f),
+         "opposing diagonals belong to different sectors");
+}
+
+AI_TEST(testBombDefenseDirectionRankingIsBoundedBySafetyAndTravel) {
+  expect(ai::bombDefenseDirectionPenalty(2, false) < ai::bombDefenseDirectionPenalty(4, false),
+         "CT defending a dropped C4 prefers fewer independent approach angles");
+  expect(ai::bombDefenseDirectionPenalty(2, true) < ai::bombDefenseDirectionPenalty(1, true),
+         "T defending planted C4 retains the option to reposition");
+  expect(ai::isBetterBombDefenseCover(102, 100, 500.0f, 8,
+            100, 100, 400.0f, 9, 4, 4, false, 2, 4),
+         "near-equal cover and connectivity allow narrower approach directions");
+  expect(!ai::isBetterBombDefenseCover(120, 100, 500.0f, 8,
+            100, 100, 400.0f, 9, 4, 4, false, 2, 4),
+         "a dangerously exposed CT position cannot win from directional topology alone");
+  expect(ai::isBetterDistributedBombDefenseNode(540.0f, false, 0.0f, 8,
+            500.0f, false, 0.0f, 9, 4, 4, 2, 4),
+         "T may make a modest route detour for controlled approach directions");
+  expect(!ai::isBetterDistributedBombDefenseNode(900.0f, false, 0.0f, 8,
+            500.0f, false, 0.0f, 9, 4, 4, 2, 4),
+         "an excessive detour still outweighs fewer approach directions");
+  expect(!ai::isBetterDistributedBombDefenseNode(540.0f, false, 512.0f, 8,
+            500.0f, false, 0.0f, 9, 4, 4, 2, 4),
+         "crowding avoidance remains more important than topology preference");
+}
