@@ -410,7 +410,6 @@ void Bot::updatePickups () {
    // Decide planted-C4 kit detours before iterating entities. Otherwise the
    // first visible kit/bomb in the entity list wins regardless of time budget.
    edict_t *preferredDefuseKit = nullptr;
-   ai::DefuseRouteChoice defuseRouteChoice = ai::DefuseRouteChoice::None;
    const bool compareDefuseRoutes = m_team == Team::CT
       && game.mapIs (MapFlags::Demolition) && gameState.isBombPlanted ()
       && !cv_ignore_objectives;
@@ -432,9 +431,6 @@ void Bot::updatePickups () {
       const auto priorChoice = m_pickupType == Pickup::DefusalKit
          ? ai::DefuseRouteChoice::ViaKit : ai::DefuseRouteChoice::Direct;
       const float bombTimeLeft = gameState.getBombTimeLeft ();
-      const auto baseline = ai::chooseDefuseRoute (m_hasDefuser, bombTimeLeft, estimatedSpeed,
-         direct, { false, 0.0f }, { false, 0.0f }, -1, -1, priorChoice);
-      defuseRouteChoice = baseline.choice;
 
       if (!m_hasDefuser && validBase) {
          float bestSlack = -1.0f;
@@ -457,13 +453,8 @@ void Bot::updatePickups () {
                && assessment.viaKit.slackSeconds > bestSlack) {
                preferredDefuseKit = candidate;
                bestSlack = assessment.viaKit.slackSeconds;
-               defuseRouteChoice = ai::DefuseRouteChoice::ViaKit;
             }
          }
-      }
-      // If no candidate is selected, revert to direct defuse or escape.
-      if (preferredDefuseKit == nullptr) {
-         defuseRouteChoice = baseline.choice;
       }
    }
 
