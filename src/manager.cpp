@@ -1500,6 +1500,7 @@ void BotManager::handleDeath (edict_t *killer, edict_t *victim) {
 void Bot::newRound () {
    // this function initializes a bot after creation & at the start of each round
 
+   endDefuseAttempt (ai::DefuseEventReason::RoundEnded, ai::DefuseEvidence::RoundMessage);
    cancelAIAction ();
    m_aiObservationState.invalidate ();
    ++m_aiCombatRoundId;
