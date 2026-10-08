@@ -1012,7 +1012,7 @@ bool YaPBActionExecutionContext::protectObjective() {
     const auto crowdCost = [&](int candidate) {
       float cost = 0.0f;
       for (const auto &ally : bots) {
-        if (!ally || ally == m_bot || !ally->m_isAlive || ally->m_team != Team::Terrorist) continue;
+        if (!ally || ally.get() == m_bot || !ally->m_isAlive || ally->m_team != Team::Terrorist) continue;
         const auto task = ally->getCurrentTaskId();
         const int goal = ally->m_chosenGoalIndex;
         if ((task != Task::MoveToPosition && task != Task::Camp) || !graph.exists(goal)
