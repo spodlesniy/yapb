@@ -13,6 +13,7 @@
 
 #include <ai/ai_action_result.h>
 #include <ai/ai_combat_event.h>
+#include <ai/ai_defuse_event.h>
 #include <ai/ai_navigation_event.h>
 
 namespace ai {
@@ -20,6 +21,7 @@ namespace ai {
 constexpr size_t kTrainingTransitionCapacity = 1024;
 constexpr size_t kTrainingCombatEventCapacity = 4096;
 constexpr size_t kTrainingNavigationEventCapacity = 2048;
+constexpr size_t kTrainingDefuseEventCapacity = 512;
 
 enum class TrainingRecordResult : uint8_t {
   Recorded,
@@ -43,6 +45,9 @@ private:
   TrainingTransition m_transitions[kTrainingTransitionCapacity] {};
   CombatEvent m_combatEvents[kTrainingCombatEventCapacity] {};
   NavigationEvent m_navigationEvents[kTrainingNavigationEventCapacity] {};
+  DefuseEvent m_defuseEvents[kTrainingDefuseEventCapacity] {};
+  size_t m_defuseEventCount {};
+  size_t m_droppedDefuseEvents {};
   size_t m_navigationEventCount {};
   size_t m_droppedNavigationEvents {};
   size_t m_combatEventCount {};
@@ -119,6 +124,18 @@ public:
   size_t droppedNavigationEvents() const { return m_droppedNavigationEvents; }
   const NavigationEvent &navigationEventAt(size_t index) const { return m_navigationEvents[index]; }
 
+  bool appendDefuseEvent(const DefuseEvent &event) {
+    if (m_defuseEventCount >= kTrainingDefuseEventCapacity) {
+      ++m_droppedDefuseEvents;
+      return false;
+    }
+    m_defuseEvents[m_defuseEventCount++] = event;
+    return true;
+  }
+  size_t defuseEventCount() const { return m_defuseEventCount; }
+  size_t droppedDefuseEvents() const { return m_droppedDefuseEvents; }
+  const DefuseEvent &defuseEventAt(size_t index) const { return m_defuseEvents[index]; }
+
   void clear() {
     for (size_t i = 0; i < kTrainingTransitionCapacity; ++i) {
       m_transitions[i] = {};
@@ -128,6 +145,8 @@ public:
     m_droppedCombatEvents = 0;
     m_navigationEventCount = 0;
     m_droppedNavigationEvents = 0;
+    m_defuseEventCount = 0;
+    m_droppedDefuseEvents = 0;
     m_droppedTransitions = 0;
     m_episodeCount = 0;
   }
