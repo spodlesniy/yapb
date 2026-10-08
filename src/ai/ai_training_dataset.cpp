@@ -131,6 +131,46 @@ bool writeCombatEvent(cr::File &file, const CombatEvent &event) {
       && writeString(file, "}\n");
 }
 
+bool writeNavigationEvent(cr::File &file, const NavigationEvent &event) {
+  if (!writeString(file, "{\"type\":\"navigation_event\",\"event\":\"")
+      || !writeString(file, navigationEventName(event.type))
+      || !writeString(file, "\",\"reason\":\"")
+      || !writeString(file, navigationEventReasonName(event.reason))
+      || !writeString(file, "\",\"game_time\":") || !writeFloat(file, event.gameTime)
+      || !writeString(file, ",\"round_start_time\":") || !writeFloat(file, event.roundStartTime)
+      || !writeString(file, ",\"round_id\":") || !writeUnsigned(file, event.roundId)
+      || !writeString(file, ",\"episode_id\":") || !writeUnsigned(file, event.episodeId)
+      || !writeString(file, ",\"bot_id\":") || !writeInt(file, event.botId)
+      || !writeString(file, ",\"team\":") || !writeInt(file, event.team)
+      || !writeString(file, ",\"task\":") || !writeInt(file, event.task)
+      || !writeString(file, ",\"ai_action\":") || !writeInt(file, event.aiAction)
+      || !writeString(file, ",\"previous_task\":") || !writeInt(file, event.previousTask)
+      || !writeString(file, ",\"next_task\":") || !writeInt(file, event.nextTask)
+      || !writeString(file, ",\"previous_node\":") || !writeInt(file, event.previousNode)
+      || !writeString(file, ",\"current_node\":") || !writeInt(file, event.currentNode)
+      || !writeString(file, ",\"goal_node\":") || !writeInt(file, event.goalNode)
+      || !writeString(file, ",\"route_source\":") || !writeInt(file, event.routeSource)
+      || !writeString(file, ",\"route_destination\":") || !writeInt(file, event.routeDestination)
+      || !writeString(file, ",\"path_type\":") || !writeInt(file, event.pathType)
+      || !writeString(file, ",\"path_node_count\":") || !writeInt(file, event.pathNodeCount)
+      || !writeString(file, ",\"path_truncated\":")
+      || !writeString(file, event.pathTruncated ? "true" : "false")
+      || !writeString(file, ",\"path_nodes\":[")) return false;
+
+  const int stored = event.pathNodeCount < kNavigationDiagnosticPathNodes
+      ? event.pathNodeCount : kNavigationDiagnosticPathNodes;
+  for (int i = 0; i < stored; ++i) {
+    if ((i && !writeString(file, ",")) || !writeInt(file, event.pathNodes[i])) return false;
+  }
+  return writeString(file, "],\"estimated_path_distance\":")
+      && writeFloat(file, event.estimatedPathDistance)
+      && writeString(file, ",\"physical_displacement\":") && writeFloat(file, event.physicalDisplacement)
+      && writeString(file, ",\"distance_to_goal\":") && writeFloat(file, event.distanceToGoal)
+      && writeString(file, ",\"position\":") && writeVec3(file, event.position)
+      && writeString(file, ",\"velocity\":") && writeVec3(file, event.velocity)
+      && writeString(file, "}\n");
+}
+
 bool writeSample(cr::File &file, const TrainingSample &sample) {
   return writeString(file, "{\"episode_id\":") &&
          writeUnsigned(file, sample.episodeId) &&
@@ -206,6 +246,14 @@ TrainingDatasetWriteResult writeTrainingDataset(const TrainingBuffer &buffer, co
       return result;
     }
     ++result.combatEventCount;
+  }
+
+  for (size_t i = 0; i < buffer.navigationEventCount(); ++i) {
+    if (!writeNavigationEvent(file, buffer.navigationEventAt(i))) {
+      result.error = TrainingDatasetWriteError::IoError;
+      return result;
+    }
+    ++result.navigationEventCount;
   }
 
   if (file.flush()) {

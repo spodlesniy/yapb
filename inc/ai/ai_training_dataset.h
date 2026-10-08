@@ -30,6 +30,7 @@ enum class TrainingDatasetWriteError : uint8_t {
 struct TrainingDatasetWriteResult {
   size_t count {};
   size_t combatEventCount {};
+  size_t navigationEventCount {};
   size_t failedIndex {};
   TrainingDatasetWriteError error { TrainingDatasetWriteError::None };
 

@@ -571,3 +571,59 @@ AI_TEST(testCombatEventWriterPreservesOriginalTransitionCount) {
   }
   std::remove(path);
 }
+
+AI_TEST(testNavigationEventBufferIsBoundedAndSeparateFromTraining) {
+  ai::TrainingBuffer buffer {};
+  ai::NavigationEvent event {};
+  event.type = ai::NavigationEventType::RouteObserved;
+  event.botId = 8;
+  event.pathNodeCount = 3;
+  event.pathNodes[0] = 12;
+  event.pathNodes[1] = 15;
+  event.pathNodes[2] = 30;
+  expect(buffer.appendNavigationEvent(event), "navigation observation is accepted independently");
+  expect(buffer.size() == 0 && buffer.combatEventCount() == 0 && buffer.navigationEventCount() == 1,
+         "navigation trace never becomes an ML transition");
+  expect(buffer.navigationEventAt(0).pathNodes[1] == 15, "route waypoint snapshot persists");
+  expect(ai::shouldReportLowNavigationDisplacement(2.1f, 10.0f, true, false),
+         "two seconds with little movement on an active route is diagnostic");
+  expect(!ai::shouldReportLowNavigationDisplacement(2.1f, 10.0f, true, true),
+         "combat or blindness must not be mislabeled as stalled navigation");
+  expect(!ai::shouldReportLowNavigationDisplacement(0.5f, 0.0f, true, false),
+         "short-lived path transitions must not be reported as stalls");
+  buffer.clear();
+  expect(buffer.navigationEventCount() == 0, "reset clears navigation diagnostics");
+}
+
+AI_TEST(testNavigationEventJsonlIsTaggedAndDoesNotCountAsTraining) {
+  const char *path = "aipb-navigation-events-test.jsonl";
+  ai::TrainingBuffer buffer {};
+  ai::NavigationEvent event {};
+  event.type = ai::NavigationEventType::RouteObserved;
+  event.reason = ai::NavigationEventReason::RouteObserved;
+  event.botId = 4;
+  event.currentNode = 2;
+  event.goalNode = 30;
+  event.pathNodeCount = 3;
+  event.pathNodes[0] = 2;
+  event.pathNodes[1] = 9;
+  event.pathNodes[2] = 30;
+  expect(buffer.appendNavigationEvent(event), "route snapshot fits in diagnostic buffer");
+  const auto result = ai::writeTrainingDataset(buffer, path);
+  expect(result.isValid(), "dataset writer accepts route snapshots");
+  expect(result.count == 0 && result.navigationEventCount == 1,
+         "navigation event is not a learning sample");
+  std::FILE *file = std::fopen(path, "rb");
+  expect(file != nullptr, "navigation JSONL exists");
+  if (file) {
+    char line[4096] {};
+    expect(std::fgets(line, sizeof(line), file) != nullptr, "header can be read");
+    expect(std::fgets(line, sizeof(line), file) != nullptr, "event can be read");
+    expect(std::strstr(line, "\"type\":\"navigation_event\"") != nullptr,
+           "navigation event has a distinct discriminator");
+    expect(std::strstr(line, "\"path_nodes\":[2,9,30]") != nullptr,
+           "waypoint sequence is serialized in order");
+    std::fclose(file);
+  }
+  std::remove(path);
+}

@@ -13,11 +13,13 @@
 
 #include <ai/ai_action_result.h>
 #include <ai/ai_combat_event.h>
+#include <ai/ai_navigation_event.h>
 
 namespace ai {
 
 constexpr size_t kTrainingTransitionCapacity = 1024;
 constexpr size_t kTrainingCombatEventCapacity = 4096;
+constexpr size_t kTrainingNavigationEventCapacity = 2048;
 
 enum class TrainingRecordResult : uint8_t {
   Recorded,
@@ -40,6 +42,9 @@ class TrainingBuffer final {
 private:
   TrainingTransition m_transitions[kTrainingTransitionCapacity] {};
   CombatEvent m_combatEvents[kTrainingCombatEventCapacity] {};
+  NavigationEvent m_navigationEvents[kTrainingNavigationEventCapacity] {};
+  size_t m_navigationEventCount {};
+  size_t m_droppedNavigationEvents {};
   size_t m_combatEventCount {};
   size_t m_droppedCombatEvents {};
   size_t m_size {};
@@ -101,6 +106,19 @@ public:
   size_t droppedCombatEvents() const { return m_droppedCombatEvents; }
   const CombatEvent &combatEventAt(size_t index) const { return m_combatEvents[index]; }
 
+  bool appendNavigationEvent(const NavigationEvent &event) {
+    if (m_navigationEventCount >= kTrainingNavigationEventCapacity) {
+      ++m_droppedNavigationEvents;
+      return false;
+    }
+    m_navigationEvents[m_navigationEventCount++] = event;
+    return true;
+  }
+
+  size_t navigationEventCount() const { return m_navigationEventCount; }
+  size_t droppedNavigationEvents() const { return m_droppedNavigationEvents; }
+  const NavigationEvent &navigationEventAt(size_t index) const { return m_navigationEvents[index]; }
+
   void clear() {
     for (size_t i = 0; i < kTrainingTransitionCapacity; ++i) {
       m_transitions[i] = {};
@@ -108,6 +126,8 @@ public:
     m_size = 0;
     m_combatEventCount = 0;
     m_droppedCombatEvents = 0;
+    m_navigationEventCount = 0;
+    m_droppedNavigationEvents = 0;
     m_droppedTransitions = 0;
     m_episodeCount = 0;
   }
