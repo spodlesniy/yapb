@@ -979,3 +979,21 @@ AI_TEST(testAttackMoveOnlyAdvancesOnDistantVisibleThreat) {
   expect(!ai::shouldAdvanceWhileAttacking(40, true, false, false, false, false, true, 700.0f * 700.0f),
          "narrow passages preserve legacy combat movement");
 }
+
+
+AI_TEST(testAudibleBombCanRetargetActiveCtBombsiteSearch) {
+  expect(ai::canRetargetCtToAudibleBomb(true, true, true, true),
+         "a reachable heard C4 authorizes immediate CT bombsite retargeting");
+  expect(!ai::canRetargetCtToAudibleBomb(true, true, false, true),
+         "planted-bomb coordinates cannot redirect CT without audible evidence");
+  expect(!ai::canRetargetCtToAudibleBomb(true, true, true, false),
+         "unreachable bomb-side graph node cannot replace the active CT route");
+  expect(!ai::canRetargetCtToAudibleBomb(false, true, true, true),
+         "CT does not retarget without a planted C4");
+  expect(!ai::canRetargetCtToAudibleBomb(true, false, true, true),
+         "explicitly disabled objectives preserve current navigation");
+  expect(ai::shouldChangeAudibleBombGoal(12, 16),
+         "a different heard-bomb node invalidates the old bombplace route");
+  expect(!ai::shouldChangeAudibleBombGoal(16, 16),
+         "matching goal must not repeatedly reset CT navigation");
+}

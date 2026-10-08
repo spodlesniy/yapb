@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: MIT
 //
 
+#include <ai/ai_bomb_search_guard.h>
 #include <ai/ai_objective_navigation_guard.h>
 #include <ai/ai_perception_guard.h>
 #include <yapb.h>
@@ -75,6 +76,39 @@ void Bot::normal_ () {
 
    if (m_reloadState == Reload::None && getAmmo () != 0 && getAmmoInClip () < 5 && prop.ammo1 != -1) {
       m_reloadState = Reload::Primary;
+   }
+
+   // Retarget an active CT bombsite search as soon as C4 is actually audible.
+   // Goal waypoints remain searchable while silent; hearing is required before
+   // consulting the bomb location. Never interrupt an explicitly forced debug goal.
+   if (m_team == Team::CT && game.mapIs (MapFlags::Demolition)
+      && gameState.isBombPlanted () && !cv_ignore_objectives
+      && !graph.exists (debugGoal)) {
+
+      const auto &audibleBomb = isBombAudible ();
+      if (!audibleBomb.empty ()) {
+         const int bombNode = graph.getNearest (audibleBomb, 512.0f);
+         ensureCurrentNodeIndex ();
+
+         bool reachable = false;
+         if (graph.exists (bombNode) && graph.exists (m_currentNodeIndex)) {
+            const float routeDistance = planner.preciseDistance (m_currentNodeIndex, bombNode);
+            reachable = routeDistance >= 0.0f && routeDistance < 32767.0f;
+         }
+
+         if (ai::canRetargetCtToAudibleBomb (gameState.isBombPlanted (),
+               !cv_ignore_objectives, true, reachable)) {
+
+            m_bombSearchOverridden = true;
+
+            if (ai::shouldChangeAudibleBombGoal (getTask ()->data, bombNode)) {
+               clearSearchNodes ();
+               getTask ()->data = bombNode;
+               m_prevGoalIndex = bombNode;
+               m_chosenGoalIndex = bombNode;
+            }
+         }
+      }
    }
 
    // if bomb planted and it's a CT calculate new path to bomb point if he's not already heading for

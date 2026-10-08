@@ -10,6 +10,16 @@
 
 namespace ai {
 
+
+constexpr bool canRetargetCtToAudibleBomb(bool bombPlanted, bool objectivesEnabled,
+                                           bool bombAudible, bool routeReachable) {
+  return bombPlanted && objectivesEnabled && bombAudible && routeReachable;
+}
+
+constexpr bool shouldChangeAudibleBombGoal(int currentGoal, int audibleBombGoal) {
+  return currentGoal != audibleBombGoal;
+}
+
 constexpr bool isBombSearchGoalEligible(bool visited, bool allowVisited) {
   return allowVisited || !visited;
 }
