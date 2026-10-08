@@ -560,9 +560,9 @@ AI_TEST(testCombatEventWriterPreservesOriginalTransitionCount) {
   expect(file != nullptr, "diagnostic JSONL file exists");
   if (file) {
     char line[2048] {};
-    std::fgets(line, sizeof(line), file);
+    expect(std::fgets(line, sizeof(line), file) != nullptr, "metadata line is readable");
     expect(std::strstr(line, "\"version\":3") != nullptr, "dataset metadata declares version 3");
-    std::fgets(line, sizeof(line), file);
+    expect(std::fgets(line, sizeof(line), file) != nullptr, "combat event line is readable");
     expect(std::strstr(line, "\"type\":\"combat_event\"") != nullptr,
            "combat event is tagged so training tools can skip it");
     expect(std::strstr(line, "\"blind_time_remaining\":1.25") != nullptr,
