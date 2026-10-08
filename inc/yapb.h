@@ -230,6 +230,7 @@ public:
 class Bot final {
 public:
    friend class BotManager;
+   friend class MessageDispatcher;
    friend class ai::BotActionExecutor;
    friend class ai::YaPBActionExecutionContext;
    friend ai::ObservationInput ai::buildObservationInput (const Bot &bot);
