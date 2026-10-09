@@ -7,6 +7,23 @@
 
 namespace ai {
 
+// Diagnostic state is a Bot member, so its complete definition must be visible
+// from yapb.h without relying on task-local navigation header include order.
+constexpr float kPlantedBombApproachDiagnosticInterval = 5.0f;
+
+class DefuseApproachDiagnosticGate final {
+  float m_nextBlockedReport {}, m_nextFailureReport {};
+public:
+  void reset() { m_nextBlockedReport = m_nextFailureReport = 0.0f; }
+  bool allow(float now, bool failure) {
+    auto &next = failure ? m_nextFailureReport : m_nextBlockedReport;
+    if (now < next) return false;
+    next = now + kPlantedBombApproachDiagnosticInterval;
+    return true;
+  }
+};
+
+ 
 enum class DefuseEventType : uint8_t { Attempt, Start, Interrupted, Complete, ApproachBlocked, ApproachFailed };
 enum class DefuseEventReason : uint8_t {
   None, BarTimeCleared, UseNotConfirmed, TaskEnded, RoundEnded, BotDied, BombExploded,

@@ -20,20 +20,6 @@ constexpr float kPlantedBombDefuseReadyDistance = 60.0f;
 constexpr float kPlantedBombDefuseRetryDistance = 42.0f;
 constexpr float kPlantedBombDefuseStanceRetrySeconds = 1.25f;
 constexpr float kPlantedBombDefuseReapproachSeconds = 3.0f;
-constexpr float kPlantedBombApproachDiagnosticInterval = 5.0f;
-
-class DefuseApproachDiagnosticGate final {
-  float m_nextBlockedReport {}, m_nextFailureReport {};
-public:
-  void reset() { m_nextBlockedReport = m_nextFailureReport = 0.0f; }
-  bool allow(float now, bool failure) {
-    auto &next = failure ? m_nextFailureReport : m_nextBlockedReport;
-    if (now < next) return false;
-    next = now + kPlantedBombApproachDiagnosticInterval;
-    return true;
-  }
-};
-
 // Physical obstruction requires a graph approach even when the bot is near C4.
 constexpr bool needsPlantedBombInteractionRoute(float distanceSq, float radiusSq, bool directReachable) {
   return distanceSq >= radiusSq || !directReachable;

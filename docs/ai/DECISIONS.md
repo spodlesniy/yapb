@@ -1670,6 +1670,14 @@ No changes are made to the conservative graph travel budget for distant reinforc
 Reason: the existing arrival check rejects all paths once the bomb has fewer than four seconds left, including zero-length routes for bots already guarding the site.
 Such bots could then emit repeated rejected ProtectObjective attempts precisely when they should hold an established defense position.
 
+## D182.1 — Make C4 approach diagnostics visible to the Bot header
+
+The user-triggered Windows x86 job for D182 failed with MSVC C2039/C3646 at `inc/yapb.h(344)`: `ai::DefuseApproachDiagnosticGate` was defined only in `ai_objective_navigation_guard.h`, while `yapb.h` declared a direct value member of that type without importing its complete definition.
+Move the five-second diagnostic gate and its interval constant to `ai_defuse_event.h`, which `yapb.h` already includes before the Bot class declaration.
+Keep objective-navigation logic and diagnostic throttling unchanged.
+Make the unit test import `ai_defuse_event.h` explicitly, rather than relying on incidental includes.
+This is a separately named one-commit correction, preserving all prior history.
+
 ## D182 — Record actual target switches and unusually fast view turns
 
 To diagnose observed unnaturally rapid changes in bot aim, record actual live-player target identity changes and actual view-angle deltas **after** `updateLookAngles()`, rather than guessing from policy intent.
