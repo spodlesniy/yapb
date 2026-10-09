@@ -9,6 +9,7 @@
 
 // Explicit declaration for D180's blind aim guard; yapb.h does not export it.
 #include <ai/ai_perception_guard.h>
+#include <ai/ai_flash_avoidance.h>
 
 ConVar cv_max_nodes_for_predict ("max_nodes_for_predict", "22", "Maximum number of path nodes to predict the enemy.", true, 15.0f, 256.0f);
 ConVar cv_whose_your_daddy ("whose_your_daddy", "0", "Enables or disables extra hard difficulty for bots.");
@@ -156,12 +157,24 @@ void Bot::updateBodyAngles () {
 void Bot::updateLookAngles () {
    const float delta = cr::clamp (game.time () - m_lookUpdateTime, cr::kFloatEqualEpsilon, kViewFrameUpdate);
    m_lookUpdateTime = game.time ();
+   m_aiFlashAvoidanceTurned = false;
 
    const bool flashBlind = ai::suppressPreciseBlindAim (m_blindTime - game.time ());
    if (flashBlind) {
       // This is the final aim gate, including freezetime and tasks that call
       // focusEnemy() directly. Never track fresh or remembered enemy positions.
       m_lookAt = getEyesPos () + m_blindLookDirection * 512.0f;
+   }
+   else if (ai::shouldApplyFlashAvoidance (game.time (), m_preventFlashing,
+      !!(m_states & Sense::SeeingEnemy), flashBlind)) {
+      // Keep turning away across frames without bypassing the angular speed limit.
+      const float previousYaw = pev->v_angle.y;
+      pev->v_angle.y = ai::flashAvoidanceYawStep (previousYaw, m_flashAvoidanceYaw, delta);
+      m_aiFlashAvoidanceTurned = ai::aimAngleDifference (pev->v_angle.y, previousYaw) != 0.0f;
+      m_lookYawVel = 0.0f;
+      m_aimSpeed.y = 0.0f;
+      updateBodyAngles ();
+      return;
    }
 
    // adjust all body and view angles to face an absolute vector

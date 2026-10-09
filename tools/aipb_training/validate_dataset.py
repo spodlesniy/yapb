@@ -250,6 +250,7 @@ def iter_validated_samples(path: str | Path):
                 }, f"line {line_number}: unknown aim event")
                 _require(value.get("reason") in {
                     "target_acquired", "target_changed", "target_lost", "flash_blind",
+                    "flash_avoidance",
                     "aim_override", "aim_grenade", "aim_enemy", "aim_entity",
                     "aim_last_enemy", "aim_predict_path", "aim_camp", "aim_navigation", "unattributed"
                 }, f"line {line_number}: unknown aim reason")

@@ -91,6 +91,17 @@ An interrupted attempt records its actual evidence source rather than claiming a
 Likewise, `round_message` refers to the round message path, whereas `game_state` means the code observed that C4 was no longer marked as planted.
 The Python validator checks evidence compatibility without counting diagnostic records as model-training samples.
 
+## D183 — Bounded flashbang avoidance and accurate aim attribution
+
+The grenade detector sets the opposite yaw of a perceived flashbang only when no enemy is currently visible.
+The target persists for the existing short avoidance interval, and `updateLookAngles()` steers at a maximum 720 degrees per second instead of snapping the view angle.
+A confirmed visible enemy takes precedence; D180's blind-direction gate also remains authoritative throughout active blindness.
+Round initialization resets the stored target and per-frame applied-turn indicator.
+Diagnostic `flash_avoidance` attribution requires actual yaw movement through this branch, so stale aim flags cannot mislabel a grenade response as navigation or enemy aim.
+Yaw/pitch differences are reduced by full 360-degree remainder even for multiple revolutions.
+JSONL v3 adds the reason without changing diagnostic structure, buffer behavior, or training transition counts.
+The turn rate and avoidance effectiveness remain subject to real-game testing after Windows x86 verification.
+
 ## D182 — Actual aim turns and target identity diagnostics
 
 JSONL v3 adds event-only `aim_event` records for target acquisition, switching, loss, and actual large view-angle changes after `updateLookAngles()`.

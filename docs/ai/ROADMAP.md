@@ -44,6 +44,7 @@ Do not fabricate completion records or historical names for Phases 1–6 without
 - Direct semantic actions for combat, navigation, objectives, grenades, and interactions, using YaPB primitives where necessary.
 - D170–D182 gameplay and telemetry work covering C4 objectives, navigation sampling, team objective defense, visible-enemy stability, flash blindness, CT defuse approaches, and bounded aim diagnostics.
 - D182.1–D182.3 Windows x86 compatibility corrections.
+- D183 multi-turn aim diagnostic correction, bounded flashbang avoidance, and per-frame cause attribution; CI and gameplay verification still pending.
 
 ### Latest verified build evidence
 
@@ -54,7 +55,7 @@ Do not fabricate completion records or historical names for Phases 1–6 without
 
 ### Open work and investigation queue
 
-- **D183 (proposed next):** fix diagnostic angle normalization and distinguish actual jitter from flashbang avoidance turns; preserve timely grenade response and add representative tests.
+- Validate D183's flash avoidance timing, enemy-priority behavior, and event attribution with a new gameplay capture after user-triggered Windows x86 verification.
 - **D184 (proposed):** coordinate CT approaches to planted C4, including defuser/cover roles, avoiding unnecessary route convergence when viable alternatives exist.
 - **D185 (proposed):** form T defense earlier around expected and planted C4 positions, without exposing hidden information or breaking planting objectives.
 - **D186 (proposed):** improve dropped-C4 guarding through safe positions, cover/exposure checks, spacing, and evidence-rich diagnostics.

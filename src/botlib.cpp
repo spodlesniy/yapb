@@ -109,7 +109,7 @@ void Bot::avoidGrenades () {
       if (m_preventFlashing < game.time () && model == kFlashbangModelName) {
          // don't look at flash bang
          if (!(m_states & Sense::SeeingEnemy)) {
-            pev->v_angle.y = cr::wrapAngle ((game.getEntityOrigin (pent) - getEyesPos ()).angles ().y + 180.0f);
+            m_flashAvoidanceYaw = cr::wrapAngle ((game.getEntityOrigin (pent) - getEyesPos ()).angles ().y + 180.0f);
 
             m_canSetAimDirection = false;
             m_preventFlashing = game.time () + rg (1.0f, 2.0f);
@@ -3693,7 +3693,7 @@ void Bot::updateAimDiagnostics () {
    if (m_aiRuntime.controller ().getMode () != ai::ControlMode::Training
       || (!decision.targetChanged && !decision.rapidTurn)) return;
    const bool blinded = m_blindTime > now;
-   const auto reason = ai::aimReasonForState(blinded,
+   const auto reason = ai::aimReasonForState(blinded, m_aiFlashAvoidanceTurned,
       (m_aimFlags & AimFlags::Override) != 0, (m_aimFlags & AimFlags::Grenade) != 0,
       (m_aimFlags & AimFlags::Enemy) != 0, (m_aimFlags & AimFlags::Entity) != 0,
       (m_aimFlags & AimFlags::LastEnemy) != 0, (m_aimFlags & AimFlags::PredictPath) != 0,

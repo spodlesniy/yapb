@@ -4,6 +4,7 @@
 //
 #pragma once
 
+#include <cmath>
 #include <cstdint>
 #include <ai/ai_observation.h>
 
@@ -11,7 +12,7 @@ namespace ai {
 
 enum class AimEventType : uint8_t { TargetAcquired, TargetSwitched, TargetLost, RapidTurn };
 enum class AimEventReason : uint8_t {
-  TargetAcquired, TargetChanged, TargetLost, Blind,
+  TargetAcquired, TargetChanged, TargetLost, Blind, FlashAvoidance,
   Override, Grenade, Enemy, Entity, LastEnemy, PredictPath,
   Camp, Navigation, Unattributed
 };
@@ -32,6 +33,7 @@ constexpr const char *aimEventReasonName(AimEventReason reason) {
   case AimEventReason::TargetChanged: return "target_changed";
   case AimEventReason::TargetLost: return "target_lost";
   case AimEventReason::Blind: return "flash_blind";
+  case AimEventReason::FlashAvoidance: return "flash_avoidance";
   case AimEventReason::Override: return "aim_override";
   case AimEventReason::Grenade: return "aim_grenade";
   case AimEventReason::Enemy: return "aim_enemy";
@@ -47,9 +49,10 @@ constexpr const char *aimEventReasonName(AimEventReason reason) {
 
 // Mirrors the prioritization in Bot::setAimDirection(). These are observed
 // aim flags, not proof that an enemy caused a specific head turn.
-constexpr AimEventReason aimReasonForState(bool blinded, bool overrideAim, bool grenade,
+constexpr AimEventReason aimReasonForState(bool blinded, bool flashAvoidance, bool overrideAim, bool grenade,
     bool enemy, bool entity, bool lastEnemy, bool predictPath, bool camp, bool navigation) {
   return blinded ? AimEventReason::Blind
+       : flashAvoidance ? AimEventReason::FlashAvoidance
        : overrideAim ? AimEventReason::Override
        : grenade ? AimEventReason::Grenade
        : enemy ? AimEventReason::Enemy
@@ -61,9 +64,9 @@ constexpr AimEventReason aimReasonForState(bool blinded, bool overrideAim, bool 
        : AimEventReason::Unattributed;
 }
 
-// Wrap yaw/pitch differences across the -180/+180 boundary.
-constexpr float aimAngleDifference(float current, float previous) {
-  float delta = current - previous;
+// Normalize differences even when source angles accumulated multiple turns.
+inline float aimAngleDifference(float current, float previous) {
+  float delta = std::fmod(current - previous, 360.0f);
   if (delta > 180.0f) delta -= 360.0f;
   if (delta < -180.0f) delta += 360.0f;
   return delta;

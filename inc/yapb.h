@@ -304,6 +304,7 @@ private:
    float m_lookYawVel {}; // look yaw velocity
    float m_lookPitchVel {}; // look pitch velocity
    float m_lookUpdateTime {}; // lookangles update time
+   float m_flashAvoidanceYaw {}; // target flash avoidance yaw
    float m_aimErrorTime {}; // time to update error vector
    float m_nextCampDirTime {}; // time next camp direction change
    float m_lastFightStyleCheck {}; // time checked style
@@ -794,6 +795,7 @@ public:
    bool m_aiNavPendingRoute {};
 
    ai::AimDiagnosticTracker m_aiAimDiagnosticTracker {};
+   bool m_aiFlashAvoidanceTurned {}; // true only for a frame with actual avoidance yaw
    ai::DefuseAttemptTracker m_aiDefuseTracker {};
    bool m_aiFlashEventActive {};
    ai::BotRuntime m_aiRuntime;

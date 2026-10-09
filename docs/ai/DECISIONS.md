@@ -1768,3 +1768,15 @@ This is a separate one-commit correction; no historical commit or force-ref upda
 The automatic unit/Training tools CI is not a substitute for the user-triggered Windows x86 game-DLL build.
 The latter must be rechecked for this exact commit; full Windows build success cannot be claimed beforehand.
 
+## D183 — Normalize multi-turn aim diagnostics and rate-limit flashbang avoidance
+
+Normalize observed yaw/pitch changes using the full 360-degree remainder so accumulated rotations do not create false `rapid_aim_turn` events.
+When a visible flashbang triggers avoidance without a visible enemy, retain its opposite yaw for the existing 1–2-second timer and steer toward it at no more than 720 degrees per second.
+The regular look-angle update owns that bounded motion; the grenade detector does not assign `pev->v_angle` directly.
+A visible enemy immediately restores normal aiming; active blindness retains the D180 gate and round initialization resets the avoidance target and diagnostics.
+Report `flash_avoidance` only for rapid-turn frames with an actual yaw adjustment from that branch.
+The JSONL v3 reason vocabulary is extended without changing the training transition contract.
+
+Reason: direct grenade-triggered view-angle writes bypassed smoothing, and one-pass angle wrapping marked multi-revolution differences as fast turns.
+Explicit per-frame attribution distinguishes flash avoidance from stale enemy and navigation aim flags.
+The response rate and game behavior still require automatic CI, user-triggered Windows x86 validation, and a fresh in-game capture.

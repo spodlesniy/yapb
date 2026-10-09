@@ -1508,6 +1508,8 @@ void Bot::newRound () {
    m_aiNavPendingRoute = false;
    m_aiNavigationGate.reset ();
    m_aiAimDiagnosticTracker.reset ();
+   m_aiFlashAvoidanceTurned = false;
+   m_flashAvoidanceYaw = 0.0f;
    m_aiRuntime.beginTrainingEpisode ();
 
    // delete all allocated path nodes

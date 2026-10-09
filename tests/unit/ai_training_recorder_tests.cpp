@@ -11,6 +11,8 @@
 #include <cstdio>
 #include <cstring>
 
+#include <ai/ai_aim_event.h>
+#include <ai/ai_flash_avoidance.h>
 #include <ai/ai_training_recorder.h>
 #include <ai/ai_training_sample.h>
 #include <ai/ai_training_dataset.h>
@@ -652,8 +654,43 @@ AI_TEST(testAimDiagnosticsDetectWrapAndThrottle) {
    tracker.observe(0.0f, 0.0f, 0.0f, -1);
    const auto acquired = tracker.observe(0.1f, 70.0f, 0.0f, 3);
    expect(acquired.targetChanged && acquired.rapidTurn, "new round restores diagnostics");
-   expect(ai::aimReasonForState(true, false, false, true, false, false, false, false, false)
+   expect(ai::aimReasonForState(true, false, false, false, true, false, false, false, false, false)
           == ai::AimEventReason::Blind, "flash takes precedence over enemy flags");
+   expect(ai::aimReasonForState(false, true, false, false, true, false, false, false, false, false)
+          == ai::AimEventReason::FlashAvoidance, "flash steering overrides stale enemy flags");
+   expect(ai::aimReasonForState(false, false, false, false, false, false, false, false, false, true)
+          == ai::AimEventReason::Navigation, "ordinary navigation reason is unchanged");
+}
+
+AI_TEST(testAimDiagnosticsNormalizeAccumulatedAngles) {
+   expect(ai::aimAngleDifference(-179.0f, 179.0f) == 2.0f, "positive yaw wrap through 180");
+   expect(ai::aimAngleDifference(179.0f, -179.0f) == -2.0f, "negative yaw wrap through 180");
+   expect(ai::aimAngleDifference(1.0f, 359.0f) == 2.0f, "positive yaw wrap through 360");
+   expect(ai::aimAngleDifference(359.0f, 1.0f) == -2.0f, "negative yaw wrap through 360");
+   expect(ai::aimAngleDifference(1460.0f, 20.0f) == 0.0f, "four complete turns have zero delta");
+   expect(ai::aimAngleDifference(-1070.0f, 10.0f) == 0.0f, "three negative turns have zero delta");
+   expect(ai::aimAngleDifference(1080.125f, 0.125f) == 0.0f, "fractional values preserve tiny delta");
+   ai::AimDiagnosticTracker tracker {};
+   tracker.observe(1.0f, 20.0f, -15.0f, -1);
+   const auto result = tracker.observe(1.1f, 1460.0f, -1095.0f, -1);
+   expect(!result.rapidTurn && result.yawDelta == 0.0f && result.pitchDelta == 0.0f,
+          "multi-turn yaw and pitch do not produce rapid turns");
+}
+
+AI_TEST(testFlashAvoidanceBoundedTurnAndPriority) {
+   expect(ai::shouldApplyFlashAvoidance(3.0f, 4.0f, false, false),
+          "flash avoidance persists across frames while safe to perform");
+   expect(!ai::shouldApplyFlashAvoidance(4.0f, 4.0f, false, false), "avoidance expires");
+   expect(!ai::shouldApplyFlashAvoidance(3.0f, 4.0f, true, false), "visible enemy takes precedence");
+   expect(!ai::shouldApplyFlashAvoidance(3.0f, 4.0f, false, true), "D180 blindness takes precedence");
+   expect(ai::flashAvoidanceYawStep(0.0f, 180.0f, 0.05f) == 36.0f,
+          "first frame is rate limited rather than snapping to the opposite yaw");
+   expect(ai::flashAvoidanceYawStep(175.0f, -175.0f, 0.1f) == -175.0f,
+          "shortest yaw turn survives wrap boundary");
+   expect(ai::flashAvoidanceYawStep(0.0f, -180.0f, 0.1f) == -72.0f,
+          "negative flash avoidance turn remains rate limited");
+   expect(ai::flashAvoidanceYawStep(0.0f, 90.0f, -0.1f) == 0.0f,
+          "nonpositive frame interval cannot cause a turn");
 }
 
 AI_TEST(testAimBufferCompactionAndJsonlWriter) {
@@ -664,7 +701,7 @@ AI_TEST(testAimBufferCompactionAndJsonlWriter) {
       expect(buffer.appendAimEvent(event), "aim diagnostic accepted");
    }
    event.type = ai::AimEventType::RapidTurn;
-   event.reason = ai::AimEventReason::Enemy;
+   event.reason = ai::AimEventReason::FlashAvoidance;
    event.gameTime = static_cast<float>(ai::kTrainingAimEventCapacity);
    event.botId = 7;
    event.previousTargetId = 2;
@@ -687,7 +724,8 @@ AI_TEST(testAimBufferCompactionAndJsonlWriter) {
       while (std::fgets(line, sizeof(line), file)) {
          if (std::strstr(line, "\"event\":\"rapid_aim_turn\"")) {
             found = std::strstr(line, "\"previous_target_id\":2") != nullptr
-                 && std::strstr(line, "\"yaw_delta\":93") != nullptr;
+                 && std::strstr(line, "\"yaw_delta\":93") != nullptr
+                 && std::strstr(line, "\"reason\":\"flash_avoidance\"") != nullptr;
          }
       }
       expect(found, "aim JSONL records both target identity and actual angle");
