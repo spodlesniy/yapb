@@ -51,6 +51,7 @@ Do not fabricate completion records or historical names for Phases 1–6 without
 - D186.1 added crlib-first include ordering for MSVC but its automatic unit-test CI failed under Linux GCC `-Wpedantic -Werror` when full `yapb.h` was included.
 - D186.2 gates the writer's first `yapb.h` include to MSVC; both automatic CI and user-triggered Windows x86 succeeded on `03eefa6`.
 - D185.1 stops non-carrier T from indefinitely repeating pre-plant staging camps; automatic CI and game verification remain pending.
+- D186.3 removes forced dropped-C4 CT camping and crouching in potentially exposed areas; CI and gameplay verification are pending.
 
 ### Latest verified build evidence
 
@@ -73,6 +74,7 @@ Do not fabricate completion records or historical names for Phases 1–6 without
 - Validate D184 defuser ownership, cover placement, fallback and teammate takeover with a multi-CT capture on multiple maps; confirm no regression in D181 or active BarTime.
 - Validate D185.1: non-carrier T continue active movement after one early staging waypoint and do not indefinitely repeat camp tasks.
 - Validate D185 T pre-plant bombsite coverage and transition to post-plant defense across several maps, including an interrupted planting attempt and visible combat.
+- Validate D186.3: CT guarding dropped C4 stay mobile and no longer crouch indefinitely in exposed areas.
 - Validate D186 dropped-C4 primary/support cover selection, safety fallback, owner cleanup, and objective navigation events using gameplay captures across multiple maps.
 - Reassess repeated small aim and movement oscillations on recordings from multiple maps; the current rapid-turn threshold alone does not detect every visible jitter.
 - Reconcile stale model feature-schema descriptions in `ARCHITECTURE.md` with the actual feature contract and training README (currently schema v7, 252 features).

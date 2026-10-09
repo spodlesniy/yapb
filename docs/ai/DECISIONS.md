@@ -1857,3 +1857,13 @@ Do not change warning flags, crlib source, toolchain, public APIs, or previous c
 
 The original Windows x86 compiler error C2084/C3615 in run 37908849949 and the newly observed Linux unit-test errors are addressed with this narrowly scoped conditional inclusion.
 Automatic CI and a new user-initiated Windows x86 build remain required to establish compatibility.
+
+## D186.3 — Make dropped-C4 defense mobile without forcing exposed CT to camp
+
+The October 9 gameplay JSONL records CT bot 7 as the primary dropped-C4 guard at time 155.60 and CT bot 4 as support at time 175.78, both with the `Camp` task immediately following assignment.
+The D186 waypoint selector checks dropped-bomb sight and approximate world exposure but does not verify protective hard geometry from attacker firing positions.
+Compulsory `Camp` and `selectCampButtons()` therefore could leave CT crouching in open areas.
+Assign only a movement task toward a reachable defensive waypoint, without compulsory camp or duck.
+Release the objective reservation when that route ends or is interrupted, allowing ordinary combat and navigation to resume.
+The same JSONL diagnostic event types remain available; genuine directional cover assessment requires separate gameplay evidence and design.
+Add a test for mobile-guard eligibility and require a new gameplay capture to validate effectiveness.

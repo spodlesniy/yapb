@@ -121,6 +121,10 @@ constexpr float kDroppedBombGuardMinDistanceSq = 128.0f * 128.0f;
 constexpr float kDroppedBombGuardMaxDistanceSq = 768.0f * 768.0f;
 constexpr float kDroppedBombGuardSeparationSq = 224.0f * 224.0f;
 constexpr float kDroppedBombGuardMaxRoute = 1200.0f;
+// Observing a dropped bomb is not proof of hard cover.
+constexpr bool shouldUseMobileDroppedBombGuard(bool eligible, bool reachable) {
+  return eligible && reachable;
+}
 
 constexpr bool isSafeDroppedBombGuardNode(bool graphValid, bool occupied, bool seesBomb,
                                           bool directLineClear, bool ladder,

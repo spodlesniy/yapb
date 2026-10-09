@@ -980,6 +980,15 @@ AI_TEST(testDroppedBombDefenderSelectionPrefersNearestThenIndex) {
          "higher bot index loses an equal-distance defender tie");
 }
 
+AI_TEST(testD186_3MobileGuardDoesNotRequireCamp) {
+  expect(ai::shouldUseMobileDroppedBombGuard(true, true),
+         "guard route requires eligible reachable target");
+  expect(!ai::shouldUseMobileDroppedBombGuard(true, false),
+         "missing route must not create a stationary guard");
+  expect(!ai::shouldUseMobileDroppedBombGuard(false, true),
+         "ineligible CT must not be forced to hold");
+}
+
 AI_TEST(testD186DroppedBombGuardCoverAndOwnership) {
   expect(ai::isSafeDroppedBombGuardNode(true, false, true, true, false,
          220.0f * 220.0f, 400.0f, false), "reachable and visible safe guard waypoint");

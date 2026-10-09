@@ -91,6 +91,13 @@ An interrupted attempt records its actual evidence source rather than claiming a
 Likewise, `round_message` refers to the round message path, whereas `game_state` means the code observed that C4 was no longer marked as planted.
 The Python validator checks evidence compatibility without counting diagnostic records as model-training samples.
 
+## D186.3 — Dropped-C4 guarding uses routes, not permanent crouching
+
+A dropped-C4 observation authorizes a waypoint route but not a forced `Camp` task.
+Exposure and direct visibility do not establish genuine physical cover against attacks.
+Upon movement completion or interruption, guard ownership ends and normal tactical behavior resumes.
+Existing JSONL guard diagnostics remain unchanged.
+
 ## D186 — Dropped C4 cover positions and objective diagnostics
 
 A CT that actually observes a dropped C4 can be elected its primary guard by the existing deterministic nearest-and-index procedure.

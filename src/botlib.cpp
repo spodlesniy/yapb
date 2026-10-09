@@ -417,8 +417,8 @@ void Bot::updatePickups () {
          }
       }
       if (!ai::isDroppedBombGuardOwnerActive (m_isAlive, present && !gameState.isBombPlanted (),
-            getCurrentTaskId () == Task::MoveToPosition || getCurrentTaskId () == Task::Camp
-            || !!(m_states & Sense::SeeingEnemy))) {
+            getCurrentTaskId () == Task::MoveToPosition
+            && getTask ()->data == m_aiDroppedBombGuardNode)) {
          recordNavigationEvent (ai::NavigationEventType::DroppedBombGuard,
             ai::NavigationEventReason::DroppedBombReleased, m_aiDroppedBombGuardNode);
          m_aiDroppedBombGuardEntity = nullptr;
@@ -1024,11 +1024,17 @@ void Bot::updatePickups () {
                   m_aiDroppedBombGuardEntity = ent;
                   m_aiDroppedBombGuardNode = index;
                   m_aiDroppedBombPrimaryGuard = primary;
-                  const float until = game.time () + rg (cv_camping_time_min.as <float> (),
-                     cv_camping_time_max.as <float> ());
-                  startTask (Task::Camp, TaskPri::Camp, kInvalidNodeIndex, until, true);
-                  startTask (Task::MoveToPosition, TaskPri::MoveToPosition, index, until, true);
-                  selectCampButtons (index);
+                  // Reachable and visible does not mean protected from enemy fire.
+                  // Do not force stationary crouching next to dropped C4.
+                  if (getCurrentTaskId () == Task::Camp) {
+                     clearTask (Task::Camp);
+                  }
+                  if (getCurrentTaskId () == Task::MoveToPosition) {
+                     clearTask (Task::MoveToPosition);
+                  }
+                  if (ai::shouldUseMobileDroppedBombGuard (true, graph.exists (index))) {
+                     startTask (Task::MoveToPosition, TaskPri::MoveToPosition, index, 0.0f, true);
+                  }
                   m_defendedBomb = true;
                   recordNavigationEvent (ai::NavigationEventType::DroppedBombGuard,
                      primary ? ai::NavigationEventReason::DroppedBombAssigned
