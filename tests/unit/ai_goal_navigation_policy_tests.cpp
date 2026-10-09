@@ -1209,6 +1209,48 @@ AI_TEST(testSilentBombsiteRequiresCompleteAudibleBrushBounds) {
 }
 
 
+AI_TEST(testD185PreplantDefenseUsesCommittedCarrierGoalOnly) {
+  expect(!ai::isCommittedPreplantBombsite(true, false, true, 100.0f, true),
+         "an ally without C4 cannot reveal the planting goal");
+  expect(!ai::isCommittedPreplantBombsite(false, true, true, 100.0f, true),
+         "dead carrier cannot assign defense");
+  expect(!ai::isCommittedPreplantBombsite(true, true, false, 100.0f, true),
+         "missing goal is not assumed from hidden bomb origin");
+  expect(!ai::isCommittedPreplantBombsite(true, true, true, 900.0f * 900.0f, false),
+         "distant undecided bombsite does not preempt normal navigation");
+  expect(ai::isCommittedPreplantBombsite(true, true, true, 320.0f * 320.0f, false),
+         "nearby committed carrier allows advance guard placement");
+  expect(ai::isCommittedPreplantBombsite(true, true, true, 900.0f * 900.0f, true),
+         "carrier inside planted zone can call for site support");
+}
+
+AI_TEST(testD185PreplantDefensePreservesPlantCombatAndValidWaypoints) {
+  expect(ai::canStagePreplantBombDefense(true, true, true, false, true,
+         false, false, false, false, false), "ordinary T teammate can stage");
+  expect(!ai::canStagePreplantBombDefense(true, true, true, false, true,
+         true, false, false, false, false), "bomb carrier must keep planting");
+  expect(!ai::canStagePreplantBombDefense(true, true, true, true, true,
+         false, false, false, false, false), "planted bomb transfers to ProtectObjective");
+  expect(!ai::canStagePreplantBombDefense(true, true, true, false, true,
+         false, false, true, false, false), "visible enemy takes priority");
+  expect(!ai::canStagePreplantBombDefense(true, true, true, false, false,
+         false, false, false, false, false), "disabled objectives prevent staging");
+  expect(ai::isUsablePreplantBombDefenseNode(true, false, true, 200.0f * 200.0f, 800.0f),
+         "safe reachable flank is eligible");
+  expect(!ai::isUsablePreplantBombDefenseNode(true, false, true, 40.0f * 40.0f, 800.0f),
+         "planting interaction area is not crowded");
+  expect(!ai::isUsablePreplantBombDefenseNode(true, false, true, 200.0f * 200.0f, 2000.0f),
+         "distant route is not a valid early staging route");
+  expect(!ai::isUsablePreplantBombDefenseNode(true, false, false, 200.0f * 200.0f, 800.0f),
+         "blind waypoint is not treated as C4 coverage");
+  expect(ai::shouldReleasePreplantBombDefense(true, true, true, true),
+         "plant confirmation releases staging to ordinary defense");
+  expect(ai::shouldReleasePreplantBombDefense(false, true, false, true),
+         "loss of carrier goal releases staging");
+  expect(!ai::shouldReleasePreplantBombDefense(false, true, true, true),
+         "stable preplant site retains waypoint ownership");
+}
+
 AI_TEST(testPlantedBombDefensePreservesOwnershipAcrossTemporaryCombat) {
   using Task = ai::TaskType;
   expect(ai::isTransientPlantedBombDefenseTask(Task::Attack, Task::Attack, Task::SeekCover, Task::Blind),

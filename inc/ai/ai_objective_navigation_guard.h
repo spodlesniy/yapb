@@ -150,6 +150,42 @@ constexpr bool hasReachedPlantedBombDefenseNode(int currentNode, int defenseNode
 }
 
 
+// D185: pre-plant teammates can stage near the carrier's public bombsite goal,
+// not the unplanted C4 world position. This is only a waypoint-level intent.
+constexpr float kPreplantBombSiteCommitDistanceSq = 640.0f * 640.0f;
+constexpr float kPreplantBombDefenseRadiusSq = 640.0f * 640.0f;
+constexpr float kPreplantBombDefenseMinRadiusSq = 128.0f * 128.0f;
+constexpr float kPreplantBombDefenseMaxRoute = 1400.0f;
+constexpr float kPreplantBombDefenseUpdateInterval = 0.75f;
+constexpr float kPreplantBombDefenseHoldSeconds = 2.0f;
+
+constexpr bool isCommittedPreplantBombsite(bool aliveCarrier, bool hasC4, bool validGoal,
+                                           float distanceSq, bool carrierInBombZone) {
+  return aliveCarrier && hasC4 && validGoal && distanceSq >= 0.0f
+      && (carrierInBombZone || distanceSq <= kPreplantBombSiteCommitDistanceSq);
+}
+
+constexpr bool canStagePreplantBombDefense(bool alive, bool terrorist, bool demolition,
+                                           bool bombPlanted, bool objectivesEnabled,
+                                           bool hasC4, bool creature, bool seesEnemy,
+                                           bool escaping, bool onLadder) {
+  return alive && terrorist && demolition && !bombPlanted && objectivesEnabled
+      && !hasC4 && !creature && !seesEnemy && !escaping && !onLadder;
+}
+
+constexpr bool isUsablePreplantBombDefenseNode(bool valid, bool occupied, bool visibleToSite,
+                                               float siteDistanceSq, float routeDistance) {
+  return valid && !occupied && visibleToSite
+      && siteDistanceSq >= kPreplantBombDefenseMinRadiusSq
+      && siteDistanceSq <= kPreplantBombDefenseRadiusSq
+      && routeDistance >= 0.0f && routeDistance < kPreplantBombDefenseMaxRoute;
+}
+
+constexpr bool shouldReleasePreplantBombDefense(bool bombPlanted, bool alive,
+                                                 bool validCarrierSite, bool objectivesEnabled) {
+  return bombPlanted || !alive || !validCarrierSite || !objectivesEnabled;
+}
+
 constexpr float kPlantedBombReinforcementRadius = 768.0f;
 constexpr float kPlantedBombReinforcementFarRoute = 1024.0f;
 constexpr float kPlantedBombReinforcementUnreachableRoute = 32767.0f;

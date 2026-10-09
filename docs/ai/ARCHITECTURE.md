@@ -91,6 +91,15 @@ An interrupted attempt records its actual evidence source rather than claiming a
 Likewise, `round_message` refers to the round message path, whereas `game_state` means the code observed that C4 was no longer marked as planted.
 The Python validator checks evidence compatibility without counting diagnostic records as model-training samples.
 
+## D185 — Early T bombsite staging before C4 is planted
+
+An alive Terrorist carrier approaching its already selected waypoint goal can signal a committed intended bombsite to its teammates without exposing unplanted C4 world coordinates.
+Eligible T teammates may use existing graph routes and visibility to take spaced positions around the goal, with limited periodic updates and no direct movement into the planting interaction area.
+Carrier planting, visible-enemy combat, and other incompatible tasks outrank early staging.
+Once the bomb becomes planted, this temporary staging releases its waypoint ownership and leaves the existing post-plant `ProtectObjective` behavior in charge.
+The helper remains engine-independent, with game-thread bot state and waypoint integration kept inside `Bot::updatePreplantBombDefense()`.
+Windows x86 and in-game behavior are not confirmed by ordinary unit CI.
+
 ## D184 — CT primary-defuser election and separated cover
 
 When planted C4 is legitimately localized, a CT chooses an eligible defuser by graph reachability, estimated travel plus 5/10-second kit-dependent defuse time, and stable bot identity.

@@ -3917,6 +3917,111 @@ void Bot::updateNavigationDiagnostics () {
    m_aiNavPreviousGoal = goal;
 }
 
+void Bot::updatePreplantBombDefense () {
+   const bool active = graph.exists (m_aiPreplantDefenseNode);
+   const bool bombPlanted = gameState.isBombPlanted ();
+   int carrierSite = kInvalidNodeIndex;
+
+   if (!bombPlanted && game.mapIs (MapFlags::Demolition) && !cv_ignore_objectives) {
+      for (const auto &ally : bots) {
+         if (!ally || !ally->pev || ally.get () == this || ally->m_team != Team::Terrorist) {
+            continue;
+         }
+         const int site = ally->m_chosenGoalIndex;
+         if (ai::isCommittedPreplantBombsite (
+            ally->m_isAlive, ally->m_hasC4, graph.exists (site),
+            graph.exists (site) ? ally->pev->origin.distanceSq (graph[site].origin) : -1.0f,
+            ally->m_inBombZone)) {
+            carrierSite = site;
+            break;
+         }
+      }
+   }
+
+   const bool eligible = ai::canStagePreplantBombDefense (
+      m_isAlive, m_team == Team::Terrorist, game.mapIs (MapFlags::Demolition),
+      bombPlanted, !cv_ignore_objectives, m_hasC4, m_isCreature,
+      !!(m_states & Sense::SeeingEnemy), getCurrentTaskId () == Task::EscapeFromBomb,
+      isOnLadder ());
+   if (active && (ai::shouldReleasePreplantBombDefense (
+      bombPlanted, m_isAlive, graph.exists (carrierSite), !cv_ignore_objectives)
+      || (carrierSite != m_aiPreplantDefenseSite && graph.exists (carrierSite)))) {
+      if (getCurrentTaskId () == Task::MoveToPosition && getTask ()->data == m_aiPreplantDefenseNode) {
+         clearTask (Task::MoveToPosition);
+      }
+      else if (m_aiPreplantDefenseCamping && getCurrentTaskId () == Task::Camp) {
+         clearTask (Task::Camp);
+      }
+      m_aiPreplantDefenseNode = kInvalidNodeIndex;
+      m_aiPreplantDefenseSite = kInvalidNodeIndex;
+      m_aiPreplantDefenseCamping = false;
+   }
+
+   if (active && eligible && carrierSite == m_aiPreplantDefenseSite
+      && getCurrentTaskId () == Task::Normal
+      && m_currentNodeIndex == m_aiPreplantDefenseNode
+      && pev->origin.distanceSq (graph[m_aiPreplantDefenseNode].origin) < cr::sqrf (64.0f)) {
+      startTask (Task::Camp, TaskPri::Camp, kInvalidNodeIndex,
+         game.time () + ai::kPreplantBombDefenseHoldSeconds, true);
+      m_aiPreplantDefenseCamping = true;
+      return;
+   }
+   if (!eligible || !graph.exists (carrierSite) || game.time () < m_aiPreplantDefenseNextUpdate) {
+      return;
+   }
+   m_aiPreplantDefenseNextUpdate = game.time () + ai::kPreplantBombDefenseUpdateInterval;
+   const auto task = getCurrentTaskId ();
+   if (task != Task::Normal && task != Task::MoveToPosition && task != Task::Camp) {
+      return;
+   }
+   if (graph.exists (m_aiPreplantDefenseNode) && carrierSite == m_aiPreplantDefenseSite) {
+      return;
+   }
+
+   const int from = graph.getNearest (pev->origin);
+   if (!graph.exists (from)) {
+      return;
+   }
+   const auto &siteOrigin = graph[carrierSite].origin;
+   int best = kInvalidNodeIndex;
+   float bestCost = kInfiniteDistance;
+   for (const auto &path : graph) {
+      if ((path.flags & (NodeFlag::Ladder | NodeFlag::CTOnly)) || path.number == carrierSite
+         || isOccupiedNode (path.number) || !vistab.visible (path.number, carrierSite)) {
+         continue;
+      }
+      const float route = planner.preciseDistance (from, path.number);
+      if (!ai::isUsablePreplantBombDefenseNode (true, false, true,
+            path.origin.distanceSq (siteOrigin), route)) {
+         continue;
+      }
+      float crowd = 0.0f;
+      for (const auto &ally : bots) {
+         if (ally && ally.get () != this && ally->m_isAlive && ally->m_team == Team::Terrorist
+            && graph.exists (ally->m_aiPreplantDefenseNode)) {
+            crowd += ai::bombDefenseCrowdingCost (
+               path.origin.distanceSq (graph[ally->m_aiPreplantDefenseNode].origin));
+         }
+      }
+      const float cost = route + crowd - ((path.flags & NodeFlag::Camp) ? 192.0f : 0.0f);
+      if (cost < bestCost || (cost == bestCost && (best < 0 || path.number < best))) {
+         best = path.number;
+         bestCost = cost;
+      }
+   }
+   if (!graph.exists (best)) {
+      return;
+   }
+
+   if (task == Task::MoveToPosition || (m_aiPreplantDefenseCamping && task == Task::Camp)) {
+      clearTask (task);
+   }
+   m_aiPreplantDefenseNode = best;
+   m_aiPreplantDefenseSite = carrierSite;
+   m_aiPreplantDefenseCamping = false;
+   startTask (Task::MoveToPosition, TaskPri::MoveToPosition, best, 0.0f, true);
+}
+
 void Bot::updateAIObservation () {
    if (pev == nullptr) {
       m_aiObservationState.invalidate ();
@@ -3981,6 +4086,7 @@ void Bot::logic () {
    }
 
    executeChatterFrameEvents ();
+   updatePreplantBombDefense ();
 
    m_checkTerrain = true;
    m_moveToGoal = true;

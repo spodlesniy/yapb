@@ -1795,3 +1795,17 @@ The existing D181 interaction-safe waypoint checks, unconfirmed-USE recovery, or
 Reason: a previous gameplay capture showed CTs converging on the same planted-bomb endpoint despite existing optional alternate route selection.
 The D184 election and cover roles are made on the game thread from teammate state and local C4 perception, without changing the engine-independent model contract.
 The new behavior needs a successful Windows x86 build and fresh multi-CT gameplay evidence; ordinary CI alone cannot prove coordination.
+
+## D185 — Stage Terrorist bombsite defense before planting without hidden state
+
+When an alive Terrorist C4 carrier has a valid waypoint goal and has committed to that site by proximity or bomb-zone entry, eligible teammates may stage at reachable, C4-site-visible waypoints before the plant completes.
+Do not infer an unplanted C4 position or enemy location.
+Stage only on demolition maps while objectives are enabled; exclude the carrier, dead bots, active visible combat, ladder and escape states, and creature modes.
+Select waypoint flanks with site-distance, route-cost, line-of-sight, and team reservation constraints rather than converging on the exact interaction zone.
+Preserve existing combat and planting tasks, and release the temporary pre-plant objective on successful plant, changed or lost carrier goal, or round restart.
+The existing post-plant `ProtectObjective` remains the authority after planting; pre-plant staging does not add a model action or new training transition.
+Add unit tests for eligibility, committed carrier evidence, invalid waypoint routing, and transition release.
+
+Reason: the earlier implementation assembled T defense only after C4 had been planted, leaving allied Terrorists poorly positioned around the selected site.
+Using the carrier's already chosen route goal permits earlier coverage without passing hidden C4 information to teammates.
+Automatic CI cannot replace the user-started Windows x86 build or multi-map gameplay validation.

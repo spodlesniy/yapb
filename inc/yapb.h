@@ -255,6 +255,10 @@ private:
    int m_plantedBombNodeIndex {}; // nearest to planted bomb node
    int m_aiCtBombCoverNode { kInvalidNodeIndex }; // D184 assigned CT cover waypoint
    int m_aiCtBombDefuserId { -1 }; // D184 elected defuser covered by this bot
+   int m_aiPreplantDefenseNode { kInvalidNodeIndex }; // D185 owned approach waypoint
+   int m_aiPreplantDefenseSite { kInvalidNodeIndex }; // carrier's published goal
+   float m_aiPreplantDefenseNextUpdate {}; // limit route-selection work
+   bool m_aiPreplantDefenseCamping {}; // D185 owns a temporary hold task
    int m_currentNodeIndex {}; // current node index
    int m_travelStartIndex {}; // travel start index to double jump action
    int m_previousNodes[5] {}; // previous node indexes from node find
@@ -517,6 +521,7 @@ private:
 
    void doPlayerAvoidance (const Vector &normal);
    void updateAIObservation ();
+   void updatePreplantBombDefense ();
    void recordNavigationEvent (ai::NavigationEventType type, ai::NavigationEventReason reason,
                                int source = -1, int destination = -1, int pathType = -1);
    void updateNavigationDiagnostics ();
