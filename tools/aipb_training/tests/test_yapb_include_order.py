@@ -84,6 +84,11 @@ class YapbFirstIncludeTests(unittest.TestCase):
         self.assertTrue(headers, "dataset writer must include the crlib umbrella header")
         self.assertEqual(headers[0], "yapb.h",
                          "dataset writer must initialize crlib before AI/STL headers (MSVC C2084/C3615)")
+        self.assertRegex(
+            source,
+            r"(?m)^#if defined\(_MSC_VER\)\n#include <yapb\.h>\n#endif$",
+            "MSVC requires crlib first, while strict Linux unit tests must skip yapb.h",
+        )
         self.assertIn("ai/ai_training_dataset.h", headers)
         self.assertIn("cstdio", headers)
 

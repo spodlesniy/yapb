@@ -48,7 +48,8 @@ Do not fabricate completion records or historical names for Phases 1–6 without
 - D184 primary CT defuser selection, shared-corridor avoidance and spaced waypoint cover; automatic CI passed on `4f72282`, while Windows x86 and gameplay acceptance remain pending.
 - D185 early T defense staging at the C4 carrier's committed bombsite goal; automatic CI passed on `ebbbdea`, while Windows x86 and gameplay acceptance remain pending.
 - D186 reachable spaced dropped-C4 CT guards with event-only diagnostics; automatic CI succeeded for `11f55ad`, but user-triggered Windows x86 failed with crlib/STL placement-new C2084/C3615 in `src/ai/ai_training_dataset.cpp`.
-- D186.1 corrects the training dataset writer's mandatory crlib-first include ordering; automatic CI and a new user-triggered Windows x86 build are pending.
+- D186.1 added crlib-first include ordering for MSVC but its automatic unit-test CI failed under Linux GCC `-Wpedantic -Werror` when full `yapb.h` was included.
+- D186.2 gates the writer's first `yapb.h` include to MSVC, retaining Windows placement-new order while keeping strict Linux unit tests engine-independent; automatic CI and user-started Windows x86 validation remain pending.
 
 ### Latest verified build evidence
 
@@ -57,6 +58,7 @@ Do not fabricate completion records or historical names for Phases 1–6 without
 - [Automatic D184 CI run 37899444020](https://github.com/spodlesniy/yapb/actions/runs/37899444020) completed successfully for `4f72282`; Windows x86 and gameplay verification remain outstanding.
 - [Automatic D185 CI run 37901917305](https://github.com/spodlesniy/yapb/actions/runs/37901917305) completed successfully for `ebbbdea`; Windows x86 and gameplay verification remain outstanding.
 - [Automatic D186 CI run 37908273267](https://github.com/spodlesniy/yapb/actions/runs/37908273267) completed successfully for `11f55ad`; it does not validate the game DLL.
+- [Automatic D186.1 CI run 37913480296](https://github.com/spodlesniy/yapb/actions/runs/37913480296) failed in the Linux AI unit-test compilation, with crlib pedantic errors caused by unconditional `yapb.h` inclusion.
 - [User-triggered D186 Windows x86 run 37908849949](https://github.com/spodlesniy/yapb/actions/runs/37908849949) failed in `bot-windows-x86` while compiling `src/ai/ai_training_dataset.cpp`, with MSVC C2084/C3615 (placement new redefinition).
 - [User-triggered Windows x86 run 37876398620](https://github.com/spodlesniy/yapb/actions/runs/37876398620) completed successfully for the same SHA.
 - This does **not** establish a successful full multi-platform release build or comprehensive in-game acceptance.

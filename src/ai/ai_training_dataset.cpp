@@ -6,8 +6,11 @@
 // SPDX-License-Identifier: MIT
 //
 
-// crlib supplies placement new before the MSVC STL's implementation.
+// MSVC needs crlib's placement new before the STL; Linux unit tests build
+// this writer under -Wpedantic -Werror and must not include game-only headers.
+#if defined(_MSC_VER)
 #include <yapb.h>
+#endif
 
 #include <ai/ai_training_dataset.h>
 

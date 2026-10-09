@@ -1835,3 +1835,15 @@ Do not modify crlib, the toolchain, or any earlier published commits.
 
 The automatic Linux CI for D186 was successful on run 37908273267, but the actual user-triggered MSVC x86 job failed on run 37908849949.
 The correction requires automatic CI and a new user-triggered Windows x86 build before compatible game DLL output can be claimed.
+
+## D186.2 — Keep MSVC crlib-first initialization without breaking pedantic Linux tests
+
+The automatic test run 37913480296 for D186.1 failed compiling `src/ai/ai_training_dataset.cpp` under GCC `-Wpedantic -Werror`.
+Its unconditional `#include <yapb.h>` introduced full crlib and game headers into an otherwise engine-independent unit-test translation unit, producing extra-semicolon, anonymous-struct and ignored-attributes errors in `crlib/simd.h`, `crlib/vector.h` and `hooks.h`.
+Keep `#include <yapb.h>` as the first include directive but guard it with `#if defined(_MSC_VER)` so MSVC still defines the pinned crlib placement new before AI/STL includes while Linux compiles the original isolated writer.
+The writer's explicit `ai_training_dataset.h` include, JSONL event format, and data serialization are unchanged.
+Extend the include-order regression test to require both the first include and its MSVC-only preprocessor guard.
+Do not change warning flags, crlib source, toolchain, public APIs, or previous commits.
+
+The original Windows x86 compiler error C2084/C3615 in run 37908849949 and the newly observed Linux unit-test errors are addressed with this narrowly scoped conditional inclusion.
+Automatic CI and a new user-initiated Windows x86 build remain required to establish compatibility.
