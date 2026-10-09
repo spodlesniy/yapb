@@ -6,6 +6,9 @@
 // SPDX-License-Identifier: MIT
 //
 
+// crlib supplies placement new before the MSVC STL's implementation.
+#include <yapb.h>
+
 #include <ai/ai_training_dataset.h>
 
 #include <cstdio>

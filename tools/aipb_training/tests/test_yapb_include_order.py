@@ -76,6 +76,17 @@ class YapbFirstIncludeTests(unittest.TestCase):
         )
         self.assertFalse(missing_perception_guard_include('#include <yapb.h>\n'))
 
+    def test_dataset_writer_crlib_first_for_msvc_x86(self) -> None:
+        # Including standard/AI headers first can define placement new before crlib.
+        path = ROOT / "src" / "ai" / "ai_training_dataset.cpp"
+        source = path.read_text(encoding="utf-8")
+        headers = INCLUDE.findall(source)
+        self.assertTrue(headers, "dataset writer must include the crlib umbrella header")
+        self.assertEqual(headers[0], "yapb.h",
+                         "dataset writer must initialize crlib before AI/STL headers (MSVC C2084/C3615)")
+        self.assertIn("ai/ai_training_dataset.h", headers)
+        self.assertIn("cstdio", headers)
+
     def test_recent_windows_x86_regression_contracts(self) -> None:
         yapb_header = (ROOT / "inc" / "yapb.h").read_text(encoding="utf-8")
         defuse_header = (ROOT / "inc" / "ai" / "ai_defuse_event.h").read_text(encoding="utf-8")

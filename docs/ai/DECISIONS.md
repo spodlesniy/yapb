@@ -1823,3 +1823,15 @@ Retain original combat/ladder/escape preemption and the existing dropped-C4 pick
 Reason: the former single-defender implementation could fall back to a random or unreachable node and provided no objective-specific evidence explaining failed defensive placement.
 D186 makes geometry, route and cover eligibility explicit and offers limited separated support without changing the model observation contract.
 Real-game success, Windows x86 compatibility and multi-map coordination remain to be confirmed by the user.
+
+## D186.1 — Restore crlib-first initialization in the training JSONL writer
+
+The user-triggered Windows x86 build run 37908849949 failed compiling `src/ai/ai_training_dataset.cpp` with MSVC C2084 and C3615 because `crlib/memory.h` defined placement `operator new(size_t, void *)` after the compiler runtime's `vcruntime_new.h` had already supplied its definition.
+The translation unit previously included `ai_training_dataset.h` and `cstdio` before the crlib header, unlike the documented D148 workaround.
+Add `#include <yapb.h>` as the first include in this game DLL source to initialize the pinned crlib before any standard or AI headers.
+Preserve the explicit `ai_training_dataset.h` include and all JSONL serialization behavior.
+Extend the Training tools include-order regression suite to reject a future accidental reordering of this translation unit.
+Do not modify crlib, the toolchain, or any earlier published commits.
+
+The automatic Linux CI for D186 was successful on run 37908273267, but the actual user-triggered MSVC x86 job failed on run 37908849949.
+The correction requires automatic CI and a new user-triggered Windows x86 build before compatible game DLL output can be claimed.
