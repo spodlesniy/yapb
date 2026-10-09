@@ -1810,6 +1810,16 @@ Reason: the earlier implementation assembled T defense only after C4 had been pl
 Using the carrier's already chosen route goal permits earlier coverage without passing hidden C4 information to teammates.
 Automatic CI cannot replace the user-started Windows x86 build or multi-map gameplay validation.
 
+## D185.1 — Release pre-plant staging after the route instead of looping Camp
+
+The October 9 game capture `2026_10_09__18_23_06__ai_training.jsonl` shows T bots 3, 6, 8 and 10 reaching pre-plant flanks and then repeatedly entering `Camp` with no further route diagnostics.
+D185 reissued a two-second camp task every time the previous camp expired, indefinitely preempting the Training teacher's normal navigation.
+Release staging ownership when its movement task completes or is cancelled and never start a `Camp` task for this early placement hint.
+Remember the committed carrier site after release, preventing the same flank from being reassigned while the carrier target is unchanged.
+Clear the remembered site when the carrier objective disappears or changes; preserve normal plant, visible combat and post-plant behavior.
+Add a focused test for completion and single assignment.
+A new gameplay capture is still needed to confirm normal T movement after staging.
+
 ## D186 — Require reachable spaced cover for dropped C4 and record the decision
 
 When a CT actually sees a dropped C4, keep the existing deterministic primary-defender election and permit one nearby supporting CT to guard separately when a suitable position exists.

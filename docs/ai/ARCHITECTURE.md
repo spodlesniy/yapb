@@ -101,6 +101,12 @@ Event-only JSONL v3 `navigation_event` records with event `dropped_bomb_guard` d
 They carry `guard_exposure`, `guard_route_distance` and `guard_nearest_ally_distance`, where -1 means unavailable, without changing training feature/schema contracts.
 All gameplay and MSVC x86 acceptance remains pending a user-initiated build and game capture.
 
+## D185.1 — Pre-plant staging is a one-shot navigational hint
+
+The initial pre-plant flank is assigned once per committed carrier goal.
+Once the move task ends, the reserved staging waypoint is released without creating another `Camp` task, allowing the normal policy to continue exploration or tactical movement.
+The staged site stays recorded until it changes or disappears so arriving teammates are not trapped in repeated short camps.
+
 ## D185 — Early T bombsite staging before C4 is planted
 
 An alive Terrorist carrier approaching its already selected waypoint goal can signal a committed intended bombsite to its teammates without exposing unplanted C4 world coordinates.

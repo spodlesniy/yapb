@@ -1534,7 +1534,6 @@ void Bot::newRound () {
    m_aiPreplantDefenseNode = kInvalidNodeIndex;
    m_aiPreplantDefenseSite = kInvalidNodeIndex;
    m_aiPreplantDefenseNextUpdate = 0.0f;
-   m_aiPreplantDefenseCamping = false;
 
    m_moveToC4 = false;
    m_defuseNotified = false;

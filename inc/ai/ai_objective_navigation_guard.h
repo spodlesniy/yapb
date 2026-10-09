@@ -157,7 +157,14 @@ constexpr float kPreplantBombDefenseRadiusSq = 640.0f * 640.0f;
 constexpr float kPreplantBombDefenseMinRadiusSq = 128.0f * 128.0f;
 constexpr float kPreplantBombDefenseMaxRoute = 1400.0f;
 constexpr float kPreplantBombDefenseUpdateInterval = 0.75f;
-constexpr float kPreplantBombDefenseHoldSeconds = 2.0f;
+// A completed staging move must not become an infinite camping loop.
+constexpr bool shouldFinishPreplantStage(bool ownsWaypoint, bool taskFinished) {
+  return ownsWaypoint && taskFinished;
+}
+
+constexpr bool shouldAssignNewPreplantStage(int carrierSite, int stagedSite) {
+  return carrierSite >= 0 && carrierSite != stagedSite;
+}
 
 constexpr bool isCommittedPreplantBombsite(bool aliveCarrier, bool hasC4, bool validGoal,
                                            float distanceSq, bool carrierInBombZone) {

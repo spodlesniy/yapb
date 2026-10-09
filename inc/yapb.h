@@ -261,7 +261,6 @@ private:
    int m_aiPreplantDefenseNode { kInvalidNodeIndex }; // D185 owned approach waypoint
    int m_aiPreplantDefenseSite { kInvalidNodeIndex }; // carrier's published goal
    float m_aiPreplantDefenseNextUpdate {}; // limit route-selection work
-   bool m_aiPreplantDefenseCamping {}; // D185 owns a temporary hold task
    int m_currentNodeIndex {}; // current node index
    int m_travelStartIndex {}; // travel start index to double jump action
    int m_previousNodes[5] {}; // previous node indexes from node find

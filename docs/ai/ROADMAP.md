@@ -49,7 +49,8 @@ Do not fabricate completion records or historical names for Phases 1–6 without
 - D185 early T defense staging at the C4 carrier's committed bombsite goal; automatic CI passed on `ebbbdea`, while Windows x86 and gameplay acceptance remain pending.
 - D186 reachable spaced dropped-C4 CT guards with event-only diagnostics; automatic CI succeeded for `11f55ad`, but user-triggered Windows x86 failed with crlib/STL placement-new C2084/C3615 in `src/ai/ai_training_dataset.cpp`.
 - D186.1 added crlib-first include ordering for MSVC but its automatic unit-test CI failed under Linux GCC `-Wpedantic -Werror` when full `yapb.h` was included.
-- D186.2 gates the writer's first `yapb.h` include to MSVC, retaining Windows placement-new order while keeping strict Linux unit tests engine-independent; automatic CI and user-started Windows x86 validation remain pending.
+- D186.2 gates the writer's first `yapb.h` include to MSVC; both automatic CI and user-triggered Windows x86 succeeded on `03eefa6`.
+- D185.1 stops non-carrier T from indefinitely repeating pre-plant staging camps; automatic CI and game verification remain pending.
 
 ### Latest verified build evidence
 
@@ -59,6 +60,8 @@ Do not fabricate completion records or historical names for Phases 1–6 without
 - [Automatic D185 CI run 37901917305](https://github.com/spodlesniy/yapb/actions/runs/37901917305) completed successfully for `ebbbdea`; Windows x86 and gameplay verification remain outstanding.
 - [Automatic D186 CI run 37908273267](https://github.com/spodlesniy/yapb/actions/runs/37908273267) completed successfully for `11f55ad`; it does not validate the game DLL.
 - [Automatic D186.1 CI run 37913480296](https://github.com/spodlesniy/yapb/actions/runs/37913480296) failed in the Linux AI unit-test compilation, with crlib pedantic errors caused by unconditional `yapb.h` inclusion.
+- [Automatic D186.2 CI run 37914692139](https://github.com/spodlesniy/yapb/actions/runs/37914692139) completed successfully for `03eefa6`.
+- [User-triggered D186.2 Windows x86 run 37915082038](https://github.com/spodlesniy/yapb/actions/runs/37915082038) completed successfully for `03eefa6`; its gameplay capture exposed T and dropped-C4 regressions.
 - [User-triggered D186 Windows x86 run 37908849949](https://github.com/spodlesniy/yapb/actions/runs/37908849949) failed in `bot-windows-x86` while compiling `src/ai/ai_training_dataset.cpp`, with MSVC C2084/C3615 (placement new redefinition).
 - [User-triggered Windows x86 run 37876398620](https://github.com/spodlesniy/yapb/actions/runs/37876398620) completed successfully for the same SHA.
 - This does **not** establish a successful full multi-platform release build or comprehensive in-game acceptance.
@@ -68,6 +71,7 @@ Do not fabricate completion records or historical names for Phases 1–6 without
 
 - Validate D183's flash avoidance timing, enemy-priority behavior, and event attribution with a new gameplay capture after user-triggered Windows x86 verification.
 - Validate D184 defuser ownership, cover placement, fallback and teammate takeover with a multi-CT capture on multiple maps; confirm no regression in D181 or active BarTime.
+- Validate D185.1: non-carrier T continue active movement after one early staging waypoint and do not indefinitely repeat camp tasks.
 - Validate D185 T pre-plant bombsite coverage and transition to post-plant defense across several maps, including an interrupted planting attempt and visible combat.
 - Validate D186 dropped-C4 primary/support cover selection, safety fallback, owner cleanup, and objective navigation events using gameplay captures across multiple maps.
 - Reassess repeated small aim and movement oscillations on recordings from multiple maps; the current rapid-turn threshold alone does not detect every visible jitter.

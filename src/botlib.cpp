@@ -4004,27 +4004,24 @@ void Bot::updatePreplantBombDefense () {
       bombPlanted, !cv_ignore_objectives, m_hasC4, m_isCreature,
       !!(m_states & Sense::SeeingEnemy), getCurrentTaskId () == Task::EscapeFromBomb,
       isOnLadder ());
-   if (active && (ai::shouldReleasePreplantBombDefense (
-      bombPlanted, m_isAlive, graph.exists (carrierSite), !cv_ignore_objectives)
-      || (carrierSite != m_aiPreplantDefenseSite && graph.exists (carrierSite)))) {
-      if (getCurrentTaskId () == Task::MoveToPosition && getTask ()->data == m_aiPreplantDefenseNode) {
+   if (graph.exists (m_aiPreplantDefenseSite)
+       && (ai::shouldReleasePreplantBombDefense (
+          bombPlanted, m_isAlive, graph.exists (carrierSite), !cv_ignore_objectives)
+          || carrierSite != m_aiPreplantDefenseSite)) {
+      if (active && getCurrentTaskId () == Task::MoveToPosition
+          && getTask ()->data == m_aiPreplantDefenseNode) {
          clearTask (Task::MoveToPosition);
-      }
-      else if (m_aiPreplantDefenseCamping && getCurrentTaskId () == Task::Camp) {
-         clearTask (Task::Camp);
       }
       m_aiPreplantDefenseNode = kInvalidNodeIndex;
       m_aiPreplantDefenseSite = kInvalidNodeIndex;
-      m_aiPreplantDefenseCamping = false;
    }
 
-   if (active && eligible && carrierSite == m_aiPreplantDefenseSite
-      && getCurrentTaskId () == Task::Normal
-      && m_currentNodeIndex == m_aiPreplantDefenseNode
-      && pev->origin.distanceSq (graph[m_aiPreplantDefenseNode].origin) < cr::sqrf (64.0f)) {
-      startTask (Task::Camp, TaskPri::Camp, kInvalidNodeIndex,
-         game.time () + ai::kPreplantBombDefenseHoldSeconds, true);
-      m_aiPreplantDefenseCamping = true;
+   // The stage is only a waypoint hint. On completion or cancellation,
+   // release its reserved node and let Training/Legacy choose the next task.
+   // Keep the committed site to avoid immediately assigning the same flank.
+   if (carrierSite == m_aiPreplantDefenseSite
+       && ai::shouldFinishPreplantStage (active, getCurrentTaskId () == Task::Normal)) {
+      m_aiPreplantDefenseNode = kInvalidNodeIndex;
       return;
    }
    if (!eligible || !graph.exists (carrierSite) || game.time () < m_aiPreplantDefenseNextUpdate) {
@@ -4035,7 +4032,7 @@ void Bot::updatePreplantBombDefense () {
    if (task != Task::Normal && task != Task::MoveToPosition && task != Task::Camp) {
       return;
    }
-   if (graph.exists (m_aiPreplantDefenseNode) && carrierSite == m_aiPreplantDefenseSite) {
+   if (!ai::shouldAssignNewPreplantStage (carrierSite, m_aiPreplantDefenseSite)) {
       return;
    }
 
@@ -4074,12 +4071,11 @@ void Bot::updatePreplantBombDefense () {
       return;
    }
 
-   if (task == Task::MoveToPosition || (m_aiPreplantDefenseCamping && task == Task::Camp)) {
+   if (task == Task::MoveToPosition) {
       clearTask (task);
    }
    m_aiPreplantDefenseNode = best;
    m_aiPreplantDefenseSite = carrierSite;
-   m_aiPreplantDefenseCamping = false;
    startTask (Task::MoveToPosition, TaskPri::MoveToPosition, best, 0.0f, true);
 }
 

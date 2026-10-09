@@ -1245,6 +1245,21 @@ AI_TEST(testD185PreplantDefenseUsesCommittedCarrierGoalOnly) {
          "carrier inside planted zone can call for site support");
 }
 
+AI_TEST(testD185_1PreplantStagingReleasesTaskOnce) {
+  expect(ai::shouldFinishPreplantStage(true, true),
+         "completed pre-plant route releases its reserved waypoint");
+  expect(!ai::shouldFinishPreplantStage(true, false),
+         "active movement still owns its waypoint");
+  expect(!ai::shouldFinishPreplantStage(false, true),
+         "unowned staging must not alter ordinary navigation");
+  expect(!ai::shouldAssignNewPreplantStage(896, 896),
+         "same committed bombsite is staged only once, never camped repeatedly");
+  expect(ai::shouldAssignNewPreplantStage(888, 896),
+         "new carrier site allows another early flank");
+  expect(!ai::shouldAssignNewPreplantStage(-1, 896),
+         "lost carrier intent does not assign a hidden bombsite");
+}
+
 AI_TEST(testD185PreplantDefensePreservesPlantCombatAndValidWaypoints) {
   expect(ai::canStagePreplantBombDefense(true, true, true, false, true,
          false, false, false, false, false), "ordinary T teammate can stage");
