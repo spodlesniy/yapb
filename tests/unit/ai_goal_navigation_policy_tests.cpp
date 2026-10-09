@@ -745,6 +745,21 @@ AI_TEST(testGoalNavigationPolicyExploresAtCurrentLegacyGoal) {
   expect(action.type == ai::ActionType::Explore, "normal task explores independently of the legacy goal");
 }
 
+AI_TEST(testD187_1LowCeilingUsesPhysicalDuckClearance) {
+  expect(ai::shouldDuckForLowCeiling(true, true, false, true, true),
+         "head-level obstacle with a clear duck passage requires crouching");
+  expect(!ai::shouldDuckForLowCeiling(true, true, false, false, true),
+         "open standing passage does not force crouching");
+  expect(!ai::shouldDuckForLowCeiling(true, true, false, true, false),
+         "solid wall must not be mistaken for a crouch tunnel");
+  expect(!ai::shouldDuckForLowCeiling(false, true, false, true, true),
+         "stationary guard does not enter a crouch loop");
+  expect(!ai::shouldDuckForLowCeiling(true, false, false, true, true),
+         "airborne bots retain jumping movement");
+  expect(!ai::shouldDuckForLowCeiling(true, true, true, true, true),
+         "ladder logic retains movement authority");
+}
+
 AI_TEST(testCtBombDefuserElectionAndTakeover) {
   expect(ai::isCtBombDefuserCandidate(true, true, false, false, false, true),
          "reachable localized CT is eligible");

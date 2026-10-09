@@ -91,6 +91,13 @@ An interrupted attempt records its actual evidence source rather than claiming a
 Likewise, `round_message` refers to the round message path, whereas `game_state` means the code observed that C4 was no longer marked as planted.
 The Python validator checks evidence compatibility without counting diagnostic records as model-training samples.
 
+## D187.1 — Physical low-ceiling duck support for existing waypoint movement
+
+A grounded moving bot performs a short world-geometry probe at standing head height toward its immediate path destination.
+When forward standing clearance is blocked and the existing duck-height test confirms a clear lower corridor, the runtime requests a brief `IN_DUCK` hold.
+The check complements waypoint flags rather than changing them and never applies to ladders, swimming, or airborne behavior.
+A capture showing low displacement alone cannot verify button state; the actual crouch must be checked in-game.
+
 ## D187 — CT bombsite approach crowding also covers Fast routes
 
 The route planner now treats a teammate's explicit goal waypoint as public coordination evidence during an approaching CT bombsite search.

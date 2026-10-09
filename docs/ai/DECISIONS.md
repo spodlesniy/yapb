@@ -1880,3 +1880,14 @@ Do not alter the pathfinding contract of other teams, regular unrelated goals, o
 Add engine-independent tests covering early site approaches, bypasses, and bounded detours.
 
 This cannot create physically independent routes when the underlying waypoint graph contains a mandatory single chokepoint; alternate-path gameplay validation and additional path diagnostics remain necessary.
+
+## D187.1 — Reinstate physical low-ceiling duck detection on bombsite approaches
+
+The October 9 `2026_10_09__20_16_42__ai_training.jsonl` capture shows CT bot 9 making little displacement near `(-1264, 2640, 180)` at time 140.38, while approaching the B bombsite through a low passage.
+The bot later changed to waypoint 757 at time 143.06, so the capture supports a delayed passage and recovery rather than proof of permanent blockage.
+Existing `moveToGoal()` crouched only when the active waypoint had `NodeFlag::Crouch`, and it could cancel that flag based on an upward trace performed at the *waypoint destination*, not the bot's forward clearance.
+Add a bounded physical forward probe at the bot's standing head level and authorize `IN_DUCK` only when the obstacle blocks standing motion while the existing three-line `canDuckUnder()` test confirms lower clearance.
+Apply only during grounded forward waypoint motion, never ladders or airborne actions; use a short duck hold to prevent frame-to-frame stand/duck oscillation.
+Do not modify map waypoints, path endpoints, graph data, jumping logic, or combat tasks.
+Add pure eligibility regression tests.
+A user-triggered Windows x86 build and de_dust2 B low-passage replay remain required; the JSONL does not record every button press or full per-frame collisions.

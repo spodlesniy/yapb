@@ -11,6 +11,7 @@
 #include <ai/ai_bomb_defense_guard.h>
 #include <ai/ai_bomb_search_guard.h>
 #include <ai/ai_ct_defuse_path_guard.h>
+#include <ai/ai_navigation_task_guard.h>
 #include <ai/ai_objective_navigation_guard.h>
 
 ConVar cv_has_team_semiclip ("has_team_semiclip", "0", "When enabled, bots will not try to avoid teammates on their way. Assumes that some semiclip plugins are in use.");
@@ -1066,6 +1067,23 @@ void Bot::checkFall () {
 
 void Bot::moveToGoal () {
    findValidNode ();
+
+   // D187.1: detect overhead world geometry at the bot, not only at the
+   // destination waypoint. This also works before a Crouch waypoint becomes
+   // the active graph node on low de_dust2 bombsite entrances.
+   if (m_moveSpeed > 20.0f && isOnFloor () && !isOnLadder () && !isInWater ()) {
+      const auto forward = (m_destOrigin - pev->origin).normalize2d_apx ();
+      TraceResult overhead {};
+      const auto headStart = pev->origin + Vector (0.0f, 0.0f, 28.0f);
+      game.testHull (headStart, headStart + forward * 40.0f,
+         TraceIgnore::Monsters, head_hull, ent (), &overhead);
+      if (ai::shouldDuckForLowCeiling (true, true, false,
+            overhead.flFraction < 1.0f || overhead.fStartSolid,
+            canDuckUnder (forward))) {
+         m_duckTime = game.time () + 0.45f;
+         pev->button |= IN_DUCK;
+      }
+   }
 
    // press duck button if we need to
    if (m_pathFlags & NodeFlag::Crouch) {

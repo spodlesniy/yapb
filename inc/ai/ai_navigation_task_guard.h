@@ -37,4 +37,12 @@ constexpr bool isTemporaryRetreatTaskOverride(TaskType task, TaskType attackTask
   return task == attackTask || task == blindTask || task == coverTask;
 }
 
+// Physical clearance can require crouching before reaching a crouch-flagged
+// waypoint. A standing-height forward obstruction alone is insufficient:
+// the duck-height probe must be free as well.
+constexpr bool shouldDuckForLowCeiling(bool moving, bool grounded, bool onLadder,
+                                       bool standingHeadBlocked, bool duckPathClear) {
+  return moving && grounded && !onLadder && standingHeadBlocked && duckPathClear;
+}
+
 } // namespace ai
