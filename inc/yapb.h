@@ -253,6 +253,8 @@ private:
    int m_voicePitch {}; // bot voice pitch
    int m_loosedBombNodeIndex {}; // nearest to loosed bomb node
    int m_plantedBombNodeIndex {}; // nearest to planted bomb node
+   int m_aiCtBombCoverNode { kInvalidNodeIndex }; // D184 assigned CT cover waypoint
+   int m_aiCtBombDefuserId { -1 }; // D184 elected defuser covered by this bot
    int m_currentNodeIndex {}; // current node index
    int m_travelStartIndex {}; // travel start index to double jump action
    int m_previousNodes[5] {}; // previous node indexes from node find
@@ -427,7 +429,8 @@ private:
    int findNearestNode ();
    int findBombNode ();
    int findCoverNode (float maxDistance);
-   int findDefendNode (const Vector &origin, bool preferLowExposure = false, bool plantedDefense = false);
+   int findDefendNode (const Vector &origin, bool preferLowExposure = false, bool plantedDefense = false,
+                      bool reserveCtCover = false);
    int findBestGoal ();
    int findBestGoalWhenBombAction ();
    int findGoalPost (int tactic, IntArray *defensive, IntArray *offensive);

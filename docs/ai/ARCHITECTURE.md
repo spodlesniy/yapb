@@ -91,6 +91,15 @@ An interrupted attempt records its actual evidence source rather than claiming a
 Likewise, `round_message` refers to the round message path, whereas `game_state` means the code observed that C4 was no longer marked as planted.
 The Python validator checks evidence compatibility without counting diagnostic records as model-training samples.
 
+## D184 — CT primary-defuser election and separated cover
+
+When planted C4 is legitimately localized, a CT chooses an eligible defuser by graph reachability, estimated travel plus 5/10-second kit-dependent defuse time, and stable bot identity.
+An already active defuser takes priority.
+The remaining eligible CTs can reserve mutually spaced line-of-sight cover waypoints, using existing graph and defensive scoring.
+Cover ownership is cleared when the assigned CT disappears or the objective ends, so another reachable CT may take over.
+This extends the existing traffic-aware path mechanism and D181's physical interaction checks without changing the observation schema.
+Unverified game-time effects and Windows x86 compatibility remain explicit Phase 7 validation requirements.
+
 ## D183 — Bounded flashbang avoidance and accurate aim attribution
 
 The grenade detector sets the opposite yaw of a perceived flashbang only when no enemy is currently visible.

@@ -44,11 +44,13 @@ Do not fabricate completion records or historical names for Phases 1–6 without
 - Direct semantic actions for combat, navigation, objectives, grenades, and interactions, using YaPB primitives where necessary.
 - D170–D182 gameplay and telemetry work covering C4 objectives, navigation sampling, team objective defense, visible-enemy stability, flash blindness, CT defuse approaches, and bounded aim diagnostics.
 - D182.1–D182.3 Windows x86 compatibility corrections.
-- D183 multi-turn aim diagnostic correction, bounded flashbang avoidance, and per-frame cause attribution; CI and gameplay verification still pending.
+- D183 multi-turn aim diagnostic correction, bounded flashbang avoidance, and per-frame cause attribution; automatic CI succeeded for `2e73aff`, while Windows x86 and gameplay verification remain pending.
+- D184 primary CT defuser selection, shared-corridor avoidance and spaced waypoint cover; automatic CI, Windows x86, and gameplay acceptance remain pending.
 
 ### Latest verified build evidence
 
 - [Automatic AI CI run 37876210668](https://github.com/spodlesniy/yapb/actions/runs/37876210668) completed successfully for snapshot SHA `61b5839`.
+- [Automatic D183 CI run 37898156477](https://github.com/spodlesniy/yapb/actions/runs/37898156477) completed successfully for `2e73aff`; it is not evidence of the user-triggered Windows x86 build.
 - [User-triggered Windows x86 run 37876398620](https://github.com/spodlesniy/yapb/actions/runs/37876398620) completed successfully for the same SHA.
 - This does **not** establish a successful full multi-platform release build or comprehensive in-game acceptance.
 - Prior gameplay captures exposed coordination, C4-defense, flash-turn, and aim-jitter cases which still require review.
@@ -56,7 +58,7 @@ Do not fabricate completion records or historical names for Phases 1–6 without
 ### Open work and investigation queue
 
 - Validate D183's flash avoidance timing, enemy-priority behavior, and event attribution with a new gameplay capture after user-triggered Windows x86 verification.
-- **D184 (proposed):** coordinate CT approaches to planted C4, including defuser/cover roles, avoiding unnecessary route convergence when viable alternatives exist.
+- Validate D184 defuser ownership, cover placement, fallback and teammate takeover with a multi-CT capture on multiple maps; confirm no regression in D181 or active BarTime.
 - **D185 (proposed):** form T defense earlier around expected and planted C4 positions, without exposing hidden information or breaking planting objectives.
 - **D186 (proposed):** improve dropped-C4 guarding through safe positions, cover/exposure checks, spacing, and evidence-rich diagnostics.
 - Reassess repeated small aim and movement oscillations on recordings from multiple maps; the current rapid-turn threshold alone does not detect every visible jitter.

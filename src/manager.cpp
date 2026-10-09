@@ -1526,6 +1526,8 @@ void Bot::newRound () {
    m_chosenGoalIndex = kInvalidNodeIndex;
    m_loosedBombNodeIndex = kInvalidNodeIndex;
    m_plantedBombNodeIndex = kInvalidNodeIndex;
+   m_aiCtBombCoverNode = kInvalidNodeIndex;
+   m_aiCtBombDefuserId = -1;
 
    m_moveToC4 = false;
    m_defuseNotified = false;

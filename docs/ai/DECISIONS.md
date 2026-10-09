@@ -1780,3 +1780,18 @@ The JSONL v3 reason vocabulary is extended without changing the training transit
 Reason: direct grenade-triggered view-angle writes bypassed smoothing, and one-pass angle wrapping marked multi-revolution differences as fast turns.
 Explicit per-frame attribution distinguishes flash avoidance from stale enemy and navigation aim flags.
 The response rate and game behavior still require automatic CI, user-triggered Windows x86 validation, and a fresh in-game capture.
+
+## D184 — Coordinate CT defuse approaches with a primary defuser and separated cover
+
+Once a CT legitimately detects planted C4, prefer a single eligible bot with a reachable waypoint route and estimated completion time, accounting for the defuse kit.
+A bot already defusing by task or BarTime retains priority over a newly approaching candidate.
+Dead, escaping, actively fighting, or unlocalized teammates do not become new defusers through shared hidden map state.
+A missing usable graph route leaves existing direct objective handling available rather than suppressing all attempts.
+Other CTs with C4 knowledge can reserve a distinct visible, reachable cover waypoint instead of crowding the direct interaction route.
+Cover reservations reject nearby already assigned CT cover positions and fall back without manufacturing an invalid waypoint.
+Cover is released when the bomb objective ends or the defuser is lost, allowing reassignment on the next pickup update.
+The existing D181 interaction-safe waypoint checks, unconfirmed-USE recovery, original CT route-traffic avoidance, and authoritative BarTime remain unchanged.
+
+Reason: a previous gameplay capture showed CTs converging on the same planted-bomb endpoint despite existing optional alternate route selection.
+The D184 election and cover roles are made on the game thread from teammate state and local C4 perception, without changing the engine-independent model contract.
+The new behavior needs a successful Windows x86 build and fresh multi-CT gameplay evidence; ordinary CI alone cannot prove coordination.

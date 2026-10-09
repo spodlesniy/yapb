@@ -9,6 +9,7 @@
 
 #include <ai/ai_bomb_defense_guard.h>
 #include <ai/ai_bomb_search_guard.h>
+#include <ai/ai_ct_defuse_path_guard.h>
 #include <ai/ai_bot_adapter.h>
 #include <ai/ai_inference_model_service.h>
 #include <ai/ai_navigation_task_guard.h>
@@ -404,6 +405,29 @@ void Bot::updatePickups () {
       m_pickupType = Pickup::None;
 
       return;
+   }
+
+   // A covered defuser may die, abort, or complete the objective.
+   if (m_aiCtBombDefuserId > 0) {
+      bool ownerAlive = false;
+      for (const auto &other : bots) {
+         if (other && other->entindex () == m_aiCtBombDefuserId && other->m_isAlive
+             && other->m_team == Team::CT
+             && (other->getCurrentTaskId () == Task::DefuseBomb || other->m_hasProgressBar
+                 || other->m_pickupType == Pickup::PlantedC4)) {
+            ownerAlive = true;
+            break;
+         }
+      }
+      if (!ai::shouldHoldCtBombCover (gameState.isBombPlanted (), ownerAlive,
+             isBombDefusing (gameState.getBombOrigin ()))) {
+         m_aiCtBombDefuserId = -1;
+         m_aiCtBombCoverNode = kInvalidNodeIndex;
+         m_defendedBomb = false;
+         if (getCurrentTaskId () == Task::MoveToPosition || getCurrentTaskId () == Task::Camp) {
+            clearTask (getCurrentTaskId ());
+         }
+      }
    }
 
    const auto &interesting = gameState.getInterestingEntities ();
@@ -815,28 +839,59 @@ void Bot::updatePickups () {
                if (rg.chance (70)) {
                   pushChatterMessage (Chatter::FoundC4Plant);
                }
-               allowPickup = !isBombDefusing (origin) || m_hasProgressBar;
+               // Elect from bots that can legitimately hear or see C4.
+               // Progress/active USE keeps ownership, otherwise prefer a reachable kit carrier.
+               int defuserId = -1;
+               float bestEstimate = kInfiniteDistance;
+               const int bombNode = graph.getNearest (origin);
+               for (const auto &other : bots) {
+                  if (!other || other->m_team != Team::CT || !other->m_isAlive
+                     || !other->pev || !graph.exists (bombNode)) {
+                     continue;
+                  }
+                  const bool localized = other->m_pickupType == Pickup::PlantedC4
+                     || !other->isBombAudible ().empty ()
+                     || other.get () == this;
+                  const bool active = other->getCurrentTaskId () == Task::DefuseBomb
+                     || other->m_hasProgressBar;
+                  const int sourceNode = graph.getNearest (other->pev->origin);
+                  const float route = graph.exists (sourceNode)
+                     ? planner.preciseDistance (sourceNode, bombNode) : kInfiniteDistance;
+                  const bool reachable = route >= 0.0f && route < ai::kCtBombRouteUnreachable
+                     && other->pev->maxspeed > 0.0f;
+                  if (!ai::isCtBombDefuserCandidate (true, localized,
+                        other->getCurrentTaskId () == Task::EscapeFromBomb,
+                        !!(other->m_states & Sense::SeeingEnemy), active, reachable)) {
+                     continue;
+                  }
+                  const float estimate = ai::ctBombDefuserEstimatedCompletion (
+                     reachable ? route : 0.0f, other->pev->maxspeed,
+                     other->m_hasDefuser, other->m_pickupType == Pickup::PlantedC4, active);
+                  if (ai::isBetterCtBombDefuser (estimate, other->entindex (),
+                        bestEstimate, defuserId)) {
+                     defuserId = other->entindex ();
+                     bestEstimate = estimate;
+                  }
+               }
+               // Never let a missing or invalid waypoint elect no one.
+               allowPickup = (defuserId < 0 || defuserId == entindex ())
+                  && (!isBombDefusing (origin) || m_hasProgressBar);
 
-               if (!m_defendedBomb && !allowPickup) {
-                  m_defendedBomb = true;
-
-                  const int index = findDefendNode (origin);
-                  const auto &path = graph[index];
-
-                  const float bombTimer = mp_c4timer.as <float> ();
-                  const float timeToExplode = gameState.getTimeBombPlanted () + bombTimer - graph.calculateTravelTime (pev->maxspeed, pev->origin, path.origin);
-
-                  if (timeToExplode > game.time ()) {
-                     clearTask (Task::MoveToPosition); // remove any move tasks
-
-                     startTask (Task::Camp, TaskPri::Camp, kInvalidNodeIndex, timeToExplode, true); // push camp task on to stack
-                     startTask (Task::MoveToPosition, TaskPri::MoveToPosition, index, timeToExplode, true); // push move command
-
-                     // decide to duck or not to duck
-                     selectCampButtons (index);
-
-                     if (rg.chance (85)) {
-                        pushChatterMessage (Chatter::DefendingBombsite);
+               if (!allowPickup && defuserId > 0 && defuserId != entindex ()
+                   && !m_defendedBomb && graph.exists (bombNode)) {
+                  const int index = findDefendNode (origin, true, false, true);
+                  if (graph.exists (index)) {
+                     const float timeToExplode = gameState.getTimeBombPlanted ()
+                        + mp_c4timer.as <float> ()
+                        - graph.calculateTravelTime (pev->maxspeed, pev->origin, graph[index].origin);
+                     if (timeToExplode > game.time ()) {
+                        m_aiCtBombDefuserId = defuserId;
+                        m_aiCtBombCoverNode = index;
+                        m_defendedBomb = true;
+                        clearTask (Task::MoveToPosition);
+                        startTask (Task::Camp, TaskPri::Camp, kInvalidNodeIndex, timeToExplode, true);
+                        startTask (Task::MoveToPosition, TaskPri::MoveToPosition, index, timeToExplode, true);
+                        selectCampButtons (index);
                      }
                   }
                }

@@ -76,4 +76,38 @@ constexpr bool shouldTryRiskAwareCtBombRoute(bool bombLocalized, int botId,
           shortestDistance, shortestDistance, maxSpeed, bombTimeLeft, hasKit);
 }
 
+// D184: elect a single CT with a credible route to localized C4.
+// Actual BarTime/DefuseBomb ownership outranks every travel-time estimate.
+constexpr float kCtBombDefuseIncumbentBias = 1.0f;
+constexpr float kCtBombCoverSeparationSq = 192.0f * 192.0f;
+constexpr float kCtBombCoverMinDistanceSq = 96.0f * 96.0f;
+
+constexpr bool isCtBombDefuserCandidate(bool alive, bool localized, bool escaping,
+                                       bool enemyVisible, bool activeDefuse, bool reachable) {
+  return alive && localized && !escaping
+      && (activeDefuse || (!enemyVisible && reachable));
+}
+
+constexpr float ctBombDefuserEstimatedCompletion(float routeDistance, float maxSpeed,
+                                                  bool hasKit, bool ownsPickup, bool activeDefuse) {
+  return activeDefuse ? -1000.0f
+       : routeDistance / (maxSpeed * kCtBombRouteEffectiveSpeed)
+           + (hasKit ? 5.0f : 10.0f)
+           - (ownsPickup ? kCtBombDefuseIncumbentBias : 0.0f);
+}
+
+constexpr bool isBetterCtBombDefuser(float estimate, int botId, float bestEstimate, int bestBotId) {
+  return bestBotId < 0 || estimate < bestEstimate
+      || (estimate == bestEstimate && botId < bestBotId);
+}
+
+constexpr bool conflictsWithCtBombCoverGoal(bool allyCoverActive, float goalDistanceSq) {
+  return allyCoverActive && goalDistanceSq >= 0.0f
+      && goalDistanceSq < kCtBombCoverSeparationSq;
+}
+
+constexpr bool shouldHoldCtBombCover(bool bombPlanted, bool ownerAlive, bool bombDefusing) {
+  return bombPlanted && (ownerAlive || bombDefusing);
+}
+
 } // namespace ai

@@ -745,6 +745,48 @@ AI_TEST(testGoalNavigationPolicyExploresAtCurrentLegacyGoal) {
   expect(action.type == ai::ActionType::Explore, "normal task explores independently of the legacy goal");
 }
 
+AI_TEST(testCtBombDefuserElectionAndTakeover) {
+  expect(ai::isCtBombDefuserCandidate(true, true, false, false, false, true),
+         "reachable localized CT is eligible");
+  expect(!ai::isCtBombDefuserCandidate(true, false, false, false, false, true),
+         "unlocalized CT cannot use shared hidden C4 location");
+  expect(!ai::isCtBombDefuserCandidate(false, true, false, false, false, true),
+         "dead CT cannot own defuse");
+  expect(!ai::isCtBombDefuserCandidate(true, true, true, false, false, true),
+         "escaping CT cannot own defuse");
+  expect(!ai::isCtBombDefuserCandidate(true, true, false, true, false, true),
+         "CT fighting a visible enemy does not take over");
+  expect(ai::isCtBombDefuserCandidate(true, true, false, true, true, false),
+         "active defuser is not displaced by enemy or missing waypoint");
+  const float kit = ai::ctBombDefuserEstimatedCompletion(600.0f, 250.0f, true, false, false);
+  const float plain = ai::ctBombDefuserEstimatedCompletion(600.0f, 250.0f, false, false, false);
+  expect(kit < plain, "kit beats equally distant no-kit candidate");
+  expect(ai::isBetterCtBombDefuser(kit, 2, plain, 1), "faster defuser wins");
+  expect(ai::isBetterCtBombDefuser(kit, 1, kit, 2), "equal ETA ties by stable bot id");
+  expect(!ai::isBetterCtBombDefuser(kit, 3, kit, 2), "no equal-score oscillation");
+  expect(ai::ctBombDefuserEstimatedCompletion(0.0f, 250.0f, false, false, true) < kit,
+         "active defuse outranks candidate travel estimate");
+  expect(ai::isBetterCtBombDefuser(12.0f, 8, 15.0f, 2),
+         "surviving replacement can be elected when original is gone");
+}
+
+AI_TEST(testCtBombCoverReservationAndOwnerLifecycle) {
+  expect(ai::conflictsWithCtBombCoverGoal(true, 100.0f * 100.0f),
+         "nearby reserved cover location is rejected");
+  expect(!ai::conflictsWithCtBombCoverGoal(true, 200.0f * 200.0f),
+         "separate cover flank remains valid");
+  expect(!ai::conflictsWithCtBombCoverGoal(false, 0.0f),
+         "unreserved node does not block cover");
+  expect(ai::shouldHoldCtBombCover(true, true, false),
+         "active teammate keeps supporting cover role");
+  expect(ai::shouldHoldCtBombCover(true, false, true),
+         "confirmed ongoing defuse keeps cover role");
+  expect(!ai::shouldHoldCtBombCover(true, false, false),
+         "dead or absent defuser releases role for takeover");
+  expect(!ai::shouldHoldCtBombCover(false, true, true),
+         "end of bomb objective releases cover");
+}
+
 AI_TEST(testBlockedC4InsideUseRadiusStillNeedsGraphStaging) {
   expect(ai::needsPlantedBombInteractionRoute(35.0f * 35.0f, 60.0f * 60.0f, false),
          "box blocks direct C4 approach even inside the 3D use sphere");

@@ -2241,7 +2241,8 @@ int Bot::findBombNode () {
    return goal;
 }
 
-int Bot::findDefendNode (const Vector &origin, bool preferLowExposure, bool plantedDefense) {
+int Bot::findDefendNode (const Vector &origin, bool preferLowExposure, bool plantedDefense,
+                         bool reserveCtCover) {
    // this function tries to find a good position which has a line of sight to a position,
    // provides enough cover point, and is far away from the defending position
 
@@ -2262,7 +2263,25 @@ int Bot::findDefendNode (const Vector &origin, bool preferLowExposure, bool plan
       return graph.random ();
    }
 
-   if (preferLowExposure) {
+   // The defender must not select a teammate's already reserved cover area.
+   const auto isReservedCover = [&] (int node) {
+      if (!reserveCtCover || !graph.exists (node)) {
+         return false;
+      }
+      for (const auto &other : bots) {
+         if (!other || other.get () == this || !other->m_isAlive || other->m_team != Team::CT
+             || !graph.exists (other->m_aiCtBombCoverNode)) {
+            continue;
+         }
+         if (ai::conflictsWithCtBombCoverGoal (true,
+                graph[node].origin.distanceSq (graph[other->m_aiCtBombCoverNode].origin))) {
+            return true;
+         }
+      }
+      return false;
+   };
+
+   if (preferLowExposure || reserveCtCover) {
       auto selectLeastExposed = [&] (bool requireCamp) {
          int bestNode = kInvalidNodeIndex;
          int bestExposure = 0;
@@ -2277,7 +2296,9 @@ int Bot::findDefendNode (const Vector &origin, bool preferLowExposure, bool plan
                continue;
             }
 
-            if (path.number == srcIndex || !vistab.visible (path.number, posIndex) || isOccupiedNode (path.number)) {
+            if (path.number == srcIndex || !vistab.visible (path.number, posIndex)
+               || isOccupiedNode (path.number) || isReservedCover (path.number)
+               || (reserveCtCover && path.origin.distanceSq (origin) < ai::kCtBombCoverMinDistanceSq)) {
                continue;
             }
 
@@ -2363,7 +2384,7 @@ int Bot::findDefendNode (const Vector &origin, bool preferLowExposure, bool plan
          }
 
          // skip occupied points
-         if (isOccupiedNode (path.number)) {
+         if (isOccupiedNode (path.number) || isReservedCover (path.number)) {
             continue;
          }
          game.testLine (path.origin, graph[posIndex].origin, TraceIgnore::Glass, ent (), &tr);
@@ -2424,14 +2445,14 @@ int Bot::findDefendNode (const Vector &origin, bool preferLowExposure, bool plan
       for (const auto &path : graph) {
          if (origin.distanceSq (path.origin) < cr::sqrf (kMaxDistance)
             && vistab.visible (path.number, posIndex)
-            && !isOccupiedNode (path.number)) {
+            && !isOccupiedNode (path.number) && !isReservedCover (path.number)) {
 
             found.push (path.number);
          }
       }
 
       if (found.empty ()) {
-         return graph.random (); // most worst case, since there a evil error in nodes
+         return reserveCtCover ? kInvalidNodeIndex : graph.random ();
       }
       return found.random ();
    }
