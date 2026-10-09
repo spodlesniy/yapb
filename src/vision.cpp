@@ -7,6 +7,9 @@
 
 #include <yapb.h>
 
+// Explicit declaration for D180's blind aim guard; yapb.h does not export it.
+#include <ai/ai_perception_guard.h>
+
 ConVar cv_max_nodes_for_predict ("max_nodes_for_predict", "22", "Maximum number of path nodes to predict the enemy.", true, 15.0f, 256.0f);
 ConVar cv_whose_your_daddy ("whose_your_daddy", "0", "Enables or disables extra hard difficulty for bots.");
 

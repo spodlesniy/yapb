@@ -1670,6 +1670,20 @@ No changes are made to the conservative graph travel budget for distant reinforc
 Reason: the existing arrival check rejects all paths once the bomb has fewer than four seconds left, including zero-length routes for bots already guarding the site.
 Such bots could then emit repeated rejected ProtectObjective attempts precisely when they should hold an established defense position.
 
+## D182.3 — Audit D179–D182 gameplay includes and prevent repeat Windows x86 failures
+
+The latest user-triggered Windows x86 workflow failed in `src/vision.cpp` with MSVC C2039/C3861 at the three uses of `ai::suppressPreciseBlindAim()`.
+D180 added the calls but did not directly include their declaring `ai_perception_guard.h` in `vision.cpp`, while the Linux AI unit target did not compile that gameplay source.
+Add the direct guard include **after the mandatory first `<yapb.h>` include**, without changing view/flash/gameplay behavior.
+
+Review the D179–D182 Windows x86 failure chain as a whole: the D179 `int8_t` visibility snapshot mismatch is fixed by D182.2, the D181 `DefuseApproachDiagnosticGate` complete-type dependency is fixed by D182.1, and the missing D180 helper declaration is fixed here.
+Extend the existing Python Training tools test to detect missing direct includes for the new perception helper calls and to protect the two earlier type/header invariants.
+Clarify the AGENTS and development checklist: production translation units must explicitly include the AI helper headers they use, immediately **after** `yapb.h` where applicable.
+This is a separate one-commit correction; no historical commit or force-ref update is permitted.
+
+The automatic unit/Training tools CI is not a substitute for the user-triggered Windows x86 game-DLL build.
+The latter must be rechecked for this exact commit; full Windows build success cannot be claimed beforehand.
+
 ## D182.2 — Match enemy-visibility snapshot storage type on Windows x86
 
 The repeated user-triggered Windows x86 build for D182.1 failed in `src/combat.cpp:497` with MSVC `C2440` converting `int8_t` to `cr::enums::_Visibility::Type`. The earlier D179 hysteresis implementation initialized the temporary visibility snapshot from `Visibility::None`, which deduced the enum type even though `Bot::m_enemyParts` is stored as `int8_t`. The reverse assignment also produced `C4244`.

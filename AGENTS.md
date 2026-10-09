@@ -42,6 +42,8 @@ This repository is the AiPB development fork of YaPB.
   Do not reorder `<yapb.h>` downward for style, alphabetical sorting, or automatic include cleanup; D148 records the Windows x86 failure.
 - For files that do not directly include `<yapb.h>`, put standard-library headers before project/local includes as usual.
 - When editing includes, verify the first `#include` in each touched production `.cpp` and run the repository-wide include-order check in `tools/aipb_training/tests/test_yapb_include_order.py`.
+- Directly include each AI helper's defining header in production `.cpp` files **after** `<yapb.h>`, even if another translation unit or a test already includes it.
+  Do not rely on incidental transitive includes: Linux AI unit tests do not compile every gameplay source, and missing declarations can otherwise surface only in the manual Windows x86 build.
 - All comments written in source code must be in English.
 - In Markdown files, write each prose sentence on its own physical line; preserve blank lines, headings, list structure, tables, front matter, code blocks, link definitions, and other syntax-sensitive Markdown constructs. Do not use Markdown hard breaks solely for source formatting.
 - Preserve existing public APIs and architecture unless the current iteration explicitly requires an API or architectural change.

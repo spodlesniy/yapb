@@ -60,7 +60,9 @@ Never append extra commits to the original step or rewrite its published commit.
 For every touched source file, verify:
 
 - The diff is limited to the current iteration.
-- Standard-library includes appear before project/local includes.
+- Production `.cpp` files that include `<yapb.h>` put it **first** (mandatory MSVC x86/crlib exception); other sources follow standard-library-first ordering.
+- Each production C++ source directly includes the AI helper headers that declare the functions and types it uses, with any `<ai/...>` headers coming **after** `<yapb.h>`.
+  Never assume an AI unit test building the same header also compiles its gameplay caller.
 - No `std::array` was introduced.
 - Fixed-size arrays use ordinary C-style arrays.
 - All source-code comments are written in English.

@@ -18,6 +18,20 @@ def misplaced_yapb_include(source: str) -> bool:
     return "yapb.h" in headers and headers[0] != "yapb.h"
 
 
+# The game DLL is not built by the normal AI-only unit test job.
+# Keep engine-independent guards explicitly visible in their production users,
+# rather than relying on headers included by unrelated source files.
+PERCEPTION_HELPERS = ("suppressPreciseBlindAim", "shouldKeepCurrentVisibleEnemy")
+
+
+def missing_perception_guard_include(source: str) -> bool:
+    uses_guard = any(
+        re.search(r"\bai::" + re.escape(name) + r"\s*\(", source)
+        for name in PERCEPTION_HELPERS
+    )
+    return uses_guard and "ai/ai_perception_guard.h" not in INCLUDE.findall(source)
+
+
 class YapbFirstIncludeTests(unittest.TestCase):
     def test_production_translation_units_have_yapb_first(self) -> None:
         files = sorted((ROOT / "src").rglob("*.cpp"))
@@ -40,6 +54,37 @@ class YapbFirstIncludeTests(unittest.TestCase):
             usages.update(re.findall(r"\bTaskPri::(\w+)", path.read_text(encoding="utf-8")))
         self.assertFalse(usages - declarations,
                          "Undefined TaskPri symbols: " + ", ".join(sorted(usages - declarations)))
+
+    def test_perception_guard_users_include_their_defining_header(self) -> None:
+        missing = [
+            str(path.relative_to(ROOT))
+            for path in (ROOT / "src").rglob("*.cpp")
+            if missing_perception_guard_include(path.read_text(encoding="utf-8"))
+        ]
+        self.assertFalse(
+            missing, "Direct <ai/ai_perception_guard.h> include missing: " + ", ".join(missing)
+        )
+
+    def test_perception_include_regression_detection(self) -> None:
+        usage = '#include <yapb.h>\nvoid f() { ai::suppressPreciseBlindAim(1.0f); }\n'
+        self.assertTrue(missing_perception_guard_include(usage))
+        self.assertFalse(
+            missing_perception_guard_include(
+                '#include <yapb.h>\n#include <ai/ai_perception_guard.h>\n'
+                'void f() { ai::suppressPreciseBlindAim(1.0f); }\n'
+            )
+        )
+        self.assertFalse(missing_perception_guard_include('#include <yapb.h>\n'))
+
+    def test_recent_windows_x86_regression_contracts(self) -> None:
+        yapb_header = (ROOT / "inc" / "yapb.h").read_text(encoding="utf-8")
+        defuse_header = (ROOT / "inc" / "ai" / "ai_defuse_event.h").read_text(encoding="utf-8")
+        combat_source = (ROOT / "src" / "combat.cpp").read_text(encoding="utf-8")
+        self.assertIn("#include <ai/ai_defuse_event.h>", yapb_header)
+        self.assertIn("class DefuseApproachDiagnosticGate final", defuse_header)
+        self.assertRegex(
+            combat_source, r"\bauto\s+currentEnemyParts\s*=\s*m_enemyParts\s*;"
+        )
 
     def test_catches_standard_and_local_headers_before_yapb(self) -> None:
         self.assertTrue(misplaced_yapb_include('#include <cstring>\n#include <yapb.h>\n'))
