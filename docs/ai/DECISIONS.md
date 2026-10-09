@@ -1670,6 +1670,12 @@ No changes are made to the conservative graph travel budget for distant reinforc
 Reason: the existing arrival check rejects all paths once the bomb has fewer than four seconds left, including zero-length routes for bots already guarding the site.
 Such bots could then emit repeated rejected ProtectObjective attempts precisely when they should hold an established defense position.
 
+## D182.2 — Match enemy-visibility snapshot storage type on Windows x86
+
+The repeated user-triggered Windows x86 build for D182.1 failed in `src/combat.cpp:497` with MSVC `C2440` converting `int8_t` to `cr::enums::_Visibility::Type`. The earlier D179 hysteresis implementation initialized the temporary visibility snapshot from `Visibility::None`, which deduced the enum type even though `Bot::m_enemyParts` is stored as `int8_t`. The reverse assignment also produced `C4244`.
+
+Initialize the temporary from `m_enemyParts` instead of the enum so that `auto` deduces the exact field storage type; subsequent snapshot and restoration assignments are type-consistent without casts, changing no gameplay behavior. This is a separately named, single ordinary corrective commit. The `yapb.h`-first include rule and all previous published commits are preserved.
+
 ## D182.1 — Make C4 approach diagnostics visible to the Bot header
 
 The user-triggered Windows x86 job for D182 failed with MSVC C2039/C3646 at `inc/yapb.h(344)`: `ai::DefuseApproachDiagnosticGate` was defined only in `ai_objective_navigation_guard.h`, while `yapb.h` declared a direct value member of that type without importing its complete definition.

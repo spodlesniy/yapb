@@ -391,7 +391,9 @@ bool Bot::lookupEnemies () {
    edict_t *visibleCurrentEnemy = nullptr;
    float currentEnemyDistanceSq = -1.0f;
    Vector currentEnemyOrigin {};
-   auto currentEnemyParts = Visibility::None;
+   // Preserve the exact storage type of m_enemyParts (int8_t), not the
+   // Visibility enum type: MSVC x86 rejects implicit int8_t -> enum assignment.
+   auto currentEnemyParts = m_enemyParts;
 
    // clear suspected flag
    if (!game.isNullEntity (m_enemy) && (m_states & Sense::SeeingEnemy)) {
