@@ -1902,3 +1902,14 @@ If no covered waypoint is available, a reachable flank may be used for mobile de
 Preserve visible-combat priority, defuse alarm handling, planting mechanics, and the existing AI semantic action lifecycle.
 The presence of barriers is a conservative cover heuristic, not proof that every combat angle is safe.
 The automatic unit test, user-triggered Windows x86 build, and a new in-game capture are required before marking D188 validated.
+
+## D189 — Bounded critical-health angular-motion diagnostic sampling
+
+Prior gameplay showed a surviving CT with approximately 1 HP visibly turning without enough angle history in the JSONL to determine the mechanism.
+Existing `rapid_aim_turn` reports only individual turns over 60 degrees, and target-switch events cannot reveal repeated small yaw reversals.
+Add a separate event-only `aim_motion_sample` for living Training-mode bots at ten HP or below.
+Accumulate absolute yaw/pitch travel, net turn, yaw-direction reversals, elapsed time, last yaw velocity, and existing task/target/aim flags over half-second windows.
+Only report windows with meaningful angular motion and cap the number of records per bot per round at 64; suppress stationary and normal-health samples.
+Keep the existing per-frame angle update, navigation, flash-blind protection, target selection, teacher and training transitions unchanged.
+Extend the JSONL v3 writer and validator and add focused C++ and Python tests.
+This is instrumentation, not an aim correction: a fresh game capture is required to identify whether apparent spinning arises from movement, target selection or angle control.

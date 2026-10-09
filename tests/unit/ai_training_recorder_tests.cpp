@@ -693,6 +693,28 @@ AI_TEST(testFlashAvoidanceBoundedTurnAndPriority) {
           "nonpositive frame interval cannot cause a turn");
 }
 
+AI_TEST(testD189LowHealthAimMotionWindowIsBoundedAndDetectsOscillation) {
+   ai::AimMotionSampler motion {};
+   motion.observe(1.0f, 0.0f, 0.0f, 1);
+   motion.observe(1.1f, 12.0f, 0.0f, 1);
+   motion.observe(1.2f, 0.0f, 0.0f, 1);
+   motion.observe(1.3f, 12.0f, 0.0f, 1);
+   motion.observe(1.4f, 0.0f, 0.0f, 1);
+   const auto result = motion.observe(1.5f, 12.0f, 0.0f, 1);
+   expect(result.sampled && result.yawTravel == 60.0f,
+          "accumulated small turns are observable despite a small net angle");
+   expect(result.yawReversals == 4, "direction changes identify oscillation");
+   expect(!motion.observe(1.6f, 15.0f, 0.0f, 1).sampled,
+          "samples are limited by elapsed window");
+   motion.reset();
+   motion.observe(2.0f, 0.0f, 0.0f, 100);
+   expect(!motion.observe(2.8f, 50.0f, 0.0f, 100).sampled,
+          "normal health is not monitored");
+   motion.observe(3.0f, 0.0f, 0.0f, 1);
+   expect(motion.observe(3.5f, 0.0f, 0.0f, 1).sampled == false,
+          "stationary aim does not fill the event buffer");
+}
+
 AI_TEST(testAimBufferCompactionAndJsonlWriter) {
    ai::TrainingBuffer buffer {};
    ai::AimEvent event {};

@@ -54,7 +54,8 @@ Do not fabricate completion records or historical names for Phases 1–6 without
 - D186.3 removes forced dropped-C4 CT camping and crouching in potentially exposed areas; automatic CI and user-triggered Windows x86 passed on `69b30be`, though in-game validation remains ongoing.
 - D187 extends CT bombsite corridor-diversity routing to Fast and pre-plant goal approaches; automatic CI and user-triggered Windows x86 succeeded for `fc51eed`, but gameplay verification remains open.
 - D187.1 adds a bounded in-front low-ceiling collision probe to restore crouching during grounded waypoint movement, without waypoint edits; automatic CI passed for `0e42a90`, while Windows x86 and gameplay checks remain pending.
-- D188 gates stationary planted-C4 defense on static physical cover and otherwise prefers mobile flanks; automatic CI, Windows x86 and gameplay evidence pending.
+- D188 gates stationary planted-C4 defense on static physical cover and otherwise prefers mobile flanks; automatic CI succeeded for `9eb6e67`, while Windows x86 and gameplay evidence remain pending.
+- D189 adds bounded critical-health angular-motion telemetry without modifying aim control; automatic CI, Windows x86 and gameplay evidence remain pending.
 
 ### Latest verified build evidence
 
@@ -64,6 +65,7 @@ Do not fabricate completion records or historical names for Phases 1–6 without
 - [Automatic D185 CI run 37901917305](https://github.com/spodlesniy/yapb/actions/runs/37901917305) completed successfully for `ebbbdea`; Windows x86 and gameplay verification remain outstanding.
 - [Automatic D186 CI run 37908273267](https://github.com/spodlesniy/yapb/actions/runs/37908273267) completed successfully for `11f55ad`; it does not validate the game DLL.
 - [Automatic D186.1 CI run 37913480296](https://github.com/spodlesniy/yapb/actions/runs/37913480296) failed in the Linux AI unit-test compilation, with crlib pedantic errors caused by unconditional `yapb.h` inclusion.
+- [Automatic D188 CI run 37941076137](https://github.com/spodlesniy/yapb/actions/runs/37941076137) completed successfully for `9eb6e67`; Windows x86 and gameplay validation remain outstanding.
 - [Automatic D187.1 CI run 37936854652](https://github.com/spodlesniy/yapb/actions/runs/37936854652) completed successfully for `0e42a90`; Windows x86 was skipped.
 - [Automatic D187 CI run 37928141173](https://github.com/spodlesniy/yapb/actions/runs/37928141173) passed for `fc51eed`.
 - [User-triggered D187 Windows x86 run 37930462099](https://github.com/spodlesniy/yapb/actions/runs/37930462099) passed for `fc51eed`; gameplay still showed a low ceiling navigation stall and exposed T post-plant camping.
@@ -87,7 +89,7 @@ Do not fabricate completion records or historical names for Phases 1–6 without
 - Validate D187: compare CT route overlap across planted and pre-plant site approaches and document unavoidable map bottlenecks; ensure no missed defuse deadline.
 - Validate D186.3: CT guarding dropped C4 stay mobile and no longer crouch indefinitely in exposed areas.
 - Validate D186 dropped-C4 primary/support cover selection, safety fallback, owner cleanup, and objective navigation events using gameplay captures across multiple maps.
-- Reassess repeated small aim and movement oscillations on recordings from multiple maps; the current rapid-turn threshold alone does not detect every visible jitter.
+- Collect D189 low-health `aim_motion_sample` records and correlate yaw reversals, velocity, task changes, navigation and visible targets before changing aim algorithms; repeat on multiple maps.
 - Reconcile stale model feature-schema descriptions in `ARCHITECTURE.md` with the actual feature contract and training README (currently schema v7, 252 features).
 - Triage new failures from gameplay and CI before expanding the queue; D183–D186 are not an arbitrary deadline to close the phase.
 

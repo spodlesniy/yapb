@@ -91,6 +91,13 @@ An interrupted attempt records its actual evidence source rather than claiming a
 Likewise, `round_message` refers to the round message path, whereas `game_state` means the code observed that C4 was no longer marked as planted.
 The Python validator checks evidence compatibility without counting diagnostic records as model-training samples.
 
+## D189 — Critical-health angular-motion diagnostics
+
+A bounded independent `AimMotionSampler` collects actual view yaw/pitch changes for living Training bots with 1–10 HP.
+Half-second windows report accumulated angular travel, net angle, yaw reversals, yaw velocity, health and normal aim context in event-only `aim_motion_sample` JSONL v3 records.
+Only significant motion is recorded, with at most 64 samples per bot per round; routine aim and existing rapid-turn diagnostics are unaffected.
+The sampler resets with the round and does not alter bot movement, aiming or neural/training transitions.
+
 ## D188 — Physical cover gate for T planted-C4 defense
 
 ProtectObjective now checks static geometry around a defensive waypoint before allowing stationary Camp.

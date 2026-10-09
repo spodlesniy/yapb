@@ -246,7 +246,8 @@ def iter_validated_samples(path: str | Path):
             if isinstance(value, dict) and value.get("type") == "aim_event":
                 _require(metadata["version"] == 3, f"line {line_number}: aim events require version 3")
                 _require(value.get("event") in {
-                    "target_acquired", "target_switched", "target_lost", "rapid_aim_turn"
+                    "target_acquired", "target_switched", "target_lost", "rapid_aim_turn",
+                    "aim_motion_sample"
                 }, f"line {line_number}: unknown aim event")
                 _require(value.get("reason") in {
                     "target_acquired", "target_changed", "target_lost", "flash_blind",
@@ -261,6 +262,13 @@ def iter_validated_samples(path: str | Path):
                     _require(type(value.get(field)) is int, f"line {line_number}: invalid {field}")
                 for field in ("view_yaw", "view_pitch", "yaw_delta", "pitch_delta", "elapsed"):
                     _require(_is_number(value.get(field)), f"line {line_number}: invalid {field}")
+                if value["event"] == "aim_motion_sample":
+                    _require(type(value.get("health")) is int and 0 < value["health"] <= 10,
+                             f"line {line_number}: invalid critical health")
+                    _require(type(value.get("yaw_reversals")) is int and value["yaw_reversals"] >= 0,
+                             f"line {line_number}: invalid yaw reversals")
+                    for field in ("yaw_travel", "pitch_travel", "yaw_velocity"):
+                        _require(_is_number(value.get(field)), f"line {line_number}: invalid {field}")
                 continue
 
             if isinstance(value, dict) and value.get("type") == "combat_event":

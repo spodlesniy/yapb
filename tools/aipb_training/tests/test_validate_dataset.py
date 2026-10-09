@@ -86,6 +86,17 @@ class TrainingDatasetValidatorTests(unittest.TestCase):
                  "pitch_delta": 0.0, "elapsed": 0.1}
         self.assertEqual(validate_dataset(self.write_dataset([METADATA, make_sample(), event])), 1)
 
+    def test_v3_accepts_low_health_aim_motion_sample(self) -> None:
+        event = {"type": "aim_event", "event": "aim_motion_sample", "reason": "aim_navigation",
+                 "game_time": 35.0, "bot_id": 7, "previous_target_id": -1, "target_id": -1,
+                 "view_yaw": 10.0, "view_pitch": 0.0, "yaw_delta": 0.0,
+                 "pitch_delta": 0.0, "elapsed": 0.5, "health": 1,
+                 "yaw_travel": 38.0, "pitch_travel": 1.0, "yaw_reversals": 4,
+                 "yaw_velocity": 12.0}
+        self.assertEqual(validate_dataset(self.write_dataset([METADATA, make_sample(), event])), 1)
+        with self.assertRaises(DatasetValidationError):
+            validate_dataset(self.write_dataset([METADATA, make_sample(), dict(event, health=90)]))
+
     def test_v3_rejects_invalid_aim_id(self) -> None:
         event = {"type": "aim_event", "event": "target_switched", "reason": "target_changed",
                  "game_time": 35.0, "bot_id": 7, "previous_target_id": True, "target_id": 5,

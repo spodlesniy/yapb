@@ -806,6 +806,7 @@ public:
    bool m_aiNavPendingRoute {};
 
    ai::AimDiagnosticTracker m_aiAimDiagnosticTracker {};
+   ai::AimMotionSampler m_aiAimMotionSampler {};
    bool m_aiFlashAvoidanceTurned {}; // true only for a frame with actual avoidance yaw
    ai::DefuseAttemptTracker m_aiDefuseTracker {};
    bool m_aiFlashEventActive {};

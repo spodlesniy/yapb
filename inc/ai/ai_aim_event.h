@@ -10,7 +10,7 @@
 
 namespace ai {
 
-enum class AimEventType : uint8_t { TargetAcquired, TargetSwitched, TargetLost, RapidTurn };
+enum class AimEventType : uint8_t { TargetAcquired, TargetSwitched, TargetLost, RapidTurn, MotionSample };
 enum class AimEventReason : uint8_t {
   TargetAcquired, TargetChanged, TargetLost, Blind, FlashAvoidance,
   Override, Grenade, Enemy, Entity, LastEnemy, PredictPath,
@@ -23,6 +23,7 @@ constexpr const char *aimEventName(AimEventType type) {
   case AimEventType::TargetSwitched: return "target_switched";
   case AimEventType::TargetLost: return "target_lost";
   case AimEventType::RapidTurn: return "rapid_aim_turn";
+  case AimEventType::MotionSample: return "aim_motion_sample";
   }
   return "unknown";
 }
@@ -118,6 +119,76 @@ public:
   }
 };
 
+// D189: event-only short-window angular motion telemetry at critical health.
+// Net angle can be near zero even when a bot repeatedly changes aim direction.
+constexpr int kAimMotionCriticalHealth = 10;
+constexpr float kAimMotionWindowSeconds = 0.5f;
+constexpr float kAimMotionMinTravelDegrees = 4.0f;
+constexpr float kAimMotionMinReversalStepDegrees = 1.0f;
+constexpr int kAimMotionMaxSamplesPerRound = 64;
+
+struct AimMotionDecision {
+  bool sampled {};
+  float elapsed {}, yawDelta {}, pitchDelta {}, yawTravel {}, pitchTravel {};
+  int32_t yawReversals {};
+};
+
+class AimMotionSampler final {
+  bool m_initialized {};
+  float m_lastTime {}, m_lastYaw {}, m_lastPitch {};
+  float m_windowTime {}, m_windowYaw {}, m_windowPitch {};
+  float m_yawTravel {}, m_pitchTravel {};
+  int m_lastYawDirection {}, m_yawReversals {}, m_samples {};
+public:
+  void reset() { *this = AimMotionSampler {}; }
+
+  AimMotionDecision observe(float now, float yaw, float pitch, int health) {
+    AimMotionDecision result {};
+    if (health <= 0 || health > kAimMotionCriticalHealth) {
+      m_initialized = false;
+      return result;
+    }
+    if (!m_initialized || now <= m_lastTime) {
+      m_initialized = true;
+      m_lastTime = m_windowTime = now;
+      m_lastYaw = m_windowYaw = yaw;
+      m_lastPitch = m_windowPitch = pitch;
+      m_yawTravel = m_pitchTravel = 0.0f;
+      m_yawReversals = m_lastYawDirection = 0;
+      return result;
+    }
+    const float deltaYaw = aimAngleDifference(yaw, m_lastYaw);
+    const float deltaPitch = aimAngleDifference(pitch, m_lastPitch);
+    m_yawTravel += std::fabs(deltaYaw);
+    m_pitchTravel += std::fabs(deltaPitch);
+    if (std::fabs(deltaYaw) >= kAimMotionMinReversalStepDegrees) {
+      const int direction = deltaYaw > 0.0f ? 1 : -1;
+      if (m_lastYawDirection && m_lastYawDirection != direction) ++m_yawReversals;
+      m_lastYawDirection = direction;
+    }
+    m_lastTime = now;
+    m_lastYaw = yaw;
+    m_lastPitch = pitch;
+    if (now - m_windowTime < kAimMotionWindowSeconds) return result;
+    result.elapsed = now - m_windowTime;
+    result.yawDelta = aimAngleDifference(yaw, m_windowYaw);
+    result.pitchDelta = aimAngleDifference(pitch, m_windowPitch);
+    result.yawTravel = m_yawTravel;
+    result.pitchTravel = m_pitchTravel;
+    result.yawReversals = m_yawReversals;
+    result.sampled = m_samples < kAimMotionMaxSamplesPerRound
+        && (m_yawTravel >= kAimMotionMinTravelDegrees
+            || m_pitchTravel >= kAimMotionMinTravelDegrees || m_yawReversals > 0);
+    if (result.sampled) ++m_samples;
+    m_windowTime = now;
+    m_windowYaw = yaw;
+    m_windowPitch = pitch;
+    m_yawTravel = m_pitchTravel = 0.0f;
+    m_yawReversals = m_lastYawDirection = 0;
+    return result;
+  }
+};
+
 struct AimEvent {
   AimEventType type { AimEventType::RapidTurn };
   AimEventReason reason { AimEventReason::Unattributed };
@@ -127,6 +198,8 @@ struct AimEvent {
   int32_t botId { -1 }, team { -1 }, task { -1 }, aiAction { -1 };
   int32_t previousTargetId { -1 }, targetId { -1 };
   float viewYaw {}, viewPitch {}, yawDelta {}, pitchDelta {}, blindTimeRemaining {};
+  int32_t health { -1 }, yawReversals {};
+  float yawTravel {}, pitchTravel {}, yawVelocity {};
   bool targetVisible {};
   Vec3 position {};
 };

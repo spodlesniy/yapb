@@ -3795,8 +3795,10 @@ void Bot::updateAimDiagnostics () {
    const int targetId = game.isPlayerEntity (m_enemy) && game.isAliveEntity (m_enemy)
       ? game.indexOfEntity (m_enemy) : -1;
    const auto decision = m_aiAimDiagnosticTracker.observe(now, pev->v_angle.y, pev->v_angle.x, targetId);
+   const auto motion = m_aiAimMotionSampler.observe(
+      now, pev->v_angle.y, pev->v_angle.x, static_cast <int> (pev->health));
    if (m_aiRuntime.controller ().getMode () != ai::ControlMode::Training
-      || (!decision.targetChanged && !decision.rapidTurn)) return;
+      || (!decision.targetChanged && !decision.rapidTurn && !motion.sampled)) return;
    const bool blinded = m_blindTime > now;
    const auto reason = ai::aimReasonForState(blinded, m_aiFlashAvoidanceTurned,
       (m_aimFlags & AimFlags::Override) != 0, (m_aimFlags & AimFlags::Grenade) != 0,
@@ -3827,6 +3829,7 @@ void Bot::updateAimDiagnostics () {
       e.blindTimeRemaining = cr::max(0.0f, m_blindTime - now);
       e.targetVisible = !!(m_states & Sense::SeeingEnemy);
       e.position = { pev->origin.x, pev->origin.y, pev->origin.z };
+      e.health = static_cast <int> (pev->health);
       buffer.appendAimEvent(e);
    };
    if (decision.targetChanged) {
@@ -3838,6 +3841,36 @@ void Bot::updateAimDiagnostics () {
          : ai::AimEventReason::TargetChanged);
    }
    if (decision.rapidTurn) record(ai::AimEventType::RapidTurn, reason);
+   if (motion.sampled) {
+      ai::AimEvent event {};
+      event.type = ai::AimEventType::MotionSample;
+      event.reason = reason;
+      event.gameTime = now;
+      event.roundStartTime = gameState.getRoundStartTime ();
+      event.roundId = gameState.getTelemetryRoundId ();
+      event.episodeId = m_aiRuntime.trainingRecorder ().episodeId ();
+      event.botId = entindex ();
+      event.team = m_team;
+      event.task = getCurrentTaskId ();
+      event.aiAction = m_aiRuntime.isActive () ? static_cast <int> (m_aiRuntime.activeAction ().type) : -1;
+      event.previousTargetId = decision.previousTargetId;
+      event.targetId = targetId;
+      event.aimFlags = m_aimFlags;
+      event.viewYaw = pev->v_angle.y;
+      event.viewPitch = pev->v_angle.x;
+      event.yawDelta = motion.yawDelta;
+      event.pitchDelta = motion.pitchDelta;
+      event.elapsed = motion.elapsed;
+      event.yawTravel = motion.yawTravel;
+      event.pitchTravel = motion.pitchTravel;
+      event.yawReversals = motion.yawReversals;
+      event.yawVelocity = m_lookYawVel;
+      event.health = static_cast <int> (pev->health);
+      event.blindTimeRemaining = cr::max (0.0f, m_blindTime - now);
+      event.targetVisible = !!(m_states & Sense::SeeingEnemy);
+      event.position = { pev->origin.x, pev->origin.y, pev->origin.z };
+      buffer.appendAimEvent(event);
+   }
 }
 
 void Bot::recordCombatEvent (ai::CombatEventType type, int weaponId, int targetId,
