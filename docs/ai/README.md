@@ -4,6 +4,7 @@ This directory contains durable project guidance for AI-assisted development of 
 
 ## Documents
 
+- [Roadmap](ROADMAP.md) — current phase status, remaining acceptance criteria, future phase proposals, and review rules.
 - [Architecture](ARCHITECTURE.md) — current AI runtime, policy, action, training responsibilities, offline Python training, and model I/O.
 - [Development](DEVELOPMENT.md) — iteration, commit, CI, review, and verification workflow.
 - [Coding Rules](CODING_RULES.md) — repository-specific implementation constraints and source-code conventions.

@@ -12,10 +12,10 @@ One iteration should:
 
 1. Define one narrow behavioral or structural change.
 2. Inspect the relevant interfaces and dependencies before editing.
-3. Inspect the affected `docs/ai` documentation and determine whether the current implementation changes require documentation updates.
+3. Review `docs/ai/ROADMAP.md` and the affected `docs/ai` documents; determine whether the step changes milestone status, scope, ordering, dependencies, blockers, or acceptance criteria.
 4. Implement only that change.
 5. Run focused validation locally when available.
-6. Inspect the complete diff.
+6. Recheck roadmap impact, update `docs/ai/ROADMAP.md` in this same change when material, and inspect the complete diff.
 7. Publish exactly one commit for the completed named step via the atomic procedure below.
 8. Verify that branch HEAD equals that commit, and check automatic unit-test CI for its exact SHA before starting the next step.
    Pending, skipped, missing, or inaccessible results are not passed CI.
@@ -27,6 +27,22 @@ For temporary or task-specific Git branches, delete the branch from the fork imm
 This cleanup rule does not apply to permanent development branches.
 
 Do not accumulate multiple unrelated fixes before committing.
+
+## Roadmap and decision-log maintenance (mandatory)
+
+`docs/ai/ROADMAP.md` is the durable source of truth for phase status, phase boundaries, planned follow-up work, dependencies, and exit criteria.
+Review it at the beginning **and end of every named development step**, including corrective steps and documentation-only steps.
+If the step changes completed or pending milestones, priority/order, scope, blockers, phase status, evidence for an exit criterion, or the plan for later phases, update the roadmap **in the same single commit**.
+If no roadmap information changes, no edit is necessary, but the review is still required.
+Do not infer phase completion from a pushed commit, successful unit tests alone, or skipped checks; verify the documented exit criteria using the appropriate CI, user-started builds, gameplay evidence, and training evaluations.
+Record verified results with a dated, commit-specific reference when applicable; preserve older results as historical snapshots.
+CI that finishes after publication can be reflected at the next named-step review, without amending or rewriting the previous commit.
+At each phase boundary, explicitly review and revise the proposed later phases before marking a phase complete.
+
+Maintain `docs/ai/DECISIONS.md` in **ascending numeric decision-ID order** (`D178`, `D178.1`, `D179`, and so on).
+A correction's decimal suffix follows its parent; do not treat IDs as strings, invent missing decisions, renumber historical decisions, or duplicate IDs.
+When correcting order, move entire decision sections while keeping their existing text intact.
+Check ordering and uniqueness before each documentation commit.
 
 ## Atomic GitHub publication (mandatory)
 
@@ -60,6 +76,8 @@ Never append extra commits to the original step or rewrite its published commit.
 For every touched source file, verify:
 
 - The diff is limited to the current iteration.
+- `docs/ai/ROADMAP.md` was reviewed for status, scope, dependency, acceptance, and downstream-phase changes.
+- `docs/ai/DECISIONS.md` headings remain ordered numerically and unique if decisions were touched.
 - Production `.cpp` files that include `<yapb.h>` put it **first** (mandatory MSVC x86/crlib exception); other sources follow standard-library-first ordering.
 - Each production C++ source directly includes the AI helper headers that declare the functions and types it uses, with any `<ai/...>` headers coming **after** `<yapb.h>`.
   Never assume an AI unit test building the same header also compiles its gameplay caller.

@@ -1670,68 +1670,26 @@ No changes are made to the conservative graph travel budget for distant reinforc
 Reason: the existing arrival check rejects all paths once the bomb has fewer than four seconds left, including zero-length routes for bots already guarding the site.
 Such bots could then emit repeated rejected ProtectObjective attempts precisely when they should hold an established defense position.
 
-## D182.3 — Audit D179–D182 gameplay includes and prevent repeat Windows x86 failures
+## D178 — Preserve planted-C4 defense camping and enforce crlib-first includes
 
-The latest user-triggered Windows x86 workflow failed in `src/vision.cpp` with MSVC C2039/C3861 at the three uses of `ai::suppressPreciseBlindAim()`.
-D180 added the calls but did not directly include their declaring `ai_perception_guard.h` in `vision.cpp`, while the Linux AI unit target did not compile that gameplay source.
-Add the direct guard include **after the mandatory first `<yapb.h>` include**, without changing view/flash/gameplay behavior.
+An actively executing Terrorist `ProtectObjective` may continue its `Camp` task while a planted C4 is active even when the server's ordinary `camping_allowed` setting is disabled.
+This exception requires an active semantic ProtectObjective action, the Terrorist team, a demolition map, and a planted bomb; unrelated Camp tasks remain subject to the setting.
+Knife-mode still blocks Camp exactly as before.
+The objective action's existing path and task lifecycle are unchanged.
 
-Review the D179–D182 Windows x86 failure chain as a whole: the D179 `int8_t` visibility snapshot mismatch is fixed by D182.2, the D181 `DefuseApproachDiagnosticGate` complete-type dependency is fixed by D182.1, and the missing D180 helper declaration is fixed here.
-Extend the existing Python Training tools test to detect missing direct includes for the new perception helper calls and to protect the two earlier type/header invariants.
-Clarify the AGENTS and development checklist: production translation units must explicitly include the AI helper headers they use, immediately **after** `yapb.h` where applicable.
-This is a separate one-commit correction; no historical commit or force-ref update is permitted.
+The include-order audit found three production C++ translation units with includes before `<yapb.h>`: `src/message.cpp`, `src/combat.cpp`, and `src/tasks.cpp`.
+All three are restored to `<yapb.h>` as the first include, and an automated Python test checks production C++ translation units to prevent this regression.
+`AGENTS.md` and `docs/ai/DEVELOPMENT.md` now state the rule explicitly, consistent with D148.
 
-The automatic unit/Training tools CI is not a substitute for the user-triggered Windows x86 game-DLL build.
-The latter must be rechecked for this exact commit; full Windows build success cannot be claimed beforehand.
+Reason: `ProtectObjective` could reach its defense point but `camp_()` immediately completed the hold because it unconditionally checked the ordinary camping CVAR.
+The same step closes the separately reported Windows x86 include-order regression risk without changing any API or relying on compatibility macros.
+## D178.1 — Fix undefined PickupItem priority in the Windows x86 build
 
-## D182.2 — Match enemy-visibility snapshot storage type on Windows x86
-
-The repeated user-triggered Windows x86 build for D182.1 failed in `src/combat.cpp:497` with MSVC `C2440` converting `int8_t` to `cr::enums::_Visibility::Type`. The earlier D179 hysteresis implementation initialized the temporary visibility snapshot from `Visibility::None`, which deduced the enum type even though `Bot::m_enemyParts` is stored as `int8_t`. The reverse assignment also produced `C4244`.
-
-Initialize the temporary from `m_enemyParts` instead of the enum so that `auto` deduces the exact field storage type; subsequent snapshot and restoration assignments are type-consistent without casts, changing no gameplay behavior. This is a separately named, single ordinary corrective commit. The `yapb.h`-first include rule and all previous published commits are preserved.
-
-## D182.1 — Make C4 approach diagnostics visible to the Bot header
-
-The user-triggered Windows x86 job for D182 failed with MSVC C2039/C3646 at `inc/yapb.h(344)`: `ai::DefuseApproachDiagnosticGate` was defined only in `ai_objective_navigation_guard.h`, while `yapb.h` declared a direct value member of that type without importing its complete definition.
-Move the five-second diagnostic gate and its interval constant to `ai_defuse_event.h`, which `yapb.h` already includes before the Bot class declaration.
-Keep objective-navigation logic and diagnostic throttling unchanged.
-Make the unit test import `ai_defuse_event.h` explicitly, rather than relying on incidental includes.
-This is a separately named one-commit correction, preserving all prior history.
-
-## D182 — Record actual target switches and unusually fast view turns
-
-To diagnose observed unnaturally rapid changes in bot aim, record actual live-player target identity changes and actual view-angle deltas **after** `updateLookAngles()`, rather than guessing from policy intent.
-Events distinguish acquiring, switching, losing targets and rapid turns; each includes previous/current target IDs, normalized yaw/pitch deltas, elapsed time, actual view angles, flash state, task/action and a reason derived from active aim flags.
-Angle changes of 60+ degrees within 0.30 seconds count as rapid. Per-bot diagnostic reporting intervals are 0.20 seconds for target changes and 0.70 seconds for rapid turns.
-A separate 1024-event bounded buffer decimates old events on overflow without displacing existing training, navigation, combat or defuse telemetry.
-These reasons describe the observed aim branch, not proven causation. There are no gameplay changes to aiming, movement, combat, or enemy selection.
-JSONL v3 and the validator accept event-only records, while version 2 remains unchanged.
-
-## D181 — Diagnose and route CT bomb approaches blocked by raised geometry
-
-A CT whose direct path to a planted C4 is blocked by a box or railing must use a reachable interaction-safe waypoint even if already inside the nominal 3D use radius. This includes the tighter retry radius after an unconfirmed USE.
-Interaction candidates are evaluated using graph route distance. A zero-length route does not establish physical reachability unless the waypoint center can actually be reached from the bot's current position.
-The fallback to an approximate bombsite waypoint for distant bots remains, but is not treated as evidence that the bot can use the C4.
-A blocked close bot without a reachable interaction waypoint stops pushing directly into the obstacle and does not fabricate a defuse attempt.
-The in-range node-center staging path of D159 is enabled for blocked close approaches.
-
-JSONL v3 adds `defuse_approach_blocked` with `geometry_reachability` and `defuse_approach_failed` with `graph_route_unavailable`, each subject to a separate five-second per-bot gate.
-These describe navigation failures prior to IN_USE; they are not BarTime confirmations or ML transitions.
-The validator accepts them only with correct evidence and a known bot identity. Older v2 data remains valid.
-
-## D180 — Gate precise aiming throughout flash blindness, irrespective of task
-
-Every active ScreenFade blindness interval now prevents precise enemy and remembered-enemy tracking through the final view-angle path, even while an AI-controlled AttackTarget/AimAtTarget or a legacy task other than Blind is active.
-At the beginning of blindness, the bot snapshots its current view direction with a small one-time pitch/yaw uncertainty.
-The view-angle update uses that fixed direction while blinded and retains smooth turning; repeated ScreenFade messages do not resample the aim and cause sudden changes.
-The precise-target resolver returns early for the whole flash interval, and expert fast-snap and newbie player-target aiming do not bypass that final gate.
-The existing global weapon-fire suppression from D160 remains unchanged, as do movement and cover navigation.
-Once the blind timer expires, ordinary aiming and target switching resume immediately.
-The snapshot is cleared on new rounds.
-This broadens the Task::Blind-only aim preservation in D133 to all runtime tasks and semantic actions.
-
-Reason: the observed CT bot appeared to track a target precisely during a flash even though no weapon_fire events were recorded during active blindness.
-The previous Task::Blind-specific return in setAimDirection() did not prevent focusEnemy() from selecting a precise target when another task or AI action owned the frame.
+The user-started Windows x86 D178 build failed in `src/tasks.cpp` at the unconfirmed-defuse recovery path because `TaskPri::PickupItem` was not declared.
+Declare `TaskPri::PickupItem` as the established 50.0 baseline and reuse it in `Bot::filterTasks()` for buttons and distance-based pickup desire.
+Keep the existing task handoff and dynamic desire calculation unchanged.
+The Python Training tools tests now verify that all `TaskPri::...` usages in production translation units are declared, because Linux AI unit tests alone do not compile the complete gameplay library.
+This is a separately named, single-commit correction to D178; published history is not rewritten.
 
 ## D179 — Keep visible combat targets until a challenger is meaningfully better
 
@@ -1747,24 +1705,66 @@ Reason: the D178.1 gameplay report observed unnaturally rapid changes of aim dir
 Previously `lookupEnemies()` selected the shortest candidate distance after each re-scan, allowing small positional fluctuations to redirect aim sharply.
 This narrow correction stabilizes target selection without changing the aim-motion model, grenade behavior, or flashblind protection.
 
-## D178.1 — Fix undefined PickupItem priority in the Windows x86 build
+## D180 — Gate precise aiming throughout flash blindness, irrespective of task
 
-The user-started Windows x86 D178 build failed in `src/tasks.cpp` at the unconfirmed-defuse recovery path because `TaskPri::PickupItem` was not declared.
-Declare `TaskPri::PickupItem` as the established 50.0 baseline and reuse it in `Bot::filterTasks()` for buttons and distance-based pickup desire.
-Keep the existing task handoff and dynamic desire calculation unchanged.
-The Python Training tools tests now verify that all `TaskPri::...` usages in production translation units are declared, because Linux AI unit tests alone do not compile the complete gameplay library.
-This is a separately named, single-commit correction to D178; published history is not rewritten.
+Every active ScreenFade blindness interval now prevents precise enemy and remembered-enemy tracking through the final view-angle path, even while an AI-controlled AttackTarget/AimAtTarget or a legacy task other than Blind is active.
+At the beginning of blindness, the bot snapshots its current view direction with a small one-time pitch/yaw uncertainty.
+The view-angle update uses that fixed direction while blinded and retains smooth turning; repeated ScreenFade messages do not resample the aim and cause sudden changes.
+The precise-target resolver returns early for the whole flash interval, and expert fast-snap and newbie player-target aiming do not bypass that final gate.
+The existing global weapon-fire suppression from D160 remains unchanged, as do movement and cover navigation.
+Once the blind timer expires, ordinary aiming and target switching resume immediately.
+The snapshot is cleared on new rounds.
+This broadens the Task::Blind-only aim preservation in D133 to all runtime tasks and semantic actions.
 
-## D178 — Preserve planted-C4 defense camping and enforce crlib-first includes
+Reason: the observed CT bot appeared to track a target precisely during a flash even though no weapon_fire events were recorded during active blindness.
+The previous Task::Blind-specific return in setAimDirection() did not prevent focusEnemy() from selecting a precise target when another task or AI action owned the frame.
 
-An actively executing Terrorist `ProtectObjective` may continue its `Camp` task while a planted C4 is active even when the server's ordinary `camping_allowed` setting is disabled.
-This exception requires an active semantic ProtectObjective action, the Terrorist team, a demolition map, and a planted bomb; unrelated Camp tasks remain subject to the setting.
-Knife-mode still blocks Camp exactly as before.
-The objective action's existing path and task lifecycle are unchanged.
+## D181 — Diagnose and route CT bomb approaches blocked by raised geometry
 
-The include-order audit found three production C++ translation units with includes before `<yapb.h>`: `src/message.cpp`, `src/combat.cpp`, and `src/tasks.cpp`.
-All three are restored to `<yapb.h>` as the first include, and an automated Python test checks production C++ translation units to prevent this regression.
-`AGENTS.md` and `docs/ai/DEVELOPMENT.md` now state the rule explicitly, consistent with D148.
+A CT whose direct path to a planted C4 is blocked by a box or railing must use a reachable interaction-safe waypoint even if already inside the nominal 3D use radius. This includes the tighter retry radius after an unconfirmed USE.
+Interaction candidates are evaluated using graph route distance. A zero-length route does not establish physical reachability unless the waypoint center can actually be reached from the bot's current position.
+The fallback to an approximate bombsite waypoint for distant bots remains, but is not treated as evidence that the bot can use the C4.
+A blocked close bot without a reachable interaction waypoint stops pushing directly into the obstacle and does not fabricate a defuse attempt.
+The in-range node-center staging path of D159 is enabled for blocked close approaches.
 
-Reason: `ProtectObjective` could reach its defense point but `camp_()` immediately completed the hold because it unconditionally checked the ordinary camping CVAR.
-The same step closes the separately reported Windows x86 include-order regression risk without changing any API or relying on compatibility macros.
+JSONL v3 adds `defuse_approach_blocked` with `geometry_reachability` and `defuse_approach_failed` with `graph_route_unavailable`, each subject to a separate five-second per-bot gate.
+These describe navigation failures prior to IN_USE; they are not BarTime confirmations or ML transitions.
+The validator accepts them only with correct evidence and a known bot identity. Older v2 data remains valid.
+
+## D182 — Record actual target switches and unusually fast view turns
+
+To diagnose observed unnaturally rapid changes in bot aim, record actual live-player target identity changes and actual view-angle deltas **after** `updateLookAngles()`, rather than guessing from policy intent.
+Events distinguish acquiring, switching, losing targets and rapid turns; each includes previous/current target IDs, normalized yaw/pitch deltas, elapsed time, actual view angles, flash state, task/action and a reason derived from active aim flags.
+Angle changes of 60+ degrees within 0.30 seconds count as rapid. Per-bot diagnostic reporting intervals are 0.20 seconds for target changes and 0.70 seconds for rapid turns.
+A separate 1024-event bounded buffer decimates old events on overflow without displacing existing training, navigation, combat or defuse telemetry.
+These reasons describe the observed aim branch, not proven causation. There are no gameplay changes to aiming, movement, combat, or enemy selection.
+JSONL v3 and the validator accept event-only records, while version 2 remains unchanged.
+
+## D182.1 — Make C4 approach diagnostics visible to the Bot header
+
+The user-triggered Windows x86 job for D182 failed with MSVC C2039/C3646 at `inc/yapb.h(344)`: `ai::DefuseApproachDiagnosticGate` was defined only in `ai_objective_navigation_guard.h`, while `yapb.h` declared a direct value member of that type without importing its complete definition.
+Move the five-second diagnostic gate and its interval constant to `ai_defuse_event.h`, which `yapb.h` already includes before the Bot class declaration.
+Keep objective-navigation logic and diagnostic throttling unchanged.
+Make the unit test import `ai_defuse_event.h` explicitly, rather than relying on incidental includes.
+This is a separately named one-commit correction, preserving all prior history.
+
+## D182.2 — Match enemy-visibility snapshot storage type on Windows x86
+
+The repeated user-triggered Windows x86 build for D182.1 failed in `src/combat.cpp:497` with MSVC `C2440` converting `int8_t` to `cr::enums::_Visibility::Type`. The earlier D179 hysteresis implementation initialized the temporary visibility snapshot from `Visibility::None`, which deduced the enum type even though `Bot::m_enemyParts` is stored as `int8_t`. The reverse assignment also produced `C4244`.
+
+Initialize the temporary from `m_enemyParts` instead of the enum so that `auto` deduces the exact field storage type; subsequent snapshot and restoration assignments are type-consistent without casts, changing no gameplay behavior. This is a separately named, single ordinary corrective commit. The `yapb.h`-first include rule and all previous published commits are preserved.
+
+## D182.3 — Audit D179–D182 gameplay includes and prevent repeat Windows x86 failures
+
+The latest user-triggered Windows x86 workflow failed in `src/vision.cpp` with MSVC C2039/C3861 at the three uses of `ai::suppressPreciseBlindAim()`.
+D180 added the calls but did not directly include their declaring `ai_perception_guard.h` in `vision.cpp`, while the Linux AI unit target did not compile that gameplay source.
+Add the direct guard include **after the mandatory first `<yapb.h>` include**, without changing view/flash/gameplay behavior.
+
+Review the D179–D182 Windows x86 failure chain as a whole: the D179 `int8_t` visibility snapshot mismatch is fixed by D182.2, the D181 `DefuseApproachDiagnosticGate` complete-type dependency is fixed by D182.1, and the missing D180 helper declaration is fixed here.
+Extend the existing Python Training tools test to detect missing direct includes for the new perception helper calls and to protect the two earlier type/header invariants.
+Clarify the AGENTS and development checklist: production translation units must explicitly include the AI helper headers they use, immediately **after** `yapb.h` where applicable.
+This is a separate one-commit correction; no historical commit or force-ref update is permitted.
+
+The automatic unit/Training tools CI is not a substitute for the user-triggered Windows x86 game-DLL build.
+The latter must be rechecked for this exact commit; full Windows build success cannot be claimed beforehand.
+

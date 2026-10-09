@@ -9,6 +9,9 @@ This repository is the AiPB development fork of YaPB.
 - These instructions are repository guidance for coding-agent work.
   Direct user, system, and developer instructions always take precedence.
 - Read the relevant documentation under `docs/ai/` before making non-trivial changes.
+- Review `docs/ai/ROADMAP.md` **before and at the end of every named development step**.
+  Update it within that step's single commit whenever phase status, completed work, remaining work, scope, ordering, dependencies, blockers, or exit criteria change; otherwise leave it unchanged.
+  Never mark a phase completed from code publication or pending/skipped CI alone.
 
 ## Development workflow
 
@@ -31,7 +34,7 @@ This repository is the AiPB development fork of YaPB.
   Agents must not dispatch or rerun it; they may recommend a game check and inspect a run the user started.
 - Automatic test CI triggered by ordinary pushes remains the normal validation gate.
   It does not authorize an agent to start either manual build.
-- Before committing, inspect the complete diff and verify the intended test target, syntax, include ordering, fixed-size array usage, and scope of the change.
+- Before committing, inspect the complete diff and verify the intended test target, syntax, include ordering, fixed-size array usage, scope of the change, and roadmap impact.
 
 ## Coding rules
 
@@ -45,7 +48,10 @@ This repository is the AiPB development fork of YaPB.
 - Directly include each AI helper's defining header in production `.cpp` files **after** `<yapb.h>`, even if another translation unit or a test already includes it.
   Do not rely on incidental transitive includes: Linux AI unit tests do not compile every gameplay source, and missing declarations can otherwise surface only in the manual Windows x86 build.
 - All comments written in source code must be in English.
-- In Markdown files, write each prose sentence on its own physical line; preserve blank lines, headings, list structure, tables, front matter, code blocks, link definitions, and other syntax-sensitive Markdown constructs. Do not use Markdown hard breaks solely for source formatting.
+- In Markdown files, write each prose sentence on its own physical line; preserve blank lines, headings, list structure, tables, front matter, code blocks, link definitions, and other syntax-sensitive Markdown constructs.
+  Do not use Markdown hard breaks solely for source formatting.
+- Keep `docs/ai/DECISIONS.md` in **ascending numeric D-ID order**, with decimal corrections after their parent (for example `D182`, `D182.1`, `D182.2`).
+  Move complete decision sections without rewriting their historical content when repairing ordering; never reuse an existing D-ID.
 - Preserve existing public APIs and architecture unless the current iteration explicitly requires an API or architectural change.
 - Prefer engine-independent AI abstractions and keep engine-specific integration at the runtime boundary.
 - Search the repository history for an established solution before introducing compatibility flags or platform-specific workarounds.
@@ -87,9 +93,11 @@ Before finalizing a change:
 
 1. Confirm the diff contains only the intended iteration.
 2. Confirm no `std::array` was introduced.
-3. Confirm standard-library includes precede project/local includes in touched files.
+3. Confirm `<yapb.h>` is the first include in every touched production `.cpp` that uses it; otherwise apply the usual standard-library-first order.
 4. Confirm all new or changed source-code comments are in English.
 5. Confirm tests are syntactically balanced and do not contain duplicate test cases.
 6. Confirm the relevant unit-test target includes the changed tests.
-7. Publish exactly one commit for the completed named step using a single expected-HEAD-checked, non-forced ref update.
-8. Verify the published SHA and actual automatic CI result; correct failures in a separately named step without rewriting history.
+7. Check `docs/ai/ROADMAP.md` and update it in the same commit if the current step affects any roadmap item, phase status, or exit criterion.
+8. Confirm newly added `DECISIONS.md` sections remain in ascending numeric order.
+9. Publish exactly one commit for the completed named step using a single expected-HEAD-checked, non-forced ref update.
+10. Verify the published SHA and actual automatic CI result; correct failures in a separately named step without rewriting history.
