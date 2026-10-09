@@ -3745,8 +3745,14 @@ void Bot::syncFindPath (int srcIndex, int destIndex, FindPath pathType,
    // on every search so it never leaks into ordinary navigation.
    m_planner->resetCtRouteCongestion ();
 
-   if (pathType == FindPath::Optimal && m_team == Team::CT
-      && game.mapIs (MapFlags::Demolition) && gameState.isBombPlanted ()) {
+   const bool sharedCtApproach = ai::shouldDiversifyCtSiteApproach (
+      m_team == Team::CT, game.mapIs (MapFlags::Demolition), gameState.isBombPlanted (),
+      graph.exists (destIndex) && !!(graph[destIndex].flags & NodeFlag::Goal),
+      pathType == FindPath::Fast || pathType == FindPath::Optimal,
+      getCurrentTaskId () == Task::DefuseBomb || m_hasProgressBar,
+      !!(m_states & Sense::SeeingEnemy));
+
+   if (sharedCtApproach && allies.count > 0) {
       // Predict shared corridor nodes using shortest graph routes from the
       // *captured* ally intentions. Do not inspect other bots' mutable
       // movement/path buffers from the asynchronous path worker.
@@ -3814,8 +3820,7 @@ void Bot::syncFindPath (int srcIndex, int destIndex, FindPath pathType,
       // A*'s danger-aware route may be substantially longer than shortest.
       // Validate its REAL link distances before committing while the C4
       // timer is active. Never let the preferred safe route cost the defuse.
-      if (pathType == FindPath::Optimal && m_team == Team::CT
-         && game.mapIs (MapFlags::Demolition) && gameState.isBombPlanted ()) {
+      if (sharedCtApproach && allies.count > 0) {
          float distance = 0.0f;
          bool validLinks = m_pathWalk.length () >= 2;
          for (size_t i = 1; validLinks && i < m_pathWalk.length (); ++i) {
@@ -3834,9 +3839,12 @@ void Bot::syncFindPath (int srcIndex, int destIndex, FindPath pathType,
             }
          }
          const float shortestDistance = planner.preciseDistance (srcIndex, destIndex);
-         if (!validLinks || !ai::canAffordRiskAwareCtBombRoute (
-            shortestDistance, distance, pev->maxspeed,
-            gameState.getBombTimeLeft (), m_hasDefuser)) {
+         const bool affordable = gameState.isBombPlanted ()
+            ? ai::canAffordRiskAwareCtBombRoute (
+                shortestDistance, distance, pev->maxspeed,
+                gameState.getBombTimeLeft (), m_hasDefuser)
+            : ai::canAffordSharedCtSiteRoute (shortestDistance, distance);
+         if (!validLinks || !affordable) {
             findShortestPath (srcIndex, destIndex);
          }
       }
@@ -3868,9 +3876,13 @@ void Bot::findPath (int srcIndex, int destIndex, FindPath pathType /*= FindPath:
 
    ai::CtBombAllyRouteSnapshot allies {};
 
-   if (pathType == FindPath::Optimal && m_team == Team::CT
-      && game.mapIs (MapFlags::Demolition) && gameState.isBombPlanted ()
-      && graph.exists (destIndex)) {
+   const bool siteGoal = graph.exists (destIndex)
+      && !!(graph[destIndex].flags & NodeFlag::Goal);
+   if (ai::shouldDiversifyCtSiteApproach (
+      m_team == Team::CT, game.mapIs (MapFlags::Demolition), gameState.isBombPlanted (),
+      siteGoal, pathType == FindPath::Fast || pathType == FindPath::Optimal,
+      getCurrentTaskId () == Task::DefuseBomb || m_hasProgressBar,
+      !!(m_states & Sense::SeeingEnemy)) && graph.exists (destIndex)) {
       // Running on the game thread: copy only stable node ids. Reconstruct
       // approximate ally shortest routes later; PathWalk is not thread-safe.
       for (const auto &bot : bots) {
@@ -3881,10 +3893,14 @@ void Bot::findPath (int srcIndex, int destIndex, FindPath pathType /*= FindPath:
             continue;
          }
          const int allyNode = bot->m_currentNodeIndex;
-         const int allyGoal = bot->getTask ()->data;
+         const int taskGoal = bot->getTask ()->data;
+         const int allyGoal = graph.exists (taskGoal) ? taskGoal : bot->m_chosenGoalIndex;
+         const bool teammateSiteGoal = siteGoal && graph.exists (allyGoal)
+            && !!(graph[allyGoal].flags & NodeFlag::Goal);
 
          if (!ai::isRelevantCtBombRouteAlly (
-            bot->m_isAlive, bot->m_bombSearchOverridden || bot->m_pickupType == Pickup::PlantedC4,
+            bot->m_isAlive, teammateSiteGoal || (gameState.isBombPlanted ()
+               && (bot->m_bombSearchOverridden || bot->m_pickupType == Pickup::PlantedC4)),
             graph.exists (allyGoal)
                ? graph[allyGoal].origin.distanceSq (graph[destIndex].origin)
                : kInfiniteDistance,

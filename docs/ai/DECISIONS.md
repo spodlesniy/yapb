@@ -1867,3 +1867,16 @@ Assign only a movement task toward a reachable defensive waypoint, without compu
 Release the objective reservation when that route ends or is interrupted, allowing ordinary combat and navigation to resume.
 The same JSONL diagnostic event types remain available; genuine directional cover assessment requires separate gameplay evidence and design.
 Add a test for mobile-guard eligibility and require a new gameplay capture to validate effectiveness.
+
+## D187 — Apply bounded teammate-route diversity to CT bombsite approach before and after planting
+
+The October 9 gameplay JSONL captured shared CT approach corridors on round 7: bots 3 and 10 followed overlapping waypoint sequences `292/293/295/296/297` with `path_type=0`, and later CT 7 traversed the same segment.
+The D184 traffic penalty was applied only for `FindPath::Optimal` after the bomb was planted, while the observed converging site approaches were mainly `FindPath::Fast` and partly pre-plant.
+Use existing immutable ally route-intent snapshots on the game thread to penalize shared intermediate waypoint nodes for CT Fast and Optimal paths on demolition bombsite goals or confirmed planted C4.
+Pre-plant coordination uses only CT teammates' actual selected public goal waypoint and never unrevealed bomb coordinates or enemy state.
+Skip diversion while defusing, using BarTime, or fighting a visible enemy.
+Validate the actual link lengths of candidate routes and fall back to shortest when the alternate is too long; when the bomb is planted also require sufficient time to reach and fully defuse.
+Do not alter the pathfinding contract of other teams, regular unrelated goals, or unsupported path types.
+Add engine-independent tests covering early site approaches, bypasses, and bounded detours.
+
+This cannot create physically independent routes when the underlying waypoint graph contains a mandatory single chokepoint; alternate-path gameplay validation and additional path diagnostics remain necessary.

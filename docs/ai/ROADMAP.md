@@ -51,7 +51,8 @@ Do not fabricate completion records or historical names for Phases 1–6 without
 - D186.1 added crlib-first include ordering for MSVC but its automatic unit-test CI failed under Linux GCC `-Wpedantic -Werror` when full `yapb.h` was included.
 - D186.2 gates the writer's first `yapb.h` include to MSVC; both automatic CI and user-triggered Windows x86 succeeded on `03eefa6`.
 - D185.1 stops non-carrier T from indefinitely repeating pre-plant staging camps; automatic CI and game verification remain pending.
-- D186.3 removes forced dropped-C4 CT camping and crouching in potentially exposed areas; CI and gameplay verification are pending.
+- D186.3 removes forced dropped-C4 CT camping and crouching in potentially exposed areas; automatic CI and user-triggered Windows x86 passed on `69b30be`, though in-game validation remains ongoing.
+- D187 extends CT bombsite corridor-diversity routing to Fast and pre-plant goal approaches, with ETA-bound fallback and teammate-only goal evidence; CI, Windows x86 and gameplay verification remain pending.
 
 ### Latest verified build evidence
 
@@ -61,6 +62,8 @@ Do not fabricate completion records or historical names for Phases 1–6 without
 - [Automatic D185 CI run 37901917305](https://github.com/spodlesniy/yapb/actions/runs/37901917305) completed successfully for `ebbbdea`; Windows x86 and gameplay verification remain outstanding.
 - [Automatic D186 CI run 37908273267](https://github.com/spodlesniy/yapb/actions/runs/37908273267) completed successfully for `11f55ad`; it does not validate the game DLL.
 - [Automatic D186.1 CI run 37913480296](https://github.com/spodlesniy/yapb/actions/runs/37913480296) failed in the Linux AI unit-test compilation, with crlib pedantic errors caused by unconditional `yapb.h` inclusion.
+- [Automatic D186.3 CI run 37924680164](https://github.com/spodlesniy/yapb/actions/runs/37924680164) passed for `69b30be`.
+- [User-triggered D186.3 Windows x86 run 37924777520](https://github.com/spodlesniy/yapb/actions/runs/37924777520) passed for `69b30be`; a later gameplay capture still shows CT route convergence.
 - [Automatic D186.2 CI run 37914692139](https://github.com/spodlesniy/yapb/actions/runs/37914692139) completed successfully for `03eefa6`.
 - [User-triggered D186.2 Windows x86 run 37915082038](https://github.com/spodlesniy/yapb/actions/runs/37915082038) completed successfully for `03eefa6`; its gameplay capture exposed T and dropped-C4 regressions.
 - [User-triggered D186 Windows x86 run 37908849949](https://github.com/spodlesniy/yapb/actions/runs/37908849949) failed in `bot-windows-x86` while compiling `src/ai/ai_training_dataset.cpp`, with MSVC C2084/C3615 (placement new redefinition).
@@ -74,6 +77,7 @@ Do not fabricate completion records or historical names for Phases 1–6 without
 - Validate D184 defuser ownership, cover placement, fallback and teammate takeover with a multi-CT capture on multiple maps; confirm no regression in D181 or active BarTime.
 - Validate D185.1: non-carrier T continue active movement after one early staging waypoint and do not indefinitely repeat camp tasks.
 - Validate D185 T pre-plant bombsite coverage and transition to post-plant defense across several maps, including an interrupted planting attempt and visible combat.
+- Validate D187: compare CT route overlap across planted and pre-plant site approaches and document unavoidable map bottlenecks; ensure no missed defuse deadline.
 - Validate D186.3: CT guarding dropped C4 stay mobile and no longer crouch indefinitely in exposed areas.
 - Validate D186 dropped-C4 primary/support cover selection, safety fallback, owner cleanup, and objective navigation events using gameplay captures across multiple maps.
 - Reassess repeated small aim and movement oscillations on recordings from multiple maps; the current rapid-turn threshold alone does not detect every visible jitter.

@@ -15,6 +15,16 @@ constexpr int kCtBombMaxRouteCongestion = 2;
 constexpr float kCtBombAllyGoalNearDistanceSq = 320.0f * 320.0f;
 constexpr float kCtBombRouteTrafficCostPerNode = 160.0f;
 
+// D187: common, explicitly selected bombsite goals are observable teammate
+// intentions even before a plant. Keep real defusing and combat unaltered.
+constexpr bool shouldDiversifyCtSiteApproach(bool counterTerrorist, bool demolition,
+                                             bool bombPlanted, bool siteGoal,
+                                             bool supportedPathType, bool defusing,
+                                             bool enemyVisible) {
+  return counterTerrorist && demolition && (bombPlanted || siteGoal)
+      && supportedPathType && !defusing && !enemyVisible;
+}
+
 // Capture ally movement intentions on the game thread before asynchronous
 // pathfinding. The worker must never read another bot's mutable PathWalk.
 struct CtBombAllyRouteIntent {
@@ -49,6 +59,14 @@ constexpr float kCtBombRouteEffectiveSpeed = 0.75f;
 constexpr float kCtBombRouteArrivalReserve = 4.0f;
 constexpr float kCtBombRouteMaxDetourFactor = 1.35f;
 constexpr float kCtBombRouteMaxDetourAllowance = 96.0f;
+
+// Do not force long pre-plant detours to escape a single narrow waypoint link.
+constexpr bool canAffordSharedCtSiteRoute(float shortestDistance, float candidateDistance) {
+  return shortestDistance > 0.0f && shortestDistance < kCtBombRouteUnreachable
+      && candidateDistance > 0.0f && candidateDistance < kCtBombRouteUnreachable
+      && candidateDistance <= shortestDistance * kCtBombRouteMaxDetourFactor
+                                + kCtBombRouteMaxDetourAllowance;
+}
 
 constexpr bool canAffordRiskAwareCtBombRoute(float shortestDistance, float candidateDistance,
                                               float maxSpeed, float bombTimeLeft, bool hasKit) {

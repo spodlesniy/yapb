@@ -91,6 +91,13 @@ An interrupted attempt records its actual evidence source rather than claiming a
 Likewise, `round_message` refers to the round message path, whereas `game_state` means the code observed that C4 was no longer marked as planted.
 The Python validator checks evidence compatibility without counting diagnostic records as model-training samples.
 
+## D187 — CT bombsite approach crowding also covers Fast routes
+
+The route planner now treats a teammate's explicit goal waypoint as public coordination evidence during an approaching CT bombsite search.
+Fast and Optimal A* routes can penalize repeatedly selected corridor nodes when approaching a bombsite or known planted C4; the first eligible CT and defuser keep shorter paths.
+A complete link-distance check bounds alternative detours and preserves available defuse time.
+No path diversity is assumed when the waypoint graph offers a single viable entrance.
+
 ## D186.3 — Dropped-C4 guarding uses routes, not permanent crouching
 
 A dropped-C4 observation authorizes a waypoint route but not a forced `Camp` task.

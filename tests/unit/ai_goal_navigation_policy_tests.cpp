@@ -1597,6 +1597,29 @@ AI_TEST(testCtBombRouteCrowdingUsesPredictedAllyIntentNotSharedDestination) {
          "own starting waypoint is not a meaningful crowding signal");
 }
 
+AI_TEST(testD187DiversifyFastCtBombsiteRoutesWithoutDelayingDefuse) {
+  expect(ai::shouldDiversifyCtSiteApproach(true, true, false, true, true, false, false),
+         "public CT bombsite goal allows early shared-route diversification");
+  expect(ai::shouldDiversifyCtSiteApproach(true, true, true, false, true, false, false),
+         "known planted C4 allows route diversity even off goal-marked nodes");
+  expect(!ai::shouldDiversifyCtSiteApproach(true, true, false, false, true, false, false),
+         "unmarked non-bomb objective must not share hidden bombsite knowledge");
+  expect(!ai::shouldDiversifyCtSiteApproach(true, true, true, true, true, true, false),
+         "active defuser must keep its direct path");
+  expect(!ai::shouldDiversifyCtSiteApproach(true, true, true, true, true, false, true),
+         "visible combat retains higher priority than path diversification");
+  expect(!ai::shouldDiversifyCtSiteApproach(true, true, true, true, false, false, false),
+         "unsupported path types remain unchanged");
+  expect(!ai::shouldDiversifyCtSiteApproach(false, true, true, true, true, false, false),
+         "terrorists cannot be affected by CT routing changes");
+  expect(ai::canAffordSharedCtSiteRoute(1500.0f, 1800.0f),
+         "moderate preplant detour can avoid a shared chokepoint");
+  expect(!ai::canAffordSharedCtSiteRoute(1500.0f, 2500.0f),
+         "excessive detour falls back to the shortest path");
+  expect(!ai::canAffordSharedCtSiteRoute(-1.0f, 1000.0f),
+         "invalid graph distance cannot trigger alternative routing");
+}
+
 AI_TEST(testCtBombRouteCongestionPenaltyIsBounded) {
   expectNear(ai::ctBombRouteTrafficPenalty(0), 0.0f, 0.001f,
              "unshared approach has no penalty");
