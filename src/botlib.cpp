@@ -3684,6 +3684,57 @@ void Bot::updateDefuseDiagnostics () {
    }
 }
 
+void Bot::updateAimDiagnostics () {
+   if (!pev) return;
+   const float now = game.time ();
+   const int targetId = game.isPlayerEntity (m_enemy) && game.isAliveEntity (m_enemy)
+      ? game.indexOfEntity (m_enemy) : -1;
+   const auto decision = m_aiAimDiagnosticTracker.observe(now, pev->v_angle.y, pev->v_angle.x, targetId);
+   if (m_aiRuntime.controller ().getMode () != ai::ControlMode::Training
+      || (!decision.targetChanged && !decision.rapidTurn)) return;
+   const bool blinded = m_blindTime > now;
+   const auto reason = ai::aimReasonForState(blinded,
+      (m_aimFlags & AimFlags::Override) != 0, (m_aimFlags & AimFlags::Grenade) != 0,
+      (m_aimFlags & AimFlags::Enemy) != 0, (m_aimFlags & AimFlags::Entity) != 0,
+      (m_aimFlags & AimFlags::LastEnemy) != 0, (m_aimFlags & AimFlags::PredictPath) != 0,
+      (m_aimFlags & AimFlags::Camp) != 0, (m_aimFlags & AimFlags::Nav) != 0);
+   auto &buffer = m_aiRuntime.trainingBuffer ();
+   auto record = [&] (ai::AimEventType type, ai::AimEventReason why) {
+      ai::AimEvent e {};
+      e.type = type;
+      e.reason = why;
+      e.gameTime = now;
+      e.roundStartTime = gameState.getRoundStartTime ();
+      e.roundId = gameState.getTelemetryRoundId ();
+      e.episodeId = m_aiRuntime.trainingRecorder ().episodeId ();
+      e.botId = entindex ();
+      e.team = m_team;
+      e.task = getCurrentTaskId ();
+      e.aiAction = m_aiRuntime.isActive () ? static_cast <int> (m_aiRuntime.activeAction ().type) : -1;
+      e.previousTargetId = decision.previousTargetId;
+      e.targetId = targetId;
+      e.aimFlags = m_aimFlags;
+      e.viewYaw = pev->v_angle.y;
+      e.viewPitch = pev->v_angle.x;
+      e.yawDelta = decision.yawDelta;
+      e.pitchDelta = decision.pitchDelta;
+      e.elapsed = decision.elapsed;
+      e.blindTimeRemaining = cr::max(0.0f, m_blindTime - now);
+      e.targetVisible = !!(m_states & Sense::SeeingEnemy);
+      e.position = { pev->origin.x, pev->origin.y, pev->origin.z };
+      buffer.appendAimEvent(e);
+   };
+   if (decision.targetChanged) {
+      const auto type = targetId < 0 ? ai::AimEventType::TargetLost
+         : decision.previousTargetId < 0 ? ai::AimEventType::TargetAcquired
+         : ai::AimEventType::TargetSwitched;
+      record(type, type == ai::AimEventType::TargetLost ? ai::AimEventReason::TargetLost
+         : type == ai::AimEventType::TargetAcquired ? ai::AimEventReason::TargetAcquired
+         : ai::AimEventReason::TargetChanged);
+   }
+   if (decision.rapidTurn) record(ai::AimEventType::RapidTurn, reason);
+}
+
 void Bot::recordCombatEvent (ai::CombatEventType type, int weaponId, int targetId,
                              int ammoBefore, int ammoAfter, int sourceEntityId,
                              int healthDamage, int armorDamage, int flashAlpha) {
@@ -3915,6 +3966,7 @@ void Bot::logic () {
    }
    setAimDirection (); // choose aim direction
    updateLookAngles (); // and turn to chosen aim direction
+   updateAimDiagnostics (); // actual target and view-angle changes
    doFireWeapons (); // fire the weapons
 
    // check for reloading

@@ -91,6 +91,14 @@ An interrupted attempt records its actual evidence source rather than claiming a
 Likewise, `round_message` refers to the round message path, whereas `game_state` means the code observed that C4 was no longer marked as planted.
 The Python validator checks evidence compatibility without counting diagnostic records as model-training samples.
 
+## D182 — Actual aim turns and target identity diagnostics
+
+JSONL v3 adds event-only `aim_event` records for target acquisition, switching, loss, and actual large view-angle changes after `updateLookAngles()`.
+Each event contains previous/current valid player IDs, normalized yaw/pitch deltas, elapsed frame time, current view angles, task/action, flash state, aim flags, a reason derived from the active aim branch, and the shared round ID.
+Rapid turns mean at least 60 degrees within 0.30 seconds. Independent 0.20-second target-change and 0.70-second rapid-turn reporting intervals limit volume.
+A separate 1024-entry buffer retains sampled early history and admits later entries by chronological decimation without exhausting navigation or combat events.
+These are correlated observations, not proven causes, and never become training transitions.
+
 ## D181 — Obstacle-aware planted C4 approach
 
 If direct movement to a planted C4 is blocked even inside the strict 3D interaction radius, the CT searches for a reachable, in-range waypoint instead of repeatedly pressing into the side of a box.

@@ -21,6 +21,7 @@ using namespace cr;
 #include <constant.h>
 #include <chatlib.h>
 
+#include <ai/ai_aim_event.h>
 #include <ai/ai_observation.h>
 #include <ai/ai_observation_state.h>
 #include <ai/ai_bot_runtime.h>
@@ -792,6 +793,7 @@ public:
    bool m_aiNavInitialized {};
    bool m_aiNavPendingRoute {};
 
+   ai::AimDiagnosticTracker m_aiAimDiagnosticTracker {};
    ai::DefuseAttemptTracker m_aiDefuseTracker {};
    bool m_aiFlashEventActive {};
    ai::BotRuntime m_aiRuntime;
@@ -806,6 +808,7 @@ public:
    void recordDefuseEvent (ai::DefuseEventType type, ai::DefuseEventReason reason, ai::DefuseEvidence evidence);
    void endDefuseAttempt (ai::DefuseEventReason reason, ai::DefuseEvidence evidence);
    void updateDefuseDiagnostics ();
+   void updateAimDiagnostics ();
    void recordCombatEvent (ai::CombatEventType type, int weaponId = -1, int targetId = -1,
                            int ammoBefore = -1, int ammoAfter = -1, int sourceEntityId = -1,
                            int healthDamage = -1, int armorDamage = -1, int flashAlpha = -1);

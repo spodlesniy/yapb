@@ -460,6 +460,10 @@ int BotControl::cmdTrainingStatus () {
       static_cast <int> (ai::kTrainingNavigationEventCapacity),
       static_cast <int> (buffer.droppedNavigationEvents ()),
       static_cast <int> (buffer.navigationCompactionCount ()));
+   msg ("Aim diagnostics: %d/%d retained, %d thinned.",
+      static_cast <int> (buffer.aimEventCount ()),
+      static_cast <int> (ai::kTrainingAimEventCapacity),
+      static_cast <int> (buffer.droppedAimEvents ()));
    return BotCommandResult::Handled;
 }
 

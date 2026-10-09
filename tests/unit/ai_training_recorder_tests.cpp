@@ -637,6 +637,68 @@ AI_TEST(testTrainingBufferStoresCombatEventsIndependentlyOfSamples) {
          "clear removes diagnostic and training buffers together");
 }
 
+AI_TEST(testAimDiagnosticsDetectWrapAndThrottle) {
+   ai::AimDiagnosticTracker tracker {};
+   tracker.observe(1.0f, 175.0f, 0.0f, 2);
+   const auto switched = tracker.observe(1.1f, -170.0f, 0.0f, 4);
+   expect(switched.targetChanged, "actual target switch is recorded");
+   expect(!switched.rapidTurn && switched.yawDelta == 15.0f,
+          "crossing yaw +/-180 is not a spurious 345-degree turn");
+   const auto turn = tracker.observe(1.2f, -70.0f, 0.0f, 4);
+   expect(turn.rapidTurn && !turn.targetChanged, "large turn is sampled separately");
+   const auto repeat = tracker.observe(1.25f, 50.0f, 0.0f, 2);
+   expect(!repeat.rapidTurn && !repeat.targetChanged, "separate gates prevent event floods");
+   tracker.reset();
+   tracker.observe(0.0f, 0.0f, 0.0f, -1);
+   const auto acquired = tracker.observe(0.1f, 70.0f, 0.0f, 3);
+   expect(acquired.targetChanged && acquired.rapidTurn, "new round restores diagnostics");
+   expect(ai::aimReasonForState(true, false, false, true, false, false, false, false, false)
+          == ai::AimEventReason::Blind, "flash takes precedence over enemy flags");
+}
+
+AI_TEST(testAimBufferCompactionAndJsonlWriter) {
+   ai::TrainingBuffer buffer {};
+   ai::AimEvent event {};
+   for (size_t i = 0; i < ai::kTrainingAimEventCapacity; ++i) {
+      event.gameTime = static_cast<float>(i);
+      expect(buffer.appendAimEvent(event), "aim diagnostic accepted");
+   }
+   event.type = ai::AimEventType::RapidTurn;
+   event.reason = ai::AimEventReason::Enemy;
+   event.gameTime = static_cast<float>(ai::kTrainingAimEventCapacity);
+   event.botId = 7;
+   event.previousTargetId = 2;
+   event.targetId = 3;
+   event.yawDelta = 93.0f;
+   expect(buffer.appendAimEvent(event), "new aim event retained after compaction");
+   expect(buffer.aimEventCount() == ai::kTrainingAimEventCapacity / 2 + 1,
+          "buffer retains early and new diagnostics");
+   expect(buffer.droppedAimEvents() == ai::kTrainingAimEventCapacity / 2,
+          "decimated aim entries counted");
+   const char *path = "aipb-aim-events-test.jsonl";
+   const auto written = ai::writeTrainingDataset(buffer, path);
+   expect(written.isValid() && written.count == 0 && written.aimEventCount == buffer.aimEventCount(),
+          "aim events export without counting as training transitions");
+   std::FILE *file = std::fopen(path, "rb");
+   expect(file != nullptr, "aim dataset is readable");
+   if (file) {
+      char line[2048] {};
+      bool found = false;
+      while (std::fgets(line, sizeof(line), file)) {
+         if (std::strstr(line, "\"event\":\"rapid_aim_turn\"")) {
+            found = std::strstr(line, "\"previous_target_id\":2") != nullptr
+                 && std::strstr(line, "\"yaw_delta\":93") != nullptr;
+         }
+      }
+      expect(found, "aim JSONL records both target identity and actual angle");
+      std::fclose(file);
+   }
+   std::remove(path);
+   buffer.clear();
+   expect(buffer.aimEventCount() == 0 && buffer.droppedAimEvents() == 0,
+          "clear resets independent aim storage");
+}
+
 AI_TEST(testCombatEventWriterPreservesOriginalTransitionCount) {
   const char *path = "aipb-combat-events-test.jsonl";
   ai::TrainingBuffer buffer {};

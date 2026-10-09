@@ -1507,6 +1507,7 @@ void Bot::newRound () {
    m_aiNavInitialized = false;
    m_aiNavPendingRoute = false;
    m_aiNavigationGate.reset ();
+   m_aiAimDiagnosticTracker.reset ();
    m_aiRuntime.beginTrainingEpisode ();
 
    // delete all allocated path nodes

@@ -12,6 +12,7 @@
 #include <cstdint>
 
 #include <ai/ai_action_result.h>
+#include <ai/ai_aim_event.h>
 #include <ai/ai_combat_event.h>
 #include <ai/ai_defuse_event.h>
 #include <ai/ai_navigation_event.h>
@@ -22,6 +23,7 @@ constexpr size_t kTrainingTransitionCapacity = 1024;
 constexpr size_t kTrainingCombatEventCapacity = 4096;
 constexpr size_t kTrainingNavigationEventCapacity = 2048;
 constexpr size_t kTrainingDefuseEventCapacity = 512;
+constexpr size_t kTrainingAimEventCapacity = 1024;
 
 enum class TrainingRecordResult : uint8_t {
   Recorded,
@@ -46,6 +48,8 @@ private:
   CombatEvent m_combatEvents[kTrainingCombatEventCapacity] {};
   NavigationEvent m_navigationEvents[kTrainingNavigationEventCapacity] {};
   DefuseEvent m_defuseEvents[kTrainingDefuseEventCapacity] {};
+  AimEvent m_aimEvents[kTrainingAimEventCapacity] {};
+  size_t m_aimEventCount {}, m_droppedAimEvents {};
   size_t m_defuseEventCount {};
   size_t m_droppedDefuseEvents {};
   size_t m_navigationEventCount {};
@@ -144,6 +148,19 @@ public:
   size_t droppedDefuseEvents() const { return m_droppedDefuseEvents; }
   const DefuseEvent &defuseEventAt(size_t index) const { return m_defuseEvents[index]; }
 
+  bool appendAimEvent(const AimEvent &e) {
+    if (m_aimEventCount >= kTrainingAimEventCapacity) {
+      const size_t kept = kTrainingAimEventCapacity / 2;
+      for (size_t i = 0; i < kept; ++i) m_aimEvents[i] = m_aimEvents[i * 2];
+      m_aimEventCount = kept;
+      m_droppedAimEvents += kTrainingAimEventCapacity - kept;
+    }
+    m_aimEvents[m_aimEventCount++] = e;
+    return true;
+  }
+  size_t aimEventCount() const { return m_aimEventCount; }
+  size_t droppedAimEvents() const { return m_droppedAimEvents; }
+  const AimEvent &aimEventAt(size_t i) const { return m_aimEvents[i]; }
   void clear() {
     for (size_t i = 0; i < kTrainingTransitionCapacity; ++i) {
       m_transitions[i] = {};
@@ -156,6 +173,8 @@ public:
     m_navigationCompactionCount = 0;
     m_defuseEventCount = 0;
     m_droppedDefuseEvents = 0;
+    m_aimEventCount = 0;
+    m_droppedAimEvents = 0;
     m_droppedTransitions = 0;
     m_episodeCount = 0;
   }

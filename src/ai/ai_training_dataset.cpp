@@ -171,6 +171,33 @@ bool writeNavigationEvent(cr::File &file, const NavigationEvent &event) {
       && writeString(file, "}\n");
 }
 
+bool writeAimEvent(cr::File &file, const AimEvent &e) {
+  return writeString(file, "{\"type\":\"aim_event\",\"event\":\"")
+      && writeString(file, aimEventName(e.type))
+      && writeString(file, "\",\"reason\":\"") && writeString(file, aimEventReasonName(e.reason))
+      && writeString(file, "\",\"game_time\":") && writeFloat(file, e.gameTime)
+      && writeString(file, ",\"round_start_time\":") && writeFloat(file, e.roundStartTime)
+      && writeString(file, ",\"round_id\":") && writeUnsigned(file, e.roundId)
+      && writeString(file, ",\"episode_id\":") && writeUnsigned(file, e.episodeId)
+      && writeString(file, ",\"bot_id\":") && writeInt(file, e.botId)
+      && writeString(file, ",\"team\":") && writeInt(file, e.team)
+      && writeString(file, ",\"task\":") && writeInt(file, e.task)
+      && writeString(file, ",\"ai_action\":") && writeInt(file, e.aiAction)
+      && writeString(file, ",\"previous_target_id\":") && writeInt(file, e.previousTargetId)
+      && writeString(file, ",\"target_id\":") && writeInt(file, e.targetId)
+      && writeString(file, ",\"aim_flags\":") && writeUnsigned(file, e.aimFlags)
+      && writeString(file, ",\"view_yaw\":") && writeFloat(file, e.viewYaw)
+      && writeString(file, ",\"view_pitch\":") && writeFloat(file, e.viewPitch)
+      && writeString(file, ",\"yaw_delta\":") && writeFloat(file, e.yawDelta)
+      && writeString(file, ",\"pitch_delta\":") && writeFloat(file, e.pitchDelta)
+      && writeString(file, ",\"elapsed\":") && writeFloat(file, e.elapsed)
+      && writeString(file, ",\"blind_time_remaining\":") && writeFloat(file, e.blindTimeRemaining)
+      && writeString(file, ",\"target_visible\":")
+      && writeString(file, e.targetVisible ? "true" : "false")
+      && writeString(file, ",\"position\":") && writeVec3(file, e.position)
+      && writeString(file, "}\n");
+}
+
 bool writeDefuseEvent(cr::File &file, const DefuseEvent &e) {
   if (!writeString(file, "{\"type\":\"defuse_event\",\"event\":\"")
       || !writeString(file, defuseEventName(e.type))
@@ -302,6 +329,13 @@ TrainingDatasetWriteResult writeTrainingDataset(const TrainingBuffer &buffer, co
     ++result.defuseEventCount;
   }
 
+  for (size_t i = 0; i < buffer.aimEventCount(); ++i) {
+    if (!writeAimEvent(file, buffer.aimEventAt(i))) {
+      result.error = TrainingDatasetWriteError::IoError;
+      return result;
+    }
+    ++result.aimEventCount;
+  }
   if (file.flush()) {
     result.error = TrainingDatasetWriteError::IoError;
     return result;

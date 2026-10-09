@@ -1670,6 +1670,15 @@ No changes are made to the conservative graph travel budget for distant reinforc
 Reason: the existing arrival check rejects all paths once the bomb has fewer than four seconds left, including zero-length routes for bots already guarding the site.
 Such bots could then emit repeated rejected ProtectObjective attempts precisely when they should hold an established defense position.
 
+## D182 — Record actual target switches and unusually fast view turns
+
+To diagnose observed unnaturally rapid changes in bot aim, record actual live-player target identity changes and actual view-angle deltas **after** `updateLookAngles()`, rather than guessing from policy intent.
+Events distinguish acquiring, switching, losing targets and rapid turns; each includes previous/current target IDs, normalized yaw/pitch deltas, elapsed time, actual view angles, flash state, task/action and a reason derived from active aim flags.
+Angle changes of 60+ degrees within 0.30 seconds count as rapid. Per-bot diagnostic reporting intervals are 0.20 seconds for target changes and 0.70 seconds for rapid turns.
+A separate 1024-event bounded buffer decimates old events on overflow without displacing existing training, navigation, combat or defuse telemetry.
+These reasons describe the observed aim branch, not proven causation. There are no gameplay changes to aiming, movement, combat, or enemy selection.
+JSONL v3 and the validator accept event-only records, while version 2 remains unchanged.
+
 ## D181 — Diagnose and route CT bomb approaches blocked by raised geometry
 
 A CT whose direct path to a planted C4 is blocked by a box or railing must use a reachable interaction-safe waypoint even if already inside the nominal 3D use radius. This includes the tighter retry radius after an unconfirmed USE.

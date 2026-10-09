@@ -72,6 +72,29 @@ class TrainingDatasetValidatorTests(unittest.TestCase):
         path = self.write_dataset([METADATA, make_sample(), event])
         self.assertEqual(validate_dataset(path), 1)
 
+    def test_v3_accepts_aim_events_without_counting_samples(self) -> None:
+        event = {"type": "aim_event", "event": "target_switched", "reason": "target_changed",
+                 "game_time": 35.0, "bot_id": 7, "previous_target_id": 2, "target_id": 5,
+                 "view_yaw": 90.0, "view_pitch": 0.0, "yaw_delta": 70.0,
+                 "pitch_delta": 1.0, "elapsed": 0.1}
+        self.assertEqual(validate_dataset(self.write_dataset([METADATA, make_sample(), event])), 1)
+
+    def test_v3_rejects_invalid_aim_id(self) -> None:
+        event = {"type": "aim_event", "event": "target_switched", "reason": "target_changed",
+                 "game_time": 35.0, "bot_id": 7, "previous_target_id": True, "target_id": 5,
+                 "view_yaw": 90.0, "view_pitch": 0.0, "yaw_delta": 70.0,
+                 "pitch_delta": 1.0, "elapsed": 0.1}
+        with self.assertRaises(DatasetValidationError):
+            validate_dataset(self.write_dataset([METADATA, event]))
+
+    def test_v2_rejects_aim_diagnostics(self) -> None:
+        event = {"type": "aim_event", "event": "rapid_aim_turn", "reason": "aim_enemy",
+                 "game_time": 35.0, "bot_id": 7, "previous_target_id": -1, "target_id": 5,
+                 "view_yaw": 90.0, "view_pitch": 0.0, "yaw_delta": 70.0,
+                 "pitch_delta": 1.0, "elapsed": 0.1}
+        with self.assertRaises(DatasetValidationError):
+            validate_dataset(self.write_dataset([dict(METADATA, version=2), event]))
+
     def test_v3_accepts_navigation_events_without_counting_samples(self) -> None:
         event = {"type": "navigation_event", "event": "route_observed",
                  "game_time": 30.0, "bot_id": 7, "path_nodes": [1, 5, 9]}

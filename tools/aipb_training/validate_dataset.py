@@ -243,6 +243,25 @@ def iter_validated_samples(path: str | Path):
             except json.JSONDecodeError as exc:
                 raise DatasetValidationError(f"line {line_number}: invalid JSON: {exc.msg}") from exc
 
+            if isinstance(value, dict) and value.get("type") == "aim_event":
+                _require(metadata["version"] == 3, f"line {line_number}: aim events require version 3")
+                _require(value.get("event") in {
+                    "target_acquired", "target_switched", "target_lost", "rapid_aim_turn"
+                }, f"line {line_number}: unknown aim event")
+                _require(value.get("reason") in {
+                    "target_acquired", "target_changed", "target_lost", "flash_blind",
+                    "aim_override", "aim_grenade", "aim_enemy", "aim_entity",
+                    "aim_last_enemy", "aim_predict_path", "aim_camp", "aim_navigation", "unattributed"
+                }, f"line {line_number}: unknown aim reason")
+                _require(_is_number(value.get("game_time")), f"line {line_number}: invalid aim time")
+                _require(type(value.get("bot_id")) is int and value["bot_id"] > 0,
+                         f"line {line_number}: invalid aim bot")
+                for field in ("target_id", "previous_target_id"):
+                    _require(type(value.get(field)) is int, f"line {line_number}: invalid {field}")
+                for field in ("view_yaw", "view_pitch", "yaw_delta", "pitch_delta", "elapsed"):
+                    _require(_is_number(value.get(field)), f"line {line_number}: invalid {field}")
+                continue
+
             if isinstance(value, dict) and value.get("type") == "combat_event":
                 _require(metadata["version"] == 3, f"line {line_number}: combat events require version 3")
                 _require(value.get("event") in {
