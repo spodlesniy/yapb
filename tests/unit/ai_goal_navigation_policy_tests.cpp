@@ -1311,6 +1311,29 @@ AI_TEST(testD185PreplantDefensePreservesPlantCombatAndValidWaypoints) {
          "stable preplant site retains waypoint ownership");
 }
 
+AI_TEST(testD188PlantedBombDefenseRequiresPhysicalCover) {
+  expect(!ai::hasPlantedBombWorldCover(0u),
+         "unobstructed open position is not a valid defensive camp");
+  expect(!ai::hasPlantedBombWorldCover(1u << 1),
+         "one obscured sector is insufficient proof of protection");
+  expect(!ai::hasPlantedBombWorldCover((1u << 0) | (1u << 1)),
+         "two adjacent sectors do not justify a long camp");
+  expect(ai::hasPlantedBombWorldCover((1u << 0) | (1u << 2)),
+         "separated world obstacles permit guarded stationary defense");
+  expect(!ai::mayCampOnPlantedBombDefense(false, false, true),
+         "arriving at an exposed node must not trigger Camp");
+  expect(!ai::mayCampOnPlantedBombDefense(true, true, true),
+         "defuse alarm requires combat response rather than stationary camping");
+  expect(!ai::mayCampOnPlantedBombDefense(true, false, false),
+         "an unfinished route must not be treated as reached");
+  expect(ai::mayCampOnPlantedBombDefense(true, false, true),
+         "physical cover after a completed route permits C4 protection");
+  expect(ai::isMobilePlantedBombFlank(true, false, true, 300.0f * 300.0f, 220.0f),
+         "exposed defender may patrol a separate reachable flank");
+  expect(!ai::isMobilePlantedBombFlank(true, false, true, 300.0f * 300.0f, 0.0f),
+         "zero-distance movement cannot substitute for protection");
+}
+
 AI_TEST(testPlantedBombDefensePreservesOwnershipAcrossTemporaryCombat) {
   using Task = ai::TaskType;
   expect(ai::isTransientPlantedBombDefenseTask(Task::Attack, Task::Attack, Task::SeekCover, Task::Blind),

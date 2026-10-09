@@ -193,6 +193,34 @@ constexpr bool shouldReleasePreplantBombDefense(bool bombPlanted, bool alive,
   return bombPlanted || !alive || !validCarrierSite || !objectivesEnabled;
 }
 
+// D188: C4 line-of-sight is not proof of solid cover from attacking CT.
+// Probe fixed directions around a waypoint, without consulting enemy positions.
+constexpr int kPlantedBombCoverSectorCount = 8;
+constexpr int kPlantedBombCoverProbeBudget = 24;
+constexpr float kPlantedBombCoverProbeDistance = 192.0f;
+constexpr float kPlantedBombMobileMinHop = 160.0f;
+constexpr float kPlantedBombMobileMaxHop = 600.0f;
+constexpr bool hasPlantedBombWorldCover(unsigned int blockedSectors) {
+  for (int i = 0; i < kPlantedBombCoverSectorCount; ++i) {
+    if (!(blockedSectors & (1u << i))) continue;
+    for (int offset = 2; offset <= 6; ++offset) {
+      if (blockedSectors & (1u << ((i + offset) % kPlantedBombCoverSectorCount))) return true;
+    }
+  }
+  return false;
+}
+constexpr bool mayCampOnPlantedBombDefense(bool physicalCover, bool defuseAlarm, bool nodeReached) {
+  return physicalCover && !defuseAlarm && nodeReached;
+}
+constexpr bool isMobilePlantedBombFlank(bool valid, bool occupied, bool siteVisible,
+                                        float bombDistanceSq, float hopDistance) {
+  return valid && !occupied && siteVisible
+      && bombDistanceSq >= 128.0f * 128.0f
+      && bombDistanceSq <= 768.0f * 768.0f
+      && hopDistance >= kPlantedBombMobileMinHop
+      && hopDistance <= kPlantedBombMobileMaxHop;
+}
+
 constexpr float kPlantedBombReinforcementRadius = 768.0f;
 constexpr float kPlantedBombReinforcementFarRoute = 1024.0f;
 constexpr float kPlantedBombReinforcementUnreachableRoute = 32767.0f;

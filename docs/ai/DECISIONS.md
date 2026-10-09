@@ -1891,3 +1891,14 @@ Apply only during grounded forward waypoint motion, never ladders or airborne ac
 Do not modify map waypoints, path endpoints, graph data, jumping logic, or combat tasks.
 Add pure eligibility regression tests.
 A user-triggered Windows x86 build and de_dust2 B low-passage replay remain required; the JSONL does not record every button press or full per-frame collisions.
+
+## D188 — Verify world cover before holding planted C4
+
+The October 9 de_dust2 gameplay capture reported a Terrorist holding an exposed planted-C4 defense position.
+Previously ProtectObjective ranked graph visibility, route cost, camp flags, and teammate spacing but could issue Camp without validating physical protection.
+Candidate positions now require world-geometry occlusion from separated approach sectors before a long stationary defense is authorized.
+Use an eight-direction static-world probe with a bounded candidate budget, without reading hidden enemy positions.
+If no covered waypoint is available, a reachable flank may be used for mobile defense rather than an exposed Camp or direct hold at the C4.
+Preserve visible-combat priority, defuse alarm handling, planting mechanics, and the existing AI semantic action lifecycle.
+The presence of barriers is a conservative cover heuristic, not proof that every combat angle is safe.
+The automatic unit test, user-triggered Windows x86 build, and a new in-game capture are required before marking D188 validated.

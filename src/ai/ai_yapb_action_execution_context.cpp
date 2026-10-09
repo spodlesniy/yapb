@@ -984,6 +984,27 @@ bool YaPBActionExecutionContext::protectObjective() {
   const auto &bombOrigin = gameState.getBombOrigin();
   auto currentTask = m_bot->getCurrentTaskId();
 
+  // Inspect static world geometry near candidate sites; no enemy information.
+  const auto hasPhysicalCover = [&](int index) {
+    if (!graph.exists(index)) return false;
+    constexpr float diagonal = 0.70710678f;
+    const Vector directions[8] = {
+      { 1.0f, 0.0f, 0.0f }, { diagonal, diagonal, 0.0f },
+      { 0.0f, 1.0f, 0.0f }, { -diagonal, diagonal, 0.0f },
+      { -1.0f, 0.0f, 0.0f }, { -diagonal, -diagonal, 0.0f },
+      { 0.0f, -1.0f, 0.0f }, { diagonal, -diagonal, 0.0f }
+    };
+    const auto eye = graph[index].origin + Vector(0.0f, 0.0f, 36.0f);
+    unsigned int blockedSectors = 0;
+    TraceResult trace {};
+    for (int i = 0; i < kPlantedBombCoverSectorCount; ++i) {
+      game.testLine(eye, eye + directions[i] * kPlantedBombCoverProbeDistance,
+                    TraceIgnore::Monsters, m_bot->ent(), &trace);
+      if (!trace.fStartSolid && trace.flFraction < 0.85f) blockedSectors |= 1u << i;
+    }
+    return hasPlantedBombWorldCover(blockedSectors);
+  };
+
   // Legacy combat/cover/blind tasks temporarily preempt movement. Keep the
   // chosen bomb-defense waypoint and let the legacy task finish rather than
   // reporting an interrupted semantic objective and discarding its route.
@@ -1031,6 +1052,10 @@ bool YaPBActionExecutionContext::protectObjective() {
     };
 
     int node = kInvalidNodeIndex;
+    bool coveredNode = false;
+    int fallbackNode = kInvalidNodeIndex;
+    float fallbackRoute = kPlantedBombReinforcementUnreachableRoute;
+    int coverChecks = 0;
     if (m_bot->m_defuseNotified) {
       // When CTs are defusing, the bomb itself takes precedence over a flank.
       node = bombNode;
@@ -1045,7 +1070,10 @@ bool YaPBActionExecutionContext::protectObjective() {
             && graph[localNode].origin.distanceSq(bombOrigin)
                 <= cr::sqrf(kPlantedBombReinforcementRadius)
             && canArriveAt(localNode) && crowdCost(localNode) == 0.0f) {
-          node = localNode;
+          if (hasPhysicalCover(localNode)) {
+            node = localNode;
+            coveredNode = true;
+          }
         }
       }
 
@@ -1085,26 +1113,35 @@ bool YaPBActionExecutionContext::protectObjective() {
                 path.links, isWalkable,
                 [&](const auto &link) { return graph[link.index].origin.x - path.origin.x; },
                 [&](const auto &link) { return graph[link.index].origin.y - path.origin.y; });
+            if (distance < fallbackRoute && pass == 0) {
+              fallbackRoute = distance;
+              fallbackNode = path.number;
+            }
             if (isBetterDistributedBombDefenseNode(
                 distance, isCamp, crowding, path.number,
                 bestRouteDistance, bestCamp, bestCrowdCost, bestNode,
-                connections, bestConnections, sectors, bestSectors)) {
-              bestNode = path.number;
-              bestRouteDistance = distance;
-              bestCamp = isCamp;
-              bestCrowdCost = crowding;
-              bestConnections = connections;
-              bestSectors = sectors;
+                connections, bestConnections, sectors, bestSectors)
+                && coverChecks < kPlantedBombCoverProbeBudget) {
+              ++coverChecks;
+              if (hasPhysicalCover(path.number)) {
+                bestNode = path.number;
+                bestRouteDistance = distance;
+                bestCamp = isCamp;
+                bestCrowdCost = crowding;
+                bestConnections = connections;
+                bestSectors = sectors;
+              }
             }
           }
           node = bestNode;
+          coveredNode = graph.exists(node);
         }
       }
 
-      // If map waypoints offer no suitable side position, reaching the bomb
-      // is still better than using a disconnected or random defense node.
+      // An exposed waypoint may support mobile patrol but never a forced hold.
       if (!graph.exists(node)) {
-        node = bombNode;
+        node = fallbackNode;
+        coveredNode = false;
       }
     }
 
@@ -1123,14 +1160,16 @@ bool YaPBActionExecutionContext::protectObjective() {
           usableLocalNode ? graph[fromNode].origin.distanceSq(bombOrigin) : -1.0f,
           usableLocalNode ? m_bot->pev->origin.distanceSq(graph[fromNode].origin) : -1.0f,
           cr::sqrf(reachDistance));
-      if (!holdLocally) {
+      if (!holdLocally || !hasPhysicalCover(fromNode)) {
         return false;
       }
       node = fromNode;
+      coveredNode = true;
     }
 
     m_protectObjectiveActive = true;
     m_protectObjectiveNode = node;
+    m_protectObjectiveCanCamp = coveredNode && !m_bot->m_defuseNotified;
     m_protectObjectiveNavigationTaskCreated = false;
 
     if (currentTask == Task::MoveToPosition || currentTask == Task::Camp || currentTask == Task::Hunt) {
@@ -1158,6 +1197,7 @@ bool YaPBActionExecutionContext::protectObjective() {
     }
 
     m_protectObjectiveNode = node;
+    m_protectObjectiveCanCamp = false;
 
     if (currentTask == Task::Camp || currentTask == Task::Hunt) {
       m_bot->clearTask(currentTask);
@@ -1198,9 +1238,38 @@ bool YaPBActionExecutionContext::protectObjective() {
     }
     else if (currentTask == Task::Normal) {
       const float bombTimeLeft = gameState.getBombTimeLeft();
-      if (bombTimeLeft > 0.0f) {
-        m_bot->startTask(Task::Camp, TaskPri::Camp, kInvalidNodeIndex, game.time() + bombTimeLeft, true);
+      if (bombTimeLeft > 0.0f && mayCampOnPlantedBombDefense(
+          m_protectObjectiveCanCamp, m_bot->m_defuseNotified, defenseNodeReached)) {
+        m_bot->startTask(Task::Camp, TaskPri::Camp, kInvalidNodeIndex,
+                         game.time() + bombTimeLeft, true);
         currentTask = Task::Camp;
+      }
+      else if (bombTimeLeft > 0.0f) {
+        // Patrol other nearby flanks rather than standing on an open waypoint.
+        const int fromNode = graph.getNearest(m_bot->pev->origin);
+        const int bombNode = graph.getNearest(bombOrigin);
+        int next = kInvalidNodeIndex;
+        float bestDistance = kPlantedBombMobileMaxHop + 1.0f;
+        if (graph.exists(fromNode) && graph.exists(bombNode)) {
+          for (const auto &path : graph) {
+            if (path.number == m_protectObjectiveNode
+                || (path.flags & (NodeFlag::Ladder | NodeFlag::CTOnly))
+                || m_bot->isOccupiedNode(path.number)
+                || !vistab.visible(path.number, bombNode)) continue;
+            const float distance = planner.preciseDistance(fromNode, path.number);
+            if (!isMobilePlantedBombFlank(true, false, true,
+                 path.origin.distanceSq(bombOrigin), distance)) continue;
+            if (distance < bestDistance) {
+              bestDistance = distance;
+              next = path.number;
+            }
+          }
+        }
+        if (!graph.exists(next)) return false;
+        m_protectObjectiveNode = next;
+        m_bot->startTask(Task::MoveToPosition, TaskPri::MoveToPosition, next, 0.0f, true);
+        m_protectObjectiveNavigationTaskCreated = true;
+        currentTask = Task::MoveToPosition;
       }
     }
   }
@@ -1259,6 +1328,7 @@ void YaPBActionExecutionContext::cancelProtectObjective() {
   m_protectObjectiveActive = false;
   m_protectObjectiveNode = kInvalidNodeIndex;
   m_protectObjectiveNavigationTaskCreated = false;
+  m_protectObjectiveCanCamp = false;
 }
 
 bool YaPBActionExecutionContext::reload(WeaponType weaponType) {

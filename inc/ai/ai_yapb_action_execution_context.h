@@ -45,6 +45,7 @@ private:
   bool m_protectObjectiveActive {};
   int m_protectObjectiveNode { -1 };
   bool m_protectObjectiveNavigationTaskCreated {};
+  bool m_protectObjectiveCanCamp {}; // D188 checked physical world cover
   bool m_reloadActive {};
   int m_reloadStateIssued { 0 };
   bool m_escapeFromBombActive {};

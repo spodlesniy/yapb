@@ -91,6 +91,13 @@ An interrupted attempt records its actual evidence source rather than claiming a
 Likewise, `round_message` refers to the round message path, whereas `game_state` means the code observed that C4 was no longer marked as planted.
 The Python validator checks evidence compatibility without counting diagnostic records as model-training samples.
 
+## D188 — Physical cover gate for T planted-C4 defense
+
+ProtectObjective now checks static geometry around a defensive waypoint before allowing stationary Camp.
+When the candidate is exposed, it selects a reachable nearby flank for movement, rather than camping at an open bombsite or the bomb entity.
+This preserves the existing task lifecycle and defuse-alarm priority, and does not assume enemy locations.
+The heuristic must be validated against actual protection and route quality in-game.
+
 ## D187.1 — Physical low-ceiling duck support for existing waypoint movement
 
 A grounded moving bot performs a short world-geometry probe at standing head height toward its immediate path destination.
