@@ -407,6 +407,27 @@ void Bot::updatePickups () {
       return;
    }
 
+   // Reconcile dropped-C4 guard ownership against observed entity presence.
+   if (m_aiDroppedBombGuardEntity != nullptr && graph.exists (m_aiDroppedBombGuardNode)) {
+      bool present = false;
+      for (const auto &item : gameState.getInterestingEntities ()) {
+         if (item == m_aiDroppedBombGuardEntity && !(item->v.effects & EF_NODRAW)) {
+            present = true;
+            break;
+         }
+      }
+      if (!ai::isDroppedBombGuardOwnerActive (m_isAlive, present && !gameState.isBombPlanted (),
+            getCurrentTaskId () == Task::MoveToPosition || getCurrentTaskId () == Task::Camp
+            || !!(m_states & Sense::SeeingEnemy))) {
+         recordNavigationEvent (ai::NavigationEventType::DroppedBombGuard,
+            ai::NavigationEventReason::DroppedBombReleased, m_aiDroppedBombGuardNode);
+         m_aiDroppedBombGuardEntity = nullptr;
+         m_aiDroppedBombGuardNode = kInvalidNodeIndex;
+         m_aiDroppedBombPrimaryGuard = false;
+         m_defendedBomb = false;
+      }
+   }
+
    // A covered defuser may die, abort, or complete the objective.
    if (m_aiCtBombDefuserId > 0) {
       bool ownerAlive = false;
@@ -979,18 +1000,41 @@ void Bot::updatePickups () {
                   }
                }
 
-               if (assignedDefender == this) {
-                  const int index = findDefendNode (origin, true);
-
+               // A primary CT and at most one supporting CT guard visible dropped C4.
+               int guards = 0;
+               for (const auto &other : bots) {
+                  if (other && other->m_isAlive && other->m_team == Team::CT
+                     && other->m_aiDroppedBombGuardEntity == ent
+                     && graph.exists (other->m_aiDroppedBombGuardNode)) ++guards;
+               }
+               const bool primary = assignedDefender == this;
+               const bool support = !primary && guards == 1
+                  && ai::isDroppedBombDefenderEligible (
+                     m_isAlive, m_team == Team::CT, true,
+                     !!(m_states & Sense::SeeingEnemy), isOnLadder (),
+                     getCurrentTaskId () == Task::EscapeFromBomb);
+               if (primary || support) {
+                  const int index = findDroppedBombGuardNode (origin);
+                  if (!graph.exists (index)) {
+                     recordNavigationEvent (ai::NavigationEventType::DroppedBombGuard,
+                        ai::NavigationEventReason::DroppedBombNoCover);
+                     break;
+                  }
                   m_ignoredItems.push (ent);
-                  startTask (Task::Camp, TaskPri::Camp, kInvalidNodeIndex, game.time () + rg (cv_camping_time_min.as <float> (), cv_camping_time_max.as <float> ()), true); // push camp task on to stack
-                  startTask (Task::MoveToPosition, TaskPri::MoveToPosition, index, game.time () + rg (10.0f, 30.0f), true); // push move command
-
-                  // decide to duck or not to duck
+                  m_aiDroppedBombGuardEntity = ent;
+                  m_aiDroppedBombGuardNode = index;
+                  m_aiDroppedBombPrimaryGuard = primary;
+                  const float until = game.time () + rg (cv_camping_time_min.as <float> (),
+                     cv_camping_time_max.as <float> ());
+                  startTask (Task::Camp, TaskPri::Camp, kInvalidNodeIndex, until, true);
+                  startTask (Task::MoveToPosition, TaskPri::MoveToPosition, index, until, true);
                   selectCampButtons (index);
                   m_defendedBomb = true;
-
-                  pushChatterMessage (Chatter::GoingToGuardDroppedC4); // play info about that
+                  recordNavigationEvent (ai::NavigationEventType::DroppedBombGuard,
+                     primary ? ai::NavigationEventReason::DroppedBombAssigned
+                             : ai::NavigationEventReason::DroppedBombSupport,
+                     index, graph.getNearest (origin));
+                  pushChatterMessage (Chatter::GoingToGuardDroppedC4);
                   return;
                }
             }
@@ -3844,6 +3888,23 @@ void Bot::recordNavigationEvent (ai::NavigationEventType type, ai::NavigationEve
    event.routeSource = source;
    event.routeDestination = destination;
    event.pathType = pathType;
+   if (type == ai::NavigationEventType::DroppedBombGuard && graph.exists (source)) {
+      const auto &cover = graph[source];
+      event.guardExposure = cr::min (cover.vis.stand, cover.vis.crouch);
+      const int from = graph.getNearest (pev->origin);
+      if (graph.exists (from)) {
+         event.guardRouteDistance = planner.preciseDistance (from, source);
+      }
+      float nearestSq = kInfiniteDistance;
+      for (const auto &ally : bots) {
+         if (!ally || ally.get () == this || !ally->m_isAlive || ally->m_team != Team::CT
+             || !graph.exists (ally->m_aiDroppedBombGuardNode)) continue;
+         const float separationSq = cover.origin.distanceSq (
+             graph[ally->m_aiDroppedBombGuardNode].origin);
+         if (separationSq < nearestSq) nearestSq = separationSq;
+      }
+      if (nearestSq < kInfiniteDistance) event.guardNearestAllyDistance = cr::sqrtf (nearestSq);
+   }
    event.position = { pev->origin.x, pev->origin.y, pev->origin.z };
    event.velocity = { pev->velocity.x, pev->velocity.y, pev->velocity.z };
    event.distanceToGoal = graph.exists(event.goalNode)

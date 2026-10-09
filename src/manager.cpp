@@ -1528,6 +1528,9 @@ void Bot::newRound () {
    m_plantedBombNodeIndex = kInvalidNodeIndex;
    m_aiCtBombCoverNode = kInvalidNodeIndex;
    m_aiCtBombDefuserId = -1;
+   m_aiDroppedBombGuardEntity = nullptr;
+   m_aiDroppedBombGuardNode = kInvalidNodeIndex;
+   m_aiDroppedBombPrimaryGuard = false;
    m_aiPreplantDefenseNode = kInvalidNodeIndex;
    m_aiPreplantDefenseSite = kInvalidNodeIndex;
    m_aiPreplantDefenseNextUpdate = 0.0f;

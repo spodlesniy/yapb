@@ -836,6 +836,13 @@ AI_TEST(testNavigationEventBufferIsBoundedAndSeparateFromTraining) {
   expect(buffer.navigationEventCount() == 0, "reset clears navigation diagnostics");
 }
 
+AI_TEST(testD186GuardEventReasons) {
+  expect(std::strcmp(ai::navigationEventName(ai::NavigationEventType::DroppedBombGuard),
+         "dropped_bomb_guard") == 0, "guard has dedicated navigation event");
+  expect(std::strcmp(ai::navigationEventReasonName(ai::NavigationEventReason::DroppedBombNoCover),
+         "no_safe_cover") == 0, "invalid graph fallback is diagnosable");
+}
+
 AI_TEST(testNavigationEventJsonlIsTaggedAndDoesNotCountAsTraining) {
   const char *path = "aipb-navigation-events-test.jsonl";
   ai::TrainingBuffer buffer {};

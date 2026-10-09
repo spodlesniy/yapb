@@ -69,12 +69,13 @@ public:
 };
 
 enum class NavigationEventType : uint8_t {
-  TaskChange, RouteRequest, RouteObserved, WaypointChanged, LowDisplacement,
+  TaskChange, RouteRequest, RouteObserved, WaypointChanged, LowDisplacement, DroppedBombGuard,
 };
 
 enum class NavigationEventReason : uint8_t {
   TaskStarted, TaskCleared, TaskCompleted, GoalChanged, SameGoalRepath,
   RouteObserved, WaypointChanged, LowDisplacement,
+  DroppedBombAssigned, DroppedBombSupport, DroppedBombNoCover, DroppedBombReleased,
 };
 
 constexpr const char *navigationEventName(NavigationEventType type) {
@@ -84,6 +85,7 @@ constexpr const char *navigationEventName(NavigationEventType type) {
   case NavigationEventType::RouteObserved: return "route_observed";
   case NavigationEventType::WaypointChanged: return "waypoint_changed";
   case NavigationEventType::LowDisplacement: return "low_displacement";
+  case NavigationEventType::DroppedBombGuard: return "dropped_bomb_guard";
   }
   return "unknown";
 }
@@ -98,6 +100,10 @@ constexpr const char *navigationEventReasonName(NavigationEventReason reason) {
   case NavigationEventReason::RouteObserved: return "path_snapshot_after_request";
   case NavigationEventReason::WaypointChanged: return "waypoint_index_changed";
   case NavigationEventReason::LowDisplacement: return "low_position_displacement";
+  case NavigationEventReason::DroppedBombAssigned: return "primary_assigned";
+  case NavigationEventReason::DroppedBombSupport: return "support_assigned";
+  case NavigationEventReason::DroppedBombNoCover: return "no_safe_cover";
+  case NavigationEventReason::DroppedBombReleased: return "guard_released";
   }
   return "unknown";
 }
@@ -116,6 +122,9 @@ struct NavigationEvent {
   int32_t pathNodes[kNavigationDiagnosticPathNodes] {};
   bool pathTruncated {};
   float estimatedPathDistance {}, physicalDisplacement {}, distanceToGoal {};
+  // D186: explain objective cover choice without adding a training transition.
+  int32_t guardExposure { -1 };
+  float guardRouteDistance { -1.0f }, guardNearestAllyDistance { -1.0f };
   Vec3 position {}, velocity {};
 };
 

@@ -46,13 +46,15 @@ Do not fabricate completion records or historical names for Phases 1–6 without
 - D182.1–D182.3 Windows x86 compatibility corrections.
 - D183 multi-turn aim diagnostic correction, bounded flashbang avoidance, and per-frame cause attribution; automatic CI succeeded for `2e73aff`, while Windows x86 and gameplay verification remain pending.
 - D184 primary CT defuser selection, shared-corridor avoidance and spaced waypoint cover; automatic CI passed on `4f72282`, while Windows x86 and gameplay acceptance remain pending.
-- D185 early T defense staging at the C4 carrier's committed bombsite goal; automatic CI, Windows x86, and gameplay acceptance remain pending.
+- D185 early T defense staging at the C4 carrier's committed bombsite goal; automatic CI passed on `ebbbdea`, while Windows x86 and gameplay acceptance remain pending.
+- D186 reachable spaced dropped-C4 CT guards with event-only diagnostics; automatic CI, Windows x86 and gameplay checks remain pending.
 
 ### Latest verified build evidence
 
 - [Automatic AI CI run 37876210668](https://github.com/spodlesniy/yapb/actions/runs/37876210668) completed successfully for snapshot SHA `61b5839`.
 - [Automatic D183 CI run 37898156477](https://github.com/spodlesniy/yapb/actions/runs/37898156477) completed successfully for `2e73aff`; it is not evidence of the user-triggered Windows x86 build.
 - [Automatic D184 CI run 37899444020](https://github.com/spodlesniy/yapb/actions/runs/37899444020) completed successfully for `4f72282`; Windows x86 and gameplay verification remain outstanding.
+- [Automatic D185 CI run 37901917305](https://github.com/spodlesniy/yapb/actions/runs/37901917305) completed successfully for `ebbbdea`; Windows x86 and gameplay verification remain outstanding.
 - [User-triggered Windows x86 run 37876398620](https://github.com/spodlesniy/yapb/actions/runs/37876398620) completed successfully for the same SHA.
 - This does **not** establish a successful full multi-platform release build or comprehensive in-game acceptance.
 - Prior gameplay captures exposed coordination, C4-defense, flash-turn, and aim-jitter cases which still require review.
@@ -62,7 +64,7 @@ Do not fabricate completion records or historical names for Phases 1–6 without
 - Validate D183's flash avoidance timing, enemy-priority behavior, and event attribution with a new gameplay capture after user-triggered Windows x86 verification.
 - Validate D184 defuser ownership, cover placement, fallback and teammate takeover with a multi-CT capture on multiple maps; confirm no regression in D181 or active BarTime.
 - Validate D185 T pre-plant bombsite coverage and transition to post-plant defense across several maps, including an interrupted planting attempt and visible combat.
-- **D186 (proposed):** improve dropped-C4 guarding through safe positions, cover/exposure checks, spacing, and evidence-rich diagnostics.
+- Validate D186 dropped-C4 primary/support cover selection, safety fallback, owner cleanup, and objective navigation events using gameplay captures across multiple maps.
 - Reassess repeated small aim and movement oscillations on recordings from multiple maps; the current rapid-turn threshold alone does not detect every visible jitter.
 - Reconcile stale model feature-schema descriptions in `ARCHITECTURE.md` with the actual feature contract and training README (currently schema v7, 252 features).
 - Triage new failures from gameplay and CI before expanding the queue; D183–D186 are not an arbitrary deadline to close the phase.

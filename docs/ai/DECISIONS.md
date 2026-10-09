@@ -1809,3 +1809,17 @@ Add unit tests for eligibility, committed carrier evidence, invalid waypoint rou
 Reason: the earlier implementation assembled T defense only after C4 had been planted, leaving allied Terrorists poorly positioned around the selected site.
 Using the carrier's already chosen route goal permits earlier coverage without passing hidden C4 information to teammates.
 Automatic CI cannot replace the user-started Windows x86 build or multi-map gameplay validation.
+
+## D186 — Require reachable spaced cover for dropped C4 and record the decision
+
+When a CT actually sees a dropped C4, keep the existing deterministic primary-defender election and permit one nearby supporting CT to guard separately when a suitable position exists.
+Select only graph-reachable cover with a real line trace toward dropped C4, safe offset from the item, clear CT access, acceptable exposure and historical danger, and no overlap with an already reserved CT guard waypoint.
+Rank qualified positions using route length, lower world-exposure, prior damage, authored camp points and useful waypoint exits, with a stable node-index tie break.
+Never substitute an arbitrary waypoint if the map lacks suitable cover; the ordinary objective code may continue without creating a false assignment.
+Record distinct `dropped_bomb_guard` navigation diagnostics for primary assignment, support assignment, failure to find safe cover, and release after the observed objective disappears or ownership becomes invalid.
+Assignment diagnostics include chosen-node exposure, reachable route estimate and nearest other CT guard distance, and are never learning transitions.
+Retain original combat/ladder/escape preemption and the existing dropped-C4 pickup ownership rules.
+
+Reason: the former single-defender implementation could fall back to a random or unreachable node and provided no objective-specific evidence explaining failed defensive placement.
+D186 makes geometry, route and cover eligibility explicit and offers limited separated support without changing the model observation contract.
+Real-game success, Windows x86 compatibility and multi-map coordination remain to be confirmed by the user.

@@ -255,6 +255,9 @@ private:
    int m_plantedBombNodeIndex {}; // nearest to planted bomb node
    int m_aiCtBombCoverNode { kInvalidNodeIndex }; // D184 assigned CT cover waypoint
    int m_aiCtBombDefuserId { -1 }; // D184 elected defuser covered by this bot
+   edict_t *m_aiDroppedBombGuardEntity {}; // D186 observed dropped C4 binding
+   int m_aiDroppedBombGuardNode { kInvalidNodeIndex }; // reserved cover
+   bool m_aiDroppedBombPrimaryGuard {}; // primary vs supporting guard
    int m_aiPreplantDefenseNode { kInvalidNodeIndex }; // D185 owned approach waypoint
    int m_aiPreplantDefenseSite { kInvalidNodeIndex }; // carrier's published goal
    float m_aiPreplantDefenseNextUpdate {}; // limit route-selection work
@@ -435,6 +438,7 @@ private:
    int findCoverNode (float maxDistance);
    int findDefendNode (const Vector &origin, bool preferLowExposure = false, bool plantedDefense = false,
                       bool reserveCtCover = false);
+   int findDroppedBombGuardNode (const Vector &bombOrigin);
    int findBestGoal ();
    int findBestGoalWhenBombAction ();
    int findGoalPost (int tactic, IntArray *defensive, IntArray *offensive);

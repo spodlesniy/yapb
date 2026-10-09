@@ -2241,6 +2241,54 @@ int Bot::findBombNode () {
    return goal;
 }
 
+int Bot::findDroppedBombGuardNode (const Vector &bombOrigin) {
+   ensureCurrentNodeIndex ();
+   const int from = graph.exists (m_currentNodeIndex) ? m_currentNodeIndex : graph.getNearest (pev->origin);
+   const int bombNode = graph.getNearest (bombOrigin);
+   if (!graph.exists (from) || !graph.exists (bombNode)) return kInvalidNodeIndex;
+
+   int best = kInvalidNodeIndex;
+   float bestScore = kInfiniteDistance;
+   TraceResult trace {};
+   for (const auto &path : graph) {
+      const float route = planner.preciseDistance (from, path.number);
+      bool reserved = false;
+      for (const auto &ally : bots) {
+         if (!ally || ally.get () == this || !ally->m_isAlive || ally->m_team != Team::CT
+            || !graph.exists (ally->m_aiDroppedBombGuardNode)) continue;
+         if (path.origin.distanceSq (graph[ally->m_aiDroppedBombGuardNode].origin)
+             < ai::kDroppedBombGuardSeparationSq) {
+            reserved = true;
+            break;
+         }
+      }
+      if (!graph.exists (path.number) || isOccupiedNode (path.number) || reserved
+          || (path.flags & NodeFlag::Ladder) || !vistab.visible (path.number, bombNode)) continue;
+      game.testLine (path.origin, bombOrigin, TraceIgnore::Glass, ent (), &trace);
+      if (!ai::isSafeDroppedBombGuardNode (true, false, true,
+          cr::fequal (trace.flFraction, 1.0f) && !trace.fStartSolid, false,
+          path.origin.distanceSq (bombOrigin), route, reserved)) continue;
+      const auto isWalkable = [&] (const auto &link) {
+         return graph.exists (link.index) && link.index != path.number
+            && !(link.flags & PathFlag::Jump) && !(graph[link.index].flags & NodeFlag::Ladder);
+      };
+      const int connections = ai::countWalkableBombDefenseConnections (path.links, isWalkable);
+      const int sectors = ai::countBombDefenseExitSectors (
+         path.links, isWalkable,
+         [&] (const auto &link) { return graph[link.index].origin.x - path.origin.x; },
+         [&] (const auto &link) { return graph[link.index].origin.y - path.origin.y; });
+      const int exposure = cr::min (path.vis.stand, path.vis.crouch);
+      const float score = ai::droppedBombGuardCoverCost (route, exposure,
+         practice.getDamage (m_team, path.number, path.number),
+         (path.flags & NodeFlag::Camp) != 0, connections, sectors);
+      if (ai::isBetterDroppedBombGuardCover (score, path.number, bestScore, best)) {
+         best = path.number;
+         bestScore = score;
+      }
+   }
+   return best;
+}
+
 int Bot::findDefendNode (const Vector &origin, bool preferLowExposure, bool plantedDefense,
                          bool reserveCtCover) {
    // this function tries to find a good position which has a line of sight to a position,

@@ -980,6 +980,27 @@ AI_TEST(testDroppedBombDefenderSelectionPrefersNearestThenIndex) {
          "higher bot index loses an equal-distance defender tie");
 }
 
+AI_TEST(testD186DroppedBombGuardCoverAndOwnership) {
+  expect(ai::isSafeDroppedBombGuardNode(true, false, true, true, false,
+         220.0f * 220.0f, 400.0f, false), "reachable and visible safe guard waypoint");
+  expect(!ai::isSafeDroppedBombGuardNode(true, false, true, true, false,
+         60.0f * 60.0f, 400.0f, false), "keep CT away from pickup interaction area");
+  expect(!ai::isSafeDroppedBombGuardNode(true, false, true, false, false,
+         220.0f * 220.0f, 400.0f, false), "blocked geometry rejects waypoint");
+  expect(!ai::isSafeDroppedBombGuardNode(true, false, true, true, false,
+         220.0f * 220.0f, 32767.0f, false), "disconnected path never becomes cover");
+  expect(!ai::isSafeDroppedBombGuardNode(true, false, true, true, false,
+         220.0f * 220.0f, 400.0f, true), "teammate reserve prevents overlap");
+  expect(ai::droppedBombGuardCoverCost(300.0f, 12, 3, true, 2, 2)
+         < ai::droppedBombGuardCoverCost(300.0f, 60, 3, false, 2, 2),
+         "low exposure and camp preference improve rank");
+  expect(ai::isBetterDroppedBombGuardCover(60.0f, 2, 60.0f, 4),
+         "stable waypoint id breaks equal scores");
+  expect(ai::isDroppedBombGuardOwnerActive(true, true, true), "active CT retains dropped C4");
+  expect(!ai::isDroppedBombGuardOwnerActive(false, true, true), "death releases reservation");
+  expect(!ai::isDroppedBombGuardOwnerActive(true, false, true), "picked up bomb releases reservation");
+}
+
 AI_TEST(testObjectiveInteractionRangeUsesFullThreeDimensionalDistance) {
   expect(ai::isWithinObjectiveInteractionRange(30.0f, 40.0f, 20.0f, 80.0f),
          "nearby objective node inside the full XYZ radius is interaction-safe");

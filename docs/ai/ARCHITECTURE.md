@@ -91,6 +91,16 @@ An interrupted attempt records its actual evidence source rather than claiming a
 Likewise, `round_message` refers to the round message path, whereas `game_state` means the code observed that C4 was no longer marked as planted.
 The Python validator checks evidence compatibility without counting diagnostic records as model-training samples.
 
+## D186 — Dropped C4 cover positions and objective diagnostics
+
+A CT that actually observes a dropped C4 can be elected its primary guard by the existing deterministic nearest-and-index procedure.
+One supporting CT may occupy another graph-reachable position with visible C4, clear geometry and a minimum separation from other assigned guards.
+The position selector combines route distance, world-visibility exposure, historical damage and useful exits while rejecting occupied, invalid, too-close and unconnected graph nodes.
+When there is no eligible cover waypoint, the behavior does not fall back to a random destination.
+Event-only JSONL v3 `navigation_event` records with event `dropped_bomb_guard` distinguish `primary_assigned`, `support_assigned`, `no_safe_cover` and `guard_released`.
+They carry `guard_exposure`, `guard_route_distance` and `guard_nearest_ally_distance`, where -1 means unavailable, without changing training feature/schema contracts.
+All gameplay and MSVC x86 acceptance remains pending a user-initiated build and game capture.
+
 ## D185 — Early T bombsite staging before C4 is planted
 
 An alive Terrorist carrier approaching its already selected waypoint goal can signal a committed intended bombsite to its teammates without exposing unplanted C4 world coordinates.

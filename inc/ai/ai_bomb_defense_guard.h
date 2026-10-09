@@ -115,6 +115,42 @@ constexpr bool isBetterBombDefenseCover(int candidateExposure, int candidateDama
   return candidateNode < bestNode;
 }
 
+// D186: only commit to graph-reachable, directly visible dropped-C4 cover.
+// Low exposure and historical damage are estimates, not enemy observations.
+constexpr float kDroppedBombGuardMinDistanceSq = 128.0f * 128.0f;
+constexpr float kDroppedBombGuardMaxDistanceSq = 768.0f * 768.0f;
+constexpr float kDroppedBombGuardSeparationSq = 224.0f * 224.0f;
+constexpr float kDroppedBombGuardMaxRoute = 1200.0f;
+
+constexpr bool isSafeDroppedBombGuardNode(bool graphValid, bool occupied, bool seesBomb,
+                                          bool directLineClear, bool ladder,
+                                          float distanceSq, float routeDistance,
+                                          bool reservedNearby) {
+  return graphValid && !occupied && seesBomb && directLineClear && !ladder
+      && !reservedNearby && distanceSq >= kDroppedBombGuardMinDistanceSq
+      && distanceSq <= kDroppedBombGuardMaxDistanceSq
+      && routeDistance >= 0.0f && routeDistance < kDroppedBombGuardMaxRoute;
+}
+
+constexpr float droppedBombGuardCoverCost(float route, int exposure, int historicDamage,
+                                           bool camp, int connections, int sectors) {
+  return route + static_cast<float>(exposure) * 12.0f
+      + static_cast<float>(historicDamage) * 2.0f
+      + static_cast<float>(bombDefenseConnectionPenalty(connections, false)) * 64.0f
+      + static_cast<float>(bombDefenseDirectionPenalty(sectors, false)) * 80.0f
+      - (camp ? 160.0f : 0.0f);
+}
+
+constexpr bool isBetterDroppedBombGuardCover(float score, int node,
+                                              float bestScore, int bestNode) {
+  return bestNode < 0 || score < bestScore || (score == bestScore && node < bestNode);
+}
+
+constexpr bool isDroppedBombGuardOwnerActive(bool alive, bool stillDropped,
+                                              bool guardTaskActive) {
+  return alive && stillDropped && guardTaskActive;
+}
+
 constexpr float kDefuseSafetyMargin = 2.0f;
 constexpr float kDefuseTimeWithKit = 7.0f;
 constexpr float kDefuseTimeWithoutKit = 12.0f;

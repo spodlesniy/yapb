@@ -275,7 +275,8 @@ def iter_validated_samples(path: str | Path):
             if isinstance(value, dict) and value.get("type") == "navigation_event":
                 _require(metadata["version"] == 3, f"line {line_number}: navigation events require version 3")
                 _require(value.get("event") in {
-                    "task_change", "route_request", "route_observed", "waypoint_changed", "low_displacement"
+                    "task_change", "route_request", "route_observed", "waypoint_changed", "low_displacement",
+                    "dropped_bomb_guard"
                 }, f"line {line_number}: unknown navigation event")
                 _require(_is_number(value.get("game_time")), f"line {line_number}: invalid navigation time")
                 _require(isinstance(value.get("bot_id"), int), f"line {line_number}: invalid navigation bot")

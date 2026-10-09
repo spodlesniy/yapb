@@ -109,6 +109,13 @@ class TrainingDatasetValidatorTests(unittest.TestCase):
         self.assertEqual(validate_dataset(path), 1)
 
 
+    def test_v3_accepts_dropped_bomb_guard_event(self) -> None:
+        event = {"type": "navigation_event", "event": "dropped_bomb_guard",
+                 "reason": "primary_assigned", "game_time": 31.0, "bot_id": 7,
+                 "guard_exposure": 17, "guard_route_distance": 275.0,
+                 "guard_nearest_ally_distance": 240.0}
+        self.assertEqual(validate_dataset(self.write_dataset([METADATA, make_sample(), event])), 1)
+
     def test_v3_accepts_defuse_events_without_counting_them(self) -> None:
         events = [
             {"type": "defuse_event", "event": "defuse_attempt",
