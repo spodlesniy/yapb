@@ -773,6 +773,32 @@ AI_TEST(testD192TrainingCtPlantedBombAblationScope) {
          "pre-plant behavior remains separate");
 }
 
+AI_TEST(testD192_1PhysicalC4InteractionNodeArrival) {
+  constexpr float reachSq = ai::kPlantedBombDefuseReadyDistance
+      * ai::kPlantedBombDefuseReadyDistance;
+  expect(!ai::hasPhysicallyReachedPlantedBombInteractionNode(
+         true, 96.0f * 96.0f, reachSq),
+         "logical target node 96 units away cannot skip physical navigation");
+  expect(ai::hasPhysicallyReachedPlantedBombInteractionNode(
+         true, 60.0f * 60.0f, reachSq),
+         "arriving within the existing ready radius permits the handoff");
+  expect(!ai::hasPhysicallyReachedPlantedBombInteractionNode(
+         true, 60.1f * 60.1f, reachSq),
+         "physical arrival outside the ready radius must continue traversal");
+  expect(!ai::hasPhysicallyReachedPlantedBombInteractionNode(
+         false, 0.0f, reachSq),
+         "physical proximity to an unrelated current node is insufficient");
+  expect(!ai::hasPhysicallyReachedPlantedBombInteractionNode(
+         true, -1.0f, reachSq),
+         "missing geometry cannot establish physical arrival");
+  expect(ai::shouldUseGraphObjectiveApproach(
+         96.0f * 96.0f, reachSq, true, false),
+         "unfinished interaction node must stay in waypoint navigation");
+  expect(!ai::shouldFinishObjectiveApproachDirectly(
+         96.0f * 96.0f, reachSq, true, false),
+         "direct C4 steering cannot begin before physical waypoint arrival");
+}
+
 AI_TEST(testCtBombDefuserElectionAndTakeover) {
   expect(ai::isCtBombDefuserCandidate(true, true, false, false, false, true),
          "reachable localized CT is eligible");

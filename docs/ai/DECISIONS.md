@@ -1950,3 +1950,14 @@ No new team-level owner or experimental objective state machine is introduced at
 The resulting behavior is a native-like AiPB baseline, not a byte-for-byte restoration of upstream YaPB, because other existing objective and interaction changes remain active.
 Do not mark the problem fixed by CI alone: collect a fresh Windows x86 gameplay capture and compare route churn, failure to start BarTime, defuse time and success with the D191 recording.
 D193 is reserved for an explicit persistent single-owner coordinator only after this baseline has been evaluated.
+
+## D192.1 — Physically verify interaction-waypoint arrival before Training CT defuse handoff
+
+The October 10 D192 capture `2026_10_10__18_27_20__ai_training.jsonl` records CT bot 10 in round 13 holding `PickupItem` with current and goal waypoint 629 while still roughly 96 units from the waypoint center.
+It later reports low displacement without a `defuse_attempt` or confirmed BarTime and ultimately abandons pickup for `EscapeFromBomb`.
+The pickup handoff in `Bot::pickupItem_()` relied on `m_currentNodeIndex == bombNode`, although an assigned current waypoint is not proof that the player physically reached its center.
+During the D192 Training CT planted-C4 ablation, require the player to be inside the existing 60-unit waypoint-approach radius before this equality can end graph navigation and authorize a local approach.
+Retain the existing direct-geometry reachability check, final C4 distance requirements, retry behavior and BarTime evidence.
+Keep Legacy, Neural, pre-plant and Terrorist behavior unchanged and avoid adding a new coordination mechanism or distance constant.
+Add pure boundary and regression tests for the observed 96-unit mismatch, exact radius, unrelated node and unavailable geometry.
+This addresses a documented handoff invariant, not proof that every possible blocked route is solved; a user-started Windows x86 build and new gameplay capture must confirm physical arrival and actual defuse.

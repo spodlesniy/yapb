@@ -1807,6 +1807,9 @@ void Bot::pickupItem_ () {
       if (m_team == Team::CT) {
          const float kDefuseInteractionDistance = ai::plantedBombDefuseApproachRadius (m_defuseTighterApproach);
          const float interactionDistanceSq = cr::sqrf (kDefuseInteractionDistance);
+         const bool isolateTrainingCtDefuse = ai::shouldIsolateTrainingCtDefuse (
+            m_aiRuntime.controller ().getMode () == ai::ControlMode::Training,
+            true, true, true);
 
          auto isInteractionNode = [&] (int node) {
             if (!graph.exists (node)) {
@@ -1914,9 +1917,7 @@ void Bot::pickupItem_ () {
 
             if (!hasActiveGoal () && graph.exists (m_currentNodeIndex) && m_currentNodeIndex != bombNode) {
                const float shortest = planner.preciseDistance (m_currentNodeIndex, bombNode);
-               const bool isolate = ai::shouldIsolateTrainingCtDefuse (
-                  m_aiRuntime.controller ().getMode () == ai::ControlMode::Training, true, true, true);
-               const auto routeType = !isolate && ai::shouldTryRiskAwareCtBombRoute (
+               const auto routeType = !isolateTrainingCtDefuse && ai::shouldTryRiskAwareCtBombRoute (
                   true, entindex (), shortest, pev->maxspeed,
                   gameState.getBombTimeLeft (), m_hasDefuser)
                   ? FindPath::Optimal : FindPath::Fast;
@@ -1924,9 +1925,18 @@ void Bot::pickupItem_ () {
             }
          }
 
+         // A graph node may be logically current while its center is still
+         // physically distant. Training CTs must finish waypoint traversal
+         // before handing the last approach to the planted-C4 interaction.
+         const bool interactionNodeReached = m_currentNodeIndex == bombNode
+            && (!isolateTrainingCtDefuse || ai::hasPhysicallyReachedPlantedBombInteractionNode (
+               true, graph.exists (bombNode)
+                  ? pev->origin.distanceSq (graph[bombNode].origin) : -1.0f,
+               cr::sqrf (ai::kPlantedBombDefuseReadyDistance)));
+
          const bool useGraphApproach = ai::shouldUseGraphObjectiveApproach (
             needRoute ? interactionDistanceSq : itemDistanceSq, interactionDistanceSq,
-            graph.exists (bombNode), m_currentNodeIndex == bombNode);
+            graph.exists (bombNode), interactionNodeReached);
 
          if (useGraphApproach) {
             m_aimFlags &= ~AimFlags::Entity;
@@ -1942,7 +1952,7 @@ void Bot::pickupItem_ () {
          // direct approach introduced by D151. Keep that fast path only while the
          // actual bot-to-C4 segment remains physically traversable.
          if (directApproachReachable && ai::shouldFinishObjectiveApproachDirectly (
-            itemDistanceSq, interactionDistanceSq, hasInteractionNode, m_currentNodeIndex == bombNode)) {
+            itemDistanceSq, interactionDistanceSq, hasInteractionNode, interactionNodeReached)) {
 
             m_moveToGoal = true;
             m_checkTerrain = true;
@@ -1955,7 +1965,7 @@ void Bot::pickupItem_ () {
          // known-safe node center instead of steering repeatedly into the obstacle.
          if (ai::shouldFinishObjectiveApproachViaInteractionNode (
             itemDistanceSq, interactionDistanceSq, hasInteractionNode,
-            m_currentNodeIndex == bombNode, directApproachReachable)) {
+            interactionNodeReached, directApproachReachable)) {
 
             m_aimFlags &= ~AimFlags::Entity;
             m_aimFlags |= AimFlags::Nav;

@@ -91,6 +91,14 @@ An interrupted attempt records its actual evidence source rather than claiming a
 Likewise, `round_message` refers to the round message path, whereas `game_state` means the code observed that C4 was no longer marked as planted.
 The Python validator checks evidence compatibility without counting diagnostic records as model-training samples.
 
+## D192.1 — Physical waypoint arrival before Training CT C4 interaction
+
+The waypoint index selected by the planted-C4 pickup route is not itself evidence that the bot reached the corresponding position.
+During the D192 Training CT ablation, the final direct C4 approach starts only after the selected interaction waypoint is physically within the existing 60-unit arrival radius.
+Until then, graph navigation retains ownership of movement even when the logical current node matches the target.
+The pre-existing checks for direct access to C4, 3D interaction distance, unconfirmed USE retries and authoritative BarTime remain in force.
+This limited correction does not affect other control modes and requires in-game confirmation.
+
 ## D192 — Training CT planted-C4 coordination ablation
 
 When a CT in Training mode searches for a planted C4 on a demolition map, its existing YaPB item pickup and defuse tasks now own the interaction.

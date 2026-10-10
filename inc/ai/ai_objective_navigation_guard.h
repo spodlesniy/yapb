@@ -39,6 +39,15 @@ constexpr float plantedBombDefuseApproachRadius(bool tighterRetry) {
   return tighterRetry ? kPlantedBombDefuseRetryDistance : kPlantedBombDefuseReadyDistance;
 }
 
+// A selected waypoint index is not evidence of physical arrival.
+// This guard is used by the Training CT pickup-to-defuse handoff.
+constexpr bool hasPhysicallyReachedPlantedBombInteractionNode(bool atTargetNode,
+                                                               float distanceToNodeSq,
+                                                               float reachDistanceSq) {
+  return atTargetNode && distanceToNodeSq >= 0.0f
+      && reachDistanceSq > 0.0f && distanceToNodeSq <= reachDistanceSq;
+}
+
 constexpr bool canBeginPlantedBombUse(float distanceSq, float maxUseDistance, bool directReachable) {
   return distanceSq >= 0.0f && maxUseDistance > 0.0f
       && distanceSq < maxUseDistance * maxUseDistance && directReachable;
