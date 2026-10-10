@@ -1925,3 +1925,14 @@ Once released, the normal policy and task system decide whether to move, seek co
 No change to `TaskPri`, radio acknowledgments, planted-C4 handling, or training feature contracts.
 Add engine-independent tests for stale, distant, invalid and fresh hearing cases.
 A new gameplay capture must verify the radio command is still obeyed without immobilizing the bot under nearby threat.
+
+## D191 — Match planted-C4 cover geometry to public CT approach lanes
+
+D188 accepted defensive camping if unrelated world obstacles blocked separated radial probes, even when all plausible bombsite entrances remained exposed.
+Use only map topology within two graph links of the planted-C4 waypoint to derive candidate-relative entrance octants, excluding ladder, Terrorist-only and jump connections.
+Do not read hidden enemy location or alter player perception.
+Authorize stationary cover only when the candidate retains an unobstructed line of sight to the C4 area, its radial obstructions pass D188, and at least two thirds of known entrance sectors are physically blocked from the defensive point.
+Unknown or completely uncovered entrances cannot authorize a long Camp; the existing D188 mobile-flank fallback stays available.
+Preserve travel-time constraints, ally spacing, defuse alarm priority and existing semantic task lifecycle.
+Add pure tests for exposed entrance sectors, barriers behind the defender, missing graph evidence and sufficient approach-facing barriers.
+This is a graph-based approximation; game geometry and waypoint completeness must be validated through a new Windows x86 gameplay capture.

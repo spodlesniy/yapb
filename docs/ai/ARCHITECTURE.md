@@ -91,6 +91,14 @@ An interrupted attempt records its actual evidence source rather than claiming a
 Likewise, `round_message` refers to the round message path, whereas `game_state` means the code observed that C4 was no longer marked as planted.
 The Python validator checks evidence compatibility without counting diagnostic records as model-training samples.
 
+## D191 — Bombsite-entrance-aligned physical cover
+
+Stationary planted-C4 defense now requires both direct visual access to the C4 interaction area and obstructions aligned with likely CT approach directions derived from the public waypoint neighborhood around the bomb.
+The implementation samples nearby walkable entry nodes within two graph links, bins their bearings into eight sectors, and requires at least two-thirds of the relevant sectors to be blocked by world geometry.
+This does not locate or predict hidden opponents, and an unknown entrance map cannot justify long camping.
+D188 mobile behavior remains the fallback when cover is not confirmed.
+Gameplay tests must determine whether the topological approximation is sufficiently reliable.
+
 ## D190 — Heard-threat interruption of radio HoldThisPosition
 
 Radio HoldThisPosition still acknowledges the player and starts a temporary Pause.

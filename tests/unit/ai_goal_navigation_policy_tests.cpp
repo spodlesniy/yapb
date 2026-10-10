@@ -1332,6 +1332,25 @@ AI_TEST(testD185PreplantDefensePreservesPlantCombatAndValidWaypoints) {
          "stable preplant site retains waypoint ownership");
 }
 
+AI_TEST(testD191PlantedBombCoverFacesWaypointApproaches) {
+  const unsigned int barriers = (1u << 0) | (1u << 2);
+  expect(!ai::hasPlantedBombApproachCover(barriers, 0u),
+         "missing graph approach evidence cannot justify a stationary defense");
+  expect(!ai::hasPlantedBombApproachCover(barriers, 1u << 4),
+         "walls behind the defender do not provide cover from the approach");
+  expect(ai::hasPlantedBombApproachCover(barriers, (1u << 0) | (1u << 2)),
+         "obstacles facing two known entrances authorize protected defense");
+  expect(ai::hasPlantedBombApproachCover(barriers, (1u << 0) | (1u << 2) | (1u << 4)),
+         "two protected entries among three meet the conservative ratio");
+  expect(!ai::hasPlantedBombApproachCover(barriers,
+         (1u << 0) | (1u << 2) | (1u << 4) | (1u << 6)),
+         "half of potential approaches left exposed is insufficient");
+  expect(!ai::hasPlantedBombApproachCover((1u << 0) | (1u << 1), 1u << 0),
+         "two adjacent barriers do not create convincing corner cover");
+  expect(!ai::hasPlantedBombApproachCover(0u, 1u << 0),
+         "open ground is never stationary cover");
+}
+
 AI_TEST(testD188PlantedBombDefenseRequiresPhysicalCover) {
   expect(!ai::hasPlantedBombWorldCover(0u),
          "unobstructed open position is not a valid defensive camp");

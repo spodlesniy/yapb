@@ -56,7 +56,8 @@ Do not fabricate completion records or historical names for Phases 1–6 without
 - D187.1 adds a bounded in-front low-ceiling collision probe to restore crouching during grounded waypoint movement, without waypoint edits; automatic CI passed for `0e42a90`, while Windows x86 and gameplay checks remain pending.
 - D188 gates stationary planted-C4 defense on static physical cover and otherwise prefers mobile flanks; automatic CI succeeded for `9eb6e67`, while Windows x86 and gameplay evidence remain pending.
 - D189 adds bounded critical-health angular-motion telemetry without modifying aim control; automatic CI and user-triggered Windows x86 succeeded for `9a1187e`, while interpretation of a new gameplay recording remains pending.
-- D190 lets a radio HoldThisPosition Pause yield to recent nearby heard enemies; automatic CI, Windows x86 and gameplay acceptance are pending.
+- D190 lets a radio HoldThisPosition Pause yield to recent nearby heard enemies; automatic CI passed on `c4ee2db`, while Windows x86 and gameplay acceptance remain pending.
+- D191 requires T planted-C4 stationary cover to face publicly reachable CT bombsite approaches, rather than arbitrary nearby walls; automatic CI, Windows x86 and gameplay checks remain pending.
 
 ### Latest verified build evidence
 
@@ -66,6 +67,7 @@ Do not fabricate completion records or historical names for Phases 1–6 without
 - [Automatic D185 CI run 37901917305](https://github.com/spodlesniy/yapb/actions/runs/37901917305) completed successfully for `ebbbdea`; Windows x86 and gameplay verification remain outstanding.
 - [Automatic D186 CI run 37908273267](https://github.com/spodlesniy/yapb/actions/runs/37908273267) completed successfully for `11f55ad`; it does not validate the game DLL.
 - [Automatic D186.1 CI run 37913480296](https://github.com/spodlesniy/yapb/actions/runs/37913480296) failed in the Linux AI unit-test compilation, with crlib pedantic errors caused by unconditional `yapb.h` inclusion.
+- [Automatic D190 CI run 38038036691](https://github.com/spodlesniy/yapb/actions/runs/38038036691) completed successfully for `c4ee2db`; Windows x86 validation remains outstanding.
 - [Automatic D189 CI run 37941858367](https://github.com/spodlesniy/yapb/actions/runs/37941858367) and [user-triggered Windows x86 run 37942744453](https://github.com/spodlesniy/yapb/actions/runs/37942744453) completed successfully for `9a1187e`.
 - [Automatic D188 CI run 37941076137](https://github.com/spodlesniy/yapb/actions/runs/37941076137) completed successfully for `9eb6e67`; Windows x86 and gameplay validation remain outstanding.
 - [Automatic D187.1 CI run 37936854652](https://github.com/spodlesniy/yapb/actions/runs/37936854652) completed successfully for `0e42a90`; Windows x86 was skipped.
@@ -86,6 +88,7 @@ Do not fabricate completion records or historical names for Phases 1–6 without
 - Validate D184 defuser ownership, cover placement, fallback and teammate takeover with a multi-CT capture on multiple maps; confirm no regression in D181 or active BarTime.
 - Validate D185.1: non-carrier T continue active movement after one early staging waypoint and do not indefinitely repeat camp tasks.
 - Validate D185 T pre-plant bombsite coverage and transition to post-plant defense across several maps, including an interrupted planting attempt and visible combat.
+- Validate D191: compare bombsite entrance-aligned protection, C4 visibility and mobile fallback on de_dust2 A/B and other maps; ensure no camping in exposed entrance lanes.
 - Validate D188: T defenders avoid prolonged stationary exposure around planted C4, and still respond to CT defusing and visible combat.
 - Validate D187.1 on de_dust2 B low passage: CT correctly crouch and traverse without standing-stuck loops, while doors, ladders, and jumping remain unchanged.
 - Validate D187: compare CT route overlap across planted and pre-plant site approaches and document unavoidable map bottlenecks; ensure no missed defuse deadline.

@@ -984,9 +984,39 @@ bool YaPBActionExecutionContext::protectObjective() {
   const auto &bombOrigin = gameState.getBombOrigin();
   auto currentTask = m_bot->getCurrentTaskId();
 
-  // Inspect static world geometry near candidate sites; no enemy information.
+  // Infer potential bombsite entrances from the bounded two-hop waypoint
+  // neighborhood around C4. This is public map geometry, not enemy tracking.
+  const int siteNode = graph.getNearest(bombOrigin);
+  const auto approachSectorsAt = [&](int candidate) {
+    if (!graph.exists(candidate) || !graph.exists(siteNode)) return 0u;
+    unsigned int mask = 0;
+    const auto &candidateOrigin = graph[candidate].origin;
+    const auto addApproach = [&](int index) {
+      if (!graph.exists(index) || index == candidate
+          || (graph[index].flags & (NodeFlag::Ladder | NodeFlag::TerroristOnly))) return;
+      const auto &outer = graph[index].origin;
+      const float siteDistanceSq = outer.distanceSq(bombOrigin);
+      if (siteDistanceSq < cr::sqrf(192.0f) || siteDistanceSq > cr::sqrf(1024.0f)) return;
+      const int sector = bombDefenseExitSector(
+        outer.x - candidateOrigin.x, outer.y - candidateOrigin.y);
+      if (sector >= 0) mask |= 1u << sector;
+    };
+    for (const auto &link : graph[siteNode].links) {
+      if (!graph.exists(link.index) || (link.flags & PathFlag::Jump)) continue;
+      addApproach(link.index);
+      for (const auto &outer : graph[link.index].links) {
+        if (!(outer.flags & PathFlag::Jump)) addApproach(outer.index);
+      }
+    }
+    return mask;
+  };
+
+  // D188's nearby obstructions are not sufficient if the CT approach lanes
+  // remain completely open. Check direction alignment before allowing Camp.
   const auto hasPhysicalCover = [&](int index) {
-    if (!graph.exists(index)) return false;
+    if (!graph.exists(index) || !graph.exists(siteNode)) return false;
+    const auto approachSectors = approachSectorsAt(index);
+    if (!approachSectors) return false;
     constexpr float diagonal = 0.70710678f;
     const Vector directions[8] = {
       { 1.0f, 0.0f, 0.0f }, { diagonal, diagonal, 0.0f },
@@ -997,12 +1027,16 @@ bool YaPBActionExecutionContext::protectObjective() {
     const auto eye = graph[index].origin + Vector(0.0f, 0.0f, 36.0f);
     unsigned int blockedSectors = 0;
     TraceResult trace {};
+    // A defender must still be able to observe the C4 interaction area.
+    game.testLine(eye, graph[siteNode].origin + Vector(0.0f, 0.0f, 36.0f),
+                  TraceIgnore::Monsters, m_bot->ent(), &trace);
+    if (trace.fStartSolid || trace.flFraction < 0.95f) return false;
     for (int i = 0; i < kPlantedBombCoverSectorCount; ++i) {
       game.testLine(eye, eye + directions[i] * kPlantedBombCoverProbeDistance,
                     TraceIgnore::Monsters, m_bot->ent(), &trace);
       if (!trace.fStartSolid && trace.flFraction < 0.85f) blockedSectors |= 1u << i;
     }
-    return hasPlantedBombWorldCover(blockedSectors);
+    return hasPlantedBombApproachCover(blockedSectors, approachSectors);
   };
 
   // Legacy combat/cover/blind tasks temporarily preempt movement. Keep the

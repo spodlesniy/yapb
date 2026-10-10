@@ -209,6 +209,23 @@ constexpr bool hasPlantedBombWorldCover(unsigned int blockedSectors) {
   }
   return false;
 }
+// D191: cover must shield likely public waypoint approaches to the site.
+// Barriers on the defender's back do not establish a safe firing position.
+// Require at least two thirds of eligible approach sectors to be protected.
+constexpr bool hasPlantedBombApproachCover(unsigned int blockedSectors,
+                                           unsigned int approachSectors) {
+  if (!hasPlantedBombWorldCover(blockedSectors) || !approachSectors) return false;
+  int blockedApproaches = 0;
+  int approaches = 0;
+  for (int i = 0; i < kPlantedBombCoverSectorCount; ++i) {
+    const auto bit = 1u << i;
+    if (!(approachSectors & bit)) continue;
+    ++approaches;
+    if (blockedSectors & bit) ++blockedApproaches;
+  }
+  return approaches > 0 && blockedApproaches * 3 >= approaches * 2;
+}
+
 constexpr bool mayCampOnPlantedBombDefense(bool physicalCover, bool defuseAlarm, bool nodeReached) {
   return physicalCover && !defuseAlarm && nodeReached;
 }
