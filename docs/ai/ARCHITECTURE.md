@@ -91,6 +91,15 @@ An interrupted attempt records its actual evidence source rather than claiming a
 Likewise, `round_message` refers to the round message path, whereas `game_state` means the code observed that C4 was no longer marked as planted.
 The Python validator checks evidence compatibility without counting diagnostic records as model-training samples.
 
+## D192 — Training CT planted-C4 coordination ablation
+
+When a CT in Training mode searches for a planted C4 on a demolition map, its existing YaPB item pickup and defuse tasks now own the interaction.
+D184 per-bot defuser re-election and forced cover task creation are bypassed; stale D184 cover ownership is cleared.
+Optional planted-C4 kit detours and D187 planted-C4 shared-route/risk-aware detours are also suppressed to keep the comparison against the earlier gameplay recording interpretable.
+Actual movement and interaction still use existing YaPB waypoint navigation, reachability checks, `PickupItem`, `DefuseBomb`, and BarTime-based success evidence.
+Legacy, Neural, pre-plant site search, dropped-C4 guarding and Terrorist objective defense are not changed by this experiment.
+This is a temporary, clearly bounded ablation in preparation for D193 team-level ownership, not a claim that the upstream implementation has been fully restored.
+
 ## D191 — Bombsite-entrance-aligned physical cover
 
 Stationary planted-C4 defense now requires both direct visual access to the C4 interaction area and obstructions aligned with likely CT approach directions derived from the public waypoint neighborhood around the bomb.

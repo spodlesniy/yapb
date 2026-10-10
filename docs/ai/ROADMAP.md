@@ -57,7 +57,8 @@ Do not fabricate completion records or historical names for Phases 1–6 without
 - D188 gates stationary planted-C4 defense on static physical cover and otherwise prefers mobile flanks; automatic CI succeeded for `9eb6e67`, while Windows x86 and gameplay evidence remain pending.
 - D189 adds bounded critical-health angular-motion telemetry without modifying aim control; automatic CI and user-triggered Windows x86 succeeded for `9a1187e`, while interpretation of a new gameplay recording remains pending.
 - D190 lets a radio HoldThisPosition Pause yield to recent nearby heard enemies; automatic CI passed on `c4ee2db`, while Windows x86 and gameplay acceptance remain pending.
-- D191 requires T planted-C4 stationary cover to face publicly reachable CT bombsite approaches, rather than arbitrary nearby walls; automatic CI, Windows x86 and gameplay checks remain pending.
+- D191 requires T planted-C4 stationary cover to face publicly reachable CT bombsite approaches, rather than arbitrary nearby walls; automatic CI and user-triggered Windows x86 passed on `7dae248`, but in-game acceptance remains open.
+- D192 temporarily isolates Training CT planted-C4 handling from D184 reassignment/forced cover, D177 kit detours and D187 planted-site path diversification, to establish a native-like defuse baseline; automatic CI, manual Windows x86 and A/B gameplay verification are pending.
 
 ### Latest verified build evidence
 
@@ -67,6 +68,7 @@ Do not fabricate completion records or historical names for Phases 1–6 without
 - [Automatic D185 CI run 37901917305](https://github.com/spodlesniy/yapb/actions/runs/37901917305) completed successfully for `ebbbdea`; Windows x86 and gameplay verification remain outstanding.
 - [Automatic D186 CI run 37908273267](https://github.com/spodlesniy/yapb/actions/runs/37908273267) completed successfully for `11f55ad`; it does not validate the game DLL.
 - [Automatic D186.1 CI run 37913480296](https://github.com/spodlesniy/yapb/actions/runs/37913480296) failed in the Linux AI unit-test compilation, with crlib pedantic errors caused by unconditional `yapb.h` inclusion.
+- [Automatic D191 CI run 38038430548](https://github.com/spodlesniy/yapb/actions/runs/38038430548) and [user-triggered Windows x86 run 38038804164](https://github.com/spodlesniy/yapb/actions/runs/38038804164) completed successfully for `7dae248`; the subsequent gameplay capture still showed defuse-related task churn.
 - [Automatic D190 CI run 38038036691](https://github.com/spodlesniy/yapb/actions/runs/38038036691) completed successfully for `c4ee2db`; Windows x86 validation remains outstanding.
 - [Automatic D189 CI run 37941858367](https://github.com/spodlesniy/yapb/actions/runs/37941858367) and [user-triggered Windows x86 run 37942744453](https://github.com/spodlesniy/yapb/actions/runs/37942744453) completed successfully for `9a1187e`.
 - [Automatic D188 CI run 37941076137](https://github.com/spodlesniy/yapb/actions/runs/37941076137) completed successfully for `9eb6e67`; Windows x86 and gameplay validation remain outstanding.
@@ -81,6 +83,15 @@ Do not fabricate completion records or historical names for Phases 1–6 without
 - [User-triggered Windows x86 run 37876398620](https://github.com/spodlesniy/yapb/actions/runs/37876398620) completed successfully for the same SHA.
 - This does **not** establish a successful full multi-platform release build or comprehensive in-game acceptance.
 - Prior gameplay captures exposed coordination, C4-defense, flash-turn, and aim-jitter cases which still require review.
+
+### Defuse stabilization priority after D192
+
+- Replay planted-C4 CT scenarios on `de_dust2` with several CTs and compare D191 vs D192 using the same bot count and mode; collect navigation, task-change, defuse-attempt, BarTime and outcome records.
+- Verify that Training CTs do not receive D184 cover assignments or repeated D187 planted-C4 detours, while Legacy/Neural and unrelated objectives remain unchanged.
+- Analyze time from C4 localization to BarTime, task switches, looping, and success/failure; a successful CI and one lucky defuse are not sufficient evidence.
+- If the ablation removes the churn, implement D193 as a single persistent team-level defuser owner with explicit coverage/transfer rules rather than restoring independent per-bot elections.
+- If the ablation does not resolve the churn, inspect the base `PickupItem`/waypoint handoff and other task producers before adding D193.
+- Keep repeated `NeedBackup` and last-T exploration as separate tasks so the defuse baseline is interpretable.
 
 ### Open work and investigation queue
 

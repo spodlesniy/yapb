@@ -1936,3 +1936,17 @@ Unknown or completely uncovered entrances cannot authorize a long Camp; the exis
 Preserve travel-time constraints, ally spacing, defuse alarm priority and existing semantic task lifecycle.
 Add pure tests for exposed entrance sectors, barriers behind the defender, missing graph evidence and sufficient approach-facing barriers.
 This is a graph-based approximation; game geometry and waypoint completeness must be validated through a new Windows x86 gameplay capture.
+
+## D192 — Isolate Training CT defuse from competing coordination mechanisms
+
+The October 10 gameplay recording `2026_10_10__16_27_07__ai_training.jsonl` showed repeated CT move/camp reassignments around planted C4 and observed spinning without reliable defuse initiation in one round.
+Earlier D184 independently re-elected a defuser inside each CT's item scan and immediately enqueued cover MoveToPosition/Camp tasks for other CTs.
+D177 kit detours and D187 congestion-aware route selection were additional changing decisions while closing on planted C4.
+For a controlled Training-mode ablation, temporarily bypass the D184 per-bot defuser election and forced cover tasks, the optional planted-C4 kit detour decision, and D187 planted-C4 route congestion/risk-aware detours.
+Use the existing native planted-C4 pickup arbitration, shortest `FindPath::Fast` approach, `PickupItem`, `DefuseBomb`, and authoritative BarTime confirmation, retaining reachability/interaction safety checks.
+The guard is strictly scoped to Training-mode CTs on demolition maps while the bomb is planted; other modes, T defense, pre-plant CT search and dropped-C4 defense remain unchanged.
+When entering the isolated state with an old D184 cover ownership, release its reserved node and queued cover task.
+No new team-level owner or experimental objective state machine is introduced at this step.
+The resulting behavior is a native-like AiPB baseline, not a byte-for-byte restoration of upstream YaPB, because other existing objective and interaction changes remain active.
+Do not mark the problem fixed by CI alone: collect a fresh Windows x86 gameplay capture and compare route churn, failure to start BarTime, defuse time and success with the D191 recording.
+D193 is reserved for an explicit persistent single-owner coordinator only after this baseline has been evaluated.

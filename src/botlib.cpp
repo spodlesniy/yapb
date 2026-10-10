@@ -428,8 +428,26 @@ void Bot::updatePickups () {
       }
    }
 
+   const bool isolateTrainingCtDefuse = ai::shouldIsolateTrainingCtDefuse (
+      m_aiRuntime.controller ().getMode () == ai::ControlMode::Training,
+      m_team == Team::CT, game.mapIs (MapFlags::Demolition), gameState.isBombPlanted ());
+
+   // D192: clean up old D184 cover ownership when entering the ablation.
+   if (isolateTrainingCtDefuse && m_aiCtBombDefuserId > 0) {
+      if (getCurrentTaskId () == Task::MoveToPosition
+         && getTask ()->data == m_aiCtBombCoverNode) {
+         clearTask (Task::MoveToPosition);
+      }
+      if (getCurrentTaskId () == Task::Camp) {
+         clearTask (Task::Camp);
+      }
+      m_aiCtBombDefuserId = -1;
+      m_aiCtBombCoverNode = kInvalidNodeIndex;
+      m_defendedBomb = false;
+   }
+
    // A covered defuser may die, abort, or complete the objective.
-   if (m_aiCtBombDefuserId > 0) {
+   if (!isolateTrainingCtDefuse && m_aiCtBombDefuserId > 0) {
       bool ownerAlive = false;
       for (const auto &other : bots) {
          if (other && other->entindex () == m_aiCtBombDefuserId && other->m_isAlive
@@ -457,7 +475,7 @@ void Bot::updatePickups () {
    // Decide planted-C4 kit detours before iterating entities. Otherwise the
    // first visible kit/bomb in the entity list wins regardless of time budget.
    edict_t *preferredDefuseKit = nullptr;
-   const bool compareDefuseRoutes = m_team == Team::CT
+   const bool compareDefuseRoutes = !isolateTrainingCtDefuse && m_team == Team::CT
       && game.mapIs (MapFlags::Demolition) && gameState.isBombPlanted ()
       && !cv_ignore_objectives;
    if (compareDefuseRoutes) {
@@ -860,6 +878,11 @@ void Bot::updatePickups () {
                if (rg.chance (70)) {
                   pushChatterMessage (Chatter::FoundC4Plant);
                }
+               if (isolateTrainingCtDefuse) {
+                  // Native pickup claims the bomb; confirmed USE blocks a new claim.
+                  allowPickup = !isBombDefusing (origin) || m_hasProgressBar;
+               }
+               else {
                // Elect from bots that can legitimately hear or see C4.
                // Progress/active USE keeps ownership, otherwise prefer a reachable kit carrier.
                int defuserId = -1;
@@ -915,6 +938,8 @@ void Bot::updatePickups () {
                         selectCampButtons (index);
                      }
                   }
+               }
+
                }
 
                // A blocked direct segment does not make planted C4 unreachable:

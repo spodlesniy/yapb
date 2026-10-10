@@ -94,6 +94,12 @@ constexpr bool shouldTryRiskAwareCtBombRoute(bool bombLocalized, int botId,
           shortestDistance, shortestDistance, maxSpeed, bombTimeLeft, hasKit);
 }
 
+// TODO(D193): replace this temporary Training ablation with a single persistent
+// CT defuser owner managed at team scope, not independent bot pickup scans.
+constexpr bool shouldIsolateTrainingCtDefuse(bool training, bool ct, bool demolition, bool planted) {
+  return training && ct && demolition && planted;
+}
+
 // D184: elect a single CT with a credible route to localized C4.
 // Actual BarTime/DefuseBomb ownership outranks every travel-time estimate.
 constexpr float kCtBombDefuseIncumbentBias = 1.0f;

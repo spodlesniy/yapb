@@ -380,7 +380,9 @@ void Bot::normal_ () {
       if (game.mapIs (MapFlags::Demolition) && gameState.isBombPlanted () && m_team == Team::CT) {
          const float shortest = graph.exists (m_currentNodeIndex) && graph.exists (destIndex)
             ? planner.preciseDistance (m_currentNodeIndex, destIndex) : kInfiniteDistanceLong;
-         pathSearchType = ai::shouldTryRiskAwareCtBombRoute (
+         const bool isolate = ai::shouldIsolateTrainingCtDefuse (
+            m_aiRuntime.controller ().getMode () == ai::ControlMode::Training, true, true, true);
+         pathSearchType = !isolate && ai::shouldTryRiskAwareCtBombRoute (
             m_bombSearchOverridden, entindex (), shortest,
             pev->maxspeed, gameState.getBombTimeLeft (), m_hasDefuser)
             ? FindPath::Optimal : FindPath::Fast;
@@ -1912,7 +1914,9 @@ void Bot::pickupItem_ () {
 
             if (!hasActiveGoal () && graph.exists (m_currentNodeIndex) && m_currentNodeIndex != bombNode) {
                const float shortest = planner.preciseDistance (m_currentNodeIndex, bombNode);
-               const auto routeType = ai::shouldTryRiskAwareCtBombRoute (
+               const bool isolate = ai::shouldIsolateTrainingCtDefuse (
+                  m_aiRuntime.controller ().getMode () == ai::ControlMode::Training, true, true, true);
+               const auto routeType = !isolate && ai::shouldTryRiskAwareCtBombRoute (
                   true, entindex (), shortest, pev->maxspeed,
                   gameState.getBombTimeLeft (), m_hasDefuser)
                   ? FindPath::Optimal : FindPath::Fast;

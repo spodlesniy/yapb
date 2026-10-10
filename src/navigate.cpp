@@ -3896,7 +3896,10 @@ void Bot::findPath (int srcIndex, int destIndex, FindPath pathType /*= FindPath:
 
    const bool siteGoal = graph.exists (destIndex)
       && !!(graph[destIndex].flags & NodeFlag::Goal);
-   if (ai::shouldDiversifyCtSiteApproach (
+   if (!ai::shouldIsolateTrainingCtDefuse (
+         m_aiRuntime.controller ().getMode () == ai::ControlMode::Training,
+         m_team == Team::CT, game.mapIs (MapFlags::Demolition), gameState.isBombPlanted ())
+      && ai::shouldDiversifyCtSiteApproach (
       m_team == Team::CT, game.mapIs (MapFlags::Demolition), gameState.isBombPlanted (),
       siteGoal, pathType == FindPath::Fast || pathType == FindPath::Optimal,
       getCurrentTaskId () == Task::DefuseBomb || m_hasProgressBar,

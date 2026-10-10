@@ -760,6 +760,19 @@ AI_TEST(testD187_1LowCeilingUsesPhysicalDuckClearance) {
          "ladder logic retains movement authority");
 }
 
+AI_TEST(testD192TrainingCtPlantedBombAblationScope) {
+  expect(ai::shouldIsolateTrainingCtDefuse(true, true, true, true),
+         "Training CT planted-C4 behavior bypasses experimental election");
+  expect(!ai::shouldIsolateTrainingCtDefuse(false, true, true, true),
+         "Legacy and Neural do not enter Training ablation");
+  expect(!ai::shouldIsolateTrainingCtDefuse(true, false, true, true),
+         "T defense remains separate");
+  expect(!ai::shouldIsolateTrainingCtDefuse(true, true, false, true),
+         "non-demolition mode remains separate");
+  expect(!ai::shouldIsolateTrainingCtDefuse(true, true, true, false),
+         "pre-plant behavior remains separate");
+}
+
 AI_TEST(testCtBombDefuserElectionAndTakeover) {
   expect(ai::isCtBombDefuserCandidate(true, true, false, false, false, true),
          "reachable localized CT is eligible");
