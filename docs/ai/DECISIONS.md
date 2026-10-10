@@ -1913,3 +1913,15 @@ Only report windows with meaningful angular motion and cap the number of records
 Keep the existing per-frame angle update, navigation, flash-blind protection, target selection, teacher and training transitions unchanged.
 Extend the JSONL v3 writer and validator and add focused C++ and Python tests.
 This is instrumentation, not an aim correction: a fresh game capture is required to identify whether apparent spinning arises from movement, target selection or angle control.
+
+## D190 — Let radio HoldThisPosition yield to an imminent heard threat
+
+The October 10 gameplay capture `2026_10_10__15_17_14__ai_training.jsonl` contains one CT `Task::Pause` episode at round 13, bot 4, game time 867.31–875.77; this aligns with the user's HoldThisPosition/RogerThat account, although the dataset does not record the radio command itself.
+The existing radio handler acknowledges HoldThisPosition by starting a 30–60-second Pause task.
+During that task, `pause_()` stops movement and adds navigation aiming even if a nearby enemy has recently been heard.
+Allow a Pause to complete when live perception retains a fresh (at most 3-second-old) enemy-hearing flag and a remembered audible position within 768 units.
+Do not read hidden enemy positions, use stale audio, manufacture a target or alter ordinary navigation/combat control.
+Once released, the normal policy and task system decide whether to move, seek cover or attack.
+No change to `TaskPri`, radio acknowledgments, planted-C4 handling, or training feature contracts.
+Add engine-independent tests for stale, distant, invalid and fresh hearing cases.
+A new gameplay capture must verify the radio command is still obeyed without immobilizing the bot under nearby threat.

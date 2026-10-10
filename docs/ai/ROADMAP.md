@@ -55,7 +55,8 @@ Do not fabricate completion records or historical names for Phases 1–6 without
 - D187 extends CT bombsite corridor-diversity routing to Fast and pre-plant goal approaches; automatic CI and user-triggered Windows x86 succeeded for `fc51eed`, but gameplay verification remains open.
 - D187.1 adds a bounded in-front low-ceiling collision probe to restore crouching during grounded waypoint movement, without waypoint edits; automatic CI passed for `0e42a90`, while Windows x86 and gameplay checks remain pending.
 - D188 gates stationary planted-C4 defense on static physical cover and otherwise prefers mobile flanks; automatic CI succeeded for `9eb6e67`, while Windows x86 and gameplay evidence remain pending.
-- D189 adds bounded critical-health angular-motion telemetry without modifying aim control; automatic CI, Windows x86 and gameplay evidence remain pending.
+- D189 adds bounded critical-health angular-motion telemetry without modifying aim control; automatic CI and user-triggered Windows x86 succeeded for `9a1187e`, while interpretation of a new gameplay recording remains pending.
+- D190 lets a radio HoldThisPosition Pause yield to recent nearby heard enemies; automatic CI, Windows x86 and gameplay acceptance are pending.
 
 ### Latest verified build evidence
 
@@ -65,6 +66,7 @@ Do not fabricate completion records or historical names for Phases 1–6 without
 - [Automatic D185 CI run 37901917305](https://github.com/spodlesniy/yapb/actions/runs/37901917305) completed successfully for `ebbbdea`; Windows x86 and gameplay verification remain outstanding.
 - [Automatic D186 CI run 37908273267](https://github.com/spodlesniy/yapb/actions/runs/37908273267) completed successfully for `11f55ad`; it does not validate the game DLL.
 - [Automatic D186.1 CI run 37913480296](https://github.com/spodlesniy/yapb/actions/runs/37913480296) failed in the Linux AI unit-test compilation, with crlib pedantic errors caused by unconditional `yapb.h` inclusion.
+- [Automatic D189 CI run 37941858367](https://github.com/spodlesniy/yapb/actions/runs/37941858367) and [user-triggered Windows x86 run 37942744453](https://github.com/spodlesniy/yapb/actions/runs/37942744453) completed successfully for `9a1187e`.
 - [Automatic D188 CI run 37941076137](https://github.com/spodlesniy/yapb/actions/runs/37941076137) completed successfully for `9eb6e67`; Windows x86 and gameplay validation remain outstanding.
 - [Automatic D187.1 CI run 37936854652](https://github.com/spodlesniy/yapb/actions/runs/37936854652) completed successfully for `0e42a90`; Windows x86 was skipped.
 - [Automatic D187 CI run 37928141173](https://github.com/spodlesniy/yapb/actions/runs/37928141173) passed for `fc51eed`.
@@ -89,7 +91,8 @@ Do not fabricate completion records or historical names for Phases 1–6 without
 - Validate D187: compare CT route overlap across planted and pre-plant site approaches and document unavoidable map bottlenecks; ensure no missed defuse deadline.
 - Validate D186.3: CT guarding dropped C4 stay mobile and no longer crouch indefinitely in exposed areas.
 - Validate D186 dropped-C4 primary/support cover selection, safety fallback, owner cleanup, and objective navigation events using gameplay captures across multiple maps.
-- Collect D189 low-health `aim_motion_sample` records and correlate yaw reversals, velocity, task changes, navigation and visible targets before changing aim algorithms; repeat on multiple maps.
+- Analyze D189 `aim_motion_sample` records; the October 10 CT defuse episodes do not have low-health samples for the defuser and still need targeted movement/aim context.
+- Validate D190: an acknowledged HoldThisPosition radio command continues to hold safely without ignoring a recent nearby audible enemy; ensure expired or distant sounds do not cancel it.
 - Reconcile stale model feature-schema descriptions in `ARCHITECTURE.md` with the actual feature contract and training README (currently schema v7, 252 features).
 - Triage new failures from gameplay and CI before expanding the queue; D183–D186 are not an arbitrary deadline to close the phase.
 

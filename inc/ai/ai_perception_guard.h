@@ -48,6 +48,19 @@ constexpr bool shouldKeepCurrentVisibleEnemy(bool currentVisible,
   return candidateDistanceSq >= currentDistanceSq * kVisibleEnemySwitchDistanceRatioSq;
 }
 
+// A radio hold does not disable reacting to a nearby, recently heard enemy.
+// The heard position is perception memory, not an unseen live entity query.
+constexpr float kRadioHoldThreatFreshness = 3.0f;
+constexpr float kRadioHoldThreatDistanceSq = 768.0f * 768.0f;
+
+constexpr bool shouldReleaseRadioHoldForHeardThreat(
+    bool hearingEnemy, float now, float heardAt, float heardDistanceSq) {
+  return hearingEnemy && heardAt > 0.0f && now >= heardAt
+      && now - heardAt <= kRadioHoldThreatFreshness
+      && heardDistanceSq >= 0.0f
+      && heardDistanceSq <= kRadioHoldThreatDistanceSq;
+}
+
 constexpr float kEnemyHearingExpiration = 10.0f;
 
 // Expire sensory evidence regardless of the scan cadence. A sound heard on

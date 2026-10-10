@@ -656,6 +656,16 @@ void Bot::attackEnemy_ () {
 }
 
 void Bot::pause_ () {
+   // A radio HoldThisPosition order yields when a close threat is heard.
+   // Restore normal tactical control rather than tracking the old nav angle.
+   const float heardDistanceSq = m_lastEnemyOrigin.empty ()
+      ? -1.0f : pev->origin.distanceSq (m_lastEnemyOrigin);
+   if (ai::shouldReleaseRadioHoldForHeardThreat (
+      !!(m_states & Sense::HearingEnemy), game.time (), m_heardSoundTime, heardDistanceSq)) {
+      completeTask ();
+      return;
+   }
+
    m_moveToGoal = false;
    m_checkTerrain = false;
 

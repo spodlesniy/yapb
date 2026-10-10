@@ -1159,6 +1159,27 @@ AI_TEST(testPlantedBombPickupAllowsReachableGraphApproach) {
 }
 
 
+AI_TEST(testD190RadioHoldYieldsToFreshCloseHeardThreat) {
+  expect(ai::shouldReleaseRadioHoldForHeardThreat(
+         true, 20.0f, 19.0f, 400.0f * 400.0f),
+         "fresh nearby sound releases hold for normal tactical control");
+  expect(!ai::shouldReleaseRadioHoldForHeardThreat(
+         false, 20.0f, 19.0f, 400.0f * 400.0f),
+         "unconfirmed hearing cannot cancel a radio command");
+  expect(!ai::shouldReleaseRadioHoldForHeardThreat(
+         true, 20.0f, 16.0f, 400.0f * 400.0f),
+         "stale sound cannot interrupt holding");
+  expect(!ai::shouldReleaseRadioHoldForHeardThreat(
+         true, 20.0f, 19.0f, 1100.0f * 1100.0f),
+         "distant sounds leave HoldThisPosition intact");
+  expect(!ai::shouldReleaseRadioHoldForHeardThreat(
+         true, 20.0f, 19.0f, -1.0f),
+         "missing sound origin never becomes a threat position");
+  expect(!ai::shouldReleaseRadioHoldForHeardThreat(
+         true, 20.0f, 21.0f, 400.0f * 400.0f),
+         "future timestamp cannot fake recent hearing");
+}
+
 AI_TEST(testHearingExpiryDoesNotDependOnScanThrottle) {
   expect(!ai::hasExpiredEnemyHearing(20.0f, 15.0f),
          "recent heard contact remains valid");

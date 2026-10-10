@@ -91,6 +91,13 @@ An interrupted attempt records its actual evidence source rather than claiming a
 Likewise, `round_message` refers to the round message path, whereas `game_state` means the code observed that C4 was no longer marked as planted.
 The Python validator checks evidence compatibility without counting diagnostic records as model-training samples.
 
+## D190 — Heard-threat interruption of radio HoldThisPosition
+
+Radio HoldThisPosition still acknowledges the player and starts a temporary Pause.
+If a living bot subsequently hears a nearby enemy with fresh positional evidence, Pause ends immediately and the ordinary tactical policy takes control.
+The guard uses existing perceived sound state, never hidden enemy position, and leaves distant or expired sounds alone.
+A gameplay replay is required to validate both obedience and the threat response.
+
 ## D189 — Critical-health angular-motion diagnostics
 
 A bounded independent `AimMotionSampler` collects actual view yaw/pitch changes for living Training bots with 1–10 HP.
