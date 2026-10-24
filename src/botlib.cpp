@@ -15,6 +15,7 @@
 #include <ai/ai_navigation_task_guard.h>
 #include <ai/ai_objective_navigation_guard.h>
 #include <ai/ai_perception_guard.h>
+#include <ai/ai_radio_guard.h>
 
 ConVar cv_debug ("debug", "0", "Enables or disables useful messages about bot states. Not required for end users.", true, 0.0f, 4.0f);
 ConVar cv_ai_mode ("ai_mode", "0", "Selects AiPB control mode. 0 = Legacy, 1 = Neural, 2 = Training.", true, 0.0f, 2.0f);
@@ -1310,6 +1311,11 @@ void Bot::pushRadioMessage (int message) {
    // this function inserts the radio message into the message queue
 
    if (cv_radio_mode.as <int> () == 0 || m_numFriendsLeft == 0 || m_isCreature) {
+      return;
+   }
+   // DefuseBomb can run this call every frame. Repeated requests must not
+   // accumulate in the radio queue after the objective is completed.
+   if (message == Radio::NeedBackup && !m_needBackupRadioGate.allow (game.time ())) {
       return;
    }
    m_forceRadio = !game.is (GameFlags::HasBotVoice)

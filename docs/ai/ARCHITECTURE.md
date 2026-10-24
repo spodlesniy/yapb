@@ -91,6 +91,13 @@ An interrupted attempt records its actual evidence source rather than claiming a
 Likewise, `round_message` refers to the round message path, whereas `game_state` means the code observed that C4 was no longer marked as planted.
 The Python validator checks evidence compatibility without counting diagnostic records as model-training samples.
 
+## D192.4 — Bounded NeedBackup radio enqueue
+
+The existing `pushRadioMessage()` dispatch now rate-limits only `Radio::NeedBackup` at the enqueue boundary to one request per bot per 15 seconds.
+The limiter resets each round, allows the first request immediately and does not change other radio commands or chatter.
+It avoids generating a large backlog from the per-frame defuse task; an already pending radio command may still be sent by the standard radio queue later.
+There is no change to `DefuseBomb` or BarTime authority, team semiclip, task ownership, model actions or JSONL.
+
 ## D192.3 — Ready CT claimant handoff and semiclip-aware terminal navigation
 
 During Training CT planted-C4 pickup, a teammate with a confirmed physically reachable USE position may take over an entity reserved by an unfinished, still-approaching CT.

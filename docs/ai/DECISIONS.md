@@ -1987,3 +1987,16 @@ Extend the final traversal-node occupancy check to single-node paths such as `[7
 Preserve original occupancy avoidance with semiclip disabled, and preserve Legacy, Neural, pre-plant and Terrorist behavior except for the shared single-node physical-navigation check.
 Keep JSONL and model contracts unchanged; add C++ regression coverage for claimant priority, BarTime preservation, single-node traversal, semiclip enabled/disabled, and deliberate boosts.
 Automatic CI, a user-started Windows x86 build and a new multi-CT gameplay capture are required; the earlier one successful defuse is not sufficient acceptance.
+
+## D192.4 — Limit NeedBackup queue spam during and after C4 defuse
+
+In `2026_10_25__01_37_53__ai_training.jsonl`, CT bot 5 recorded low displacement near C4 at game time 157.61 and CT bot 10 started engine-confirmed BarTime at 158.10, completing defuse at 163.11.
+The user observed recurring `Need Backup` including after defuse, but radio transmission identity and cadence are not recorded in JSONL.
+The concrete queue defect is `defuseBomb_()` calling `pushRadioMessage(Radio::NeedBackup)` each update while holding USE, without limiting how often new radio queue entries are appended.
+Enforce one accepted `NeedBackup` enqueue per bot every 15 seconds at the common `pushRadioMessage()` boundary and reset this per-bot limit at the start of each round.
+The first legitimate request stays immediate; rejected repeats do not change queued radio selection or unrelated radio and chatter messages.
+This prevents frame-rate-dependent backlog rather than modifying enemy perception, defuse progression, semiclip, or Training action contracts.
+Add isolated C++ unit tests for first call, same-frame flooding, delayed repeat, separate bots and round reset.
+After CI and a user-started Windows x86 build, listen for absence of continuous requests through and after defuse.
+A single previously enqueued message may still be emitted late by the existing team radio scheduling, but repeated queues can no longer accumulate.
+The remaining CT physical approach stall must be studied with dedicated geometry/route diagnostics rather than another unmeasured radius change.

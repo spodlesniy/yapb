@@ -28,6 +28,7 @@ using namespace cr;
 #include <ai/ai_ct_defuse_path_guard.h>
 #include <ai/ai_defuse_event.h>
 #include <ai/ai_semiclip_navigation_guard.h>
+#include <ai/ai_radio_guard.h>
 
 namespace ai {
 
@@ -272,6 +273,7 @@ private:
    int m_liftState {}; // state of lift handling
    int m_radioSelect {}; // radio entry
    int m_radioPercent {}; // radio usage percent (in response)
+   ai::NeedBackupRadioGate m_needBackupRadioGate {}; // rate-limit repeated backup requests
    int m_killsCount {}; // the kills count of a bot
    int m_rechoiceGoalCount {}; // multiple failed goals?
 

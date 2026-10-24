@@ -1748,6 +1748,7 @@ void Bot::newRound () {
 
    m_radioEntity = nullptr;
    m_radioOrder = 0;
+   m_needBackupRadioGate.reset ();
    m_defendedBomb = false;
    m_defendHostage = false;
    m_headedTime = 0.0f;

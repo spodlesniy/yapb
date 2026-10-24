@@ -19,6 +19,7 @@
 #include <ai/ai_objective_navigation_guard.h>
 #include <ai/ai_perception_guard.h>
 #include <ai/ai_semiclip_navigation_guard.h>
+#include <ai/ai_radio_guard.h>
 
 using ai::test::expect;
 using ai::test::expectNear;
@@ -1876,6 +1877,20 @@ AI_TEST(testD192_3TrainingCtPlantedC4ReadyTeammateTakeover) {
          "the CT with confirmed BarTime is never displaced");
   expect(!ai::shouldYieldTrainingCtBombPickupToDefuser(false, true, false),
          "other control modes retain their original task lifecycle");
+}
+
+AI_TEST(testD192_4NeedBackupQueueCadence) {
+  ai::NeedBackupRadioGate defuser {};
+  ai::NeedBackupRadioGate teammate {};
+  expect(defuser.allow(158.0f), "first emergency is not delayed");
+  expect(!defuser.allow(158.01f), "same-frame repeated defuse requests are rejected");
+  expect(!defuser.allow(163.0f), "radio queue cannot be flooded through a five-second defuse");
+  expect(!defuser.allow(172.99f), "still suppressed before cooldown expires");
+  expect(defuser.allow(173.0f), "renewed emergency can be sent later");
+  expect(teammate.allow(158.1f), "other bots retain independent radio budgets");
+  defuser.reset();
+  expect(defuser.allow(175.0f), "first emergency is allowed in a new round");
+  expect(!defuser.allow(175.1f), "new-round reset preserves repeated-request protection");
 }
 
 AI_TEST(testSemiclipDoesNotMaskRealNodeOccupancyAmongSeveralTeammates) {
