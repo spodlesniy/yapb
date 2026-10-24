@@ -1088,6 +1088,40 @@ void Bot::updatePickups () {
    if (!game.isNullEntity (pickupItem)) {
       for (const auto &other : bots) {
          if (other.get () != this && other->m_isAlive && other->m_pickupItem == pickupItem) {
+            // A teammate near enough for a real USE may take over from a CT
+            // holding the entity while still physically approaching. This is
+            // independent of teammate body collision / semiclip settings.
+            const bool plantedCtPickup = isolateTrainingCtDefuse
+               && m_pickupType == Pickup::PlantedC4
+               && other->m_team == Team::CT
+               && other->m_pickupType == Pickup::PlantedC4;
+            bool transfer = false;
+            if (plantedCtPickup && other->pev) {
+               const bool contenderReady = ai::canBeginPlantedBombUse (
+                  pev->origin.distanceSq (pickupPos), ai::kPlantedBombDefuseReadyDistance,
+                  graph.isNodeReacheable (pev->origin, pickupPos));
+               const bool ownerReady = other->getCurrentTaskId () == Task::PickupItem
+                  && ai::canBeginPlantedBombUse (
+                     other->pev->origin.distanceSq (pickupPos),
+                     ai::plantedBombDefuseApproachRadius (other->m_defuseTighterApproach),
+                     graph.isNodeReacheable (other->pev->origin, pickupPos));
+               transfer = ai::shouldTransferTrainingCtBombPickup (
+                  true, contenderReady,
+                  other->m_hasProgressBar || other->getCurrentTaskId () == Task::DefuseBomb,
+                  ownerReady);
+            }
+            if (transfer) {
+               // Same game thread: hand off the entity claim and end only the
+               // displaced CT's unfinished pickup task.
+               other->m_pickupItem = nullptr;
+               other->m_pickupType = Pickup::None;
+               other->m_states &= ~Sense::PickupItem;
+               if (other->getCurrentTaskId () == Task::PickupItem) {
+                  other->clearSearchNodes ();
+                  other->completeTask ();
+               }
+               continue;
+            }
             m_pickupItem = nullptr;
             m_pickupType = Pickup::None;
 

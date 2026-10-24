@@ -100,6 +100,21 @@ constexpr bool shouldIsolateTrainingCtDefuse(bool training, bool ct, bool demoli
   return training && ct && demolition && planted;
 }
 
+// A C4 pickup reservation is not a defuse in progress. A teammate already
+// able to USE the bomb can supersede an owner still approaching its waypoint.
+// Do not interrupt an owner at USE/BarTime or another physically ready owner.
+constexpr bool shouldTransferTrainingCtBombPickup(bool isolatedTrainingCt,
+    bool contenderUseReady, bool ownerDefusing, bool ownerUseReady) {
+  return isolatedTrainingCt && contenderUseReady && !ownerDefusing && !ownerUseReady;
+}
+
+// Confirmed BarTime, not another bot's provisional PickupItem, makes a CT
+// stop pursuing C4 so that ordinary combat/cover behavior can resume.
+constexpr bool shouldYieldTrainingCtBombPickupToDefuser(bool isolatedTrainingCt,
+    bool teammateBarTime, bool ownBarTime) {
+  return isolatedTrainingCt && teammateBarTime && !ownBarTime;
+}
+
 // D184: elect a single CT with a credible route to localized C4.
 // Actual BarTime/DefuseBomb ownership outranks every travel-time estimate.
 constexpr float kCtBombDefuseIncumbentBias = 1.0f;

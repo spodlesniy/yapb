@@ -1839,6 +1839,45 @@ AI_TEST(testSemiclipNavigationAllowsSharedTraversalButPreservesTacticalPositions
          "deliberate teammate boost keeps collision-aware node treatment");
 }
 
+AI_TEST(testD192_3SemiclipNeverBlocksFinalTraversalWaypoint) {
+  using Purpose = ai::NodeOccupancyPurpose;
+  expect(ai::isTerminalTraversalOccupancyCandidate(true, false, 70, 70, 70),
+         "a one-node C4 route must recognize an occupied final node");
+  expect(ai::isTerminalTraversalOccupancyCandidate(true, true, 70, 70, 70),
+         "the last link of a multi-node C4 route remains covered");
+  expect(!ai::isTerminalTraversalOccupancyCandidate(true, false, 70, 70, 71),
+         "a non-goal single-node anchor does not trigger terminal blocking");
+  expect(!ai::isTerminalTraversalOccupancyCandidate(false, false, -1, -1, 70),
+         "empty paths cannot participate in teammate occupancy checks");
+  expect(ai::shouldIgnoreTeammateOccupancy(true, Purpose::Traversal, false),
+         "yb_has_team_semiclip 1 bypasses the check even at an occupied final node");
+  expect(!ai::shouldIgnoreTeammateOccupancy(false, Purpose::Traversal, false),
+         "without semiclip a physically occupied last node is still considered");
+  expect(!ai::shouldIgnoreTeammateOccupancy(true, Purpose::Traversal, true),
+         "DoubleJump deliberate teammate boost remains collision-aware");
+}
+
+AI_TEST(testD192_3TrainingCtPlantedC4ReadyTeammateTakeover) {
+  expect(ai::shouldTransferTrainingCtBombPickup(true, true, false, false),
+         "a USE-ready CT can replace a still-approaching pickup owner");
+  expect(!ai::shouldTransferTrainingCtBombPickup(true, false, false, false),
+         "merely reaching the same waypoint does not authorize takeover");
+  expect(!ai::shouldTransferTrainingCtBombPickup(true, true, true, false),
+         "an actual DefuseBomb owner or BarTime cannot be preempted");
+  expect(!ai::shouldTransferTrainingCtBombPickup(true, true, false, true),
+         "a physically ready owner retains the pickup claim");
+  expect(!ai::shouldTransferTrainingCtBombPickup(false, true, false, false),
+         "Legacy and Neural pickup arbitration is unchanged");
+  expect(ai::shouldYieldTrainingCtBombPickupToDefuser(true, true, false),
+         "a waiting CT releases pickup ownership once a teammate has BarTime");
+  expect(!ai::shouldYieldTrainingCtBombPickupToDefuser(true, false, false),
+         "a provisional PickupItem claim is not BarTime");
+  expect(!ai::shouldYieldTrainingCtBombPickupToDefuser(true, true, true),
+         "the CT with confirmed BarTime is never displaced");
+  expect(!ai::shouldYieldTrainingCtBombPickupToDefuser(false, true, false),
+         "other control modes retain their original task lifecycle");
+}
+
 AI_TEST(testSemiclipDoesNotMaskRealNodeOccupancyAmongSeveralTeammates) {
   expect(ai::hasTeammateWaypointReservation(42, 42, 13),
          "teammate at the current waypoint reserves its tactical position");

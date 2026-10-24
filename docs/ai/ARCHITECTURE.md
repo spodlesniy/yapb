@@ -91,6 +91,15 @@ An interrupted attempt records its actual evidence source rather than claiming a
 Likewise, `round_message` refers to the round message path, whereas `game_state` means the code observed that C4 was no longer marked as planted.
 The Python validator checks evidence compatibility without counting diagnostic records as model-training samples.
 
+## D192.3 — Ready CT claimant handoff and semiclip-aware terminal navigation
+
+During Training CT planted-C4 pickup, a teammate with a confirmed physically reachable USE position may take over an entity reserved by an unfinished, still-approaching CT.
+Actual `DefuseBomb`/BarTime and a physically ready incumbent cannot be preempted; a displaced claimant drops only the obsolete pickup navigation.
+Once a teammate's BarTime is confirmed, nondefusers release stale C4 pickup tasks without reintroducing D184's speculative forced cover/camp assignments.
+Final-waypoint teammate occupancy detection covers a one-node route as well as the final link of longer routes, and uses the existing `Traversal` classification.
+With `yb_has_team_semiclip 1`, waypoint occupation by an ally cannot block ordinary intermediate or terminal movement; deliberate teammate boosting and deliberate tactical position separation retain their own constraints.
+The candidate must still pass actual bot-to-C4 geometry before requesting USE; confirmed BarTime remains the authority for a successful defuse start.
+
 ## D192.2 — Direct finish after a physically reached C4 fallback waypoint
 
 When no usable waypoint lies inside the planted C4 interaction sphere, Training CT pickup navigation may use the nearest existing waypoint as a fallback.

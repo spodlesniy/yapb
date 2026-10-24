@@ -1714,6 +1714,31 @@ void Bot::pickupItem_ () {
    // find the distance to the item
    const float itemDistanceSq = dest.distanceSq (pev->origin);
 
+   if (m_team == Team::CT && m_pickupType == Pickup::PlantedC4) {
+      const bool isolatedTrainingCt = ai::shouldIsolateTrainingCtDefuse (
+         m_aiRuntime.controller ().getMode () == ai::ControlMode::Training,
+         true, game.mapIs (MapFlags::Demolition), gameState.isBombPlanted ());
+      bool teammateBarTime = false;
+      if (isolatedTrainingCt) {
+         for (const auto &other : bots) {
+            if (other.get () != this && other->m_isAlive && other->m_team == Team::CT
+               && other->m_hasProgressBar && other->getCurrentTaskId () == Task::DefuseBomb) {
+               teammateBarTime = true;
+               break;
+            }
+         }
+      }
+      if (ai::shouldYieldTrainingCtBombPickupToDefuser (
+            isolatedTrainingCt, teammateBarTime, m_hasProgressBar)) {
+         m_pickupItem = nullptr;
+         m_pickupType = Pickup::None;
+         m_states &= ~Sense::PickupItem;
+         clearSearchNodes ();
+         completeTask ();
+         return;
+      }
+   }
+
    switch (m_pickupType) {
    case Pickup::DroppedC4:
    case Pickup::None:

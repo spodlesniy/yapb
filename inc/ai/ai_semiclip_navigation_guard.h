@@ -24,6 +24,15 @@ constexpr bool shouldIgnoreTeammateOccupancy(bool teamSemiclipEnabled,
       && !deliberateTeammateBoost;
 }
 
+// Apply the final-node physical occupancy check to a single-node route too.
+// The check's caller must use Traversal occupancy: semiclip bypasses it, while
+// deliberate teammate boosts and tactical reservations keep their semantics.
+constexpr bool isTerminalTraversalOccupancyCandidate(bool routeNotEmpty,
+    bool hasNext, int candidateNode, int lastNode, int taskGoal) {
+  return routeNotEmpty && candidateNode >= 0 && candidateNode == lastNode
+      && (hasNext || taskGoal == lastNode);
+}
+
 // A teammate at the first inspected node must not conceal another teammate
 // occupying the destination farther down the client list.
 constexpr bool hasTeammateWaypointReservation(int node, int currentNode, int previousNode) {

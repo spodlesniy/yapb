@@ -1973,3 +1973,17 @@ Preserve the original requirement for an in-range interaction waypoint when the 
 The capture does not expose the live C4 reachability trace or whether an interaction-safe node was available; this fixes a demonstrable missing handoff, not a proven complete explanation of the captured stall.
 The same capture records CT bots 9 and 5 following a common approach to waypoint 1177, but D192 intentionally disables planted-C4 route diversification; analyze that coordination independently rather than mixing it into the defuse baseline.
 Add focused C++ tests, verify automatic CI and a user-initiated Windows x86 build, and require new in-game evidence before claiming defuse reliability.
+
+## D192.3 — Ready CT pickup handoff without teammate-occupancy obstruction under semiclip
+
+The October 25 capture `2026_10_25__01_01_10__ai_training.jsonl` documents round-13 CT bot 8 repeatedly pursuing planted C4 from waypoint 70 without entering `DefuseBomb`; CT bot 10 was already almost at that waypoint by game time 959.22.
+Bot 8 released `PickupItem` at 966.34; bot 10 then acquired `DefuseBomb`, received authoritative `defuse_start` BarTime at 966.55, and the C4 was defused at 971.56.
+The native item scan still reserves a found entity for any bot with the same `m_pickupItem`, even if its CT pickup is stalled and another teammate could already USE the C4.
+For Training CT on a planted-C4 map only, let an independently localized and physically USE-ready contender take the claim from an unfinished, non-ready `PickupItem` owner; preserve an owner's active `DefuseBomb`, BarTime or physically ready position.
+The transfer only ends the displaced CT's unfinished pickup task and search, without creating a new team coordinator or inventing success before BarTime.
+Once a teammate actually has BarTime, other Training CTs release stale planted-C4 pickup pursuit and resume normal tactical decisions; a separate later step can add confirmed-defuser-aware cover placement without reintroducing D184's premature repeated assignments.
+The existing `yb_has_team_semiclip 1` already bypasses the `Traversal` occupancy check in `isOccupiedNode`, while `Tactical` reservations and deliberate `DoubleJump` remain distinct.
+Extend the final traversal-node occupancy check to single-node paths such as `[70]`, always with purpose `Traversal`; with semiclip enabled, neither an intermediate nor terminal teammate-owned waypoint must block movement.
+Preserve original occupancy avoidance with semiclip disabled, and preserve Legacy, Neural, pre-plant and Terrorist behavior except for the shared single-node physical-navigation check.
+Keep JSONL and model contracts unchanged; add C++ regression coverage for claimant priority, BarTime preservation, single-node traversal, semiclip enabled/disabled, and deliberate boosts.
+Automatic CI, a user-started Windows x86 build and a new multi-CT gameplay capture are required; the earlier one successful defuse is not sufficient acceptance.

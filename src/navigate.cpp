@@ -13,6 +13,7 @@
 #include <ai/ai_ct_defuse_path_guard.h>
 #include <ai/ai_navigation_task_guard.h>
 #include <ai/ai_objective_navigation_guard.h>
+#include <ai/ai_semiclip_navigation_guard.h>
 
 ConVar cv_has_team_semiclip ("has_team_semiclip", "0", "When enabled, bots will not try to avoid teammates on their way. Assumes that some semiclip plugins are in use.");
 ConVar cv_graph_slope_height ("graph_slope_height", "24.0", "Determines the maximum slope height change between the current and next node to consider the current link as a jump link. Only for generated graphs.", true, 12.0f, 48.0f);
@@ -1509,9 +1510,13 @@ bool Bot::updateNavigation () {
    // is sitting there, so the bot is unable to reach the node because of other player on it, and he starts to jumping and so on
    // here we're clearing task memory data (important!), since task executor may restart goal with one from memory, so this process
    // will go in cycle, and forcing bot to re-create new route.
-   if (m_pathWalk.hasNext ()
-      && m_pathWalk.next () == m_pathWalk.last ()
-      && isOccupiedNode (m_pathWalk.next (), pathHasFlags, ai::NodeOccupancyPurpose::Traversal)) {
+   const bool hasNextNode = m_pathWalk.hasNext ();
+   const int finalCandidate = m_pathWalk.empty () ? kInvalidNodeIndex
+      : (hasNextNode ? m_pathWalk.next () : m_pathWalk.first ());
+   if (ai::isTerminalTraversalOccupancyCandidate (
+         !m_pathWalk.empty (), hasNextNode, finalCandidate,
+         m_pathWalk.empty () ? kInvalidNodeIndex : m_pathWalk.last (), getTask ()->data)
+      && isOccupiedNode (finalCandidate, pathHasFlags, ai::NodeOccupancyPurpose::Traversal)) {
 
       getTask ()->data = kInvalidNodeIndex;
 
