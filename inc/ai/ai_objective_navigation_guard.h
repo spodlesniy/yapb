@@ -83,6 +83,16 @@ constexpr bool shouldFinishObjectiveApproachDirectly(float distanceSq, float int
 // If the short final line to the objective is physically blocked, keep using
 // the already selected interaction-safe node as a geometry-aware staging point.
 // Its center lies inside the interaction sphere, so reaching it is sufficient.
+// A physically reached fallback node is not inside the C4 interaction sphere.
+// Resume direct movement only where real bot-to-bomb geometry is traversable.
+// This closes the Training CT pickup handoff when no interaction node exists.
+constexpr bool shouldFinishPlantedBombFallbackDirectApproach(bool trainingCt,
+    float distanceSq, float interactionDistanceSq, bool fallbackNodeExists,
+    bool fallbackNodeReached, bool directReachable) {
+  return trainingCt && distanceSq >= interactionDistanceSq
+      && fallbackNodeExists && fallbackNodeReached && directReachable;
+}
+
 constexpr bool shouldFinishObjectiveApproachViaInteractionNode(float distanceSq, float interactionDistanceSq,
                                                               bool interactionNodeExists, bool interactionNodeReached,
                                                               bool directApproachReachable) {

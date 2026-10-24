@@ -91,6 +91,14 @@ An interrupted attempt records its actual evidence source rather than claiming a
 Likewise, `round_message` refers to the round message path, whereas `game_state` means the code observed that C4 was no longer marked as planted.
 The Python validator checks evidence compatibility without counting diagnostic records as model-training samples.
 
+## D192.2 — Direct finish after a physically reached C4 fallback waypoint
+
+When no usable waypoint lies inside the planted C4 interaction sphere, Training CT pickup navigation may use the nearest existing waypoint as a fallback.
+That fallback is not an interaction-safe location by itself.
+After the bot physically reaches it, the existing direct movement primitive may finish toward C4 only if the engine geometry check confirms a traversable segment and the bomb remains outside use distance.
+If the direct segment is blocked, this new handoff does not bypass the safe interaction-node search or authorize an unconfirmed USE.
+Legacy and Neural branches remain unchanged, and BarTime still provides the only authoritative defuse-start evidence.
+
 ## D192.1 — Physical waypoint arrival before Training CT C4 interaction
 
 The waypoint index selected by the planted-C4 pickup route is not itself evidence that the bot reached the corresponding position.

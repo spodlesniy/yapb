@@ -1959,6 +1959,18 @@ void Bot::pickupItem_ () {
             break;
          }
 
+         // No waypoint may lie inside the C4 interaction sphere. After
+         // physically reaching a fallback waypoint, continue toward C4
+         // directly only when the final segment is traversable.
+         if (ai::shouldFinishPlantedBombFallbackDirectApproach (
+               isolateTrainingCtDefuse, itemDistanceSq, interactionDistanceSq,
+               !hasInteractionNode && graph.exists (bombNode),
+               interactionNodeReached, directApproachReachable)) {
+            m_moveToGoal = true;
+            m_checkTerrain = true;
+            break;
+         }
+
          // A box edge, railing, or other local obstacle can make the C4 origin
          // unreachable even though the graph has already delivered us to a node
          // whose center lies inside defuse range. In that case finish toward the

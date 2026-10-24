@@ -1961,3 +1961,15 @@ Retain the existing direct-geometry reachability check, final C4 distance requir
 Keep Legacy, Neural, pre-plant and Terrorist behavior unchanged and avoid adding a new coordination mechanism or distance constant.
 Add pure boundary and regression tests for the observed 96-unit mismatch, exact radius, unrelated node and unavailable geometry.
 This addresses a documented handoff invariant, not proof that every possible blocked route is solved; a user-started Windows x86 build and new gameplay capture must confirm physical arrival and actual defuse.
+
+## D192.2 — Finish Training CT defuse from a physically reached fallback waypoint
+
+The October 25 D192.1 gameplay capture `2026_10_25__00_02_36__ai_training.jsonl` again records no defuse attempt or BarTime.
+In round 2, CT bot 5 pursued planted C4 under `PickupItem` toward node 177 from game time 162.98, emitted `low_displacement` 55.4 units from that node at 171.78, requested the same route again at 174.98, and escaped when the defuse deadline passed at 177.48.
+The pickup code can choose the closest fallback waypoint when no graph-routable node lies inside the C4 interaction sphere.
+D192.1 correctly checks physical arrival at this fallback, but the existing final direct movement branch still requires an interaction-safe node, so an arrived fallback cannot trigger direct closing movement even when the bot-to-C4 segment is reachable.
+For the isolated Training CT planted-C4 case, permit the already established direct-movement primitive after confirmed physical fallback arrival only when the actual C4 remains outside use range and direct geometry is reachable.
+Preserve the original requirement for an in-range interaction waypoint when the direct segment is blocked, do not relax the authoritative BarTime/USE checks, and do not alter Legacy or Neural handling.
+The capture does not expose the live C4 reachability trace or whether an interaction-safe node was available; this fixes a demonstrable missing handoff, not a proven complete explanation of the captured stall.
+The same capture records CT bots 9 and 5 following a common approach to waypoint 1177, but D192 intentionally disables planted-C4 route diversification; analyze that coordination independently rather than mixing it into the defuse baseline.
+Add focused C++ tests, verify automatic CI and a user-initiated Windows x86 build, and require new in-game evidence before claiming defuse reliability.

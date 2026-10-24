@@ -59,7 +59,8 @@ Do not fabricate completion records or historical names for Phases 1–6 without
 - D190 lets a radio HoldThisPosition Pause yield to recent nearby heard enemies; automatic CI passed on `c4ee2db`, while Windows x86 and gameplay acceptance remain pending.
 - D191 requires T planted-C4 stationary cover to face publicly reachable CT bombsite approaches, rather than arbitrary nearby walls; automatic CI and user-triggered Windows x86 passed on `7dae248`, but in-game acceptance remains open.
 - D192 temporarily isolates Training CT planted-C4 handling from D184 reassignment/forced cover, D177 kit detours and D187 planted-site path diversification; automatic CI and user-triggered Windows x86 succeeded for `119c4bd`, but the October 10 capture still shows a critical pickup/defuse handoff failure.
-- D192.1 requires a physically reached interaction waypoint before the Training CT planted-C4 pickup handoff; automatic CI, user-triggered Windows x86 and gameplay evidence are pending.
+- D192.1 requires a physically reached interaction waypoint before the Training CT planted-C4 pickup handoff; automatic CI and user-triggered Windows x86 succeeded for `de17fae`, but October 25 gameplay still shows a critical stall without a defuse attempt.
+- D192.2 adds a missing Training CT fallback-waypoint-to-direct-C4 movement handoff after real physical arrival and verified direct traversability; automatic CI, user-triggered Windows x86 and gameplay evidence are pending.
 
 ### Latest verified build evidence
 
@@ -71,6 +72,7 @@ Do not fabricate completion records or historical names for Phases 1–6 without
 - [Automatic D186.1 CI run 37913480296](https://github.com/spodlesniy/yapb/actions/runs/37913480296) failed in the Linux AI unit-test compilation, with crlib pedantic errors caused by unconditional `yapb.h` inclusion.
 - [Automatic D191 CI run 38038430548](https://github.com/spodlesniy/yapb/actions/runs/38038430548) and [user-triggered Windows x86 run 38038804164](https://github.com/spodlesniy/yapb/actions/runs/38038804164) completed successfully for `7dae248`; the subsequent gameplay capture still showed defuse-related task churn.
 - [Automatic D192 CI run 38044131707](https://github.com/spodlesniy/yapb/actions/runs/38044131707) and [user-triggered Windows x86 run 38044990996](https://github.com/spodlesniy/yapb/actions/runs/38044990996) completed successfully for `119c4bd`; the post-D192 October 10 capture still shows round-13 CT pickup stall without BarTime.
+- [Automatic D192.1 CI run 38049620148](https://github.com/spodlesniy/yapb/actions/runs/38049620148) and [user-triggered Windows x86 run 38052084500](https://github.com/spodlesniy/yapb/actions/runs/38052084500) completed successfully for `de17fae`; the October 25 capture still lacks a CT defuse attempt.
 - [Automatic D190 CI run 38038036691](https://github.com/spodlesniy/yapb/actions/runs/38038036691) completed successfully for `c4ee2db`; Windows x86 validation remains outstanding.
 - [Automatic D189 CI run 37941858367](https://github.com/spodlesniy/yapb/actions/runs/37941858367) and [user-triggered Windows x86 run 37942744453](https://github.com/spodlesniy/yapb/actions/runs/37942744453) completed successfully for `9a1187e`.
 - [Automatic D188 CI run 37941076137](https://github.com/spodlesniy/yapb/actions/runs/37941076137) completed successfully for `9eb6e67`; Windows x86 and gameplay validation remain outstanding.
@@ -89,9 +91,11 @@ Do not fabricate completion records or historical names for Phases 1–6 without
 ### Defuse stabilization priority after D192
 
 - The post-D192 October 10 capture confirms a round-12 BarTime/defuse success, but round-13 CT bot 10 remains in `PickupItem` with current/goal waypoint 629 roughly 96 units away, then abandons the bomb without a defuse attempt.
-- D192.1 repairs the specific logical-node-versus-physical-arrival handoff invariant; do not infer that this alone fixes blocked geometry or defuse reliability.
-- Run the automatic C++ unit gate, then request a user-started Windows x86 build and a fresh `de_dust2` capture to verify actual waypoint convergence, task transition, IN_USE, BarTime and defuse outcome.
-- Check the round-13 physical stall and any route replanning against the new capture before changing interaction-node choice or low-level collision/navigation.
+- D192.1 ensures physical arrival at the selected interaction or fallback waypoint; the October 25 gameplay still shows a CT stalled at a planted-C4 pickup without initiating USE.
+- D192.2 restores the missing physically reached fallback-to-direct movement handoff only for a geometrically traversable final segment, without changing the C4 interaction radius or defuse evidence.
+- Run automatic C++ tests, then request a user-started Windows x86 build and a fresh `de_dust2` capture that records waypoint convergence, task transition, IN_USE, BarTime and defuse outcome.
+- The October 25 round-2 capture shows CT bots 9 and 5 following overlapping paths to planted-bomb goal 1177. D192 deliberately suppresses shared-route detours while C4 is planted; investigate any route-diversity restoration separately, subject to measured defuse-time constraints.
+- If the next game capture again stalls, inspect live C4-to-bot geometry and interaction-node availability before changing low-level collision, navigation or route scoring.
 - D193 remains deferred until the basic pickup/defuse path is demonstrably reliable; a successful build and one successful defuse do not satisfy this gate.
 - Address repeated `NeedBackup` and T `ProtectObjective` waypoint oscillation as separate focused steps; the current JSONL does not directly capture radio transmissions.
 

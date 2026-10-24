@@ -799,6 +799,28 @@ AI_TEST(testD192_1PhysicalC4InteractionNodeArrival) {
          "direct C4 steering cannot begin before physical waypoint arrival");
 }
 
+AI_TEST(testD192_2FallbackWaypointHandsOffOnlyToReachableC4) {
+  constexpr float readySq = ai::kPlantedBombDefuseReadyDistance
+      * ai::kPlantedBombDefuseReadyDistance;
+  const auto canFinish = [&](bool training, float bombDistanceSq,
+                             bool fallback, bool reached, bool clear) {
+    return ai::shouldFinishPlantedBombFallbackDirectApproach(
+        training, bombDistanceSq, readySq, fallback, reached, clear);
+  };
+  expect(canFinish(true, 96.0f * 96.0f, true, true, true),
+         "physical fallback arrival resumes clear direct travel to C4");
+  expect(!canFinish(true, 96.0f * 96.0f, true, false, true),
+         "logical waypoint ownership without physical arrival is insufficient");
+  expect(!canFinish(true, 96.0f * 96.0f, true, true, false),
+         "blocked final geometry must not be traversed directly");
+  expect(!canFinish(true, 96.0f * 96.0f, false, true, true),
+         "missing fallback waypoint cannot authorize direct travel");
+  expect(!canFinish(true, 59.0f * 59.0f, true, true, true),
+         "already in C4 use radius belongs to the existing USE branch");
+  expect(!canFinish(false, 96.0f * 96.0f, true, true, true),
+         "Legacy and Neural control preserve their original handoff");
+}
+
 AI_TEST(testCtBombDefuserElectionAndTakeover) {
   expect(ai::isCtBombDefuserCandidate(true, true, false, false, false, true),
          "reachable localized CT is eligible");
