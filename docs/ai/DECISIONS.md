@@ -2048,3 +2048,11 @@ During isolated Training CT planted-C4 pickup, emit bounded `defuse_approach_pen
 Record current and selected waypoint, physical distance to the selected waypoint, real C4 distance and time, direct geometric reachability, actual arrival, and whether the chosen waypoint is an interaction waypoint.
 Use a separate five-second diagnostic gate reset each round, without altering path selection, interaction radii, semantics of authoritative BarTime, or training features.
 Gameplay capture on the Windows x86 game DLL is required before attributing a delay to occupancy, graph selection or geometry.
+
+## D192.11 — Preserve displaced Training CT planted-C4 ownership through transient combat sensing
+
+A confirmed modded knockback may clear BarTime while an active Training CT still owns a planted-C4 pickup.
+The native defuse task returns to `PickupItem`, but the next `updatePickups()` scan can erase the pickup solely because `SeeingEnemy` is set, diverting the bot before it can approach again.
+Keep the existing planted-C4 claim across that specific scanner veto for at most two seconds after physical displacement; never generate a new pickup, bypass an active escape, change the original defuse timing or USE confirmation, or change Legacy/Neural behavior.
+The existing normal combat decision path remains in effect; this step only prevents the scanner from dropping the current C4 claim during a short recovery window.
+Verify MSVC x86 compilation and gameplay with the modded knockback before claiming practical improvement.

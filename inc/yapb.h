@@ -811,6 +811,7 @@ public:
    ai::AimMotionSampler m_aiAimMotionSampler {};
    bool m_aiFlashAvoidanceTurned {}; // true only for a frame with actual avoidance yaw
    ai::DefuseAttemptTracker m_aiDefuseTracker {};
+   float m_aiCtDefuseRecoveryUntil {};
    bool m_aiFlashEventActive {};
    ai::BotRuntime m_aiRuntime;
 

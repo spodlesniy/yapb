@@ -1107,6 +1107,7 @@ void Bot::defuseBomb_ () {
       m_defuseTighterApproach = false;
       clearSearchNodes ();
       clearTask (Task::DefuseBomb);
+      m_aiCtDefuseRecoveryUntil = game.time () + ai::kCtDefuseRecoveryPickupGrace;
       if (m_pickupType == Pickup::PlantedC4 && !game.isNullEntity (m_pickupItem)) {
          startTask (Task::PickupItem, TaskPri::PickupItem, kInvalidNodeIndex, 0.0f, true);
       }

@@ -841,6 +841,24 @@ AI_TEST(testD192_6FreshDefuseTimeGatePreservesBarTimeAndModes) {
          "an unavailable countdown does not invent an abort");
 }
 
+AI_TEST(testD192_11DisplacedCtKeepsExistingC4ClaimBriefly) {
+   const float until = 102.0f;
+   expect(ai::shouldPreserveDisplacedCtBombPickup(true, true, true, false, 100.0f, until),
+          "displaced Training CT preserves its existing C4 pickup");
+   expect(ai::shouldPreserveDisplacedCtBombPickup(true, true, true, false, 101.99f, until),
+          "pickup persists inside the bounded recovery period");
+   expect(!ai::shouldPreserveDisplacedCtBombPickup(true, true, true, false, 102.0f, until),
+          "expired grace period restores normal combat pickup veto");
+   expect(!ai::shouldPreserveDisplacedCtBombPickup(true, true, false, false, 101.0f, until),
+          "grace never creates a new C4 claim");
+   expect(!ai::shouldPreserveDisplacedCtBombPickup(true, true, true, true, 101.0f, until),
+          "late escape cannot be cancelled by C4 recovery");
+   expect(!ai::shouldPreserveDisplacedCtBombPickup(false, true, true, false, 101.0f, until),
+          "legacy and other modes are unchanged");
+   expect(!ai::shouldPreserveDisplacedCtBombPickup(true, false, true, false, 101.0f, until),
+          "grace does not persist after bomb removal");
+}
+
 AI_TEST(testD192_6EscapeActionSurvivesOwnedMoveToPosition) {
   auto observation = makeObservation();
   ai::GoalNavigationPolicy policy {};

@@ -370,6 +370,17 @@ void Bot::updatePickups () {
 
       // seeing enemy now, not good time to pickup anything
       else if (m_states & Sense::SeeingEnemy) {
+         const bool trainingCt = m_aiRuntime.controller ().getMode () == ai::ControlMode::Training
+            && m_team == Team::CT && game.mapIs (MapFlags::Demolition);
+         if (ai::shouldPreserveDisplacedCtBombPickup (trainingCt, gameState.isBombPlanted (),
+               m_pickupType == Pickup::PlantedC4 && !game.isNullEntity (m_pickupItem),
+               getCurrentTaskId () == Task::EscapeFromBomb
+                  || (getAIActionState ().isActive ()
+                     && getAIActionState ().action ().type == ai::ActionType::EscapeFromBomb),
+               game.time (), m_aiCtDefuseRecoveryUntil)) {
+            // Keep existing C4 ownership while combat is sensed; defer the scan.
+            return false;
+         }
          return true;
       }
 

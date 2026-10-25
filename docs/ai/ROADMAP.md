@@ -69,6 +69,7 @@ Do not fabricate completion records or historical names for Phases 1–6 without
 - D192.8 adds event-only diagnostics for CT defuse task vetoes and T bomb-timer escape decisions, including timer, enemy-sensing context and proximity; no tactical behavior changes. Automatic CI and user-triggered Windows x86 gameplay validation remain pending.
 - D192.9 corrects the T-team enum in the D192.8 native gameplay diagnostic (`Team::Terrorist` rather than non-existent `Team::T`); D192.8 Linux unit CI passed but local MSVC DLL compilation failed with C2838/C2065. Windows x86 compilation of the correction remains unverified.
 - D192.10 adds rate-limited, event-only Training CT planted-C4 approach snapshots at graph-to-direct handoffs, recording selected/current waypoint, physical waypoint separation, direct reachability and C4 time. It does not change movement or defuse behavior; CI, Windows x86 and gameplay acceptance remain pending.
+- D192.11 keeps an already-owned planted-C4 pickup for at most two seconds after a confirmed physical defuse displacement when enemy sensing would otherwise clear the pickup scan. The exception is Training CT-only, cannot create a new C4 claim or override bomb escape, and does not force USE; CI and gameplay validation pending.
 
 ### Latest verified build evidence
 

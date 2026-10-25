@@ -123,6 +123,15 @@ constexpr bool shouldTransferTrainingCtBombPickup(bool isolatedTrainingCt,
 
 // Confirmed BarTime, not another bot's provisional PickupItem, makes a CT
 // stop pursuing C4 so that ordinary combat/cover behavior can resume.
+// A confirmed displaced defuser may keep its current C4 pickup across a
+// brief combat-sensing scanner veto; no new pickup or USE is authorized.
+constexpr float kCtDefuseRecoveryPickupGrace = 2.0f;
+constexpr bool shouldPreserveDisplacedCtBombPickup(bool trainingCt, bool bombPlanted,
+    bool hasPlantedC4Pickup, bool escapeActive, float now, float recoveryUntil) {
+  return trainingCt && bombPlanted && hasPlantedC4Pickup && !escapeActive
+      && recoveryUntil > now && now >= recoveryUntil - kCtDefuseRecoveryPickupGrace;
+}
+
 constexpr bool shouldYieldTrainingCtBombPickupToDefuser(bool isolatedTrainingCt,
     bool teammateBarTime, bool ownBarTime) {
   return isolatedTrainingCt && teammateBarTime && !ownBarTime;
