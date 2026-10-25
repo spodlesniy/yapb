@@ -40,7 +40,8 @@ Independent AI is a separate research track forked from `ai/phase-07-training` a
 Its goal is independently specified decision logic and self-generated gameplay experience rather than imitation of the YaPB-based teacher.
 D200 establishes the [independent architecture](INDEPENDENT_AI.md) and [waypoint/practice source audit](INDEPENDENT_AI_WAYPOINT_AUDIT.md), without implemented behavior, model training or game testing.
 D201 adds read-only topology diagnostics to the existing graph statistics command and unit tests for components, invalid links, and directional objective reachability.
-D202 establishes the standalone `projects/aipb-map/` C++20/CMake foundation with independent tests and CI; map/navigation models and BSP import remain unimplemented.
+D202 establishes the standalone `projects/aipb-map/` C++20/CMake foundation with independent tests and CI.
+D203 introduces independent MapModel/NavigationModel, structural checks and deterministic JSONL serialization with content SHA-256; BSP import, graph generation, and YaPB export remain pending.
 This is instrumentation, not evidence that arbitrary maps have been measured or physically traversed; Windows x86/in-game acceptance is pending.
 Proposed progression: graph evaluation/generator; versioned map knowledge; bot profiles; match context and perception; independent policy; reproducible rewards/learning; opt-in inference and in-game comparisons.
 This parallel track does not change any existing Phase 7 exit criterion.

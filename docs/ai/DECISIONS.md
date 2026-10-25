@@ -2142,3 +2142,12 @@ Do not import or link crlib, linkage, YaPB/GoldSrc runtime headers, ONNX Runtime
 Keep the YaPB root CMake and Meson builds unchanged and exclude Map Tool-only pushes from the legacy automatic workflow.
 Scope legacy fixed-array rules to legacy code and permit project-local STL conventions without weakening the repository-wide atomic commit and upstream protection rules.
 D202 establishes build infrastructure only; it does not implement BSP import, the MapModel/NavigationModel, navigation generation, or a YaPB graph exporter.
+
+## D203 — Standalone map and navigation models and artifact serialization
+
+Define STL-only MapModel and NavigationModel value types without YaPB/crlib/GoldSrc dependencies.
+Separate visual geometry, collision shapes and entities from regions, nodes, directed edges and traversal properties.
+Enforce structural invariants at the core boundary and store validation outcomes or runtime experience only in future external analysis layers.
+Use explicit schema v0.1.0 JSON manifest plus JSONL streams, canonical ordering and SHA-256 fingerprints, preserving 64-bit object IDs as decimal strings.
+Bind navigation to a concrete map artifact digest, verify stream checksums, reject overwrites and unsupported schemas and provide independent CMake/CTest coverage.
+No BSP parser, gameplay physics checker, waypoint exporter or server runtime integration is introduced.
