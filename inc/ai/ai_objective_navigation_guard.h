@@ -74,6 +74,13 @@ constexpr bool shouldReapproachUnconfirmedDefuse(float elapsedSeconds, bool hasP
   return elapsedSeconds >= kPlantedBombDefuseReapproachSeconds && !hasProgressBar;
 }
 
+// D192.13: prefer direct C4 movement when the physical segment is clear.
+// This only selects movement; actual USE still requires canBeginPlantedBombUse.
+constexpr bool shouldApproachPlantedBombDirectly(bool isolatedTrainingCt,
+    float distanceSq, float interactionDistanceSq, bool directReachable) {
+  return isolatedTrainingCt && directReachable && distanceSq >= interactionDistanceSq;
+}
+
 // Keep graph navigation active until an objective can be interacted with directly.
 // Reaching the objective's target node falls back to the final direct approach.
 constexpr bool shouldUseGraphObjectiveApproach(float distanceSq, float interactionDistanceSq,

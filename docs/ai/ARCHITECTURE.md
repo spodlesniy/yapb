@@ -549,3 +549,8 @@ The feature vector also includes normalized task_time_remaining, which lets the 
 Isolated Training CT `PickupItem` emits bounded `defuse_approach_pending` events for graph and direct closing movement.
 These diagnostic-only events carry selected/current waypoints, waypoint separation and physical handoff state, alongside observed bomb timing and distance.
 They never imply `IN_USE`, BarTime or success and do not modify the training observation/action contract.
+
+## D192.13 — Prefer clear final C4 segment in Training
+
+For an isolated Training CT pursuing planted C4, an unobstructed direct segment outside the interaction radius takes precedence over the interaction-waypoint graph branch.
+This changes movement choice only: it does not turn a clear trace into an IN_USE attempt and does not skip `canBeginPlantedBombUse`, blocked-geometry fallback, BarTime confirmation or late-escape logic.

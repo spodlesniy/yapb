@@ -1894,6 +1894,25 @@ void Bot::pickupItem_ () {
          const bool directApproachReachable = graph.isNodeReacheable (pev->origin, dest);
          const bool needRoute = ai::needsPlantedBombInteractionRoute (
             itemDistanceSq, interactionDistanceSq, directApproachReachable);
+         // When the C4 segment is physically traversable, avoid an unnecessary
+         // interaction-waypoint visit. Keep native direct steering and wait
+         // until the conservative USE radius is physically reached.
+         if (ai::shouldApproachPlantedBombDirectly (
+               isolateTrainingCtDefuse, itemDistanceSq, interactionDistanceSq,
+               directApproachReachable)) {
+            if (m_aiDefuseApproachDiagnostics.allowHandoff (game.time ())) {
+               recordDefuseEvent (ai::DefuseEventType::ApproachDelayed,
+                  ai::DefuseEventReason::DirectApproachPending,
+                  ai::DefuseEvidence::ObservedDistance, getTask ()->data, -1.0f,
+                  true, false, false);
+            }
+            m_aimFlags &= ~AimFlags::Nav;
+            m_aimFlags |= AimFlags::Entity;
+            m_moveToGoal = true;
+            m_checkTerrain = true;
+            break;
+         }
+
          int bombNode = getTask ()->data;
          bool hasInteractionNode = isInteractionNode (bombNode);
 

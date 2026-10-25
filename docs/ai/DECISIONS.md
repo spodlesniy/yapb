@@ -2066,3 +2066,12 @@ Preserve both master histories and instead pin the upstream commit hash for immu
 The upstream commit is an external commit and must not be assumed to be an existing object in the fork, so a fork-side reference branch is not created without first importing its object history.
 The source audit and proposed D192.13 regression conditions are recorded in `docs/ai/D192_12_UPSTREAM_AUDIT.md`.
 This step changes documentation only and makes no gameplay code or tests changes.
+
+## D192.13 — Direct C4 steering ahead of unnecessary waypoint traversal
+
+Comparison against synchronized upstream master `4606ada` showed that AiPB isolated Training CT pickup could prioritize `updateNavigation()` toward an interaction waypoint even when the live CT-to-C4 segment was directly traversable.
+The capture on October 25 shows prolonged proximity near an unfinished waypoint while `direct_reachable=true`.
+Prefer direct entity steering before interaction-waypoint route selection only in isolated Training CT pickup while the C4 is outside the interaction radius and the actual direct segment is reachable.
+Retain graph fallback for obstructed segments; the existing `canBeginPlantedBombUse` guard remains the sole pickup-to-defuse handoff, with BarTime still authoritative.
+Add unit tests for clear/blocked segments, scope isolation and the independent USE-radius/obstacle conditions.
+This does not change teammate ownership, deadlines or other modes.

@@ -71,6 +71,7 @@ Do not fabricate completion records or historical names for Phases 1–6 without
 - D192.10 adds rate-limited, event-only Training CT planted-C4 approach snapshots at graph-to-direct handoffs, recording selected/current waypoint, physical waypoint separation, direct reachability and C4 time. It does not change movement or defuse behavior; CI, Windows x86 and gameplay acceptance remain pending.
 - D192.11 keeps an already-owned planted-C4 pickup for at most two seconds after a confirmed physical defuse displacement when enemy sensing would otherwise clear the pickup scan. The exception is Training CT-only, cannot create a new C4 claim or override bomb escape, and does not force USE; CI and gameplay validation pending.
 - D192.12 pins read-only upstream `yapb/yapb` master at `4606ada` and audits planted-C4 pickup/navigation against AiPB; the fork master diverges, so master history is not rewritten. Findings and D192.13 hypotheses are in [D192_12_UPSTREAM_AUDIT.md](D192_12_UPSTREAM_AUDIT.md).
+- D192.13 restores direct planted-C4 steering when an isolated Training CT has an unobstructed physical segment but has not reached an interaction waypoint; blocked C4 remains routed and USE still requires a clear 60/42-unit interaction. CI and Windows x86 gameplay validation pending.
 
 ### Latest verified build evidence
 

@@ -841,6 +841,25 @@ AI_TEST(testD192_6FreshDefuseTimeGatePreservesBarTimeAndModes) {
          "an unavailable countdown does not invent an abort");
 }
 
+AI_TEST(testD192_13ClearC4SegmentBypassesInteractionWaypoint) {
+  constexpr float rangeSq = ai::kPlantedBombDefuseReadyDistance
+      * ai::kPlantedBombDefuseReadyDistance;
+  expect(ai::shouldApproachPlantedBombDirectly(true, 97.0f * 97.0f, rangeSq, true),
+         "clear C4 path bypasses an unfinished interaction waypoint");
+  expect(!ai::shouldApproachPlantedBombDirectly(true, 97.0f * 97.0f, rangeSq, false),
+         "obstructed C4 still requires graph navigation");
+  expect(!ai::shouldApproachPlantedBombDirectly(false, 97.0f * 97.0f, rangeSq, true),
+         "Legacy and Neural waypoint behavior remains unchanged");
+  expect(!ai::shouldApproachPlantedBombDirectly(true, 50.0f * 50.0f, rangeSq, true),
+         "within USE radius use existing confirmation gate");
+  expect(!ai::canBeginPlantedBombUse(97.0f * 97.0f, ai::kPlantedBombDefuseReadyDistance, true),
+         "direct movement alone cannot authorize distant USE");
+  expect(!ai::canBeginPlantedBombUse(30.0f * 30.0f, ai::kPlantedBombDefuseReadyDistance, false),
+         "close C4 behind a wall cannot authorize USE");
+  expect(ai::canBeginPlantedBombUse(50.0f * 50.0f, ai::kPlantedBombDefuseReadyDistance, true),
+         "clear C4 within interaction radius can enter defuse task");
+}
+
 AI_TEST(testD192_11DisplacedCtKeepsExistingC4ClaimBriefly) {
    const float until = 102.0f;
    expect(ai::shouldPreserveDisplacedCtBombPickup(true, true, true, false, 100.0f, until),
