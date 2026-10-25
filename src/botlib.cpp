@@ -3828,7 +3828,13 @@ void Bot::checkSpawnConditions () {
          startTask (Task::Spraypaint, TaskPri::Spraypaint, kInvalidNodeIndex, game.time () + 1.0f, false);
       }
 
+      const bool keepCtFirearm = ai::shouldBlockTrainingCtPostBuyKnife (
+         m_aiRuntime.controller ().getMode () == ai::ControlMode::Training,
+         m_team == Team::CT, game.mapIs (MapFlags::Demolition),
+         gameState.isBombPlanted (), m_numEnemiesLeft > 0,
+         !cv_ignore_objectives, isKnifeMode ());
       if (m_difficulty >= Difficulty::Normal
+         && !keepCtFirearm
          && rg.chance (m_personality == Personality::Rusher ? 99 : 50)
          && !m_isReloading
          && game.mapIs (MapFlags::HostageRescue | MapFlags::Demolition | MapFlags::Escape | MapFlags::Assassination)) {

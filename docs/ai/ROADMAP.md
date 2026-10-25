@@ -224,3 +224,5 @@ Research options are not guaranteed feature commitments.
 - Before moving to the next phase, confirm every current exit gate and review the proposed later phases with the user.
 - Keep engineering decisions in [DECISIONS.md](DECISIONS.md) in ascending **numeric** D-ID order without renumbering or rewriting their historical content.
 - Keep the [development workflow](DEVELOPMENT.md) and [agent instructions](../../AGENTS.md) in sync with these rules.
+
+- D192.17 closes the independent post-buy knife-switch path for Training CTs approaching planted C4 while enemies are alive; the existing jump-navigation firearm guard remains. This is a narrow combat-safety correction, not proof that every observed knife switch has this origin. CI and Windows x86 gameplay validation pending.

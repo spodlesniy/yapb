@@ -160,6 +160,15 @@ constexpr bool blocksBombCarrierSidePickups(bool hasC4, bool objectivesEnabled) 
   return hasC4 && objectivesEnabled;
 }
 
+// D192.17: post-buy knife switching must not undo planted-C4 combat readiness.
+// Keep legitimate knife-only modes and non-Training behavior untouched.
+constexpr bool shouldBlockTrainingCtPostBuyKnife(bool training, bool ct,
+    bool demolition, bool planted, bool enemiesAlive, bool objectivesEnabled,
+    bool knifeMode) {
+  return training && ct && demolition && planted && enemiesAlive
+      && objectivesEnabled && !knifeMode;
+}
+
 // Keep a firearm ready while a Counter-Terrorist is traversing toward a
 // planted bomb with living enemies still in the round. The usual jump-speed
 // knife optimization is safe again after the threat is gone or objectives are

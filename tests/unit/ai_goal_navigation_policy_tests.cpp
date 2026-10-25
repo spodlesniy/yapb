@@ -1161,6 +1161,30 @@ AI_TEST(testBombCarrierBlocksSidePickupsWhileObjectiveIsEnabled) {
          "ignored objectives do not impose bomb-carrier pickup ownership");
 }
 
+AI_TEST(testD192_17PostBuyKnifeDoesNotOverrideTrainingCtC4Readiness) {
+  expect(ai::shouldBlockTrainingCtPostBuyKnife(
+      true, true, true, true, true, true, false),
+      "Training CT keeps firearm while planted C4 and enemies remain");
+  expect(!ai::shouldBlockTrainingCtPostBuyKnife(
+      false, true, true, true, true, true, false),
+      "Legacy and Neural keep their existing post-buy switch");
+  expect(!ai::shouldBlockTrainingCtPostBuyKnife(
+      true, false, true, true, true, true, false),
+      "Terrorist post-buy behavior is unchanged");
+  expect(!ai::shouldBlockTrainingCtPostBuyKnife(
+      true, true, true, false, true, true, false),
+      "pre-plant post-buy behavior is unchanged");
+  expect(!ai::shouldBlockTrainingCtPostBuyKnife(
+      true, true, true, true, false, true, false),
+      "no surviving enemies allows the normal speed choice");
+  expect(!ai::shouldBlockTrainingCtPostBuyKnife(
+      true, true, true, true, true, false, false),
+      "ignored objectives do not force a combat override");
+  expect(!ai::shouldBlockTrainingCtPostBuyKnife(
+      true, true, true, true, true, true, true),
+      "knife-only mode remains allowed");
+}
+
 AI_TEST(testPlantedBombApproachPreservesFirearmUnderThreat) {
   expect(ai::preservesFirearmForPlantedBombApproach(true, true, true, true, true),
          "CT keeps a firearm ready while approaching a planted C4 with living enemies");

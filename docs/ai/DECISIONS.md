@@ -2108,3 +2108,12 @@ Include the related CT ID on contention, the active pickup type/entity state, bo
 The events do not change policy decisions, task priorities, navigation, USE, C4 owner election or the supervised sample contract.
 A future capture can attribute subsequent `PickupItem -> Normal` transitions to observed claim-release reasons, while task preemptions without claim loss remain distinguishable.
 Do not infer the cause of the already-recorded oscillations without new evidence.
+
+## D192.17 — Keep post-buy knife selection from defeating Training CT planted-C4 firearm policy
+
+The D192.16-era navigation already guards the jump-link speed knife optimization while a CT pursues planted C4 with living enemies.
+The independent post-buy `checkSpawnConditions()` knife selection had no equivalent protection and could still switch to a knife with the objective active.
+Apply a Training-only prohibition to that post-buy switch when a CT is on a demolition map, the bomb is planted, opponents remain alive and objectives are enabled.
+Leave knife-only modes, all non-Training control modes, pre-plant and no-enemy behavior unchanged.
+Add unit coverage for the guard and its exclusions.
+This addresses a confirmed unguarded path but does not claim to prove which weapon-switch path caused the earlier gameplay observation.
