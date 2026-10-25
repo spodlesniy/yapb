@@ -42,6 +42,7 @@ D200 establishes the [independent architecture](INDEPENDENT_AI.md) and [waypoint
 D201 adds read-only topology diagnostics to the existing graph statistics command and unit tests for components, invalid links, and directional objective reachability.
 D202 establishes the standalone `projects/aipb-map/` C++20/CMake foundation with independent tests and CI.
 D203 introduces independent MapModel/NavigationModel, structural checks and deterministic JSONL serialization with content SHA-256; BSP import, graph generation, and YaPB export remain pending.
+D203.1 excludes changes confined to `projects/**` or the Map Tool workflow from the legacy YaPB push CI, while retaining independent project CI and mixed-change verification.
 This is instrumentation, not evidence that arbitrary maps have been measured or physically traversed; Windows x86/in-game acceptance is pending.
 Proposed progression: graph evaluation/generator; versioned map knowledge; bot profiles; match context and perception; independent policy; reproducible rewards/learning; opt-in inference and in-game comparisons.
 This parallel track does not change any existing Phase 7 exit criterion.

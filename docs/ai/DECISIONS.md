@@ -2151,3 +2151,11 @@ Enforce structural invariants at the core boundary and store validation outcomes
 Use explicit schema v0.1.0 JSON manifest plus JSONL streams, canonical ordering and SHA-256 fingerprints, preserving 64-bit object IDs as decimal strings.
 Bind navigation to a concrete map artifact digest, verify stream checksums, reject overwrites and unsupported schemas and provide independent CMake/CTest coverage.
 No BSP parser, gameplay physics checker, waypoint exporter or server runtime integration is introduced.
+
+## D203.1 — Scope legacy automatic CI away from standalone projects
+
+Exclude `projects/**` and `.github/workflows/aipb-map.yml` from the push-triggered YaPB `build.yml` workflow, rather than filtering out the entire Independent AI branch.
+The existing `**.md` exclusion remains and mixed commits containing unignored legacy project files still trigger YaPB CI.
+The standalone Map Tool workflow retains its own path filter; manual `windows-x86` and `full` triggers remain unchanged.
+The workflow-edit commit itself can still trigger legacy CI because `.github/workflows/build.yml` is not ignored.
+This is a CI-only change; no source, build target, runtime behavior or compatibility contract is altered.

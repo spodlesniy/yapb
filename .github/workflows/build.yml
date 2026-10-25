@@ -8,7 +8,8 @@ on:
       - 'ai/**'
     paths-ignore:
       - '**.md'
-      - 'projects/aipb-map/**'
+      - 'projects/**'
+      - '.github/workflows/aipb-map.yml'
 
   workflow_dispatch:
     inputs:
