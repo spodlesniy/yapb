@@ -841,6 +841,25 @@ AI_TEST(testD192_6FreshDefuseTimeGatePreservesBarTimeAndModes) {
          "an unavailable countdown does not invent an abort");
 }
 
+AI_TEST(testD192_15NativeLikeNearC4RecoveryRequiresSafeUse) {
+  const auto eligible = [](bool ready, float elapsed, bool clear, float distance) {
+    return ai::shouldFallbackToCtBombDefuse(
+      true, true, true, false, false, false, false, ready,
+      elapsed, clear, distance * distance);
+  };
+  expect(eligible(true, 3.1f, true, 45.0f), "stalled ready CT may recover defuse task");
+  expect(!eligible(true, 2.0f, true, 45.0f), "fallback has a bounded dwell delay");
+  expect(!eligible(true, 3.1f, false, 45.0f), "wall still blocks fallback USE");
+  expect(!eligible(true, 3.1f, true, 80.0f), "original 80-unit threshold is insufficient for USE");
+  expect(!eligible(false, 3.1f, true, 45.0f), "insufficient remaining bomb time rejects fallback");
+  expect(!ai::shouldFallbackToCtBombDefuse(
+      true, true, false, false, false, false, false, true, 4.0f, true, 40.0f * 40.0f),
+      "missing pickup entity does not create an unsupported USE attempt");
+  expect(!ai::shouldFallbackToCtBombDefuse(
+      true, true, true, true, false, false, false, true, 4.0f, true, 40.0f * 40.0f),
+      "teammate defusing prevents takeover");
+}
+
 AI_TEST(testD192_14CtDefuseOwnershipExcludesDeadAndSelfAndTracksApproach) {
   constexpr float close = 100.0f * 100.0f;
   constexpr float approaching = 400.0f * 400.0f;

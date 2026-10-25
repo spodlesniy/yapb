@@ -3520,11 +3520,41 @@ void Bot::frame () {
    if (gameState.isBombPlanted () && m_team == Team::CT && m_isAlive) {
       const auto &bombPosition = gameState.getBombOrigin ();
 
+      if (bombPosition.empty () || m_hasProgressBar
+         || getCurrentTaskId () == Task::EscapeFromBomb
+         || isBombDefusing (bombPosition)) {
+         m_aiCtNearBombSince = 0.0f;
+      }
+
       if (!bombPosition.empty ()
          && !m_hasProgressBar
          && getCurrentTaskId () != Task::EscapeFromBomb
          && pev->origin.distanceSq (bombPosition) < cr::sqrf (1540.0f)
          && !isBombDefusing (bombPosition)) {
+
+         // Original YaPB uses a near-C4 timer to recover a stalled pickup.
+         // Restrict this fallback to a physically usable Training CT claim.
+         const float distanceSq = pev->origin.distanceSq (bombPosition);
+         const bool near = distanceSq < cr::sqrf (ai::kCtNearBombFallbackRadius);
+         if (!near) m_aiCtNearBombSince = 0.0f;
+         else if (m_aiCtNearBombSince <= 0.0f) m_aiCtNearBombSince = game.time ();
+         const bool trainingCt = m_aiRuntime.controller ().getMode () == ai::ControlMode::Training;
+         const bool pickupOwned = m_pickupType == Pickup::PlantedC4
+            && !game.isNullEntity (m_pickupItem);
+         if (ai::shouldFallbackToCtBombDefuse (
+               trainingCt, gameState.isBombPlanted (), pickupOwned, false,
+               getCurrentTaskId () == Task::DefuseBomb,
+               getCurrentTaskId () == Task::EscapeFromBomb,
+               (m_states & Sense::SeeingEnemy) != 0,
+               !ai::shouldAbandonLateTrainingCtBombApproach (
+                  trainingCt, m_hasProgressBar, gameState.getBombTimeLeft (), m_hasDefuser),
+               near ? game.time () - m_aiCtNearBombSince : 0.0f,
+               graph.isNodeReacheable (pev->origin, bombPosition), distanceSq)) {
+            m_aiCtNearBombSince = 0.0f;
+            clearSearchNodes ();
+            startTask (Task::DefuseBomb, TaskPri::DefuseBomb,
+               kInvalidNodeIndex, 0.0f, true);
+         }
 
          m_ignoredItems.clear ();
          m_itemCheckTime = game.time ();
@@ -3537,6 +3567,10 @@ void Bot::frame () {
             clearTask (getCurrentTaskId ());
          }
       }
+   }
+
+   if (!gameState.isBombPlanted () || m_team != Team::CT || !m_isAlive) {
+      m_aiCtNearBombSince = 0.0f;
    }
 
    checkSpawnConditions ();

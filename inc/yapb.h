@@ -812,6 +812,7 @@ public:
    bool m_aiFlashAvoidanceTurned {}; // true only for a frame with actual avoidance yaw
    ai::DefuseAttemptTracker m_aiDefuseTracker {};
    float m_aiCtDefuseRecoveryUntil {};
+   float m_aiCtNearBombSince {};
    bool m_aiFlashEventActive {};
    ai::BotRuntime m_aiRuntime;
 

@@ -2084,3 +2084,11 @@ Exclude escape owners and retain human near-C4 IN_USE detection.
 When isolated Training CT scans C4, a different contender already physically ready for USE may challenge an unfinished reservation; a teammate with confirmed BarTime blocks that takeover.
 This is not a permanent single team-level defuser owner, which remains D193 scope.
 No changes to direct C4 steering or BarTime handling are part of this step.
+
+## D192.15 — Guarded near-C4 stalled-pickup fallback
+
+Upstream `SlowFrame` uses a 2–4 second near-C4 dwell timer to recover a stalled pickup by starting DefuseBomb.
+AiPB lacked that fallback after its more elaborate graph/direct pickup handoff was introduced.
+Reintroduce a three-second dwell recovery only for a live Training CT already owning the planted-C4 entity, with no other defusing teammate, no visible enemy, no active escape, adequate bomb time and a physically unobstructed C4 within the existing 60-unit ready radius.
+The original upstream also falls back to a game-state bomb entity when pickup ownership is lost; the fork has no verified equivalent accessor in the audited code, so this step deliberately does not fabricate or dereference an unverified entity.
+The native DefuseBomb task retains IN_USE/BarTime confirmation and safety checks.

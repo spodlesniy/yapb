@@ -73,6 +73,7 @@ Do not fabricate completion records or historical names for Phases 1–6 without
 - D192.12 pins read-only upstream `yapb/yapb` master at `4606ada` and audits planted-C4 pickup/navigation against AiPB; the fork master diverges, so master history is not rewritten. Findings and D192.13 hypotheses are in [D192_12_UPSTREAM_AUDIT.md](D192_12_UPSTREAM_AUDIT.md).
 - D192.13 restores direct planted-C4 steering when an isolated Training CT has an unobstructed physical segment but has not reached an interaction waypoint; blocked C4 remains routed and USE still requires a clear 60/42-unit interaction. CI and Windows x86 gameplay validation pending.
 - D192.14 fixes the inverted alive-bot filter in `isBombDefusing()`, restores recognition of teammates approaching C4, and retains physical-use-ready takeover of an unfinished pickup claim in isolated Training CT mode. CI and Windows x86 gameplay validation pending.
+- D192.15 restores a bounded near-C4 stalled-pickup fallback for Training CT with existing C4 claim, safe geometry and remaining timer, based on upstream `SlowFrame`; this does not bypass the USE radius or manufacture a missing bomb entity. CI and Windows x86 gameplay validation pending.
 
 ### Latest verified build evidence
 

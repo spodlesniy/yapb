@@ -17,6 +17,20 @@ namespace ai {
 // range is shorter than the 80-unit coarse pickup radius previously used.
 // Use a conservative 60-unit 3D limit; after a failed USE, close to 42 units.
 constexpr float kPlantedBombDefuseReadyDistance = 60.0f;
+constexpr float kCtNearBombFallbackRadius = 96.0f;
+constexpr float kCtNearBombFallbackDelay = 3.0f;
+
+// Native-like recovery from a stuck pickup: require actual interaction
+// geometry before handing USE to DefuseBomb, unlike the upstream coarse gate.
+constexpr bool shouldFallbackToCtBombDefuse(bool trainingCt, bool planted,
+    bool pickupOwned, bool teammateDefusing, bool currentDefuse, bool escaping,
+    bool enemyVisible, bool canFinish, float elapsed, bool directReachable,
+    float distanceSq) {
+  return trainingCt && planted && pickupOwned && !teammateDefusing
+      && !currentDefuse && !escaping && !enemyVisible && canFinish
+      && elapsed >= kCtNearBombFallbackDelay && directReachable
+      && distanceSq < kPlantedBombDefuseReadyDistance * kPlantedBombDefuseReadyDistance;
+}
 constexpr float kPlantedBombDefuseRetryDistance = 42.0f;
 constexpr float kPlantedBombDefuseStanceRetrySeconds = 1.25f;
 constexpr float kPlantedBombDefuseReapproachSeconds = 3.0f;
