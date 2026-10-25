@@ -864,8 +864,8 @@ AI_TEST(testD192_6EscapeActionSurvivesOwnedMoveToPosition) {
          "CT with enough time still yields native bombsite search navigation");
   observation.bot.team = 0;
   observation.bombTimeRemaining = 4.0f;
-  expect(policy.decide(observation).type == ai::ActionType::None,
-         "T bomb defense does not inherit CT late escape logic");
+  expect(policy.decide(observation).type == ai::ActionType::ProtectObjective,
+         "T planted-bomb defense retains ProtectObjective instead of CT late escape");
 }
 
 AI_TEST(testCtBombDefuserElectionAndTakeover) {

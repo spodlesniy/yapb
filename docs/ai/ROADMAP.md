@@ -65,6 +65,7 @@ Do not fabricate completion records or historical names for Phases 1–6 without
 - D192.4 throttles repeated `NeedBackup` requests at the queue boundary; automatic CI and user-triggered Windows x86 succeeded for `1f6527e`, while radio gameplay acceptance remains open.
 - D192.5 revalidates 3D C4 range during BarTime and returns displaced Training CTs to `PickupItem`; automatic CI was unavailable because fork workflows were disabled, and local Windows x86 and gameplay validation remain pending.
 - D192.6 prevents Training CTs from repeatedly acquiring C4 when their planned fresh defuse no longer fits the bomb timer; it preserves the AI escape action across executor-owned navigation. Automatic CI is currently unavailable, and local tests and gameplay validation remain pending.
+- D192.7 corrects the D192.6 T planted-bomb policy regression-test expectation from `None` to the existing `ProtectObjective` contract; the D192.6 push CI reached unit tests but failed on that assertion. New CI and gameplay verification remain pending.
 
 ### Latest verified build evidence
 
