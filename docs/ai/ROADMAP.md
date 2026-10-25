@@ -34,6 +34,15 @@ The long-term goal is **measured, safe Neural gameplay**, not merely compiling a
 The names and exit gates for Phases 8–12 are planning proposals to review at the Phase 7 exit.
 Do not fabricate completion records or historical names for Phases 1–6 without source evidence.
 
+## Parallel experimental track — Independent AI (`ai/independent-ai`)
+
+Independent AI is a separate research track forked from `ai/phase-07-training` at `cbb2b3b`; it does not replace Phase 7 stabilization or the proposed Phases 8–12.
+Its goal is independently specified decision logic and self-generated gameplay experience rather than imitation of the YaPB-based teacher.
+D200 establishes the [independent architecture](INDEPENDENT_AI.md) and [waypoint/practice source audit](INDEPENDENT_AI_WAYPOINT_AUDIT.md), without implemented behavior, model training or game testing.
+Proposed progression: graph evaluation/generator; versioned map knowledge; bot profiles; match context and perception; independent policy; reproducible rewards/learning; opt-in inference and in-game comparisons.
+This parallel track does not change any existing Phase 7 exit criterion.
+
+
 ## Phase 7 — Training gameplay stabilization
 
 ### Already implemented

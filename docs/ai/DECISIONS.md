@@ -2117,3 +2117,12 @@ Apply a Training-only prohibition to that post-buy switch when a CT is on a demo
 Leave knife-only modes, all non-Training control modes, pre-plant and no-enemy behavior unchanged.
 Add unit coverage for the guard and its exclusions.
 This addresses a confirmed unguarded path but does not claim to prove which weapon-switch path caused the earlier gameplay observation.
+
+## D200 — Establish independent AI architecture and waypoint research baseline
+
+Create a parallel research track on `ai/independent-ai`, retaining all existing Legacy, Training and Neural behaviors.
+Distinguish graph topology, map experience, transient agent memory, skill/style/mood, match context, authorized perception, independent decisions, execution and learning.
+Do not use original YaPB or `GoalNavigationPolicy` decisions as independent learning targets by default.
+Engine primitives can be reused provisionally only with explicit recognition that some hide tactical choices.
+Audit graph generation, planning and `BotPractice` before choosing navigation replacements; measure source-level risks in later focused steps.
+This is a documentation-only decision and establishes no new executable model contract, CI success, or Phase 7 completion.
