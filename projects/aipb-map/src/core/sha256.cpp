@@ -1,4 +1,4 @@
-#include "sha256.h"
+#include <aipb/map/hash.h>
 
 #include <array>
 #include <cstdint>
@@ -7,7 +7,7 @@
 #include <tuple>
 #include <vector>
 
-namespace aipb::map::io {
+namespace aipb::map {
 namespace {
 constexpr std::array<std::uint32_t, 64> kConstants {
     0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
@@ -69,4 +69,4 @@ std::string sha256Hex(std::string_view data) {
     return out.str();
 }
 
-} // namespace aipb::map::io
+} // namespace aipb::map

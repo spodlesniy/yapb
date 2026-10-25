@@ -1,8 +1,11 @@
 #pragma once
 
-#include <string>
-#include <string_view>
+#include <aipb/map/hash.h>
 
 namespace aipb::map::io {
-std::string sha256Hex(std::string_view data);
+
+inline std::string sha256Hex(std::string_view bytes) {
+    return aipb::map::sha256Hex(bytes);
 }
+
+} // namespace aipb::map::io

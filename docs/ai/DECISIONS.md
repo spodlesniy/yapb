@@ -2159,3 +2159,12 @@ The existing `**.md` exclusion remains and mixed commits containing unignored le
 The standalone Map Tool workflow retains its own path filter; manual `windows-x86` and `full` triggers remain unchanged.
 The workflow-edit commit itself can still trigger legacy CI because `.github/workflows/build.yml` is not ignored.
 This is a CI-only change; no source, build target, runtime behavior or compatibility contract is altered.
+
+## D204 — Import GoldSrc BSP v30 render geometry and entities
+
+Add a standalone `IMapImporter` abstraction and GoldSrc BSP v30 implementation within `projects/aipb-map/`.
+Read BSP header/lump descriptors, validate render geometry ranges and extract model-local world/brush meshes from faces and signed surfedges.
+Import game entities, class names, origin, arbitrary unique key/value properties and links to brush model geometry without depending on engine or YaPB headers.
+Add an opt-in CLI import command producing the existing D203 versioned `.aipbmap` artifact and tests with synthetic BSP fixtures and corrupt source cases.
+Keep collision hulls, texture semantics, runtime geometry physics, model transformations and navigation generation out of scope; geometry coverage on real Counter-Strike BSPs remains unverified.
+Move reusable SHA-256 calculation into map core to avoid importer-to-serializer coupling, leaving the D203 artifact codec interface unchanged.
