@@ -4,6 +4,7 @@ Independent native C++20 tool for offline map import, navigation generation, com
 D203 provides engine-independent `MapModel` and `NavigationModel`, validation and deterministic `.aipbmap`/`.aipbnav` JSONL artifacts with SHA-256 fingerprints.
 D204 adds a separate GoldSrc BSP v30 importer and the `aipb-map import` CLI command.
 D205 adds collision planes, render nodes, clipnodes, leaves and hull references, stored in map artifacts v0.2.0 (v0.1.0 map loading remains supported).
+D206 adds read-only map inspection metrics and optional deterministic JSON reports without altering imported map artifacts.
 Navigation builders, physical traversal validation and YaPB `.graph` export remain future work.
 
 ## Build and test
@@ -43,12 +44,29 @@ Entity strings must be valid UTF-8 for the D203 JSON writer; legacy non-UTF-8 en
 Only GoldSrc BSP version 30 is supported; malformed source files fail with an error rather than producing a partial artifact.
 See [D204 BSP importer notes](../../docs/ai/INDEPENDENT_AI_BSP_IMPORT.md) and [D205 collision format](../../docs/ai/INDEPENDENT_AI_COLLISION.md).
 
+## Inspect a map artifact (D206)
+
+```sh
+./build/debug/aipb-map inspect \
+  --input ./results/de_dust2.aipbmap \
+  --output ./results/de_dust2-inspection.json
+```
+
+`--output` is optional; summary and diagnostic findings are always printed to stdout.
+The JSON report must be outside the `.aipbmap` directory, and existing reports are not overwritten.
+Inspection reads validated `.aipbmap` artifacts (v0.1.0 and v0.2.0), measures render geometry, collision shapes, entities and partition hull reachability and reports informational or warning findings.
+It does not prove physical traversability, map coverage or correct GoldSrc runtime collision.
+Actual de_dust2 import and inspection remain to be verified with a real BSP fixture.
+See [D206 map-inspection specification](../../docs/ai/INDEPENDENT_AI_MAP_INSPECTION.md).
+
 ## Architecture
 
 - `aipb_map_core`: STL-only geometry, map/navigation models, structural validation and shared SHA-256.
 - `aipb_map_io`: JSON/JSONL serialization, artifact manifests and file integrity checks.
 - `aipb_map_bsp`: GoldSrc BSP v30 reader and `IMapImporter` implementation.
-- `aipb-map`: CLI integration, using the importer and artifact writer.
+- `aipb_map_analysis`: read-only geometry and collision-partition statistics with typed findings.
+- `aipb_map_report`: deterministic JSON serialization of analysis reports; depends on the internal JSON codec but not on importer implementations.
+- `aipb-map`: CLI integration, using the importer, artifact reader/writer and inspector.
 
 There is no dependency on the repository root Meson/CMake build, the YaPB DLL, crlib or the GoldSrc SDK.
 External constraints (such as YaPB waypoint/link limits) will be handled only by the future exporter.

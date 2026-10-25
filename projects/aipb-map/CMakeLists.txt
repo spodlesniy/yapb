@@ -27,8 +27,21 @@ add_library(aipb_map_bsp STATIC
 add_library(aipb::map_bsp ALIAS aipb_map_bsp)
 target_link_libraries(aipb_map_bsp PUBLIC aipb::map_core)
 
+add_library(aipb_map_analysis STATIC
+    src/analysis/inspector.cpp
+)
+add_library(aipb::map_analysis ALIAS aipb_map_analysis)
+target_link_libraries(aipb_map_analysis PUBLIC aipb::map_core)
+
+add_library(aipb_map_report STATIC
+    src/analysis/report_json.cpp
+)
+add_library(aipb::map_report ALIAS aipb_map_report)
+target_link_libraries(aipb_map_report PUBLIC aipb::map_analysis PRIVATE aipb::map_io)
+target_include_directories(aipb_map_report PRIVATE src/io)
+
 add_executable(aipb-map src/cli/main.cpp)
-target_link_libraries(aipb-map PRIVATE aipb::map_bsp aipb::map_io)
+target_link_libraries(aipb-map PRIVATE aipb::map_bsp aipb::map_io aipb::map_report)
 
 include(CTest)
 if(BUILD_TESTING)
@@ -39,6 +52,17 @@ if(BUILD_TESTING)
     target_include_directories(aipb_map_model_tests PRIVATE src/io)
     add_executable(aipb_map_bsp_tests tests/bsp_import_tests.cpp)
     target_link_libraries(aipb_map_bsp_tests PRIVATE aipb::map_bsp aipb::map_io)
+    add_executable(aipb_map_inspector_tests tests/inspector_tests.cpp)
+    target_link_libraries(aipb_map_inspector_tests PRIVATE aipb::map_report aipb::map_io)
+    target_include_directories(aipb_map_inspector_tests PRIVATE src/io)
+    add_test(NAME aipb_map_inspection COMMAND aipb_map_inspector_tests)
+    add_test(NAME aipb_map_cli_inspection
+        COMMAND ${CMAKE_COMMAND}
+            -DCLI=$<TARGET_FILE:aipb-map>
+            -DFIXTURE=$<TARGET_FILE:aipb_map_inspector_tests>
+            -DWORK=${CMAKE_CURRENT_BINARY_DIR}/aipb-map-cli-test
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/inspect_cli.cmake
+    )
     add_test(NAME aipb_map_bsp_import COMMAND aipb_map_bsp_tests)
     add_test(NAME aipb_map_cli_help COMMAND aipb-map --help)
     set_tests_properties(aipb_map_cli_help PROPERTIES
@@ -52,9 +76,9 @@ if(BUILD_TESTING)
     )
 endif()
 
-set(aipb_map_targets aipb_map_core aipb_map_io aipb_map_bsp aipb-map)
+set(aipb_map_targets aipb_map_core aipb_map_io aipb_map_bsp aipb_map_analysis aipb_map_report aipb-map)
 if(BUILD_TESTING)
-    list(APPEND aipb_map_targets aipb_map_tests aipb_map_model_tests aipb_map_bsp_tests)
+    list(APPEND aipb_map_targets aipb_map_tests aipb_map_model_tests aipb_map_bsp_tests aipb_map_inspector_tests)
 endif()
 foreach(target IN LISTS aipb_map_targets)
     if(MSVC)

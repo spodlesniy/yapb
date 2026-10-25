@@ -2177,3 +2177,13 @@ Extend GoldSrc BSP v30 importer using bounded, explicit little-endian parsing an
 Write a versioned `.aipbmap` v0.2.0 format with separate checksummed JSONL collision partition streams and preserve read support for existing v0.1.0 map artifacts.
 Keep `.aipbnav` at v0.1.0 and preserve exact map-artifact SHA-256 identity; no automatic re-binding after map reserialization.
 Do not infer walkability, implement collision traces or simulate dynamic brush movement; gameplay fidelity on real Counter-Strike maps remains unverified.
+
+## D206 — Read-only Map Inspector and Metrics
+
+Add a standalone `aipb_map_analysis` module depending only on the map core, and a separate JSON report adapter, without extending or mutating the versioned map/navigation artifacts.
+Report per-mesh geometry counts and raw bounds, unused vertices, exactly zero-area triangles, collision shape counts, entity class counts and partition model/hull topology including unique reachable branches, distinct terminals, longest branch depth and unreferenced source records.
+Keep collision-shape geometry bounds separate from raw BSP model bounds because entity/brush coordinate transforms are not interpreted.
+Expose `aipb-map inspect --input <map.aipbmap> [--output <report.json>]` with a human-readable summary and optionally a deterministic versioned JSON file outside the source artifact directory, refusing existing report paths.
+Verify independently with CTest unit/CLI smoke tests across empty and populated partitions, deep collision trees, checksum-preserving reads and malformed output paths.
+Treat findings as descriptive diagnostics rather than proofs of in-game walkability, map coverage, BSP corruption or collision accuracy.
+A real Counter-Strike BSP inspection and in-game acceptance remain pending.
