@@ -12,9 +12,14 @@ namespace ai {
 constexpr float kPlantedBombApproachDiagnosticInterval = 5.0f;
 
 class DefuseApproachDiagnosticGate final {
-  float m_nextBlockedReport {}, m_nextFailureReport {};
+  float m_nextBlockedReport {}, m_nextFailureReport {}, m_nextHandoffReport {};
 public:
-  void reset() { m_nextBlockedReport = m_nextFailureReport = 0.0f; }
+  void reset() { m_nextBlockedReport = m_nextFailureReport = m_nextHandoffReport = 0.0f; }
+  bool allowHandoff(float now) {
+    if (now < m_nextHandoffReport) return false;
+    m_nextHandoffReport = now + kPlantedBombApproachDiagnosticInterval;
+    return true;
+  }
   bool allow(float now, bool failure) {
     auto &next = failure ? m_nextFailureReport : m_nextBlockedReport;
     if (now < next) return false;
@@ -24,10 +29,10 @@ public:
 };
 
  
-enum class DefuseEventType : uint8_t { Attempt, Start, Interrupted, Complete, ApproachBlocked, ApproachFailed, Declined };
+enum class DefuseEventType : uint8_t { Attempt, Start, Interrupted, Complete, ApproachBlocked, ApproachFailed, Declined, ApproachDelayed };
 enum class DefuseEventReason : uint8_t {
   None, BarTimeCleared, UseNotConfirmed, TaskEnded, RoundEnded, BotDied, BombExploded,
-  DirectPathBlocked, NoReachableInteractionNode, OutOfUseRange, InsufficientTime, EnemyWithoutCover
+  DirectPathBlocked, NoReachableInteractionNode, OutOfUseRange, InsufficientTime, EnemyWithoutCover, GraphApproachPending, DirectApproachPending
 };
 enum class DefuseEvidence : uint8_t {
   UseButton, BarTimePositive, BarTimeZero, TaskLifecycle, UnconfirmedUseTimeout,
@@ -44,6 +49,7 @@ constexpr const char *defuseEventName(DefuseEventType v) {
   case DefuseEventType::ApproachBlocked: return "defuse_approach_blocked";
   case DefuseEventType::ApproachFailed: return "defuse_approach_failed";
   case DefuseEventType::Declined: return "defuse_declined";
+  case DefuseEventType::ApproachDelayed: return "defuse_approach_pending";
   }
   return "unknown";
 }
@@ -61,6 +67,8 @@ constexpr const char *defuseReasonName(DefuseEventReason v) {
   case DefuseEventReason::OutOfUseRange: return "out_of_use_range";
   case DefuseEventReason::InsufficientTime: return "insufficient_time";
   case DefuseEventReason::EnemyWithoutCover: return "enemy_without_cover";
+  case DefuseEventReason::GraphApproachPending: return "graph_approach_pending";
+  case DefuseEventReason::DirectApproachPending: return "direct_approach_pending";
   }
   return "unknown";
 }
@@ -97,6 +105,9 @@ struct DefuseEvent {
   bool hasDefuseKit {}, hasProgressBar {}, isDucking {};
   bool enemyVisible {}, enemyHeard {};
   int32_t friendsNearby { -1 };
+  int32_t approachWaypoint { -1 }, currentWaypoint { -1 };
+  float distanceToWaypoint { -1.0f };
+  bool directReachable {}, waypointReached {}, interactionWaypoint {};
 };
 
 // BarTime=0 may precede the authoritative #Bomb_Defused TextMsg.

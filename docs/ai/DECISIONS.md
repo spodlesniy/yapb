@@ -2039,3 +2039,12 @@ Record a `bomb_escape_decision` at the native T bomb-timer escape transition, wi
 These are observations of the stated branches, not proof that a sighted or heard CT was defusing or that the T deliberately abandoned an active defuser.
 Do not alter action execution, pursuit, defuse time allowance, enemy detection or model-facing training samples.
 Require fresh Windows x86 gameplay capture to interpret decision ordering, and do not treat missing events as evidence that an uninstrumented branch cannot occur.
+
+## D192.10 — Observe final Training CT planted-C4 handoff delays
+
+The October 25 `2026_10_25__14_14_36__ai_training.jsonl` gameplay capture records CT 7 taking roughly nine seconds between planted-C4 pickup selection and BarTime while two CTs navigated near the same waypoint.
+The pre-existing low-displacement and task events do not identify whether the selected interaction waypoint was physically reached or whether a directly reachable C4 final segment was still being traversed.
+During isolated Training CT planted-C4 pickup, emit bounded `defuse_approach_pending` snapshots for graph traversal and final direct movement.
+Record current and selected waypoint, physical distance to the selected waypoint, real C4 distance and time, direct geometric reachability, actual arrival, and whether the chosen waypoint is an interaction waypoint.
+Use a separate five-second diagnostic gate reset each round, without altering path selection, interaction radii, semantics of authoritative BarTime, or training features.
+Gameplay capture on the Windows x86 game DLL is required before attributing a delay to occupancy, graph selection or geometry.

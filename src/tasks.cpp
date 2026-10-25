@@ -2007,7 +2007,18 @@ void Bot::pickupItem_ () {
             needRoute ? interactionDistanceSq : itemDistanceSq, interactionDistanceSq,
             graph.exists (bombNode), interactionNodeReached);
 
+         const float waypointDistance = graph.exists (bombNode)
+            ? pev->origin.distance (graph[bombNode].origin) : -1.0f;
+         auto reportPendingApproach = [&] (ai::DefuseEventReason reason) {
+            if (isolateTrainingCtDefuse && m_aiDefuseApproachDiagnostics.allowHandoff (game.time ())) {
+               recordDefuseEvent (ai::DefuseEventType::ApproachDelayed, reason,
+                  ai::DefuseEvidence::ObservedDistance, bombNode, waypointDistance,
+                  directApproachReachable, interactionNodeReached, hasInteractionNode);
+            }
+         };
+
          if (useGraphApproach) {
+            reportPendingApproach (ai::DefuseEventReason::GraphApproachPending);
             m_aimFlags &= ~AimFlags::Entity;
             m_aimFlags |= AimFlags::Nav;
             m_moveToGoal = true;
@@ -2023,6 +2034,7 @@ void Bot::pickupItem_ () {
          if (directApproachReachable && ai::shouldFinishObjectiveApproachDirectly (
             itemDistanceSq, interactionDistanceSq, hasInteractionNode, interactionNodeReached)) {
 
+            reportPendingApproach (ai::DefuseEventReason::DirectApproachPending);
             m_moveToGoal = true;
             m_checkTerrain = true;
             break;
@@ -2035,6 +2047,7 @@ void Bot::pickupItem_ () {
                isolateTrainingCtDefuse, itemDistanceSq, interactionDistanceSq,
                !hasInteractionNode && graph.exists (bombNode),
                interactionNodeReached, directApproachReachable)) {
+            reportPendingApproach (ai::DefuseEventReason::DirectApproachPending);
             m_moveToGoal = true;
             m_checkTerrain = true;
             break;

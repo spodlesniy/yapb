@@ -568,6 +568,22 @@ AI_TEST(testD192_5PhysicalDisplacementIsObservedNotAnEngineBarTimeMessage) {
           "a physical return to C4 can begin a fresh defuse attempt");
 }
 
+AI_TEST(testD192_10PendingApproachDiagnosticGateAndLabels) {
+   ai::DefuseApproachDiagnosticGate gate {};
+   expect(gate.allowHandoff(100.0f), "first final-approach report is immediate");
+   expect(!gate.allowHandoff(101.0f), "repeat final-approach reports are bounded");
+   expect(gate.allow(101.0f, false), "new handoff gate does not suppress blocked geometry evidence");
+   expect(gate.allowHandoff(105.0f), "persistent approach can be reported later");
+   gate.reset();
+   expect(gate.allowHandoff(0.0f), "next round can report its first approach");
+   expect(std::strcmp(ai::defuseEventName(ai::DefuseEventType::ApproachDelayed),
+                      "defuse_approach_pending") == 0, "pending approach is not a USE attempt");
+   expect(std::strcmp(ai::defuseReasonName(ai::DefuseEventReason::GraphApproachPending),
+                      "graph_approach_pending") == 0, "graph traversal remains distinct from direct approach");
+   expect(std::strcmp(ai::defuseReasonName(ai::DefuseEventReason::DirectApproachPending),
+                      "direct_approach_pending") == 0, "final direct approach remains observable");
+}
+
 AI_TEST(testD192_8ObjectiveDecisionDiagnosticsDoNotClaimDefuse) {
    expect(std::strcmp(ai::defuseEventName(ai::DefuseEventType::Declined),
                       "defuse_declined") == 0, "refusal is not an attempt");

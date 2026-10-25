@@ -3807,7 +3807,8 @@ void Bot::checkSpawnConditions () {
 }
 
 void Bot::recordDefuseEvent (ai::DefuseEventType type, ai::DefuseEventReason reason,
-                             ai::DefuseEvidence evidence) {
+                             ai::DefuseEvidence evidence, int approachWaypoint, float distanceToWaypoint,
+                             bool directReachable, bool waypointReached, bool interactionWaypoint) {
    if (m_aiRuntime.controller ().getMode () != ai::ControlMode::Training || !pev) return;
    ai::DefuseEvent e {};
    e.type = type;
@@ -3828,6 +3829,12 @@ void Bot::recordDefuseEvent (ai::DefuseEventType type, ai::DefuseEventReason rea
    e.isDucking = (pev->button & IN_DUCK) != 0;
    e.enemyVisible = (m_states & Sense::SeeingEnemy) != 0;
    e.enemyHeard = (m_states & Sense::HearingEnemy) != 0;
+   e.currentWaypoint = m_currentNodeIndex;
+   e.approachWaypoint = approachWaypoint;
+   e.distanceToWaypoint = distanceToWaypoint;
+   e.directReachable = directReachable;
+   e.waypointReached = waypointReached;
+   e.interactionWaypoint = interactionWaypoint;
    if (type == ai::DefuseEventType::Declined) e.friendsNearby = numFriendsNear (pev->origin, 768.0f);
    e.botPosition = { pev->origin.x, pev->origin.y, pev->origin.z };
    e.hasBotPosition = true;

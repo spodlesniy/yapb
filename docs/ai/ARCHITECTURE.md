@@ -543,3 +543,9 @@ The feature vector also includes normalized task_time_remaining, which lets the 
 - Preserve legacy behavior as an independent control path.
 - Keep the Python training package independent from the game process.
 - Prefer deterministic, testable components at the policy/runtime boundary.
+
+## D192.10 — Planted-C4 final approach diagnostics
+
+Isolated Training CT `PickupItem` emits bounded `defuse_approach_pending` events for graph and direct closing movement.
+These diagnostic-only events carry selected/current waypoints, waypoint separation and physical handoff state, alongside observed bomb timing and distance.
+They never imply `IN_USE`, BarTime or success and do not modify the training observation/action contract.

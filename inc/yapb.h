@@ -821,7 +821,9 @@ public:
 public:
    void logic (); /// the things that can be executed while skipping frames
    void spawned ();
-   void recordDefuseEvent (ai::DefuseEventType type, ai::DefuseEventReason reason, ai::DefuseEvidence evidence);
+   void recordDefuseEvent (ai::DefuseEventType type, ai::DefuseEventReason reason, ai::DefuseEvidence evidence,
+      int approachWaypoint = -1, float distanceToWaypoint = -1.0f,
+      bool directReachable = false, bool waypointReached = false, bool interactionWaypoint = false);
    void endDefuseAttempt (ai::DefuseEventReason reason, ai::DefuseEvidence evidence);
    void updateDefuseDiagnostics ();
    void updateAimDiagnostics ();

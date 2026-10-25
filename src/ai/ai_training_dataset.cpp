@@ -261,6 +261,15 @@ bool writeDefuseEvent(cr::File &file, const DefuseEvent &e) {
       && writeString(file, ",\"enemy_heard\":")
       && writeString(file, e.enemyHeard ? "true" : "false")
       && writeString(file, ",\"friends_nearby\":") && writeInt(file, e.friendsNearby)
+      && writeString(file, ",\"current_waypoint\":") && writeInt(file, e.currentWaypoint)
+      && writeString(file, ",\"approach_waypoint\":") && writeInt(file, e.approachWaypoint)
+      && writeString(file, ",\"distance_to_waypoint\":") && writeFloat(file, e.distanceToWaypoint)
+      && writeString(file, ",\"direct_reachable\":")
+      && writeString(file, e.directReachable ? "true" : "false")
+      && writeString(file, ",\"waypoint_reached\":")
+      && writeString(file, e.waypointReached ? "true" : "false")
+      && writeString(file, ",\"interaction_waypoint\":")
+      && writeString(file, e.interactionWaypoint ? "true" : "false")
       && writeString(file, "}\n");
 }
 
