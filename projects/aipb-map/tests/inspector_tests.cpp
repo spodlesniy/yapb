@@ -17,15 +17,18 @@ using namespace aipb::map;
 using namespace aipb::map::analysis;
 
 void require(bool ok, const char *why) {
-  if (!ok)
+  if (!ok) {
     throw std::runtime_error(why);
+  }
 }
 
 bool hasFinding(const MapReport &report, const std::string &code) {
   for (const auto &finding : report.findings) {
-    if (finding.code == code)
+    if (finding.code == code) {
       return true;
+    }
   }
+
   return false;
 }
 
@@ -51,6 +54,7 @@ MapModel fixture() {
   partition.models.push_back({ 8, { -5, -5, -5 }, { 5, 5, 5 }, {}, { -1, 1, -2, -1 } });
   map.partition = std::move(partition);
   validate(map);
+
   return map;
 }
 
@@ -118,6 +122,7 @@ void testLongHullAndArtifact() {
   constexpr std::size_t n = 2048;
   auto &part = *map.partition;
   part.clipNodes.clear();
+
   for (std::size_t i = 0; i < n; ++i) {
     part.clipNodes.push_back({ 0, i + 1 == n ? -1 : static_cast<std::int32_t>(i + 1), -2 });
   }
@@ -130,6 +135,7 @@ void testLongHullAndArtifact() {
   const auto base = std::filesystem::temp_directory_path() / "aipb_map_d206_inspector_tests";
   std::filesystem::remove_all(base);
   std::filesystem::create_directories(base);
+
   try {
     const auto destination = base / "fixture.aipbmap";
     const auto digest = io::saveMap(map, destination);
@@ -150,6 +156,7 @@ int main(int argc, char *argv[]) {
   try {
     if (argc == 3 && std::string_view(argv[1]) == "--write-fixture") {
       io::saveMap(fixture(), argv[2]);
+
       return 0;
     }
     require(argc == 1, "unknown inspector test argument");
@@ -157,9 +164,11 @@ int main(int argc, char *argv[]) {
     testWithoutPartition();
     testLongHullAndArtifact();
     std::cout << "D206 map inspection checks passed\n";
+
     return 0;
   } catch (const std::exception &error) {
     std::cerr << "D206 map inspection: " << error.what() << '\n';
+
     return 1;
   }
 }

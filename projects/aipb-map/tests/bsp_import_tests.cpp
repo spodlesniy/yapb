@@ -17,8 +17,9 @@
 namespace {
 
 void check(bool value, const char *reason) {
-  if (!value)
+  if (!value) {
     throw std::runtime_error(reason);
+  }
 }
 
 template <typename Callable> void reject(Callable func, const char *reason) {
@@ -48,8 +49,9 @@ void u16(Bytes &target, std::size_t offset, std::uint16_t value) {
   target[offset + 1] = static_cast<std::uint8_t>(value >> 8);
 }
 void u32(Bytes &target, std::size_t offset, std::uint32_t value) {
-  for (int i = 0; i < 4; ++i)
+  for (int i = 0; i < 4; ++i) {
     target[offset + i] = static_cast<std::uint8_t>(value >> (i * 8));
+  }
 }
 void appendU16(Bytes &b, std::uint16_t v) {
   const auto p = b.size();
@@ -71,18 +73,24 @@ Bytes makeBsp(std::string_view entities = "{\n\"classname\" \"worldspawn\"\n\"wa
   std::array<Bytes, 15> lumps;
   lumps[0].assign(entities.begin(), entities.end());
   lumps[0].push_back(0);
+
   for (const std::array<float, 3> v :
        { std::array<float, 3> { 0, 0, 0 }, { 64, 0, 0 }, { 64, 64, 0 }, { 0, 64, 0 }, { 0, 0, 32 }, { 64, 0, 32 }, { 0, 64, 32 } }) {
-    for (float c : v)
+    for (float c : v) {
       appendF32(lumps[3], c);
+    }
   }
+
   for (const std::array<std::uint16_t, 2> edge :
        { std::array<std::uint16_t, 2> { 3, 0 }, { 0, 1 }, { 1, 2 }, { 2, 3 }, { 5, 4 }, { 5, 6 }, { 6, 4 } }) {
     appendU16(lumps[12], edge[0]);
     appendU16(lumps[12], edge[1]);
   }
-  for (auto e : { 1, 2, 3, 0, -4, 5, 6 })
+
+  for (auto e : { 1, 2, 3, 0, -4, 5, 6 }) {
     appendU32(lumps[13], std::bit_cast<std::uint32_t>(static_cast<std::int32_t>(e)));
+  }
+
   for (const std::array<int, 2> face : { std::array<int, 2> { 0, 4 }, { 4, 3 } }) {
     auto &b = lumps[7];
     appendU16(b, 0); // planenum
@@ -93,6 +101,7 @@ Bytes makeBsp(std::string_view entities = "{\n\"classname\" \"worldspawn\"\n\"wa
     appendU32(b, 0);           // light styles
     appendU32(b, 0xFFFFFFFFU); // light offset
   }
+
   if (withCollision) {
     appendF32(lumps[1], 0);
     appendF32(lumps[1], 0);
@@ -102,48 +111,66 @@ Bytes makeBsp(std::string_view entities = "{\n\"classname\" \"worldspawn\"\n\"wa
     appendU32(lumps[5], 0); // hull-0 node, plane 0
     appendU16(lumps[5], 0xffff);
     appendU16(lumps[5], 0xfffe); // leaf 0 and leaf 1
-    for (int n = 0; n < 6; ++n)
+
+    for (int n = 0; n < 6; ++n) {
       appendU16(lumps[5], 0); // bounds
+    }
     appendU16(lumps[5], 0);
     appendU16(lumps[5], 0); // faces
     appendU32(lumps[9], 0); // clipnode plane 0
     appendU16(lumps[9], 0xfffe);
     appendU16(lumps[9], 0xffff); // solid, empty
+
     for (int contents : { -2, -1 }) {
       appendU32(lumps[10], static_cast<std::uint32_t>(contents));
-      for (int n = 0; n < 24; ++n)
+
+      for (int n = 0; n < 24; ++n) {
         lumps[10].push_back(0);
+      }
     }
   }
+
   for (int i = 0; i < 2; ++i) {
     auto &b = lumps[14];
-    for (int n = 0; n < 3; ++n)
+
+    for (int n = 0; n < 3; ++n) {
       appendF32(b, withCollision ? -64.0f : 0.0f);
-    for (int n = 0; n < 3; ++n)
+    }
+
+    for (int n = 0; n < 3; ++n) {
       appendF32(b, withCollision ? 64.0f : 0.0f);
-    for (int n = 0; n < 3; ++n)
+    }
+
+    for (int n = 0; n < 3; ++n) {
       appendF32(b, 0);
-    for (int n = 0; n < 4; ++n)
+    }
+
+    for (int n = 0; n < 4; ++n) {
       appendU32(b, 0);
+    }
     appendU32(b, 0); // visleafs
     appendU32(b, static_cast<std::uint32_t>(i));
     appendU32(b, 1);
   }
   Bytes result(124, 0);
   u32(result, 0, 30);
+
   for (std::size_t i = 0; i < lumps.size(); ++i) {
     u32(result, 4 + i * 8, static_cast<std::uint32_t>(result.size()));
     u32(result, 8 + i * 8, static_cast<std::uint32_t>(lumps[i].size()));
     result.insert(result.end(), lumps[i].begin(), lumps[i].end());
   }
+
   return result;
 }
 
 void write(const std::filesystem::path &path, const Bytes &bytes) {
   std::ofstream file(path, std::ios::binary);
   file.write(reinterpret_cast<const char *>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
-  if (!file)
+
+  if (!file) {
     throw std::runtime_error("test BSP write failed");
+  }
 }
 
 void testValidBsp(TempDir &dir) {
@@ -307,9 +334,11 @@ int main() {
     testCollisionBsp(dir);
     testCorruptBsp(dir);
     std::cout << "D205 BSP collision import checks passed\n";
+
     return 0;
   } catch (const std::exception &error) {
     std::cerr << error.what() << '\n';
+
     return 1;
   }
 }

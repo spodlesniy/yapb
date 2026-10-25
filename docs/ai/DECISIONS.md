@@ -2195,3 +2195,10 @@ Apply formatting-only changes to all C++ headers, sources and tests in `projects
 The available local clangd 17 formatter lacks support for some newer YAML style keys, so validate against a temporary compatible profile; preserve the exact canonical project settings for newer clang-format versions.
 Run all existing CTest targets with GCC Debug/Release and Clang Debug and check formatting idempotence.
 No legacy YaPB source files are modified.
+
+## D206.2 — Require braces and logical whitespace in standalone C++ projects
+
+Extend `projects/.clang-format` with `InsertBraces: true` and short-statement settings, and enable `readability-braces-around-statements` in `projects/.clang-tidy`.
+Document empty-line rules for control-flow blocks, final nontrivial function returns and logical sections in `projects/STYLE.md`; these are reviewed manually because clang-format cannot infer intent.
+Apply style-only braces and whitespace adjustments to standalone Map Tool C++ files, with no intentional behavior changes.
+Validate using existing GCC/Clang compilation and CTest; a local clangd 17 compatible profile is used for formatting because not all canonical settings are supported by that version.

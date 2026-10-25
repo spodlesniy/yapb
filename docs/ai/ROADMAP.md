@@ -47,6 +47,7 @@ D204 introduces an independent GoldSrc BSP v30 render-geometry/entity importer a
 D205 extends map artifacts to v0.2.0 with GoldSrc hull 0 render-node/leaf and hull 1–3 clipnode collision partitions, backward map v0.1.0 reads and focused synthetic tests; real-map, in-game collision and navigation validation remain pending.
 D206 adds a read-only map inspector and independent deterministic JSON report for mesh/entity counts, bounds, hull-tree topology and structural diagnostics; validation on a real Counter-Strike map and physical reachability remain pending.
 D206.1 applies the shared `src/ai` clang-format and clang-tidy configurations to independent `projects/` and reformats existing Map Tool C++ sources without changing behavior.
+D206.2 strengthens the shared project style with mandatory control-flow braces and guidelines for empty lines before control blocks and final returns, and applies it to existing Map Tool sources.
 This is instrumentation, not evidence that arbitrary maps have been measured or physically traversed; Windows x86/in-game acceptance is pending.
 Proposed progression: graph evaluation/generator; versioned map knowledge; bot profiles; match context and perception; independent policy; reproducible rewards/learning; opt-in inference and in-game comparisons.
 This parallel track does not change any existing Phase 7 exit criterion.

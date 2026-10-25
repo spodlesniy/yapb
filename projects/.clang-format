@@ -25,3 +25,8 @@ SpacesInParensOptions:
 PackConstructorInitializers: CurrentLine
 ReflowComments: false
 CommentPragmas: '^'
+
+# Add explicit blocks around single-statement control flow.
+InsertBraces: true
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false

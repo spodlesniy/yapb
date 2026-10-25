@@ -13,5 +13,7 @@ The repository's Git workflow, one-D-step-one-commit policy, protected upstream,
 - Run the standalone CMake/CTest checks for changes here; retain tests independent of CS 1.6 and the legacy YaPB build.
 - Keep source comments in English and user-facing CLI errors actionable.
 
+- Follow `projects/STYLE.md`: always brace control-flow bodies, separate control blocks and final returns with blank lines when appropriate, and group statements into readable logical sections.
+
 Legacy YaPB-specific limits on fixed arrays and `<yapb.h>` include ordering do not apply to this standalone project's sources.
 Do not change the legacy runtime's own compilation behavior while working on the Map Tool.

@@ -1,1 +1,4 @@
-Checks: 'readability-trailing-comma, -modernize-*'
+Checks: 'readability-trailing-comma,readability-braces-around-statements,-modernize-*'
+CheckOptions:
+  - key: readability-braces-around-statements.ShortStatementLines
+    value: '0'

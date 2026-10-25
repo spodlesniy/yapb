@@ -27,24 +27,32 @@ std::string sha256Hex(std::string_view data) {
   std::vector<std::uint8_t> bytes(data.begin(), data.end());
   const auto bits = static_cast<std::uint64_t>(bytes.size()) * 8;
   bytes.push_back(0x80);
-  while ((bytes.size() % 64) != 56)
+
+  while ((bytes.size() % 64) != 56) {
     bytes.push_back(0);
-  for (int i = 7; i >= 0; --i)
+  }
+
+  for (int i = 7; i >= 0; --i) {
     bytes.push_back(static_cast<std::uint8_t>(bits >> (i * 8)));
+  }
   std::array<std::uint32_t, 8> state { 0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19 };
+
   for (std::size_t offset = 0; offset < bytes.size(); offset += 64) {
     std::array<std::uint32_t, 64> words {};
+
     for (std::size_t i = 0; i < 16; ++i) {
       const auto j = offset + i * 4;
       words[i] = (static_cast<std::uint32_t>(bytes[j]) << 24) | (static_cast<std::uint32_t>(bytes[j + 1]) << 16) |
                  (static_cast<std::uint32_t>(bytes[j + 2]) << 8) | bytes[j + 3];
     }
+
     for (std::size_t i = 16; i < 64; ++i) {
       const auto a = words[i - 15];
       const auto b = words[i - 2];
       words[i] = words[i - 16] + (rotate(a, 7) ^ rotate(a, 18) ^ (a >> 3)) + words[i - 7] + (rotate(b, 17) ^ rotate(b, 19) ^ (b >> 10));
     }
     auto [a, b, c, d, e, f, g, h] = std::tuple { state[0], state[1], state[2], state[3], state[4], state[5], state[6], state[7] };
+
     for (std::size_t i = 0; i < 64; ++i) {
       const auto s1 = rotate(e, 6) ^ rotate(e, 11) ^ rotate(e, 25);
       const auto choice = (e & f) ^ (~e & g);
@@ -72,8 +80,11 @@ std::string sha256Hex(std::string_view data) {
   }
   std::ostringstream out;
   out << std::hex << std::setfill('0');
-  for (auto word : state)
+
+  for (auto word : state) {
     out << std::setw(8) << word;
+  }
+
   return out.str();
 }
 

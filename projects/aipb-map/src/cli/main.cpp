@@ -28,10 +28,14 @@ int importCommand(int argc, char *argv[]) {
   bool seenFormat = false;
   bool seenInput = false;
   bool seenOutput = false;
-  if (argc != 9)
+
+  if (argc != 9) {
     throw std::invalid_argument("import requires --format, --input and --output");
+  }
+
   for (int i = 2; i < argc; i += 2) {
     const std::string_view key(argv[i]);
+
     if (key == "--format" && !seenFormat) {
       format = argv[i + 1];
       seenFormat = true;
@@ -45,6 +49,7 @@ int importCommand(int argc, char *argv[]) {
       throw std::invalid_argument("duplicate or unrecognized import option: " + std::string(key));
     }
   }
+
   if (!seenFormat || !seenInput || !seenOutput || format != "bsp" || input.empty() || output.empty()) {
     throw std::invalid_argument("import requires --format bsp, nonempty --input and --output");
   }
@@ -53,6 +58,7 @@ int importCommand(int argc, char *argv[]) {
   const auto hash = aipb::map::io::saveMap(map, output);
   std::cout << "Imported " << map.name << ": " << map.meshes.size() << " meshes, " << map.entities.size() << " entities\n"
             << "Map artifact SHA-256: " << hash << '\n';
+
   return 0;
 }
 
@@ -64,8 +70,10 @@ int inspectCommand(int argc, char *argv[]) {
   std::filesystem::path output;
   bool seenInput = false;
   bool seenOutput = false;
+
   for (int i = 2; i < argc; i += 2) {
     const std::string_view key(argv[i]);
+
     if (key == "--input" && !seenInput) {
       input = argv[i + 1];
       seenInput = true;
@@ -76,21 +84,26 @@ int inspectCommand(int argc, char *argv[]) {
       throw std::invalid_argument("duplicate or unrecognized inspect option: " + std::string(key));
     }
   }
+
   if (!seenInput || input.empty() || (seenOutput && output.empty())) {
     throw std::invalid_argument("inspect requires nonempty --input and --output paths");
   }
   const auto artifact = aipb::map::io::loadMap(input);
   const auto report = aipb::map::analysis::inspect(artifact.model, artifact.sha256);
+
   if (seenOutput) {
     const auto relative = std::filesystem::weakly_canonical(output).lexically_relative(std::filesystem::weakly_canonical(input));
+
     if (!relative.empty() && *relative.begin() != "..") {
       throw std::invalid_argument("inspection report must be outside the map artifact directory");
     }
+
     if (std::filesystem::exists(output)) {
       throw std::runtime_error("inspection output already exists: " + output.string());
     }
     const auto json = aipb::map::analysis::toJson(report);
     std::ofstream stream(output, std::ios::binary);
+
     if (!stream || !stream.write(json.data(), static_cast<std::streamsize>(json.size()))) {
       stream.close();
       std::filesystem::remove(output);
@@ -105,9 +118,11 @@ int inspectCommand(int argc, char *argv[]) {
             << report.partition.renderNodes << " render nodes, " << report.partition.clipNodes << " clip nodes\n"
             << "Entities: " << report.entityCount << "\n"
             << "Findings: " << report.findings.size() << "\n";
+
   for (const auto &finding : report.findings) {
     std::cout << "  [" << finding.severity << "] " << finding.code << ": " << finding.detail << '\n';
   }
+
   return 0;
 }
 
@@ -117,21 +132,27 @@ int main(int argc, char *argv[]) {
   try {
     if (argc == 2 && std::string_view { argv[1] } == "--version") {
       std::cout << "aipb-map " << aipb::map::version() << '\n';
+
       return 0;
     }
+
     if (argc == 1 || (argc == 2 && std::string_view { argv[1] } == "--help")) {
       help();
+
       return 0;
     }
+
     if (argc >= 2 && std::string_view { argv[1] } == "import") {
       return importCommand(argc, argv);
     }
+
     if (argc >= 2 && std::string_view { argv[1] } == "inspect") {
       return inspectCommand(argc, argv);
     }
     throw std::invalid_argument("unsupported command");
   } catch (const std::exception &error) {
     std::cerr << "aipb-map: " << error.what() << "\nRun aipb-map --help for usage.\n";
+
     return 2;
   }
 }

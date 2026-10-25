@@ -17,8 +17,9 @@
 namespace {
 
 void check(bool ok, const char *message) {
-  if (!ok)
+  if (!ok) {
     throw std::runtime_error(message);
+  }
 }
 
 template <typename F> void rejected(F test, const char *message) {
@@ -54,6 +55,7 @@ aipb::map::MapModel exampleMap() {
   map.collision.push_back({ 2, "solid", { { 0, 0, 0 }, { 1, 0, 0 }, { 0, 1, 0 } }, { { 0, 1, 2 } } });
   map.entities.push_back(
       { 3, "func_door", { 20.5, 33, -3 }, { { "key\n\"", "value \\ test" }, { "special", "\t\r\n" } }, map.meshes[0].id, 2 });
+
   return map;
 }
 
@@ -158,6 +160,7 @@ void testLegacyMapCompatibility() {
   const auto path = dir.path / "legacy.aipbmap";
   std::filesystem::create_directories(path);
   io::Json::Object hashes;
+
   for (const char *file : { "meshes.jsonl", "collision.jsonl", "entities.jsonl" }) {
     std::ofstream(path / file, std::ios::binary).close();
     hashes.emplace(file, io::sha256Hex(""));
@@ -210,9 +213,11 @@ int main() {
     testEmptyAndVersioning();
     testLegacyMapCompatibility();
     std::cout << "D203 model/artifact checks passed\n";
+
     return 0;
   } catch (const std::exception &error) {
     std::cerr << error.what() << '\n';
+
     return 1;
   }
 }

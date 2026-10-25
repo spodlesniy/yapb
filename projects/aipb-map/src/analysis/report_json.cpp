@@ -20,8 +20,10 @@ Json encode(const Vec3 &point) {
   return Array { point.x, point.y, point.z };
 }
 Json encode(const Bounds &bounds) {
-  if (!bounds.available)
+  if (!bounds.available) {
     return Json();
+  }
+
   return Object { { "min", encode(bounds.minimum) }, { "max", encode(bounds.maximum) } };
 }
 Json encode(const MeshMetrics &metric) {
@@ -44,12 +46,16 @@ Json encode(const Finding &finding) {
   return Object { { "severity", finding.severity }, { "code", finding.code }, { "detail", finding.detail } };
 }
 Json encode(const PartitionMetrics &p) {
-  if (!p.available)
+  if (!p.available) {
     return Json();
+  }
   Array hulls;
-  for (const auto &hull : p.hulls)
+
+  for (const auto &hull : p.hulls) {
     hulls.push_back(encode(hull));
+  }
   Object leafContents;
+
   for (const auto &[contents, count] : p.leafContents) {
     leafContents.emplace(std::to_string(contents), number(count));
   }
@@ -70,14 +76,20 @@ Json encode(const PartitionMetrics &p) {
 
 std::string toJson(const MapReport &report) {
   Array meshes;
-  for (const auto &mesh : report.meshes)
+
+  for (const auto &mesh : report.meshes) {
     meshes.push_back(encode(mesh));
+  }
   Array findings;
-  for (const auto &finding : report.findings)
+
+  for (const auto &finding : report.findings) {
     findings.push_back(encode(finding));
+  }
   Object entityTypes;
-  for (const auto &[type, count] : report.entityTypes)
+
+  for (const auto &[type, count] : report.entityTypes) {
     entityTypes.emplace(type, number(count));
+  }
   return io::writeJson(Object { { "format", "aipb-map-inspection" },
                                 { "schema_version", "0.1.0" },
                                 { "map_name", report.mapName },
