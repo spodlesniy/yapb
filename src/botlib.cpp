@@ -419,6 +419,13 @@ void Bot::updatePickups () {
 
    // we're not allowed to run now
    if (isPickupBlocked ()) {
+      if (m_team == Team::CT && m_pickupType == Pickup::PlantedC4
+         && !game.isNullEntity (m_pickupItem) && gameState.isBombPlanted ()) {
+         recordNavigationEvent (ai::NavigationEventType::PlantedC4Ownership,
+            (m_states & Sense::SeeingEnemy) && !m_isCreature
+               ? ai::NavigationEventReason::C4ScannerBlockedByEnemy
+               : ai::NavigationEventReason::C4ScannerBlockedOther);
+      }
       m_pickupItem = nullptr;
       m_pickupType = Pickup::None;
 
@@ -579,6 +586,11 @@ void Bot::updatePickups () {
          }
       }
       else {
+         if (m_team == Team::CT && m_pickupType == Pickup::PlantedC4
+             && gameState.isBombPlanted ()) {
+            recordNavigationEvent (ai::NavigationEventType::PlantedC4Ownership,
+               ai::NavigationEventReason::C4RescanLostEntity);
+         }
          m_pickupItem = nullptr;
          m_pickupType = Pickup::None;
       }
@@ -1149,6 +1161,8 @@ void Bot::updatePickups () {
             if (transfer) {
                // Same game thread: hand off the entity claim and end only the
                // displaced CT's unfinished pickup task.
+               other->recordNavigationEvent (ai::NavigationEventType::PlantedC4Ownership,
+                  ai::NavigationEventReason::C4ClaimTransferred, -1, -1, -1, entindex ());
                other->m_pickupItem = nullptr;
                other->m_pickupType = Pickup::None;
                other->m_states &= ~Sense::PickupItem;
@@ -1157,6 +1171,11 @@ void Bot::updatePickups () {
                   other->completeTask ();
                }
                continue;
+            }
+            if (plantedCtPickup) {
+               recordNavigationEvent (ai::NavigationEventType::PlantedC4Ownership,
+                  ai::NavigationEventReason::C4ClaimRejectedByTeammate,
+                  -1, -1, -1, other->entindex ());
             }
             m_pickupItem = nullptr;
             m_pickupType = Pickup::None;
@@ -4054,7 +4073,7 @@ void Bot::recordCombatEvent (ai::CombatEventType type, int weaponId, int targetI
 }
 
 void Bot::recordNavigationEvent (ai::NavigationEventType type, ai::NavigationEventReason reason,
-                                 int source, int destination, int pathType) {
+                                 int source, int destination, int pathType, int relatedBotId) {
    if (m_aiRuntime.controller ().getMode () != ai::ControlMode::Training || !pev) return;
    ai::NavigationEvent event {};
    event.type = type;
@@ -4075,6 +4094,18 @@ void Bot::recordNavigationEvent (ai::NavigationEventType type, ai::NavigationEve
    event.routeSource = source;
    event.routeDestination = destination;
    event.pathType = pathType;
+   if (type == ai::NavigationEventType::PlantedC4Ownership) {
+      event.relatedBotId = relatedBotId;
+      event.pickupType = m_pickupType;
+      event.pickupEntityValid = !game.isNullEntity (m_pickupItem);
+      event.bombTimeRemaining = gameState.getBombTimeLeft ();
+      const auto &bomb = gameState.getBombOrigin ();
+      if (!bomb.empty ()) event.distanceToBomb = bomb.distance (pev->origin);
+      event.enemyVisible = (m_states & Sense::SeeingEnemy) != 0;
+      event.enemyHeard = (m_states & Sense::HearingEnemy) != 0;
+      event.enemyAlive = game.isAliveEntity (m_enemy);
+      event.enemiesRemaining = m_numEnemiesLeft;
+   }
    if (type == ai::NavigationEventType::BombEscape) {
       event.bombTimeRemaining = gameState.getBombTimeLeft ();
       const auto &bomb = gameState.getBombOrigin ();

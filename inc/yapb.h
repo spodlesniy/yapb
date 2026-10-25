@@ -528,7 +528,8 @@ private:
    void updateAIObservation ();
    void updatePreplantBombDefense ();
    void recordNavigationEvent (ai::NavigationEventType type, ai::NavigationEventReason reason,
-                               int source = -1, int destination = -1, int pathType = -1);
+                               int source = -1, int destination = -1, int pathType = -1,
+                               int relatedBotId = -1);
    void updateNavigationDiagnostics ();
 
    void cancelAIAction ();

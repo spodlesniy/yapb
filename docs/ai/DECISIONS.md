@@ -2098,3 +2098,13 @@ The native DefuseBomb task retains IN_USE/BarTime confirmation and safety checks
 Local Windows x86 compilation of D192.15 failed because the new local variable named `near` in `src/botlib.cpp` was interpreted as an MSVC keyword, producing C2513 and cascading parser errors around lines 3538–3552.
 Rename the variable and its two usages to `nearBomb`, preserving all conditions and gameplay semantics.
 This is a separately named one-commit correction; no published history is rewritten.
+
+## D192.16 — Distinguish C4 ownership loss from task churn
+
+The October 25 `2026_10_25__16_27_30__ai_training.jsonl` capture shows CT 10 and CT 4 alternating `PickupItem` and `Normal` near planted C4, sometimes within a fraction of a second.
+Those task-level observations do not identify whether pickup scanning, entity visibility or another teammate ended the C4 claim.
+Emit Training-only `planted_c4_ownership` navigation diagnostics from the actual scan-veto, invalid-rescan, claimed-entity transfer/rejection and task-level stale-entity/confirmed-BarTime yield branches.
+Include the related CT ID on contention, the active pickup type/entity state, bomb time/distance and enemy visibility in the existing JSONL writer.
+The events do not change policy decisions, task priorities, navigation, USE, C4 owner election or the supervised sample contract.
+A future capture can attribute subsequent `PickupItem -> Normal` transitions to observed claim-release reasons, while task preemptions without claim loss remain distinguishable.
+Do not infer the cause of the already-recorded oscillations without new evidence.

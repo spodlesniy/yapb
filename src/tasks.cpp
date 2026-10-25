@@ -1732,6 +1732,11 @@ void Bot::pickupItem_ () {
    }
 
    if (game.isNullEntity (m_pickupItem)) {
+      if (m_team == Team::CT && m_pickupType == Pickup::PlantedC4
+          && gameState.isBombPlanted ()) {
+         recordNavigationEvent (ai::NavigationEventType::PlantedC4Ownership,
+            ai::NavigationEventReason::C4PickupEntityInvalid);
+      }
       m_pickupItem = nullptr;
       completeTask ();
 
@@ -1761,6 +1766,8 @@ void Bot::pickupItem_ () {
       }
       if (ai::shouldYieldTrainingCtBombPickupToDefuser (
             isolatedTrainingCt, teammateBarTime, m_hasProgressBar)) {
+         recordNavigationEvent (ai::NavigationEventType::PlantedC4Ownership,
+            ai::NavigationEventReason::C4YieldedToBarTime);
          m_pickupItem = nullptr;
          m_pickupType = Pickup::None;
          m_states &= ~Sense::PickupItem;

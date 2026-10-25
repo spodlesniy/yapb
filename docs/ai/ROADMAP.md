@@ -75,6 +75,7 @@ Do not fabricate completion records or historical names for Phases 1–6 without
 - D192.14 fixes the inverted alive-bot filter in `isBombDefusing()`, restores recognition of teammates approaching C4, and retains physical-use-ready takeover of an unfinished pickup claim in isolated Training CT mode. CI and Windows x86 gameplay validation pending.
 - D192.15 restores a bounded near-C4 stalled-pickup fallback for Training CT with existing C4 claim, safe geometry and remaining timer, based on upstream `SlowFrame`; this does not bypass the USE radius or manufacture a missing bomb entity. CI and Windows x86 gameplay validation pending.
 - D192.15.1 corrects the MSVC-reserved identifier `near` introduced in D192.15 to `nearBomb`; the preceding local Windows x86 build failed at `src/botlib.cpp:3538` with C2513/C2059/C2181/C2143. Rebuild verification remains pending.
+- D192.16 instruments planted-C4 pickup ownership exits in Training JSONL (`planted_c4_ownership`): scanner veto, failed entity rescan, teammate rejection/transfer, stale pickup and BarTime yielding, including related CT identity and enemy context. No tactical changes; the October 25 capture confirms task oscillation but not its causal path. CI and game validation pending.
 
 ### Latest verified build evidence
 

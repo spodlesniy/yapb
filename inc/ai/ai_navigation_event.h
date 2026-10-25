@@ -70,12 +70,15 @@ public:
 
 enum class NavigationEventType : uint8_t {
   TaskChange, RouteRequest, RouteObserved, WaypointChanged, LowDisplacement, DroppedBombGuard, BombEscape,
+  PlantedC4Ownership,
 };
 
 enum class NavigationEventReason : uint8_t {
   TaskStarted, TaskCleared, TaskCompleted, GoalChanged, SameGoalRepath,
   RouteObserved, WaypointChanged, LowDisplacement,
   DroppedBombAssigned, DroppedBombSupport, DroppedBombNoCover, DroppedBombReleased, BombTimerExpiredForRoute,
+  C4ScannerBlockedByEnemy, C4ScannerBlockedOther, C4RescanLostEntity,
+  C4ClaimRejectedByTeammate, C4ClaimTransferred, C4PickupEntityInvalid, C4YieldedToBarTime,
 };
 
 constexpr const char *navigationEventName(NavigationEventType type) {
@@ -87,6 +90,7 @@ constexpr const char *navigationEventName(NavigationEventType type) {
   case NavigationEventType::LowDisplacement: return "low_displacement";
   case NavigationEventType::DroppedBombGuard: return "dropped_bomb_guard";
   case NavigationEventType::BombEscape: return "bomb_escape_decision";
+  case NavigationEventType::PlantedC4Ownership: return "planted_c4_ownership";
   }
   return "unknown";
 }
@@ -106,6 +110,13 @@ constexpr const char *navigationEventReasonName(NavigationEventReason reason) {
   case NavigationEventReason::DroppedBombNoCover: return "no_safe_cover";
   case NavigationEventReason::DroppedBombReleased: return "guard_released";
   case NavigationEventReason::BombTimerExpiredForRoute: return "bomb_timer_route";
+  case NavigationEventReason::C4ScannerBlockedByEnemy: return "scanner_enemy_veto";
+  case NavigationEventReason::C4ScannerBlockedOther: return "scanner_other_veto";
+  case NavigationEventReason::C4RescanLostEntity: return "rescan_lost_entity";
+  case NavigationEventReason::C4ClaimRejectedByTeammate: return "claim_rejected_by_teammate";
+  case NavigationEventReason::C4ClaimTransferred: return "claim_transferred";
+  case NavigationEventReason::C4PickupEntityInvalid: return "pickup_entity_invalid";
+  case NavigationEventReason::C4YieldedToBarTime: return "yielded_to_teammate_bartime";
   }
   return "unknown";
 }
@@ -130,6 +141,8 @@ struct NavigationEvent {
   float bombTimeRemaining { -1.0f }, distanceToBomb { -1.0f };
   bool enemyVisible {}, enemyHeard {}, enemyAlive {};
   int32_t enemiesRemaining { -1 };
+  int32_t relatedBotId { -1 }, pickupType { -1 };
+  bool pickupEntityValid {};
   Vec3 position {}, velocity {};
 };
 

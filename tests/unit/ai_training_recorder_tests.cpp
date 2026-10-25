@@ -584,6 +584,49 @@ AI_TEST(testD192_10PendingApproachDiagnosticGateAndLabels) {
                       "direct_approach_pending") == 0, "final direct approach remains observable");
 }
 
+AI_TEST(testD192_16C4OwnershipDiagnosticsAreExplicitAndNotTrainingSamples) {
+   expect(std::strcmp(ai::navigationEventName(ai::NavigationEventType::PlantedC4Ownership),
+                      "planted_c4_ownership") == 0, "claim changes have a distinct event type");
+   expect(std::strcmp(ai::navigationEventReasonName(ai::NavigationEventReason::C4ScannerBlockedByEnemy),
+                      "scanner_enemy_veto") == 0, "enemy scanner veto is explicit");
+   expect(std::strcmp(ai::navigationEventReasonName(ai::NavigationEventReason::C4RescanLostEntity),
+                      "rescan_lost_entity") == 0, "entity disappearance is distinguishable");
+   expect(std::strcmp(ai::navigationEventReasonName(ai::NavigationEventReason::C4ClaimTransferred),
+                      "claim_transferred") == 0, "handoff is distinguishable");
+   expect(std::strcmp(ai::navigationEventReasonName(ai::NavigationEventReason::C4ClaimRejectedByTeammate),
+                      "claim_rejected_by_teammate") == 0, "contender rejection is distinguishable");
+   const char *path = "aipb-c4-ownership-events-test.jsonl";
+   ai::TrainingBuffer buffer {};
+   ai::NavigationEvent event {};
+   event.type = ai::NavigationEventType::PlantedC4Ownership;
+   event.reason = ai::NavigationEventReason::C4ClaimTransferred;
+   event.relatedBotId = 10;
+   event.pickupType = 8;
+   event.pickupEntityValid = true;
+   event.enemyVisible = true;
+   expect(buffer.appendNavigationEvent(event), "claim diagnostic fits in buffer");
+   const auto result = ai::writeTrainingDataset(buffer, path);
+   expect(result.isValid() && result.count == 0 && result.navigationEventCount == 1,
+          "ownership evidence does not create a training transition");
+   std::FILE *file = std::fopen(path, "rb");
+   expect(file != nullptr, "C4 ownership JSONL can be opened");
+   if (file) {
+      char line[4096] {};
+      expect(std::fgets(line, sizeof(line), file) != nullptr, "metadata exists");
+      expect(std::fgets(line, sizeof(line), file) != nullptr, "ownership diagnostic exists");
+      expect(std::strstr(line, "\"event\":\"planted_c4_ownership\"") != nullptr,
+             "ownership event is serialized by name");
+      expect(std::strstr(line, "\"related_bot_id\":10") != nullptr,
+             "related claimant is serialized");
+      expect(std::strstr(line, "\"pickup_entity_valid\":true") != nullptr,
+             "claim entity state is serialized");
+      expect(std::strstr(line, "\"enemy_visible\":true") != nullptr,
+             "enemy visibility is included");
+      std::fclose(file);
+   }
+   std::remove(path);
+}
+
 AI_TEST(testD192_8ObjectiveDecisionDiagnosticsDoNotClaimDefuse) {
    expect(std::strcmp(ai::defuseEventName(ai::DefuseEventType::Declined),
                       "defuse_declined") == 0, "refusal is not an attempt");
