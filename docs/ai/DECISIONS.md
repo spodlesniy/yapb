@@ -2075,3 +2075,12 @@ Prefer direct entity steering before interaction-waypoint route selection only i
 Retain graph fallback for obstructed segments; the existing `canBeginPlantedBombUse` guard remains the sole pickup-to-defuse handoff, with BarTime still authoritative.
 Add unit tests for clear/blocked segments, scope isolation and the independent USE-radius/obstacle conditions.
 This does not change teammate ownership, deadlines or other modes.
+
+## D192.14 — Recognize live CT planted-C4 ownership without trapping a ready contender
+
+The fork's `isBombDefusing()` incorrectly checked `bot && !bot->m_isAlive` after the live-client filter, making its native bot-task detection unreachable for live CT bots.
+Use a live same-team non-self check for the 165-unit active-defuse radius and 512-unit approach radius, including a planted-C4 pickup claim or a movement goal close to C4.
+Exclude escape owners and retain human near-C4 IN_USE detection.
+When isolated Training CT scans C4, a different contender already physically ready for USE may challenge an unfinished reservation; a teammate with confirmed BarTime blocks that takeover.
+This is not a permanent single team-level defuser owner, which remains D193 scope.
+No changes to direct C4 steering or BarTime handling are part of this step.

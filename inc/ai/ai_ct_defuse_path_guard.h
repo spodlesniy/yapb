@@ -113,6 +113,25 @@ constexpr bool shouldAbandonLateTrainingCtBombApproach(bool isolatedTrainingCt,
       && bombSecondsLeft < plannedPlantedBombDefuseSeconds(hasKit);
 }
 
+// D192.14: recognize live teammates approaching planted C4 without
+// confusing another bot's claim with confirmed BarTime.
+constexpr bool isCtBombDefuseTeammateEngaged(bool alive, bool sameTeam, bool self,
+    bool escaping, float distanceSq, bool activeDefuse, bool pickupClaim,
+    bool movingTowardBomb) {
+  constexpr float kActiveRangeSq = 165.0f * 165.0f;
+  constexpr float kApproachRangeSq = 512.0f * 512.0f;
+  return alive && sameTeam && !self && !escaping && distanceSq >= 0.0f
+      && ((distanceSq < kActiveRangeSq && activeDefuse)
+          || (distanceSq < kApproachRangeSq && (activeDefuse || pickupClaim || movingTowardBomb)));
+}
+
+// A physically ready contender can supersede an unfinished remote pickup
+// reservation; this does not supersede confirmed USE/BarTime.
+constexpr bool canCtBombReadyContenderChallenge(bool isolatedTrainingCt,
+    bool physicallyUseReady, bool teammateBarTime) {
+  return isolatedTrainingCt && physicallyUseReady && !teammateBarTime;
+}
+
 // A C4 pickup reservation is not a defuse in progress. A teammate already
 // able to USE the bomb can supersede an owner still approaching its waypoint.
 // Do not interrupt an owner at USE/BarTime or another physically ready owner.

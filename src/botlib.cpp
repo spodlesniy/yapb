@@ -902,7 +902,21 @@ void Bot::updatePickups () {
                }
                if (isolateTrainingCtDefuse) {
                   // Native pickup claims the bomb; confirmed USE blocks a new claim.
-                  allowPickup = !isBombDefusing (origin) || m_hasProgressBar;
+                  // A ready CT can take over a distant unfinished pickup claim.
+                  const bool physicallyReady = ai::canBeginPlantedBombUse (
+                     pev->origin.distanceSq (origin), ai::kPlantedBombDefuseReadyDistance,
+                     graph.isNodeReacheable (pev->origin, origin));
+                  bool teammateBarTime = false;
+                  for (const auto &other : bots) {
+                     if (other && other.get () != this && other->m_isAlive
+                        && other->m_team == Team::CT && other->m_hasProgressBar) {
+                        teammateBarTime = true;
+                        break;
+                     }
+                  }
+                  allowPickup = !isBombDefusing (origin) || m_hasProgressBar
+                     || ai::canCtBombReadyContenderChallenge (
+                        true, physicallyReady, teammateBarTime);
                }
                else {
                // Elect from bots that can legitimately hear or see C4.
@@ -5228,47 +5242,32 @@ void Bot::selectCampButtons (int index) {
 }
 
 bool Bot::isBombDefusing (const Vector &bombOrigin) const {
-   // this function finds if somebody currently defusing the bomb.
-
-   if (!gameState.isBombPlanted ()) {
-      return false;
-   }
-   bool defusingInProgress = false;
-   constexpr auto kDistanceToBomb = cr::sqrf (165.0f);
+   if (!gameState.isBombPlanted ()) return false;
 
    for (const auto &client : util.getClients ()) {
-      if (!(client.flags & ClientFlags::Used) || !(client.flags & ClientFlags::Alive)) {
-         continue;
-      }
+      if (!(client.flags & ClientFlags::Used) || !(client.flags & ClientFlags::Alive)
+         || client.ent == ent ()) continue;
 
       auto bot = bots[client.ent];
-      const auto bombDistanceSq = client.origin.distanceSq (bombOrigin);
-
-      if (bot && !bot->m_isAlive) {
-         if (m_team != bot->m_team || bot->getCurrentTaskId () == Task::EscapeFromBomb) {
-            continue; // skip other mess
-         }
-
-         // if close enough, mark as progressing
-         if (bombDistanceSq < kDistanceToBomb && (bot->getCurrentTaskId () == Task::DefuseBomb || bot->m_hasProgressBar)) {
-            defusingInProgress = true;
-            break;
-         }
+      const float distanceSq = client.origin.distanceSq (bombOrigin);
+      if (bot) {
+         const bool active = bot->getCurrentTaskId () == Task::DefuseBomb || bot->m_hasProgressBar;
+         const bool pickupClaim = bot->m_pickupType == Pickup::PlantedC4;
+         const bool movingToBomb = bot->getCurrentTaskId () == Task::MoveToPosition
+            && graph.exists (bot->getTask ()->data)
+            && graph[bot->getTask ()->data].origin.distanceSq (bombOrigin) < cr::sqrf (512.0f);
+         if (ai::isCtBombDefuseTeammateEngaged (
+               bot->m_isAlive, bot->m_team == m_team, false,
+               bot->getCurrentTaskId () == Task::EscapeFromBomb,
+               distanceSq, active, pickupClaim, movingToBomb)) return true;
          continue;
       }
 
-      // take in account peoples too
-      if (client.team == m_team) {
-
-         // if close enough, mark as progressing
-         if (bombDistanceSq < kDistanceToBomb && ((client.ent->v.button | client.ent->v.oldbuttons) & IN_USE)) {
-            defusingInProgress = true;
-            break;
-         }
-         continue;
-      }
+      // Human teammates must actually press USE near C4.
+      if (client.team == m_team && distanceSq < cr::sqrf (165.0f)
+         && ((client.ent->v.button | client.ent->v.oldbuttons) & IN_USE)) return true;
    }
-   return defusingInProgress;
+   return false;
 }
 
 float Bot::getShiftSpeed () {

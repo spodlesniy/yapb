@@ -841,6 +841,33 @@ AI_TEST(testD192_6FreshDefuseTimeGatePreservesBarTimeAndModes) {
          "an unavailable countdown does not invent an abort");
 }
 
+AI_TEST(testD192_14CtDefuseOwnershipExcludesDeadAndSelfAndTracksApproach) {
+  constexpr float close = 100.0f * 100.0f;
+  constexpr float approaching = 400.0f * 400.0f;
+  expect(ai::isCtBombDefuseTeammateEngaged(true, true, false, false,
+         close, true, false, false), "living defuser is detected");
+  expect(ai::isCtBombDefuseTeammateEngaged(true, true, false, false,
+         approaching, false, true, false), "approaching planted-C4 claimant is detected");
+  expect(ai::isCtBombDefuseTeammateEngaged(true, true, false, false,
+         approaching, false, false, true), "teammate movement goal close to C4 is detected");
+  expect(!ai::isCtBombDefuseTeammateEngaged(false, true, false, false,
+         close, true, true, false), "dead bot does not claim C4");
+  expect(!ai::isCtBombDefuseTeammateEngaged(true, true, true, false,
+         close, true, true, false), "self is excluded");
+  expect(!ai::isCtBombDefuseTeammateEngaged(true, false, false, false,
+         close, true, true, false), "enemy is excluded");
+  expect(!ai::isCtBombDefuseTeammateEngaged(true, true, false, true,
+         close, false, true, false), "escaping CT no longer owns C4");
+  expect(!ai::isCtBombDefuseTeammateEngaged(true, true, false, false,
+         600.0f * 600.0f, false, true, false), "distant pickup does not reserve C4");
+  expect(ai::canCtBombReadyContenderChallenge(true, true, false),
+         "physically ready contender can challenge an unfinished claim");
+  expect(!ai::canCtBombReadyContenderChallenge(true, true, true),
+         "confirmed teammate BarTime cannot be preempted");
+  expect(!ai::canCtBombReadyContenderChallenge(true, false, false),
+         "distant contender cannot steal C4");
+}
+
 AI_TEST(testD192_13ClearC4SegmentBypassesInteractionWaypoint) {
   constexpr float rangeSq = ai::kPlantedBombDefuseReadyDistance
       * ai::kPlantedBombDefuseReadyDistance;
