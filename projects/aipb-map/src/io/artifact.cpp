@@ -74,7 +74,10 @@ Triangle decodeTriangle(const Json &value) {
   return { asIndex(a[0]), asIndex(a[1]), asIndex(a[2]) };
 }
 
-template <typename T, typename Converter> Json encodeList(const std::vector<T> &values, Converter convert) {
+template <typename T, typename Converter> Json encodeList(
+  const std::vector<T> &values,
+  Converter convert
+) {
   Array result;
   result.reserve(values.size());
 
@@ -85,7 +88,10 @@ template <typename T, typename Converter> Json encodeList(const std::vector<T> &
   return Json(std::move(result));
 }
 
-template <typename T, typename Converter> std::vector<T> decodeList(const Json &values, Converter convert) {
+template <typename T, typename Converter> std::vector<T> decodeList(
+  const Json &values,
+  Converter convert
+) {
   std::vector<T> result;
   result.reserve(values.array().size());
 
@@ -265,7 +271,11 @@ template <typename Collection> std::string asJsonLines(const Collection &items) 
   return content;
 }
 
-template <typename T> void readLines(const std::string &content, std::vector<T> &items, T (*decode)(const Json &)) {
+template <typename T> void readLines(
+  const std::string &content,
+  std::vector<T> &items,
+  T (*decode)(const Json &)
+) {
   std::size_t start = 0;
 
   while (start < content.size()) {
@@ -299,7 +309,10 @@ std::string readFile(const std::filesystem::path &path) {
 
   return content;
 }
-void writeFile(const std::filesystem::path &path, const std::string &contents) {
+void writeFile(
+  const std::filesystem::path &path,
+  const std::string &contents
+) {
   std::ofstream output(path, std::ios::binary | std::ios::trunc);
 
   if (!output || !output.write(contents.data(), static_cast<std::streamsize>(contents.size()))) {
@@ -318,7 +331,10 @@ std::string digest(const Files &files) {
   return sha256Hex(canonical);
 }
 
-std::string save(const Files &records, const std::filesystem::path &dir) {
+std::string save(
+  const Files &records,
+  const std::filesystem::path &dir
+) {
   if (std::filesystem::exists(dir)) {
     throw std::runtime_error("artifact destination already exists");
   }
@@ -339,7 +355,10 @@ std::string save(const Files &records, const std::filesystem::path &dir) {
   return digest(records);
 }
 
-Files read(const std::filesystem::path &dir, const std::vector<std::string> &files) {
+Files read(
+  const std::filesystem::path &dir,
+  const std::vector<std::string> &files
+) {
   Files result;
 
   for (const auto &file : files) {
@@ -361,7 +380,12 @@ Files read(const std::filesystem::path &dir, const std::vector<std::string> &fil
   return result;
 }
 
-std::string manifest(const std::string &format, Object fields, const Files &streams, std::string_view version = "0.1.0") {
+std::string manifest(
+  const std::string &format,
+  Object fields,
+  const Files &streams,
+  std::string_view version = "0.1.0"
+) {
   Object hashes;
 
   for (const auto &[name, content] : streams) {
@@ -374,7 +398,10 @@ std::string manifest(const std::string &format, Object fields, const Files &stre
   return writeJson(Json(std::move(fields))) + '\n';
 }
 
-void checkVersion(const Json &value, const std::string &format) {
+void checkVersion(
+  const Json &value,
+  const std::string &format
+) {
   if (value.at("format").text() != format || value.at("schema_version").text() != "0.1.0") {
     throw std::runtime_error("unsupported map artifact schema or format");
   }
@@ -382,7 +409,10 @@ void checkVersion(const Json &value, const std::string &format) {
 
 } // namespace
 
-std::string saveMap(const MapModel &model, const std::filesystem::path &directory) {
+std::string saveMap(
+  const MapModel &model,
+  const std::filesystem::path &directory
+) {
   validate(model);
   Files files { { "meshes.jsonl", asJsonLines(model.meshes) },
                 { "collision.jsonl", asJsonLines(model.collision) },
@@ -462,7 +492,10 @@ MapArtifact loadMap(const std::filesystem::path &directory) {
   return { std::move(model), digest(files) };
 }
 
-std::string saveNavigation(const NavigationModel &model, const std::filesystem::path &directory) {
+std::string saveNavigation(
+  const NavigationModel &model,
+  const std::filesystem::path &directory
+) {
   validate(model);
   Files files { { "regions.jsonl", asJsonLines(model.regions) },
                 { "nodes.jsonl", asJsonLines(model.nodes) },
@@ -472,7 +505,10 @@ std::string saveNavigation(const NavigationModel &model, const std::filesystem::
   return save(files, directory);
 }
 
-NavigationArtifact loadNavigation(const std::filesystem::path &directory, const MapArtifact *map) {
+NavigationArtifact loadNavigation(
+  const std::filesystem::path &directory,
+  const MapArtifact *map
+) {
   const auto files = read(directory, { "manifest.json", "regions.jsonl", "nodes.jsonl", "edges.jsonl" });
   const auto info = parseJson(files.at("manifest.json"));
   checkVersion(info, "aipb-navigation");

@@ -78,6 +78,9 @@ struct MapReport {
 };
 
 // Report geometry and graph topology without mutating the model or proving gameplay reachability.
-MapReport inspect(const MapModel &model, std::string artifactSha256 = {});
+MapReport inspect(
+  const MapModel &model,
+  std::string artifactSha256 = {}
+);
 
 } // namespace aipb::map::analysis

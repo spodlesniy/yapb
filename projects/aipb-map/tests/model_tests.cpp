@@ -17,13 +17,19 @@
 
 namespace {
 
-void check(bool ok, const char *message) {
+void check(
+  bool ok,
+  const char *message
+) {
   if (!ok) {
     throw std::runtime_error(message);
   }
 }
 
-void rejected(std::invocable auto test, const char *message) {
+void rejected(
+  std::invocable auto test,
+  const char *message
+) {
   try {
     test();
   } catch (const std::exception &) {
@@ -191,12 +197,22 @@ void testEmptyAndVersioning() {
   using namespace aipb::map;
   TestDirectory dir;
   MapModel empty {
-    .name = "empty", .sourceFormat = "synthetic", .sourceSha256 = std::string(64, '0'), .units = "units",
-    .meshes = {}, .collision = {}, .entities = {}
+    .name = "empty",
+    .sourceFormat = "synthetic",
+    .sourceSha256 = std::string(64, '0'),
+    .units = "units",
+    .meshes = {},
+    .collision = {},
+    .entities = {}
   };
   auto digest = io::saveMap(empty, dir.path / "empty.aipbmap");
   check(io::loadMap(dir.path / "empty.aipbmap").model == empty, "empty map does not load");
-  NavigationModel nav { .mapArtifactSha256 = digest, .regions = {}, .nodes = {}, .edges = {} };
+  NavigationModel nav {
+    .mapArtifactSha256 = digest,
+    .regions = {},
+    .nodes = {},
+    .edges = {}
+  };
   auto navPath = dir.path / "empty.aipbnav";
   io::saveNavigation(nav, navPath);
   check(io::loadNavigation(navPath).model == nav, "empty graph does not load");

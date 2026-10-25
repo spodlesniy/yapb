@@ -50,7 +50,10 @@ bool validUtf8(const std::string &value) {
   return true;
 }
 
-void appendUtf8(std::string &result, std::uint32_t cp) {
+void appendUtf8(
+  std::string &result,
+  std::uint32_t cp
+) {
   if (cp <= 0x7f) {
     result += static_cast<char>(cp);
   } else if (cp <= 0x7ff) {
@@ -361,7 +364,10 @@ public:
   }
 };
 
-void writeString(std::string &output, const std::string &value) {
+void writeString(
+  std::string &output,
+  const std::string &value
+) {
   if (!validUtf8(value)) {
     throw std::invalid_argument("invalid UTF-8 in JSON string");
   }
@@ -383,7 +389,10 @@ void writeString(std::string &output, const std::string &value) {
   output += '"';
 }
 
-void write(std::string &output, const Json &json) {
+void write(
+  std::string &output,
+  const Json &json
+) {
   if (std::holds_alternative<std::nullptr_t>(json.data)) {
     output += "null";
   } else if (const auto *b = std::get_if<bool>(&json.data)) {

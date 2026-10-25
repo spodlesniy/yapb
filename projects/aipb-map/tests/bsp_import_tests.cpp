@@ -17,13 +17,19 @@
 
 namespace {
 
-void check(bool value, const char *reason) {
+void check(
+  bool value,
+  const char *reason
+) {
   if (!value) {
     throw std::runtime_error(reason);
   }
 }
 
-void reject(std::invocable auto func, const char *reason) {
+void reject(
+  std::invocable auto func,
+  const char *reason
+) {
   try {
     func();
   } catch (const std::exception &) {
@@ -45,26 +51,43 @@ struct TempDir {
 
 using Bytes = std::vector<std::uint8_t>;
 
-void u16(Bytes &target, std::size_t offset, std::uint16_t value) {
+void u16(
+  Bytes &target,
+  std::size_t offset,
+  std::uint16_t value
+) {
   target[offset] = static_cast<std::uint8_t>(value);
   target[offset + 1] = static_cast<std::uint8_t>(value >> 8);
 }
-void u32(Bytes &target, std::size_t offset, std::uint32_t value) {
+void u32(
+  Bytes &target,
+  std::size_t offset,
+  std::uint32_t value
+) {
   for (int i = 0; i < 4; ++i) {
     target[offset + i] = static_cast<std::uint8_t>(value >> (i * 8));
   }
 }
-void appendU16(Bytes &b, std::uint16_t v) {
+void appendU16(
+  Bytes &b,
+  std::uint16_t v
+) {
   const auto p = b.size();
   b.resize(p + 2);
   u16(b, p, v);
 }
-void appendU32(Bytes &b, std::uint32_t v) {
+void appendU32(
+  Bytes &b,
+  std::uint32_t v
+) {
   const auto p = b.size();
   b.resize(p + 4);
   u32(b, p, v);
 }
-void appendF32(Bytes &b, float v) {
+void appendF32(
+  Bytes &b,
+  float v
+) {
   appendU32(b, std::bit_cast<std::uint32_t>(v));
 }
 
@@ -165,9 +188,15 @@ Bytes makeBsp(std::string_view entities = "{\n\"classname\" \"worldspawn\"\n\"wa
   return result;
 }
 
-void write(const std::filesystem::path &path, const Bytes &bytes) {
+void write(
+  const std::filesystem::path &path,
+  const Bytes &bytes
+) {
   std::ofstream file(path, std::ios::binary);
-  file.write(reinterpret_cast<const char *>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
+  file.write(
+    reinterpret_cast<const char *>(bytes.data()),
+    static_cast<std::streamsize>(bytes.size())
+  );
 
   if (!file) {
     throw std::runtime_error("test BSP write failed");
@@ -200,7 +229,10 @@ void testValidBsp(TempDir &dir) {
   check(map.sourceSha256 == second.sourceSha256, "BSP source fingerprint not content-based");
 }
 
-std::size_t lumpOffset(const Bytes &bsp, std::size_t index) {
+std::size_t lumpOffset(
+  const Bytes &bsp,
+  std::size_t index
+) {
   return static_cast<std::size_t>(bsp[4 + index * 8]) | (static_cast<std::size_t>(bsp[5 + index * 8]) << 8) |
          (static_cast<std::size_t>(bsp[6 + index * 8]) << 16) | (static_cast<std::size_t>(bsp[7 + index * 8]) << 24);
 }

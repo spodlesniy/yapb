@@ -49,6 +49,7 @@ D206 adds a read-only map inspector and independent deterministic JSON report fo
 D206.1 applies the shared `src/ai` clang-format and clang-tidy configurations to independent `projects/` and reformats existing Map Tool C++ sources without changing behavior.
 D206.2 strengthens the shared project style with mandatory control-flow braces and guidelines for empty lines before control blocks and final returns, and applies it to existing Map Tool sources.
 D206.3 establishes C++20 initialization/span/ranges guidance with more expressive C++20 test conventions, and applies focused behavior-preserving refactoring to Map Tool.
+D206.4 requires one designated member per line and one parameter per line in multi-parameter function declarations/definitions, and applies the new layout to the standalone Map Tool.
 This is instrumentation, not evidence that arbitrary maps have been measured or physically traversed; Windows x86/in-game acceptance is pending.
 Proposed progression: graph evaluation/generator; versioned map knowledge; bot profiles; match context and perception; independent policy; reproducible rewards/learning; opt-in inference and in-game comparisons.
 This parallel track does not change any existing Phase 7 exit criterion.

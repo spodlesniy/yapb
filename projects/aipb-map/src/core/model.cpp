@@ -12,7 +12,10 @@
 namespace aipb::map {
 namespace {
 
-void require(bool condition, std::string_view message) {
+void require(
+  bool condition,
+  std::string_view message
+) {
   if (!condition) {
     throw std::invalid_argument(std::string(message));
   }
@@ -22,7 +25,10 @@ bool finite(Vec3 point) {
   return std::isfinite(point.x) && std::isfinite(point.y) && std::isfinite(point.z);
 }
 
-void checkTriangles(std::span<const Vec3> vertices, std::span<const Triangle> triangles) {
+void checkTriangles(
+  std::span<const Vec3> vertices,
+  std::span<const Triangle> triangles
+) {
   for (const auto &vertex : vertices) {
     require(finite(vertex), "mesh contains a non-finite coordinate");
   }
@@ -51,7 +57,12 @@ bool sha256(std::string_view hash) {
   });
 }
 
-void checkBranchGraph(const std::vector<CollisionBranch> &branches, std::size_t planes, std::size_t leaves, bool indexedLeaves) {
+void checkBranchGraph(
+  const std::vector<CollisionBranch> &branches,
+  std::size_t planes,
+  std::size_t leaves,
+  bool indexedLeaves
+) {
   std::vector<std::uint8_t> state(branches.size(), 0);
 
   for (std::size_t start = 0; start < branches.size(); ++start) {
@@ -168,7 +179,10 @@ void validate(const MapModel &model) {
   }
 }
 
-void validate(const NavigationModel &model, const MapModel *map) {
+void validate(
+  const NavigationModel &model,
+  const MapModel *map
+) {
   require(sha256(model.mapArtifactSha256), "map artifact SHA-256 must be 64 lowercase hexadecimal characters");
   const auto regionIds = uniqueIds(model.regions);
   const auto nodeIds = uniqueIds(model.nodes);

@@ -83,3 +83,6 @@ See [shared style rules](../STYLE.md).
 
 D206.3 adopts targeted modern C++20 patterns in the core and inspector, while allowing compact C++20 fixture and assertion idioms in tests.
 See [shared C++20 conventions](../STYLE.md) for initialization, non-owning spans, ranges, ownership and test-specific rules.
+
+D206.4 formats each designated initializer on its own line (including a single field) and each parameter of multi-parameter function signatures on a separate line.
+These rules apply to production and test code; function-call argument formatting is unchanged.

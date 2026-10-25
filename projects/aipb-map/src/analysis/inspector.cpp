@@ -13,7 +13,10 @@
 namespace aipb::map::analysis {
 namespace {
 
-void extend(Bounds &bounds, const Vec3 &p) {
+void extend(
+  Bounds &bounds,
+  const Vec3 &p
+) {
   if (!bounds.available) {
     bounds = { true, p, p };
 
@@ -27,7 +30,10 @@ void extend(Bounds &bounds, const Vec3 &p) {
   bounds.maximum.z = std::max(bounds.maximum.z, p.z);
 }
 
-void extend(Bounds &target, const Bounds &source) {
+void extend(
+  Bounds &target,
+  const Bounds &source
+) {
   if (!source.available) {
     return;
   }
@@ -35,7 +41,11 @@ void extend(Bounds &target, const Bounds &source) {
   extend(target, source.maximum);
 }
 
-bool zeroArea(const Vec3 &a, const Vec3 &b, const Vec3 &c) {
+bool zeroArea(
+  const Vec3 &a,
+  const Vec3 &b,
+  const Vec3 &c
+) {
   const auto x = static_cast<long double>(b.x) - a.x;
   const auto y = static_cast<long double>(b.y) - a.y;
   const auto z = static_cast<long double>(b.z) - a.z;
@@ -46,8 +56,16 @@ bool zeroArea(const Vec3 &a, const Vec3 &b, const Vec3 &c) {
   return (y * w - z * v) == 0 && (z * u - x * w) == 0 && (x * v - y * u) == 0;
 }
 
-MeshMetrics inspectMesh(ObjectId id, std::span<const Vec3> vertices, std::span<const Triangle> triangles) {
-  MeshMetrics result { .id = id, .vertices = vertices.size(), .triangles = triangles.size() };
+MeshMetrics inspectMesh(
+  ObjectId id,
+  std::span<const Vec3> vertices,
+  std::span<const Triangle> triangles
+) {
+  MeshMetrics result {
+    .id = id,
+    .vertices = vertices.size(),
+    .triangles = triangles.size()
+  };
   std::vector<std::uint8_t> used(vertices.size(), 0);
 
   for (const auto &vertex : vertices) {
@@ -67,7 +85,11 @@ MeshMetrics inspectMesh(ObjectId id, std::span<const Vec3> vertices, std::span<c
 }
 
 // Longest path in the validated acyclic partition tree, computed without recursion.
-std::size_t maximumDepth(const std::vector<CollisionBranch> &branches, std::int32_t root, std::vector<std::size_t> &memo) {
+std::size_t maximumDepth(
+  const std::vector<CollisionBranch> &branches,
+  std::int32_t root,
+  std::vector<std::size_t> &memo
+) {
   if (root < 0) {
     return 0;
   }
@@ -99,8 +121,15 @@ std::size_t maximumDepth(const std::vector<CollisionBranch> &branches, std::int3
   return memo[static_cast<std::size_t>(root)];
 }
 
-HullMetrics inspectHull(const CollisionPartition &partition, ObjectId modelId, std::size_t hull, std::int32_t root,
-                        std::vector<std::uint8_t> &globalNodes, std::vector<std::uint8_t> &globalLeaves, std::vector<std::size_t> &depths) {
+HullMetrics inspectHull(
+  const CollisionPartition &partition,
+  ObjectId modelId,
+  std::size_t hull,
+  std::int32_t root,
+  std::vector<std::uint8_t> &globalNodes,
+  std::vector<std::uint8_t> &globalLeaves,
+  std::vector<std::size_t> &depths
+) {
   const auto &branches = hull == 0 ? partition.renderNodes : partition.clipNodes;
   HullMetrics result {
     .modelId = modelId,
@@ -183,7 +212,10 @@ PartitionMetrics inspectPartition(const CollisionPartition &partition) {
 
 } // namespace
 
-MapReport inspect(const MapModel &model, std::string artifactSha256) {
+MapReport inspect(
+  const MapModel &model,
+  std::string artifactSha256
+) {
   validate(model);
   MapReport report {
     .mapName = model.name,

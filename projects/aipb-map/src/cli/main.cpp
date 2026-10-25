@@ -21,7 +21,10 @@ void help() {
             << "  aipb-map inspect --input <map.aipbmap> [--output <report.json>]\n";
 }
 
-int importCommand(int argc, char *argv[]) {
+int importCommand(
+  int argc,
+  char *argv[]
+) {
   std::string format;
   std::filesystem::path input;
   std::filesystem::path output;
@@ -62,7 +65,10 @@ int importCommand(int argc, char *argv[]) {
   return 0;
 }
 
-int inspectCommand(int argc, char *argv[]) {
+int inspectCommand(
+  int argc,
+  char *argv[]
+) {
   if (argc != 4 && argc != 6) {
     throw std::invalid_argument("inspect requires --input and optional --output");
   }
@@ -128,7 +134,10 @@ int inspectCommand(int argc, char *argv[]) {
 
 } // namespace
 
-int main(int argc, char *argv[]) {
+int main(
+  int argc,
+  char *argv[]
+) {
   try {
     if (argc == 2 && std::string_view { argv[1] } == "--version") {
       std::cout << "aipb-map " << aipb::map::version() << '\n';

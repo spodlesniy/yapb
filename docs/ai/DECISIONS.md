@@ -2209,3 +2209,12 @@ Document C++20 aggregate/designated initialization, span/ranges, ownership, cons
 Allow test code to use the full supported C++20 feature set to reduce repetitive fixture construction and assertions, without sacrificing deterministic and portable checks.
 Apply scoped modernization in the Map Tool inspector and model validation and simplify test fixtures/validation helpers without changing public model definitions, artifact schemas, map hashes or runtime behavior.
 Keep GCC and Clang strict-warning builds and all seven Map Tool CTest checks passing; do not weaken diagnostics to accommodate partial aggregate initialization.
+
+## D206.4 — One-per-line designated initializers and function parameters
+
+Extend the shared `projects/STYLE.md` rule set so every designated initializer field starts on its own physical line, even when only one field is present.
+Require function declarations and definitions with two or more parameters to put every parameter on a separate line, regardless of column width, with the opening and closing delimiters separated from parameter lines.
+Keep single-parameter functions and function calls out of this requirement; do not alter runtime behavior or API contracts.
+Set `BinPackParameters: AlwaysOnePerLine` and `AllowAllParametersOfDeclarationOnNextLine: false` in `projects/.clang-format` to support one-per-line layouts, while documenting that short signatures and compact designated lists still require code-review enforcement.
+Apply the rules across standalone Map Tool C++ source, headers and tests, then verify strict-warning GCC/Clang builds and existing CTest cases.
+Do not modify the legacy YaPB runtime or the project's artifact formats.

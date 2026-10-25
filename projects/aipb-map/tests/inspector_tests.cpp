@@ -16,13 +16,19 @@ namespace {
 using namespace aipb::map;
 using namespace aipb::map::analysis;
 
-void require(bool ok, const char *why) {
+void require(
+  bool ok,
+  const char *why
+) {
   if (!ok) {
     throw std::runtime_error(why);
   }
 }
 
-bool hasFinding(const MapReport &report, std::string_view code) {
+bool hasFinding(
+  const MapReport &report,
+  std::string_view code
+) {
   return std::ranges::any_of(report.findings, [code](const Finding &finding) { return finding.code == code; });
 }
 
@@ -152,7 +158,10 @@ void testLongHullAndArtifact() {
 
 } // namespace
 
-int main(int argc, char *argv[]) {
+int main(
+  int argc,
+  char *argv[]
+) {
   try {
     if (argc == 3 && std::string_view(argv[1]) == "--write-fixture") {
       io::saveMap(fixture(), argv[2]);

@@ -15,6 +15,7 @@ The repository's Git workflow, one-D-step-one-commit policy, protected upstream,
 - Keep source comments in English and user-facing CLI errors actionable.
 
 - Follow `projects/STYLE.md`: always brace control-flow bodies, separate control blocks and final returns with blank lines when appropriate, and group statements into readable logical sections.
+- Keep every designated initializer on a separate line, including single-field initializers, and put each parameter of multi-parameter function declarations and definitions on its own line.
 
 Legacy YaPB-specific limits on fixed arrays and `<yapb.h>` include ordering do not apply to this standalone project's sources.
 Do not change the legacy runtime's own compilation behavior while working on the Map Tool.

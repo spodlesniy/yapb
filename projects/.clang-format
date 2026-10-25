@@ -30,3 +30,8 @@ CommentPragmas: '^'
 InsertBraces: true
 AllowShortIfStatementsOnASingleLine: Never
 AllowShortLoopsOnASingleLine: false
+
+# Never pack several declaration parameters onto one physical line.
+# Short multi-parameter signatures are broken manually per projects/STYLE.md.
+BinPackParameters: AlwaysOnePerLine
+AllowAllParametersOfDeclarationOnNextLine: false

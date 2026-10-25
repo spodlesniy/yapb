@@ -137,6 +137,9 @@ struct NavigationModel {
 
 // Structural validation does not judge physical reachability or gameplay quality.
 void validate(const MapModel &model);
-void validate(const NavigationModel &model, const MapModel *map = nullptr);
+void validate(
+  const NavigationModel &model,
+  const MapModel *map = nullptr
+);
 
 } // namespace aipb::map

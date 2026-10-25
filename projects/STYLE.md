@@ -40,6 +40,41 @@ This policy does not increase the standard of the legacy YaPB runtime.
 - Do not introduce constructors solely to initialize aggregate data or use templates, concepts, views or lambdas just to demonstrate language features.
   Retain explicit checks and casts at binary-format boundaries; modernization must not change artifact bytes, public contracts or numerical behavior.
 
+## Designated initializers and function signatures
+
+Always place every C++20 designated initializer on its own physical line, even if there is only one field or all fields fit within the column limit.
+Place the first field below the opening brace and the closing brace on a separate line.
+Use the same layout for production code and test fixtures, including designated initializers nested within another object.
+Keep member order consistent with the aggregate declaration, as C++20 requires.
+
+```cpp
+HullMetrics metrics {
+  .modelId = modelId,
+  .hull = hull,
+  .root = root
+};
+
+NavigationModel navigation {
+  .mapArtifactSha256 = digest
+};
+```
+
+When a function declaration or definition has two or more parameters, put each parameter on its own physical line, even if the entire signature fits within the column limit.
+Put the first parameter immediately below the opening parenthesis and the closing parenthesis on a separate line.
+Apply this to free functions, member functions, template functions and test helpers, including matching header declarations and source definitions.
+Single-parameter and parameterless functions may remain on one line; do not apply this rule to function calls.
+
+```cpp
+MapReport inspect(
+  const MapModel &model,
+  std::string artifactSha256 = {}
+);
+```
+
+The shared clang-format configuration uses `BinPackParameters: AlwaysOnePerLine` and prohibits grouping overflowed parameters.
+It cannot by itself reliably force a newline before every short function parameter or inside short designated initializer lists.
+Enforce those remaining details in code review instead of changing the formatter's column limit or forcing argument wrapping on function calls.
+
 ## C++20 in tests
 
 Tests may use the full supported C++20 toolbox more freely to reduce fixture construction and assertion boilerplate.

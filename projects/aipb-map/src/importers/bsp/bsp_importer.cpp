@@ -126,10 +126,17 @@ public:
   float f32(std::size_t offset) const {
     return std::bit_cast<float>(u32(offset));
   }
-  std::size_t count(std::size_t index, std::size_t recordSize) const {
+  std::size_t count(
+    std::size_t index,
+    std::size_t recordSize
+  ) const {
     return lumps_[index].length / recordSize;
   }
-  std::size_t record(std::size_t index, std::size_t recordSize, std::size_t which) const {
+  std::size_t record(
+    std::size_t index,
+    std::size_t recordSize,
+    std::size_t which
+  ) const {
     if (which >= count(index, recordSize)) {
       fail("BSP references a missing record");
     }
@@ -150,12 +157,18 @@ private:
   [[noreturn]] static void fail(const char *message) {
     throw std::runtime_error(message);
   }
-  void check(std::size_t offset, std::size_t size) const {
+  void check(
+    std::size_t offset,
+    std::size_t size
+  ) const {
     if (offset > bytes_.size() || size > bytes_.size() - offset) {
       fail("BSP read out of bounds");
     }
   }
-  void checkRecords(std::size_t index, std::size_t recordSize) const {
+  void checkRecords(
+    std::size_t index,
+    std::size_t recordSize
+  ) const {
     if (lumps_[index].length % recordSize != 0) {
       fail("BSP lump contains a partial record");
     }
@@ -460,8 +473,12 @@ private:
   }
 };
 
-void linkEntities(const BspReader &bsp, const std::vector<Mesh> &meshes, const std::optional<CollisionPartition> &partition,
-                  std::vector<MapEntity> &entities) {
+void linkEntities(
+  const BspReader &bsp,
+  const std::vector<Mesh> &meshes,
+  const std::optional<CollisionPartition> &partition,
+  std::vector<MapEntity> &entities
+) {
   const auto models = bsp.count(kModels, 64);
 
   for (auto &entity : entities) {
