@@ -7,6 +7,11 @@
 
 #include <yapb.h>
 
+#include <ai/ai_graph_quality.h>
+
+static_assert (ai::kGraphQualityMaxNodes == kMaxNodes, "Graph quality node limit must match YaPB");
+static_assert (ai::kGraphQualityMaxLinks == kMaxNodeLinks, "Graph quality link limit must match YaPB");
+
 ConVar cv_graph_fixcamp ("graph_fixcamp", "0", "Specifies whether the bot should not 'fix' camp directions of camp waypoints when loading the old PWF format.");
 ConVar cv_graph_url ("graph_url", product.download.chars (), "Specifies the URL from which bots will be able to download the graph in case of a missing local one. Set to empty if no downloads are needed.", false, 0.0f, 0.0f);
 ConVar cv_graph_url_upload ("graph_url_upload", product.upload.chars (), "Specifies the URL to which bots will try to upload the graph file to the database.", false, 0.0f, 0.0f);
@@ -1282,6 +1287,70 @@ void BotGraph::showStats () {
    msg ("CT Points: %d - Goal Points: %d", ctPoints, goalPoints);
    msg ("Rescue Points: %d - Camp Points: %d", rescuePoints, campPoints);
    msg ("Block Hostage Points: %d - Sniper Points: %d", noHostagePoints, sniperPoints);
+   // D201: inspect the existing graph without changing its routes or practice scores.
+   constexpr float kSpawnMatchDistance = 256.0f;
+   bool terroristStarts[ai::kGraphQualityMaxNodes] {};
+   bool ctStarts[ai::kGraphQualityMaxNodes] {};
+   int tSpawnEntities = 0;
+   int ctSpawnEntities = 0;
+   int tUnmapped = 0;
+   int ctUnmapped = 0;
+
+   auto mapSpawns = [&] (const char *classname, bool *sources, int &entityCount, int &unmapped) {
+      game.searchEntities ("classname", classname, [&] (edict_t *ent) {
+         ++entityCount;
+         const int node = getNearestNoBuckets (game.getEntityOrigin (ent), kSpawnMatchDistance);
+         if (exists (node)) {
+            sources[node] = true;
+         }
+         else {
+            ++unmapped;
+         }
+         return EntitySearchResult::Continue;
+      });
+   };
+
+   mapSpawns ("info_player_deathmatch", terroristStarts, tSpawnEntities, tUnmapped);
+   mapSpawns ("info_player_start", ctStarts, ctSpawnEntities, ctUnmapped);
+   mapSpawns ("info_vip_start", ctStarts, ctSpawnEntities, ctUnmapped);
+
+   const auto quality = ai::measureGraphQuality (length (), terroristStarts, ctStarts,
+      [&] (int node, int slot) { return m_paths[node].links[slot].index; },
+      [&] (int node) { return !!(m_paths[node].flags & NodeFlag::Goal); },
+      [&] (int node) { return !!(m_paths[node].flags & NodeFlag::Rescue); });
+
+   if (!quality.valid) {
+      msg ("Graph quality: unsupported node count.");
+      return;
+   }
+   msg ("Graph quality (topology only; spawn lookup radius <256 units):");
+   if (analyzer.isAnalyzing () || hasChanged ()) {
+      msg ("  WARNING: graph analysis/editing is unfinished; topology results are provisional.");
+   }
+   msg ("  directed edges: %d, weak components: %d (largest: %d), isolated nodes: %d",
+      quality.edges, quality.weakComponents, quality.largestWeakComponent, quality.isolatedNodes);
+   msg ("  link anomalies: invalid %d, self %d, duplicate %d; unmatched reverse edges: %d",
+      quality.invalidLinks, quality.selfLinks, quality.duplicateLinks, quality.oneWayLinks);
+   msg ("  T spawn entities: %d (unmapped %d), mapped graph sources: %d",
+      tSpawnEntities, tUnmapped, quality.terroristSources);
+   msg ("  CT/VIP spawn entities: %d (unmapped %d), mapped graph sources: %d",
+      ctSpawnEntities, ctUnmapped, quality.ctSources);
+   if (quality.terroristSources > 0) {
+      msg ("  directed T spawn-to-goal reach: %d/%d tagged goals",
+         quality.terroristReachableGoals, quality.goals);
+   }
+   else {
+      msg ("  directed T spawn-to-goal reach: N/A (no mapped T spawn source)");
+   }
+   if (quality.ctSources > 0) {
+      msg ("  directed CT spawn-to-goal reach: %d/%d tagged goals",
+         quality.ctReachableGoals, quality.goals);
+      msg ("  directed CT spawn-to-rescue reach: %d/%d tagged rescues",
+         quality.ctReachableRescues, quality.rescues);
+   }
+   else {
+      msg ("  directed CT spawn-to-goal/rescue reach: N/A (no mapped CT/VIP spawn source)");
+   }
 }
 
 void BotGraph::showFileInfo () {

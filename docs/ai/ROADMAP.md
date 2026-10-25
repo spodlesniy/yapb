@@ -39,6 +39,8 @@ Do not fabricate completion records or historical names for Phases 1–6 without
 Independent AI is a separate research track forked from `ai/phase-07-training` at `cbb2b3b`; it does not replace Phase 7 stabilization or the proposed Phases 8–12.
 Its goal is independently specified decision logic and self-generated gameplay experience rather than imitation of the YaPB-based teacher.
 D200 establishes the [independent architecture](INDEPENDENT_AI.md) and [waypoint/practice source audit](INDEPENDENT_AI_WAYPOINT_AUDIT.md), without implemented behavior, model training or game testing.
+D201 adds read-only topology diagnostics to the existing graph statistics command and unit tests for components, invalid links, and directional objective reachability.
+This is instrumentation, not evidence that arbitrary maps have been measured or physically traversed; Windows x86/in-game acceptance is pending.
 Proposed progression: graph evaluation/generator; versioned map knowledge; bot profiles; match context and perception; independent policy; reproducible rewards/learning; opt-in inference and in-game comparisons.
 This parallel track does not change any existing Phase 7 exit criterion.
 

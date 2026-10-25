@@ -485,6 +485,7 @@ int BotControl::cmdNode () {
       "erase",
       "erase_training",
       "fileinfo",
+      "stats",
       "check"
    };
 
@@ -537,7 +538,7 @@ int BotControl::cmdNode () {
       addGraphCmd ("flags", "flags [noarguments]", "Open and displays menu for modifying flags for nearest point.", &BotControl::cmdNodeSetFlags);
       addGraphCmd ("teleport", "teleport [index]", "Teleports player to specified node index.", &BotControl::cmdNodeTeleport);
       addGraphCmd ("upload", "upload", "Uploads created graph to graph database.", &BotControl::cmdNodeUpload);
-      addGraphCmd ("stats", "stats [noarguments]", "Shows the stats about node types on the map.", &BotControl::cmdNodeShowStats);
+      addGraphCmd ("stats", "stats [noarguments]", "Shows graph node types, topology quality and objective reachability.", &BotControl::cmdNodeShowStats);
       addGraphCmd ("fileinfo", "fileinfo [noarguments]", "Shows basic information about graph file.", &BotControl::cmdNodeFileInfo);
       addGraphCmd ("adjust_height", "adjust_height [height offset]", "Modifies all the graph nodes height (z-component) with specified offset.", &BotControl::cmdNodeAdjustHeight);
       addGraphCmd ("refresh", "refresh [noarguments]", "Deletes a current graph and downloads one from graph database.", &BotControl::cmdNodeRefresh);

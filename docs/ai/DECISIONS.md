@@ -2126,3 +2126,11 @@ Do not use original YaPB or `GoalNavigationPolicy` decisions as independent lear
 Engine primitives can be reused provisionally only with explicit recognition that some hide tactical choices.
 Audit graph generation, planning and `BotPractice` before choosing navigation replacements; measure source-level risks in later focused steps.
 This is a documentation-only decision and establishes no new executable model contract, CI success, or Phase 7 completion.
+
+## D201 — Read-only waypoint topology measurements
+
+Add engine-independent, bounded graph-quality analysis of directed links, invalid/self/duplicate connections, one-way links, weakly connected components, isolated nodes and directed reachability from mapped team spawn points to tagged goal/rescue nodes.
+Integrate this analysis into the existing graph stats console command, permitting dedicated-server diagnostics without an editor and retaining its original node-type output.
+Match actual map spawn entities to nearby graph nodes rather than assuming legacy team-only waypoint flags represent spawns.
+Do not alter graph generation, route selection, bot behavior, learned practice or AI training data.
+This analysis measures topological plausibility only; graph edge reachability in gameplay and coverage of unrepresented areas require later experiments.

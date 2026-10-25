@@ -375,6 +375,7 @@ if get_option('tests')
    ai_tests = executable(
       'yapb_ai_tests',
       'tests/unit/ai_test.cpp',
+      'tests/unit/ai_graph_quality_tests.cpp',
       'tests/unit/ai_action_tests.cpp',
       'tests/unit/ai_observation_tests.cpp',
       'tests/unit/ai_controller_tests.cpp',
