@@ -23,3 +23,7 @@ build/
 **/compile_commands.json
 
 /tools/aipb_training/checkpoints/
+
+# Track standalone CMake presets despite the legacy global JSON ignore.
+!/projects/aipb-map/CMakePresets.json
+/projects/aipb-map/CMakeUserPresets.json

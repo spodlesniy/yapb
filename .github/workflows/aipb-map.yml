@@ -1,0 +1,57 @@
+name: aipb-map
+
+on:
+  push:
+    branches:
+      - master
+      - dev
+      - 'ai/**'
+    paths:
+      - 'projects/aipb-map/**'
+      - '.github/workflows/aipb-map.yml'
+  pull_request:
+    paths:
+      - 'projects/aipb-map/**'
+      - '.github/workflows/aipb-map.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    name: Map Tool Linux (${{ matrix.compiler }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [g++, clang++]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7.0.1
+      - name: Configure
+        env:
+          CXX: ${{ matrix.compiler }}
+        run: cmake -S projects/aipb-map -B build/aipb-map -G Ninja -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON
+      - name: Build
+        run: cmake --build build/aipb-map --parallel
+      - name: Test
+        run: ctest --test-dir build/aipb-map --output-on-failure
+
+  windows:
+    name: Map Tool Windows (MSVC x64)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7.0.1
+      - name: Set up MSVC environment
+        uses: TheMrMilchmann/setup-msvc-dev@v4.1.0
+        with:
+          arch: amd64
+      - name: Install Ninja
+        run: python -m pip install --upgrade ninja
+      - name: Configure
+        run: cmake -S projects/aipb-map -B build/aipb-map -G Ninja -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON
+      - name: Build
+        run: cmake --build build/aipb-map --parallel
+      - name: Test
+        run: ctest --test-dir build/aipb-map --output-on-failure

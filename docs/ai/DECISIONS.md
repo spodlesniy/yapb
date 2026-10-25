@@ -2134,3 +2134,11 @@ Integrate this analysis into the existing graph stats console command, permittin
 Match actual map spawn entities to nearby graph nodes rather than assuming legacy team-only waypoint flags represent spawns.
 Do not alter graph generation, route selection, bot behavior, learned practice or AI training data.
 This analysis measures topological plausibility only; graph edge reachability in gameplay and coverage of unrepresented areas require later experiments.
+
+## D202 — Isolate the standalone AiPB Map Tool foundation
+
+Introduce an independent C++20/STL project under `projects/aipb-map/` with its own CMake/Ninja presets, static core library, CLI entry point, unit smoke tests, and GitHub Actions on Linux and Windows x64.
+Do not import or link crlib, linkage, YaPB/GoldSrc runtime headers, ONNX Runtime or the existing game DLL.
+Keep the YaPB root CMake and Meson builds unchanged and exclude Map Tool-only pushes from the legacy automatic workflow.
+Scope legacy fixed-array rules to legacy code and permit project-local STL conventions without weakening the repository-wide atomic commit and upstream protection rules.
+D202 establishes build infrastructure only; it does not implement BSP import, the MapModel/NavigationModel, navigation generation, or a YaPB graph exporter.

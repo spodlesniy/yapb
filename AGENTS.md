@@ -38,7 +38,9 @@ This repository is the AiPB development fork of YaPB.
 
 ## Coding rules
 
-- Do not use `std::array`.
+Independent projects under `projects/` can use C++20 and STL without importing crlib; follow each project's local `AGENTS.md` for C++ details while retaining repository-wide Git, documentation, and CI safety rules.
+
+- Do not use `std::array` in the legacy YaPB runtime and its existing AI contracts; independent projects under `projects/` may define their own STL rules in a project-local `AGENTS.md`.
 - Use ordinary fixed-size C-style arrays when a fixed-size array is required.
 - **Mandatory first-include exception for MSVC x86/crlib:** in every production C++ translation unit that directly includes `<yapb.h>`, it MUST be the **first `#include` directive**, before any standard-library, AI, or local header (including `<cstring>`, `<cmath>`, and `<ai/...>`).
   The pinned crlib supplies a placement `operator new` that must be defined before the STL's placement-new declaration on older MSVC.
@@ -92,7 +94,7 @@ The training buffer is a fixed-capacity contiguous store exposed through read-on
 Before finalizing a change:
 
 1. Confirm the diff contains only the intended iteration.
-2. Confirm no `std::array` was introduced.
+2. Confirm no `std::array` was introduced into legacy YaPB code; standalone projects follow their scoped rules.
 3. Confirm `<yapb.h>` is the first include in every touched production `.cpp` that uses it; otherwise apply the usual standard-library-first order.
 4. Confirm all new or changed source-code comments are in English.
 5. Confirm tests are syntactically balanced and do not contain duplicate test cases.
