@@ -3535,8 +3535,8 @@ void Bot::frame () {
          // Original YaPB uses a near-C4 timer to recover a stalled pickup.
          // Restrict this fallback to a physically usable Training CT claim.
          const float distanceSq = pev->origin.distanceSq (bombPosition);
-         const bool near = distanceSq < cr::sqrf (ai::kCtNearBombFallbackRadius);
-         if (!near) m_aiCtNearBombSince = 0.0f;
+         const bool nearBomb = distanceSq < cr::sqrf (ai::kCtNearBombFallbackRadius);
+         if (!nearBomb) m_aiCtNearBombSince = 0.0f;
          else if (m_aiCtNearBombSince <= 0.0f) m_aiCtNearBombSince = game.time ();
          const bool trainingCt = m_aiRuntime.controller ().getMode () == ai::ControlMode::Training;
          const bool pickupOwned = m_pickupType == Pickup::PlantedC4
@@ -3548,7 +3548,7 @@ void Bot::frame () {
                (m_states & Sense::SeeingEnemy) != 0,
                !ai::shouldAbandonLateTrainingCtBombApproach (
                   trainingCt, m_hasProgressBar, gameState.getBombTimeLeft (), m_hasDefuser),
-               near ? game.time () - m_aiCtNearBombSince : 0.0f,
+               nearBomb ? game.time () - m_aiCtNearBombSince : 0.0f,
                graph.isNodeReacheable (pev->origin, bombPosition), distanceSq)) {
             m_aiCtNearBombSince = 0.0f;
             clearSearchNodes ();

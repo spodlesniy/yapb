@@ -2092,3 +2092,9 @@ AiPB lacked that fallback after its more elaborate graph/direct pickup handoff w
 Reintroduce a three-second dwell recovery only for a live Training CT already owning the planted-C4 entity, with no other defusing teammate, no visible enemy, no active escape, adequate bomb time and a physically unobstructed C4 within the existing 60-unit ready radius.
 The original upstream also falls back to a game-state bomb entity when pickup ownership is lost; the fork has no verified equivalent accessor in the audited code, so this step deliberately does not fabricate or dereference an unverified entity.
 The native DefuseBomb task retains IN_USE/BarTime confirmation and safety checks.
+
+## D192.15.1 — Windows MSVC identifier compatibility
+
+Local Windows x86 compilation of D192.15 failed because the new local variable named `near` in `src/botlib.cpp` was interpreted as an MSVC keyword, producing C2513 and cascading parser errors around lines 3538–3552.
+Rename the variable and its two usages to `nearBomb`, preserving all conditions and gameplay semantics.
+This is a separately named one-commit correction; no published history is rewritten.
