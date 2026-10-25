@@ -67,6 +67,7 @@ Do not fabricate completion records or historical names for Phases 1–6 without
 - D192.6 prevents Training CTs from repeatedly acquiring C4 when their planned fresh defuse no longer fits the bomb timer; it preserves the AI escape action across executor-owned navigation. Automatic CI is currently unavailable, and local tests and gameplay validation remain pending.
 - D192.7 corrects the D192.6 T planted-bomb policy regression-test expectation from `None` to the existing `ProtectObjective` contract; the D192.6 push CI reached unit tests but failed on that assertion. New CI and gameplay verification remain pending.
 - D192.8 adds event-only diagnostics for CT defuse task vetoes and T bomb-timer escape decisions, including timer, enemy-sensing context and proximity; no tactical behavior changes. Automatic CI and user-triggered Windows x86 gameplay validation remain pending.
+- D192.9 corrects the T-team enum in the D192.8 native gameplay diagnostic (`Team::Terrorist` rather than non-existent `Team::T`); D192.8 Linux unit CI passed but local MSVC DLL compilation failed with C2838/C2065. Windows x86 compilation of the correction remains unverified.
 
 ### Latest verified build evidence
 

@@ -2062,7 +2062,7 @@ void Bot::overrideConditions () {
       && tid != Task::EscapeFromBomb
       && isOutOfBombTimer ()) {
 
-      if (m_team == Team::T && m_aiRuntime.controller ().getMode () == ai::ControlMode::Training) {
+      if (m_team == Team::Terrorist && m_aiRuntime.controller ().getMode () == ai::ControlMode::Training) {
          recordNavigationEvent (ai::NavigationEventType::BombEscape,
             ai::NavigationEventReason::BombTimerExpiredForRoute);
       }
