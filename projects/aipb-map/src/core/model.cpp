@@ -1,8 +1,10 @@
 #include <aipb/map/model.h>
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <set>
+#include <span>
 #include <stdexcept>
 #include <string_view>
 #include <vector>
@@ -20,7 +22,7 @@ bool finite(Vec3 point) {
   return std::isfinite(point.x) && std::isfinite(point.y) && std::isfinite(point.z);
 }
 
-void checkTriangles(const std::vector<Vec3> &vertices, const std::vector<Triangle> &triangles) {
+void checkTriangles(std::span<const Vec3> vertices, std::span<const Triangle> triangles) {
   for (const auto &vertex : vertices) {
     require(finite(vertex), "mesh contains a non-finite coordinate");
   }
@@ -43,18 +45,10 @@ template <typename Collection> std::set<ObjectId> uniqueIds(const Collection &it
   return ids;
 }
 
-bool sha256(const std::string &hash) {
-  if (hash.size() != 64) {
-    return false;
-  }
-
-  for (const char c : hash) {
-    if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'))) {
-      return false;
-    }
-  }
-
-  return true;
+bool sha256(std::string_view hash) {
+  return hash.size() == 64 && std::ranges::all_of(hash, [](char c) {
+    return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f');
+  });
 }
 
 void checkBranchGraph(const std::vector<CollisionBranch> &branches, std::size_t planes, std::size_t leaves, bool indexedLeaves) {

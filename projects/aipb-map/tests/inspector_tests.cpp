@@ -4,12 +4,12 @@
 
 #include "json.h"
 
+#include <algorithm>
 #include <filesystem>
 #include <iostream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
-#include <utility>
 
 namespace {
 
@@ -22,37 +22,37 @@ void require(bool ok, const char *why) {
   }
 }
 
-bool hasFinding(const MapReport &report, const std::string &code) {
-  for (const auto &finding : report.findings) {
-    if (finding.code == code) {
-      return true;
-    }
-  }
-
-  return false;
+bool hasFinding(const MapReport &report, std::string_view code) {
+  return std::ranges::any_of(report.findings, [code](const Finding &finding) { return finding.code == code; });
 }
 
 MapModel fixture() {
-  MapModel map;
-  map.name = "inspection_fixture";
-  map.sourceFormat = "synthetic";
-  map.sourceSha256 = std::string(64, 'a');
-  map.units = "goldsrc_units";
-  map.meshes.push_back({ 1, { { 0, 0, 0 }, { 2, 0, 0 }, { 0, 2, 0 }, { 1, 1, 0 }, { 5, 0, 0 } }, { { 0, 1, 2 }, { 0, 1, 4 } } });
-  map.collision.push_back({ 17, "triangle", { { -2, 0, -3 }, { -1, 0, -3 }, { -1, 1, -3 } }, { { 0, 1, 2 } } });
-  map.entities.push_back({ 4, "worldspawn", { 0, 0, 0 }, {}, 1, {}, 7 });
-  map.entities.push_back({ 5, "func_door", { 1, 2, 3 }, {}, {}, {}, 8 });
-  CollisionPartition partition;
-  partition.planes.push_back({ { 0, 0, 1 }, 0, 2 });
-  partition.renderNodes.push_back({ 0, 1, -1 });
-  partition.renderNodes.push_back({ 0, -2, -2 });
-  partition.clipNodes.push_back({ 0, 1, -1 });
-  partition.clipNodes.push_back({ 0, -2, -3 });
-  partition.clipNodes.push_back({ 0, -4, -1 });
-  partition.leaves = { { -2 }, { -1 }, { -3 } };
-  partition.models.push_back({ 7, { -10, -20, -30 }, { 10, 20, 30 }, {}, { 0, 0, -2, -1 } });
-  partition.models.push_back({ 8, { -5, -5, -5 }, { 5, 5, 5 }, {}, { -1, 1, -2, -1 } });
-  map.partition = std::move(partition);
+  MapModel map {
+    .name = "inspection_fixture",
+    .sourceFormat = "synthetic",
+    .sourceSha256 = std::string(64, 'a'),
+    .units = "goldsrc_units",
+    .meshes = {
+      { 1, { { 0, 0, 0 }, { 2, 0, 0 }, { 0, 2, 0 }, { 1, 1, 0 }, { 5, 0, 0 } }, { { 0, 1, 2 }, { 0, 1, 4 } } }
+    },
+    .collision = {
+      { 17, "triangle", { { -2, 0, -3 }, { -1, 0, -3 }, { -1, 1, -3 } }, { { 0, 1, 2 } } }
+    },
+    .entities = {
+      { 4, "worldspawn", { 0, 0, 0 }, {}, 1, {}, 7 },
+      { 5, "func_door", { 1, 2, 3 }, {}, {}, {}, 8 }
+    },
+    .partition = CollisionPartition {
+      .planes = { { { 0, 0, 1 }, 0, 2 } },
+      .renderNodes = { { 0, 1, -1 }, { 0, -2, -2 } },
+      .clipNodes = { { 0, 1, -1 }, { 0, -2, -3 }, { 0, -4, -1 } },
+      .leaves = { { -2 }, { -1 }, { -3 } },
+      .models = {
+        { 7, { -10, -20, -30 }, { 10, 20, 30 }, {}, { 0, 0, -2, -1 } },
+        { 8, { -5, -5, -5 }, { 5, 5, 5 }, {}, { -1, 1, -2, -1 } }
+      }
+    }
+  };
   validate(map);
 
   return map;

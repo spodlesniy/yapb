@@ -5,6 +5,7 @@
 #include "sha256.h"
 
 #include <cmath>
+#include <concepts>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -22,7 +23,7 @@ void check(bool ok, const char *message) {
   }
 }
 
-template <typename F> void rejected(F test, const char *message) {
+void rejected(std::invocable auto test, const char *message) {
   try {
     test();
   } catch (const std::exception &) {
@@ -46,15 +47,22 @@ public:
 
 aipb::map::MapModel exampleMap() {
   using namespace aipb::map;
-  MapModel map;
-  map.name = "cs_тест_\"\\";
-  map.sourceFormat = "goldsrc-bsp";
-  map.sourceSha256 = std::string(64, 'a');
-  map.units = "goldsrc_units";
-  map.meshes.push_back({ 9007199254740997ULL, { { 1.5, -2.25, 1000.125 }, { 7, 8, 9 }, { 12, 13, 14 } }, { { 0, 1, 2 } } });
-  map.collision.push_back({ 2, "solid", { { 0, 0, 0 }, { 1, 0, 0 }, { 0, 1, 0 } }, { { 0, 1, 2 } } });
-  map.entities.push_back(
-      { 3, "func_door", { 20.5, 33, -3 }, { { "key\n\"", "value \\ test" }, { "special", "\t\r\n" } }, map.meshes[0].id, 2 });
+  constexpr ObjectId meshId = 9007199254740997ULL;
+  MapModel map {
+    .name = "cs_тест_\"\\",
+    .sourceFormat = "goldsrc-bsp",
+    .sourceSha256 = std::string(64, 'a'),
+    .units = "goldsrc_units",
+    .meshes = {
+      { meshId, { { 1.5, -2.25, 1000.125 }, { 7, 8, 9 }, { 12, 13, 14 } }, { { 0, 1, 2 } } }
+    },
+    .collision = {
+      { 2, "solid", { { 0, 0, 0 }, { 1, 0, 0 }, { 0, 1, 0 } }, { { 0, 1, 2 } } }
+    },
+    .entities = {
+      { 3, "func_door", { 20.5, 33, -3 }, { { "key\n\"", "value \\ test" }, { "special", "\t\r\n" } }, meshId, 2 }
+    }
+  };
 
   return map;
 }
@@ -95,12 +103,12 @@ void testStructuralValidation() {
   broken.sourceSha256 = "0000";
   rejected([&] { validate(broken); }, "bad source hash accepted");
 
-  NavigationModel nav;
-  nav.mapArtifactSha256 = std::string(64, 'b');
-  nav.regions.push_back({ 4, { map.meshes[0].id } });
-  nav.nodes.push_back({ 1, { 0, 0, 0 }, 4, "junction" });
-  nav.nodes.push_back({ 2, { 10, 0, 0 }, 4, "exit" });
-  nav.edges.push_back({ 3, 1, 2, "walk", { { "width", 64.25 } } });
+  NavigationModel nav {
+    .mapArtifactSha256 = std::string(64, 'b'),
+    .regions = { { 4, { map.meshes[0].id } } },
+    .nodes = { { 1, { 0, 0, 0 }, 4, "junction" }, { 2, { 10, 0, 0 }, 4, "exit" } },
+    .edges = { { 3, 1, 2, "walk", { { "width", 64.25 } } } }
+  };
   validate(nav, &map);
   nav.edges[0].to = 404;
   rejected([&] { validate(nav); }, "dangling edge accepted");
@@ -128,12 +136,12 @@ void testPersistence() {
   check(io::saveMap(changed, dir.path / "changed.aipbmap") != digest, "changed geometry retained the old map fingerprint");
   rejected([&] { io::saveMap(model, mapPath); }, "overwrite of existing artifact accepted");
 
-  NavigationModel nav;
-  nav.mapArtifactSha256 = digest;
-  nav.regions.push_back({ 4, { model.meshes[0].id } });
-  nav.nodes.push_back({ 1, { 0, 0, -5 }, 4, "junction" });
-  nav.nodes.push_back({ 2, { 10, 0, -8 }, 4, "exit" });
-  nav.edges.push_back({ 3, 1, 2, "drop", { { "delta_z", -3.0 } } });
+  NavigationModel nav {
+    .mapArtifactSha256 = digest,
+    .regions = { { 4, { model.meshes[0].id } } },
+    .nodes = { { 1, { 0, 0, -5 }, 4, "junction" }, { 2, { 10, 0, -8 }, 4, "exit" } },
+    .edges = { { 3, 1, 2, "drop", { { "delta_z", -3.0 } } } }
+  };
   const auto navPath = dir.path / "result.aipbnav";
   const auto navDigest = io::saveNavigation(nav, navPath);
   const auto reloaded = io::loadNavigation(navPath, &loaded);
@@ -182,10 +190,13 @@ void testLegacyMapCompatibility() {
 void testEmptyAndVersioning() {
   using namespace aipb::map;
   TestDirectory dir;
-  MapModel empty { "empty", "synthetic", std::string(64, '0'), "units", {}, {}, {} };
+  MapModel empty {
+    .name = "empty", .sourceFormat = "synthetic", .sourceSha256 = std::string(64, '0'), .units = "units",
+    .meshes = {}, .collision = {}, .entities = {}
+  };
   auto digest = io::saveMap(empty, dir.path / "empty.aipbmap");
   check(io::loadMap(dir.path / "empty.aipbmap").model == empty, "empty map does not load");
-  NavigationModel nav { digest, {}, {}, {} };
+  NavigationModel nav { .mapArtifactSha256 = digest, .regions = {}, .nodes = {}, .edges = {} };
   auto navPath = dir.path / "empty.aipbnav";
   io::saveNavigation(nav, navPath);
   check(io::loadNavigation(navPath).model == nav, "empty graph does not load");

@@ -2202,3 +2202,10 @@ Extend `projects/.clang-format` with `InsertBraces: true` and short-statement se
 Document empty-line rules for control-flow blocks, final nontrivial function returns and logical sections in `projects/STYLE.md`; these are reviewed manually because clang-format cannot infer intent.
 Apply style-only braces and whitespace adjustments to standalone Map Tool C++ files, with no intentional behavior changes.
 Validate using existing GCC/Clang compilation and CTest; a local clangd 17 compatible profile is used for formatting because not all canonical settings are supported by that version.
+
+## D206.3 — Modern C++20 coding conventions for standalone projects
+
+Document C++20 aggregate/designated initialization, span/ranges, ownership, const-correctness and readability preferences under `projects/STYLE.md` while retaining the legacy YaPB C++17 boundary.
+Allow test code to use the full supported C++20 feature set to reduce repetitive fixture construction and assertions, without sacrificing deterministic and portable checks.
+Apply scoped modernization in the Map Tool inspector and model validation and simplify test fixtures/validation helpers without changing public model definitions, artifact schemas, map hashes or runtime behavior.
+Keep GCC and Clang strict-warning builds and all seven Map Tool CTest checks passing; do not weaken diagnostics to accommodate partial aggregate initialization.

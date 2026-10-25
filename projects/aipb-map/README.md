@@ -80,3 +80,6 @@ The D206.1 initial formatting used clangd 17's compatible subset because its bun
 
 D206.2 requires braces for all control-flow statements and meaningful blank-line separation.
 See [shared style rules](../STYLE.md).
+
+D206.3 adopts targeted modern C++20 patterns in the core and inspector, while allowing compact C++20 fixture and assertion idioms in tests.
+See [shared C++20 conventions](../STYLE.md) for initialization, non-owning spans, ranges, ownership and test-specific rules.

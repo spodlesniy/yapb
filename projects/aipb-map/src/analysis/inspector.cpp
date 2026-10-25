@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cstdint>
 #include <set>
+#include <span>
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -45,11 +46,8 @@ bool zeroArea(const Vec3 &a, const Vec3 &b, const Vec3 &c) {
   return (y * w - z * v) == 0 && (z * u - x * w) == 0 && (x * v - y * u) == 0;
 }
 
-MeshMetrics inspectMesh(ObjectId id, const std::vector<Vec3> &vertices, const std::vector<Triangle> &triangles) {
-  MeshMetrics result;
-  result.id = id;
-  result.vertices = vertices.size();
-  result.triangles = triangles.size();
+MeshMetrics inspectMesh(ObjectId id, std::span<const Vec3> vertices, std::span<const Triangle> triangles) {
+  MeshMetrics result { .id = id, .vertices = vertices.size(), .triangles = triangles.size() };
   std::vector<std::uint8_t> used(vertices.size(), 0);
 
   for (const auto &vertex : vertices) {
@@ -63,7 +61,7 @@ MeshMetrics inspectMesh(ObjectId id, const std::vector<Vec3> &vertices, const st
       ++result.zeroAreaTriangles;
     }
   }
-  result.unusedVertices = static_cast<std::size_t>(std::count(used.begin(), used.end(), 0));
+  result.unusedVertices = static_cast<std::size_t>(std::ranges::count(used, std::uint8_t { 0 }));
 
   return result;
 }
@@ -103,12 +101,13 @@ std::size_t maximumDepth(const std::vector<CollisionBranch> &branches, std::int3
 
 HullMetrics inspectHull(const CollisionPartition &partition, ObjectId modelId, std::size_t hull, std::int32_t root,
                         std::vector<std::uint8_t> &globalNodes, std::vector<std::uint8_t> &globalLeaves, std::vector<std::size_t> &depths) {
-  HullMetrics result;
-  result.modelId = modelId;
-  result.hull = hull;
-  result.root = root;
   const auto &branches = hull == 0 ? partition.renderNodes : partition.clipNodes;
-  result.maximumDepth = maximumDepth(branches, root, depths);
+  HullMetrics result {
+    .modelId = modelId,
+    .hull = hull,
+    .root = root,
+    .maximumDepth = maximumDepth(branches, root, depths)
+  };
   std::set<std::int32_t> terminals;
   std::set<std::size_t> visited;
   std::vector<std::int32_t> pending { root };
@@ -141,13 +140,16 @@ HullMetrics inspectHull(const CollisionPartition &partition, ObjectId modelId, s
 }
 
 PartitionMetrics inspectPartition(const CollisionPartition &partition) {
-  PartitionMetrics result;
-  result.available = true;
-  result.planes = partition.planes.size();
-  result.renderNodes = partition.renderNodes.size();
-  result.clipNodes = partition.clipNodes.size();
-  result.leaves = partition.leaves.size();
-  result.models = partition.models.size();
+  PartitionMetrics result {
+    .available = true,
+    .planes = partition.planes.size(),
+    .renderNodes = partition.renderNodes.size(),
+    .clipNodes = partition.clipNodes.size(),
+    .leaves = partition.leaves.size(),
+    .models = partition.models.size(),
+    .leafContents = {},
+    .hulls = {}
+  };
 
   for (const auto &model : partition.models) {
     extend(result.sourceModelBounds, model.mins);
@@ -170,7 +172,7 @@ PartitionMetrics inspectPartition(const CollisionPartition &partition) {
     }
   }
   const auto unused = [](const std::vector<std::uint8_t> &visited) {
-    return static_cast<std::size_t>(std::count(visited.begin(), visited.end(), 0));
+    return static_cast<std::size_t>(std::ranges::count(visited, std::uint8_t { 0 }));
   };
   result.unreachableRenderNodes = unused(visitedRender);
   result.unreachableClipNodes = unused(visitedClip);
@@ -183,15 +185,20 @@ PartitionMetrics inspectPartition(const CollisionPartition &partition) {
 
 MapReport inspect(const MapModel &model, std::string artifactSha256) {
   validate(model);
-  MapReport report;
-  report.mapName = model.name;
-  report.sourceFormat = model.sourceFormat;
-  report.sourceSha256 = model.sourceSha256;
-  report.artifactSha256 = std::move(artifactSha256);
-  report.units = model.units;
-  report.meshCount = model.meshes.size();
-  report.collisionShapeCount = model.collision.size();
-  report.entityCount = model.entities.size();
+  MapReport report {
+    .mapName = model.name,
+    .sourceFormat = model.sourceFormat,
+    .sourceSha256 = model.sourceSha256,
+    .artifactSha256 = std::move(artifactSha256),
+    .units = model.units,
+    .meshCount = model.meshes.size(),
+    .collisionShapeCount = model.collision.size(),
+    .entityCount = model.entities.size(),
+    .entityTypes = {},
+    .meshes = {},
+    .partition = {},
+    .findings = {}
+  };
 
   for (const auto &mesh : model.meshes) {
     auto metrics = inspectMesh(mesh.id, mesh.vertices, mesh.triangles);

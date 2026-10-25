@@ -1,5 +1,6 @@
 #include <array>
 #include <bit>
+#include <concepts>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
@@ -22,7 +23,7 @@ void check(bool value, const char *reason) {
   }
 }
 
-template <typename Callable> void reject(Callable func, const char *reason) {
+void reject(std::invocable auto func, const char *reason) {
   try {
     func();
   } catch (const std::exception &) {
