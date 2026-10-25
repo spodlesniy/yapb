@@ -5,6 +5,7 @@ The repository's Git workflow, one-D-step-one-commit policy, protected upstream,
 
 - Build independently from `projects/aipb-map/` using its own CMake project; do not include it as a subdirectory of the legacy YaPB build.
 - Use C++20 and the standard library, including STL containers and `std::array` when appropriate.
+- Follow the shared `projects/.clang-format` and `projects/.clang-tidy` configurations for all standalone C++ project files; use a formatter version that supports their full option set.
 - Do not include `yapb.h`, crlib, linkage, GoldSrc SDK headers, or legacy AI headers in the Map Tool core.
 - Do not link the Map Tool against the game DLL or ONNX Runtime.
 - Keep the map and navigation data models independent of importer, exporter, builder, and serialization implementations.

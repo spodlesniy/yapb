@@ -71,3 +71,9 @@ See [D206 map-inspection specification](../../docs/ai/INDEPENDENT_AI_MAP_INSPECT
 There is no dependency on the repository root Meson/CMake build, the YaPB DLL, crlib or the GoldSrc SDK.
 External constraints (such as YaPB waypoint/link limits) will be handled only by the future exporter.
 Project-specific coding rules are in [AGENTS.md](AGENTS.md).
+
+## Formatting and linting
+
+C++ files under `projects/` inherit the shared [clang-format configuration](../.clang-format) and [clang-tidy configuration](../.clang-tidy), copied from `src/ai/`.
+Run `clang-format -i` on C++ source and header files from the standalone project; use a version that understands all settings in the configuration (including newer braced-list and parentheses options).
+The D206.1 initial formatting used clangd 17's compatible subset because its bundled formatter does not support all modern keys; the committed configurations remain identical to the originals.

@@ -1,0 +1,27 @@
+Language: Cpp
+BasedOnStyle: LLVM
+IndentWidth: 2
+TabWidth: 2
+UseTab: Never
+ColumnLimit: 140
+SpaceBeforeParens: ControlStatements
+SpaceBeforeCpp11BracedList: true
+Cpp11BracedListStyle: false
+BracedListStyle: Block
+SpacesInRepetitiveBracedInitList: true
+SpacesInBraces: true
+SpaceInEmptyBlock: true
+AllowShortBlocksOnASingleLine: false
+AllowShortFunctionsOnASingleLine: false
+SpaceBeforeInitializerOptions:
+  InConstructorInitializer: false
+SpacesInParens: Custom
+SpacesInParensOptions:
+  InFunctionCall: false
+  InFunctionDeclaration: false
+  InControlStatements: false
+  InCStyleCasts: true
+  InEmptyParentheses: false
+PackConstructorInitializers: CurrentLine
+ReflowComments: false
+CommentPragmas: '^'

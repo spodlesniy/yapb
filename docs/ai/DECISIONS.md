@@ -2187,3 +2187,11 @@ Expose `aipb-map inspect --input <map.aipbmap> [--output <report.json>]` with a 
 Verify independently with CTest unit/CLI smoke tests across empty and populated partitions, deep collision trees, checksum-preserving reads and malformed output paths.
 Treat findings as descriptive diagnostics rather than proofs of in-game walkability, map coverage, BSP corruption or collision accuracy.
 A real Counter-Strike BSP inspection and in-game acceptance remain pending.
+
+## D206.1 — Share formatting and lint configuration across standalone projects
+
+Copy the existing `src/ai/.clang-format` and `src/ai/.clang-tidy` byte-for-byte to `projects/` so independently built C++ projects inherit the same style and lint settings.
+Apply formatting-only changes to all C++ headers, sources and tests in `projects/aipb-map/` without changing semantics, build targets or runtime behavior.
+The available local clangd 17 formatter lacks support for some newer YAML style keys, so validate against a temporary compatible profile; preserve the exact canonical project settings for newer clang-format versions.
+Run all existing CTest targets with GCC Debug/Release and Clang Debug and check formatting idempotence.
+No legacy YaPB source files are modified.
