@@ -2056,3 +2056,13 @@ The native defuse task returns to `PickupItem`, but the next `updatePickups()` s
 Keep the existing planted-C4 claim across that specific scanner veto for at most two seconds after physical displacement; never generate a new pickup, bypass an active escape, change the original defuse timing or USE confirmation, or change Legacy/Neural behavior.
 The existing normal combat decision path remains in effect; this step only prevents the scanner from dropping the current C4 claim during a short recovery window.
 Verify MSVC x86 compilation and gameplay with the modded knockback before claiming practical improvement.
+
+## D192.12 — Pin upstream baseline and audit planted-C4 approach without rewriting master
+
+Upstream `yapb/yapb:master` was observed at `4606ada42819b29ba80aa22d8f6eedb446a19a8a` and the fork `spodlesniy/yapb:master` at `a6b7f298cb7e82c2df4bbcd02525099b6cc39b20` on October 25, 2026.
+The GitHub comparison reports diverged histories (fork master ahead 121, behind 2); no fast-forward can synchronize them.
+The mandatory project no-history-rewrite rule prohibits force-pushing fork master even if specifically offered for convenience.
+Preserve both master histories and instead pin the upstream commit hash for immutable read-only comparisons.
+The upstream commit is an external commit and must not be assumed to be an existing object in the fork, so a fork-side reference branch is not created without first importing its object history.
+The source audit and proposed D192.13 regression conditions are recorded in `docs/ai/D192_12_UPSTREAM_AUDIT.md`.
+This step changes documentation only and makes no gameplay code or tests changes.
