@@ -306,6 +306,7 @@ def iter_validated_samples(path: str | Path):
                     "defuse_interrupted": {
                         "bar_time_zero", "unconfirmed_use_timeout", "task_lifecycle",
                         "round_message", "death_message", "observed_dead", "game_state",
+                        "observed_distance",
                     },
                     "defuse_complete": {"bomb_defused_text_message"},
                     "defuse_approach_blocked": {"geometry_reachability"},
@@ -313,6 +314,17 @@ def iter_validated_samples(path: str | Path):
                 }
                 _require(value.get("evidence_source") in allowed_evidence[value["event"]],
                          f"line {line_number}: invalid defuse event evidence")
+                if value.get("evidence_source") == "observed_distance":
+                    _require(value["event"] == "defuse_interrupted"
+                             and value.get("reason") == "out_of_use_range",
+                             f"line {line_number}: observed distance requires physical interruption")
+                    _require(_is_number(value.get("distance_to_bomb"))
+                             and value["distance_to_bomb"] >= 0.0,
+                             f"line {line_number}: physical interruption requires distance")
+                if value.get("reason") == "out_of_use_range":
+                    _require(value["event"] == "defuse_interrupted"
+                             and value.get("evidence_source") == "observed_distance",
+                             f"line {line_number}: physical reason requires observed distance")
                 if "attempt_id" in value:
                     _require(type(value["attempt_id"]) is int and value["attempt_id"] >= 0,
                              f"line {line_number}: invalid defuse attempt id")

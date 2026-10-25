@@ -552,6 +552,22 @@ AI_TEST(testDefuseFallbackEvidenceNamesAreDistinctFromEngineMessages) {
                       "death_message") == 0, "actual DeathMsg remains distinct");
 }
 
+AI_TEST(testD192_5PhysicalDisplacementIsObservedNotAnEngineBarTimeMessage) {
+   expect(std::strcmp(ai::defuseReasonName(ai::DefuseEventReason::OutOfUseRange),
+                      "out_of_use_range") == 0,
+          "out-of-range defuse has a distinct reason");
+   expect(std::strcmp(ai::defuseEvidenceName(ai::DefuseEvidence::ObservedDistance),
+                      "observed_distance") == 0,
+          "local physical distance is not the engine's BarTime=0 signal");
+   ai::DefuseAttemptTracker tracker {};
+   expect(tracker.beginUse(156.88f), "initial IN_USE begins one attempt");
+   expect(tracker.confirmProgress(156.89f), "positive BarTime confirms progress");
+   expect(tracker.end(), "observed knockback closes this attempt exactly once");
+   expect(!tracker.active(), "displaced defuser is no longer marked as progressing");
+   expect(tracker.beginUse(163.0f) && tracker.attemptId() == 2,
+          "a physical return to C4 can begin a fresh defuse attempt");
+}
+
 AI_TEST(testDefuseApproachEventsDoNotImplyUseOrProgress) {
    expect(std::strcmp(ai::defuseEventName(ai::DefuseEventType::ApproachBlocked),
                       "defuse_approach_blocked") == 0,

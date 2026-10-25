@@ -955,6 +955,24 @@ AI_TEST(testPlantedBombDefuseRequiresInteractionProximityAndClearApproach) {
          "same distant position is not immediately retried after a failed USE");
 }
 
+AI_TEST(testD192_5DefuseProgressCannotFreezeOutOfUseRange) {
+  constexpr float kReady = ai::kPlantedBombDefuseReadyDistance;
+  expect(!ai::shouldRecoverPhysicallyDisplacedDefuser(true, true, 44.46f * 44.46f, kReady),
+         "CT with confirmed BarTime near C4 must stay defusing");
+  expect(!ai::shouldRecoverPhysicallyDisplacedDefuser(true, true, 59.9f * 59.9f, kReady),
+         "minor motion inside USE sphere does not interrupt progress");
+  expect(ai::shouldRecoverPhysicallyDisplacedDefuser(true, true, 60.0f * 60.0f, kReady),
+         "USE radius boundary immediately ends stale defuse hold");
+  expect(ai::shouldRecoverPhysicallyDisplacedDefuser(true, true, 133.99f * 133.99f, kReady),
+         "round-2 knockback must abandon stale BarTime and resume approach");
+  expect(!ai::shouldRecoverPhysicallyDisplacedDefuser(true, false, 133.99f * 133.99f, kReady),
+         "missing BarTime still uses the existing unconfirmed USE recovery");
+  expect(!ai::shouldRecoverPhysicallyDisplacedDefuser(false, true, 133.99f * 133.99f, kReady),
+         "other control modes retain upstream task behavior");
+  expect(!ai::shouldRecoverPhysicallyDisplacedDefuser(true, true, -1.0f, kReady),
+         "invalid distance cannot cause a fabricated displacement");
+}
+
 AI_TEST(testUnconfirmedBombDefuseRecoveryNeverInterruptsBarTime) {
   expect(!ai::shouldChangeUnconfirmedDefuseStance(1.0f, false, false),
          "early USE attempt retains stance");

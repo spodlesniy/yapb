@@ -91,6 +91,15 @@ An interrupted attempt records its actual evidence source rather than claiming a
 Likewise, `round_message` refers to the round message path, whereas `game_state` means the code observed that C4 was no longer marked as planted.
 The Python validator checks evidence compatibility without counting diagnostic records as model-training samples.
 
+## D192.5 — Revalidate reach throughout confirmed defuse
+
+BarTime is authoritative evidence that a defuse started, not proof that interaction remains physically possible after a modded knockback.
+For Training CT planted C4 only, `DefuseBomb` rechecks the 3D distance each update against the existing 60-unit ready sphere.
+If displaced outside, the task closes the attempt, clears locally stale progress and hands control back to `PickupItem` instead of keeping movement disabled and holding USE.
+The separate `out_of_use_range` / `observed_distance` diagnostic does not claim an engine BarTime=0 callback.
+Legacy/Neural, semiclip, training features and normal positive BarTime evidence remain unchanged.
+In-game acceptance is pending.
+
 ## D192.4 — Bounded NeedBackup radio enqueue
 
 The existing `pushRadioMessage()` dispatch now rate-limits only `Radio::NeedBackup` at the enqueue boundary to one request per bot per 15 seconds.

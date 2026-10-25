@@ -62,7 +62,8 @@ Do not fabricate completion records or historical names for Phases 1–6 without
 - D192.1 requires a physically reached interaction waypoint before the Training CT planted-C4 pickup handoff; automatic CI and user-triggered Windows x86 succeeded for `de17fae`, but October 25 gameplay still shows a critical stall without a defuse attempt.
 - D192.2 adds a missing Training CT fallback-waypoint-to-direct-C4 movement handoff; automatic CI and user-triggered Windows x86 succeeded for `9ab5472`, but subsequent gameplay still shows CT pickup stalls and delayed BarTime.
 - D192.3 allows a USE-ready Training CT to take C4 from an unfinished non-ready claimant while preserving `yb_has_team_semiclip 1` traversal; automatic CI and user-triggered Windows x86 passed, and the October 25 capture confirms CT bot 10 defused, but CT bot 5 still stalled near C4.
-- D192.4 throttles repeated `NeedBackup` requests at the queue boundary; CI, user-triggered Windows x86 and in-game radio verification are pending.
+- D192.4 throttles repeated `NeedBackup` requests at the queue boundary; automatic CI and user-triggered Windows x86 succeeded for `1f6527e`, while radio gameplay acceptance remains open.
+- D192.5 revalidates 3D C4 range during BarTime and returns displaced Training CTs to `PickupItem`; automatic CI, user-triggered Windows x86 and gameplay validation are pending.
 
 ### Latest verified build evidence
 

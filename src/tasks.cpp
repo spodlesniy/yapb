@@ -1083,6 +1083,30 @@ void Bot::defuseBomb_ () {
       return;
    }
 
+   // A modded blast can move the bot outside USE range without clearing
+   // BarTime. Do not keep the stale progress flag and freeze movement.
+   if (ai::shouldRecoverPhysicallyDisplacedDefuser (
+         ai::shouldIsolateTrainingCtDefuse (
+            m_aiRuntime.controller ().getMode () == ai::ControlMode::Training,
+            m_team == Team::CT, game.mapIs (MapFlags::Demolition), gameState.isBombPlanted ()),
+         m_hasProgressBar, bombPos.distanceSq (pev->origin),
+         ai::kPlantedBombDefuseReadyDistance)) {
+      endDefuseAttempt (ai::DefuseEventReason::OutOfUseRange,
+         ai::DefuseEvidence::ObservedDistance);
+      // Clear only the stale local flag; the new attempt requires fresh BarTime.
+      m_hasProgressBar = false;
+      m_defuseUseStartTime = 0.0f;
+      m_defuseChangedStance = false;
+      m_duckDefuseCheckTime = 0.0f;
+      m_defuseTighterApproach = false;
+      clearSearchNodes ();
+      clearTask (Task::DefuseBomb);
+      if (m_pickupType == Pickup::PlantedC4 && !game.isNullEntity (m_pickupItem)) {
+         startTask (Task::PickupItem, TaskPri::PickupItem, kInvalidNodeIndex, 0.0f, true);
+      }
+      return;
+   }
+
    // The BarTime message is the only authoritative confirmation that USE
    // actually started a defuse. Recover instead of standing immobile with
    // IN_USE held forever when the bomb is slightly out of reach.

@@ -168,6 +168,28 @@ class TrainingDatasetValidatorTests(unittest.TestCase):
                      "evidence_source": source}
             self.assertEqual(validate_dataset(self.write_dataset([METADATA, event])), 0)
 
+    def test_d192_5_accepts_physically_displaced_defuser_as_non_training_event(self) -> None:
+        event = {"type": "defuse_event", "event": "defuse_interrupted",
+                 "reason": "out_of_use_range", "evidence_source": "observed_distance",
+                 "game_time": 162.5, "bot_id": 3, "attempt_id": 1,
+                 "distance_to_bomb": 134.0, "has_progress_bar": True}
+        self.assertEqual(validate_dataset(self.write_dataset([METADATA, make_sample(), event])), 1)
+
+    def test_d192_5_rejects_false_physical_defuse_evidence(self) -> None:
+        event = {"type": "defuse_event", "event": "defuse_interrupted",
+                 "reason": "out_of_use_range", "evidence_source": "bar_time_zero",
+                 "game_time": 162.5, "bot_id": 3, "distance_to_bomb": 134.0}
+        with self.assertRaises(DatasetValidationError):
+            validate_dataset(self.write_dataset([METADATA, event]))
+        event["evidence_source"] = "observed_distance"
+        del event["distance_to_bomb"]
+        with self.assertRaises(DatasetValidationError):
+            validate_dataset(self.write_dataset([METADATA, event]))
+        event["distance_to_bomb"] = 134.0
+        event["reason"] = "bar_time_cleared"
+        with self.assertRaises(DatasetValidationError):
+            validate_dataset(self.write_dataset([METADATA, event]))
+
     def test_defuse_start_rejects_non_authoritative_evidence(self) -> None:
         event = {"type": "defuse_event", "event": "defuse_start",
                  "game_time": 3.0, "bot_id": 3, "evidence_source": "in_use"}

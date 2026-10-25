@@ -2000,3 +2000,17 @@ Add isolated C++ unit tests for first call, same-frame flooding, delayed repeat,
 After CI and a user-started Windows x86 build, listen for absence of continuous requests through and after defuse.
 A single previously enqueued message may still be emitted late by the existing team radio scheduling, but repeated queues can no longer accumulate.
 The remaining CT physical approach stall must be studied with dedicated geometry/route diagnostics rather than another unmeasured radius change.
+
+## D192.5 — Recover confirmed defuse after non-standard physical knockback
+
+The October 25 post-D192.4 `2026_10_25__10_26_07__ai_training.jsonl` contains a round-2 attempt: CT bot 3 entered `DefuseBomb` at 156.851, obtained authoritative BarTime at 156.887 without a defuse kit and received 66 damage at 162.301.
+The attempt persisted until the bot died at 170.225, around 134 units from C4, while cached `has_progress_bar` remained true.
+There is no `defuse_complete` in this capture.
+The exact source and instant of displacement are not proven by JSONL; the user observed HE knockback.
+The existing task did not revalidate physical C4 distance after BarTime, leaving `IN_USE` and zero movement active when modded knockback moved the bot out of range.
+For Training CT planted-C4 defuse only, recheck real 3D distance against the existing 60-unit ready radius before continued USE; when displaced, end the attempt, clear locally stale progress and resume the existing `PickupItem` approach.
+Record an `out_of_use_range` interruption with `observed_distance` evidence, not a fabricated BarTime=0 message.
+Preserve the authoritative positive BarTime start, normal in-range progress, Legacy/Neural, semiclip, existing radii and learning features.
+Add C++ boundary/tracker tests and Python event-evidence validation.
+Automatic CI, a user-triggered Windows x86 build and another gameplay capture are required to validate recovery.
+The separate spinning/waypoint issue remains open for physical approach diagnostics.

@@ -53,6 +53,15 @@ constexpr bool canBeginPlantedBombUse(float distanceSq, float maxUseDistance, bo
       && distanceSq < maxUseDistance * maxUseDistance && directReachable;
 }
 
+// BarTime confirms an initial defuse, but non-standard server knockback can
+// leave the cached progress flag true even after physical interaction is lost.
+constexpr bool shouldRecoverPhysicallyDisplacedDefuser(bool isolatedTrainingCt,
+                                                       bool hasProgressBar,
+                                                       float distanceSq, float interactionRadius) {
+  return isolatedTrainingCt && hasProgressBar && distanceSq >= 0.0f
+      && interactionRadius > 0.0f && distanceSq >= interactionRadius * interactionRadius;
+}
+
 // A task/IN_USE alone is NOT evidence of defusing. Only the game's BarTime
 // message confirms it. A failed attempt must return to the C4 approach.
 constexpr bool shouldChangeUnconfirmedDefuseStance(float elapsedSeconds, bool hasProgressBar,
