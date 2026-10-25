@@ -91,6 +91,15 @@ An interrupted attempt records its actual evidence source rather than claiming a
 Likewise, `round_message` refers to the round message path, whereas `game_state` means the code observed that C4 was no longer marked as planted.
 The Python validator checks evidence compatibility without counting diagnostic records as model-training samples.
 
+## D192.6 — Stable escape once a fresh defuse is no longer possible
+
+During Training CT planted-C4 handling, a fresh C4 pickup is rejected when remaining time is less than the current native 7-second kit / 12-second non-kit defuse planning budget.
+The bot releases provisional pickup ownership and starts the ordinary bomb escape behavior; a BarTime-confirmed defuser remains protected.
+The deterministic teacher policy keeps the `EscapeFromBomb` semantic action during its own native `MoveToPosition` and interim `Normal` updates while a fresh defuse would be impossible.
+This avoids repeatedly canceling and selecting new retreat waypoints when the executor takes ownership of movement.
+The existing CT bombsite search respects the bomb's audible/localized state rather than reading hidden global plant coordinates.
+Semiclip, interaction radius, navigation scoring and the training data contract are unchanged.
+
 ## D192.5 — Revalidate reach throughout confirmed defuse
 
 BarTime is authoritative evidence that a defuse started, not proof that interaction remains physically possible after a modded knockback.

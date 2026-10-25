@@ -100,6 +100,19 @@ constexpr bool shouldIsolateTrainingCtDefuse(bool training, bool ct, bool demoli
   return training && ct && demolition && planted;
 }
 
+// YaPB reserves extra task time beyond the 5/10 second engine defuse.
+// Never start another Training CT pickup/defuse cycle when that allowance
+// already exceeds the remaining bomb timer.
+constexpr float plannedPlantedBombDefuseSeconds(bool hasKit) {
+  return hasKit ? 7.0f : 12.0f;
+}
+
+constexpr bool shouldAbandonLateTrainingCtBombApproach(bool isolatedTrainingCt,
+    bool activeProgress, float bombSecondsLeft, bool hasKit) {
+  return isolatedTrainingCt && !activeProgress && bombSecondsLeft > 0.0f
+      && bombSecondsLeft < plannedPlantedBombDefuseSeconds(hasKit);
+}
+
 // A C4 pickup reservation is not a defuse in progress. A teammate already
 // able to USE the bomb can supersede an owner still approaching its waypoint.
 // Do not interrupt an owner at USE/BarTime or another physically ready owner.

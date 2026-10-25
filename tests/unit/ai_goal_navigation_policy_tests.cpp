@@ -822,6 +822,52 @@ AI_TEST(testD192_2FallbackWaypointHandsOffOnlyToReachableC4) {
          "Legacy and Neural control preserve their original handoff");
 }
 
+AI_TEST(testD192_6FreshDefuseTimeGatePreservesBarTimeAndModes) {
+  expect(ai::plannedPlantedBombDefuseSeconds(true) == 7.0f,
+         "kit planning uses the existing seven-second reserve");
+  expect(ai::plannedPlantedBombDefuseSeconds(false) == 12.0f,
+         "no-kit planning uses the existing twelve-second reserve");
+  expect(ai::shouldAbandonLateTrainingCtBombApproach(true, false, 6.0f, true),
+         "CT with kit cannot begin another impossible late defuse");
+  expect(ai::shouldAbandonLateTrainingCtBombApproach(true, false, 11.0f, false),
+         "CT without kit cannot claim C4 with insufficient time");
+  expect(!ai::shouldAbandonLateTrainingCtBombApproach(true, false, 12.0f, false),
+         "a feasible no-kit pickup remains eligible at the boundary");
+  expect(!ai::shouldAbandonLateTrainingCtBombApproach(true, true, 2.0f, true),
+         "confirmed active BarTime is never stopped by the fresh-attempt gate");
+  expect(!ai::shouldAbandonLateTrainingCtBombApproach(false, false, 2.0f, false),
+         "Legacy and Neural are not affected");
+  expect(!ai::shouldAbandonLateTrainingCtBombApproach(true, false, 0.0f, false),
+         "an unavailable countdown does not invent an abort");
+}
+
+AI_TEST(testD192_6EscapeActionSurvivesOwnedMoveToPosition) {
+  auto observation = makeObservation();
+  ai::GoalNavigationPolicy policy {};
+  observation.bot.team = 1;
+  observation.bot.alive = true;
+  observation.bot.objectiveFlags |= ai::ObjectiveFlag::BombPlanted;
+  observation.bot.currentTask = ai::TaskType::EscapeFromBomb;
+  observation.bombTimeRemaining = 6.0f;
+  observation.bot.hasDefuser = true;
+  expect(policy.decide(observation).type == ai::ActionType::EscapeFromBomb,
+         "native escape task starts a semantic escape action");
+  observation.bot.currentTask = ai::TaskType::MoveToPosition;
+  expect(policy.decide(observation).type == ai::ActionType::EscapeFromBomb,
+         "escape-owned movement keeps its goal while the timer is impossible");
+  observation.bot.currentTask = ai::TaskType::Normal;
+  expect(policy.decide(observation).type == ai::ActionType::EscapeFromBomb,
+         "a brief native Normal handoff does not restart the escape repeatedly");
+  observation.bombTimeRemaining = 20.0f;
+  observation.bot.currentTask = ai::TaskType::MoveToPosition;
+  expect(policy.decide(observation).type == ai::ActionType::None,
+         "CT with enough time still yields native bombsite search navigation");
+  observation.bot.team = 0;
+  observation.bombTimeRemaining = 4.0f;
+  expect(policy.decide(observation).type == ai::ActionType::None,
+         "T bomb defense does not inherit CT late escape logic");
+}
+
 AI_TEST(testCtBombDefuserElectionAndTakeover) {
   expect(ai::isCtBombDefuserCandidate(true, true, false, false, false, true),
          "reachable localized CT is eligible");

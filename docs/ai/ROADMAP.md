@@ -63,7 +63,8 @@ Do not fabricate completion records or historical names for Phases 1–6 without
 - D192.2 adds a missing Training CT fallback-waypoint-to-direct-C4 movement handoff; automatic CI and user-triggered Windows x86 succeeded for `9ab5472`, but subsequent gameplay still shows CT pickup stalls and delayed BarTime.
 - D192.3 allows a USE-ready Training CT to take C4 from an unfinished non-ready claimant while preserving `yb_has_team_semiclip 1` traversal; automatic CI and user-triggered Windows x86 passed, and the October 25 capture confirms CT bot 10 defused, but CT bot 5 still stalled near C4.
 - D192.4 throttles repeated `NeedBackup` requests at the queue boundary; automatic CI and user-triggered Windows x86 succeeded for `1f6527e`, while radio gameplay acceptance remains open.
-- D192.5 revalidates 3D C4 range during BarTime and returns displaced Training CTs to `PickupItem`; automatic CI, user-triggered Windows x86 and gameplay validation are pending.
+- D192.5 revalidates 3D C4 range during BarTime and returns displaced Training CTs to `PickupItem`; automatic CI was unavailable because fork workflows were disabled, and local Windows x86 and gameplay validation remain pending.
+- D192.6 prevents Training CTs from repeatedly acquiring C4 when their planned fresh defuse no longer fits the bomb timer; it preserves the AI escape action across executor-owned navigation. Automatic CI is currently unavailable, and local tests and gameplay validation remain pending.
 
 ### Latest verified build evidence
 
@@ -94,6 +95,10 @@ Do not fabricate completion records or historical names for Phases 1–6 without
 - Prior gameplay captures exposed coordination, C4-defense, flash-turn, and aim-jitter cases which still require review.
 
 ### Defuse stabilization priority after D192
+
+- The October 25 capture `2026_10_25__12_34_18__ai_training.jsonl` records CT bot 7 continuing its waypoint-494 route before learning/retargeting to planted C4 and entering a repeated late `PickupItem/DefuseBomb` loop with no USE attempt.
+- D192.6 should eliminate new hopeless pickup claims and preserve the same safe retreat goal across `EscapeFromBomb -> MoveToPosition` updates; this is not proof that CT bombsite search chooses the best site before C4 is audible.
+- Audit the earlier CT bombsite search against graph-route travel costs and the bot's knowledge of C4, not the hidden bomb origin, in a separate follow-up.
 
 - The post-D192 October 10 capture confirms a round-12 BarTime/defuse success, but round-13 CT bot 10 remains in `PickupItem` with current/goal waypoint 629 roughly 96 units away, then abandons the bomb without a defuse attempt.
 - D192.1 ensures physical arrival at the selected interaction or fallback waypoint; the October 25 gameplay still shows a CT stalled at a planted-C4 pickup without initiating USE.

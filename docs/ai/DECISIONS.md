@@ -2014,3 +2014,18 @@ Preserve the authoritative positive BarTime start, normal in-range progress, Leg
 Add C++ boundary/tracker tests and Python event-evidence validation.
 Automatic CI, a user-triggered Windows x86 build and another gameplay capture are required to validate recovery.
 The separate spinning/waypoint issue remains open for physical approach diagnostics.
+
+## D192.6 — Abort hopeless Training CT C4 pickup and preserve the retreat objective
+
+The October 25 capture `2026_10_25__12_34_18__ai_training.jsonl` shows round-2 CT bot 7 continuing a pre-existing path toward waypoint 494 until game time 166.42 before retargeting to bombsite waypoint 189 and arriving near the C4 around 183.69.
+Between 183.92 and 185.83, it repeatedly cycled `PickupItem -> DefuseBomb -> PickupItem/Normal`, with no `defuse_attempt`, BarTime or successful defuse.
+This is consistent with the native defuse task rejecting a fresh attempt because its 7-second kit or 12-second non-kit planning time exceeds the remaining countdown before it can press USE.
+By 185.93, `EscapeFromBomb` briefly appeared, but the AI executor changed it to `MoveToPosition`, and the policy returned None for a CT with planted C4 in that native task.
+Canceling the active escape action repeatedly selected new distant safe nodes and prevented stable retreat.
+For isolated Training CT post-plant behavior, refuse fresh planted-C4 pickup when the bomb timer is already shorter than the same planned defuse allowance, release the entity claim and start the existing escape path.
+Never apply that refusal to a BarTime-confirmed ongoing defuse, pre-plant behavior, Legacy, Neural or Terrorists.
+While a late CT remains unable to begin a fresh defuse, keep the `EscapeFromBomb` semantic action selected through the executor-owned `MoveToPosition`/brief `Normal` task transitions.
+Preserve the no-hidden-bomb-information constraint: the earlier bombsite detour may reflect lack of localization rather than incorrect distance measurement; investigate site search prioritization separately using graph-route and perception evidence.
+No navigation radius, bomb timer, dataset schema or semiclip rule changes in this step.
+Add focused C++ policy and timer boundary regression tests.
+The reported gameplay capture contains no binary SHA, and D192.5 automatic CI is unavailable due to fork workflows being disabled; a local Windows x86 build and repeat capture are necessary before confirming behavior.

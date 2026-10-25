@@ -1859,6 +1859,20 @@ void Bot::pickupItem_ () {
          const bool isolateTrainingCtDefuse = ai::shouldIsolateTrainingCtDefuse (
             m_aiRuntime.controller ().getMode () == ai::ControlMode::Training,
             true, true, true);
+         if (ai::shouldAbandonLateTrainingCtBombApproach (
+               isolateTrainingCtDefuse, m_hasProgressBar,
+               gameState.getBombTimeLeft (), m_hasDefuser)) {
+            // The last arrival cannot finish a fresh defuse. Release C4 and
+            // start retreat rather than retrying a rejected task every frame.
+            m_pickupItem = nullptr;
+            m_pickupType = Pickup::None;
+            m_states &= ~Sense::PickupItem;
+            clearSearchNodes ();
+            completeTask ();
+            startTask (Task::EscapeFromBomb, TaskPri::EscapeFromBomb,
+               kInvalidNodeIndex, 0.0f, true);
+            break;
+         }
 
          auto isInteractionNode = [&] (int node) {
             if (!graph.exists (node)) {

@@ -7,6 +7,7 @@
 //
 
 #include <ai/ai_goal_navigation_policy.h>
+#include <ai/ai_ct_defuse_path_guard.h>
 
 namespace ai {
 namespace {
@@ -159,6 +160,20 @@ Action GoalNavigationPolicy::decide(const Observation &observation) const {
       (observation.combat.perceptionFlags & static_cast<uint32_t>(PerceptionFlag::SeeingEnemy)) != 0;
   const bool bombPlanted = (observation.bot.objectiveFlags & ObjectiveFlag::BombPlanted) != 0;
   const bool bombDropped = (observation.bot.objectiveFlags & ObjectiveFlag::BombDropped) != 0;
+
+  // The escape executor moves using MoveToPosition. Keep its EscapeFromBomb
+  // action active through that native task while no fresh defuse can finish;
+  // returning None here would cancel its goal on each policy tick.
+  if (observation.bot.team == kCounterTerroristTeam && bombPlanted
+      && (observation.bot.currentTask == TaskType::Normal
+          || observation.bot.currentTask == TaskType::MoveToPosition)
+      && shouldAbandonLateTrainingCtBombApproach(
+          true, false, observation.bombTimeRemaining, observation.bot.hasDefuser)) {
+    Action action {};
+    action.type = ActionType::EscapeFromBomb;
+    action.confidence = 1.0f;
+    return action;
+  }
 
   if (observation.bot.team == kCounterTerroristTeam && bombPlanted
       && observation.bot.currentTask == TaskType::MoveToPosition) {

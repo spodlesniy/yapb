@@ -383,8 +383,14 @@ void Bot::updatePickups () {
          return true;
       }
 
-      // we're escaping from the bomb, don't bother!
-      else if (getCurrentTaskId () == Task::EscapeFromBomb) {
+      // The AI escape action owns a native MoveToPosition after its first
+      // frame. Do not reacquire C4 and cancel the same escape route.
+      else if (getCurrentTaskId () == Task::EscapeFromBomb
+         || (m_team == Team::CT && game.mapIs (MapFlags::Demolition)
+            && gameState.isBombPlanted ()
+            && m_aiRuntime.controller ().getMode () == ai::ControlMode::Training
+            && getAIActionState ().isActive ()
+            && getAIActionState ().action ().type == ai::ActionType::EscapeFromBomb)) {
          return true;
       }
 
@@ -868,7 +874,11 @@ void Bot::updatePickups () {
                   return;
                }
 
-               if (isOutOfBombTimer ()) {
+               if (isOutOfBombTimer () || ai::shouldAbandonLateTrainingCtBombApproach (
+                     isolateTrainingCtDefuse, m_hasProgressBar,
+                     gameState.getBombTimeLeft (), m_hasDefuser)) {
+                  m_pickupItem = nullptr;
+                  m_pickupType = Pickup::None;
                   completeTask ();
 
                   // then start escape from bomb immediate
