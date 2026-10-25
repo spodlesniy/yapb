@@ -568,6 +568,19 @@ AI_TEST(testD192_5PhysicalDisplacementIsObservedNotAnEngineBarTimeMessage) {
           "a physical return to C4 can begin a fresh defuse attempt");
 }
 
+AI_TEST(testD192_8ObjectiveDecisionDiagnosticsDoNotClaimDefuse) {
+   expect(std::strcmp(ai::defuseEventName(ai::DefuseEventType::Declined),
+                      "defuse_declined") == 0, "refusal is not an attempt");
+   expect(std::strcmp(ai::defuseReasonName(ai::DefuseEventReason::EnemyWithoutCover),
+                      "enemy_without_cover") == 0, "combat veto has distinct evidence");
+   expect(std::strcmp(ai::defuseReasonName(ai::DefuseEventReason::InsufficientTime),
+                      "insufficient_time") == 0, "time veto has distinct evidence");
+   expect(std::strcmp(ai::navigationEventName(ai::NavigationEventType::BombEscape),
+                      "bomb_escape_decision") == 0, "retreat decision is diagnostic only");
+   expect(std::strcmp(ai::navigationEventReasonName(ai::NavigationEventReason::BombTimerExpiredForRoute),
+                      "bomb_timer_route") == 0, "retreat reason records timer heuristic");
+}
+
 AI_TEST(testDefuseApproachEventsDoNotImplyUseOrProgress) {
    expect(std::strcmp(ai::defuseEventName(ai::DefuseEventType::ApproachBlocked),
                       "defuse_approach_blocked") == 0,

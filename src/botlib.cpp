@@ -2062,6 +2062,10 @@ void Bot::overrideConditions () {
       && tid != Task::EscapeFromBomb
       && isOutOfBombTimer ()) {
 
+      if (m_team == Team::T && m_aiRuntime.controller ().getMode () == ai::ControlMode::Training) {
+         recordNavigationEvent (ai::NavigationEventType::BombEscape,
+            ai::NavigationEventReason::BombTimerExpiredForRoute);
+      }
       completeTask (); // complete current task
 
       // then start escape from bomb immediate
@@ -3822,6 +3826,9 @@ void Bot::recordDefuseEvent (ai::DefuseEventType type, ai::DefuseEventReason rea
    e.hasDefuseKit = m_hasDefuser;
    e.hasProgressBar = m_hasProgressBar;
    e.isDucking = (pev->button & IN_DUCK) != 0;
+   e.enemyVisible = (m_states & Sense::SeeingEnemy) != 0;
+   e.enemyHeard = (m_states & Sense::HearingEnemy) != 0;
+   if (type == ai::DefuseEventType::Declined) e.friendsNearby = numFriendsNear (pev->origin, 768.0f);
    e.botPosition = { pev->origin.x, pev->origin.y, pev->origin.z };
    e.hasBotPosition = true;
    if (game.mapIs (MapFlags::Demolition) && gameState.isBombPlanted ()) {
@@ -4002,6 +4009,15 @@ void Bot::recordNavigationEvent (ai::NavigationEventType type, ai::NavigationEve
    event.routeSource = source;
    event.routeDestination = destination;
    event.pathType = pathType;
+   if (type == ai::NavigationEventType::BombEscape) {
+      event.bombTimeRemaining = gameState.getBombTimeLeft ();
+      const auto &bomb = gameState.getBombOrigin ();
+      if (!bomb.empty ()) event.distanceToBomb = bomb.distance (pev->origin);
+      event.enemyVisible = (m_states & Sense::SeeingEnemy) != 0;
+      event.enemyHeard = (m_states & Sense::HearingEnemy) != 0;
+      event.enemyAlive = game.isAliveEntity (m_enemy);
+      event.enemiesRemaining = m_numEnemiesLeft;
+   }
    if (type == ai::NavigationEventType::DroppedBombGuard && graph.exists (source)) {
       const auto &cover = graph[source];
       event.guardExposure = cr::min (cover.vis.stand, cover.vis.crouch);

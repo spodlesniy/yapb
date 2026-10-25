@@ -161,6 +161,15 @@ bool writeNavigationEvent(cr::File &file, const NavigationEvent &event) {
       || !writeString(file, ",\"guard_exposure\":") || !writeInt(file, event.guardExposure)
       || !writeString(file, ",\"guard_route_distance\":") || !writeFloat(file, event.guardRouteDistance)
       || !writeString(file, ",\"guard_nearest_ally_distance\":") || !writeFloat(file, event.guardNearestAllyDistance)
+      || !writeString(file, ",\"bomb_time_remaining\":") || !writeFloat(file, event.bombTimeRemaining)
+      || !writeString(file, ",\"distance_to_bomb\":") || !writeFloat(file, event.distanceToBomb)
+      || !writeString(file, ",\"enemy_visible\":")
+      || !writeString(file, event.enemyVisible ? "true" : "false")
+      || !writeString(file, ",\"enemy_heard\":")
+      || !writeString(file, event.enemyHeard ? "true" : "false")
+      || !writeString(file, ",\"enemy_alive\":")
+      || !writeString(file, event.enemyAlive ? "true" : "false")
+      || !writeString(file, ",\"enemies_remaining\":") || !writeInt(file, event.enemiesRemaining)
       || !writeString(file, ",\"path_node_count\":") || !writeInt(file, event.pathNodeCount)
       || !writeString(file, ",\"path_truncated\":")
       || !writeString(file, event.pathTruncated ? "true" : "false")
@@ -247,6 +256,11 @@ bool writeDefuseEvent(cr::File &file, const DefuseEvent &e) {
       && writeString(file, e.hasProgressBar ? "true" : "false")
       && writeString(file, ",\"is_ducking\":")
       && writeString(file, e.isDucking ? "true" : "false")
+      && writeString(file, ",\"enemy_visible\":")
+      && writeString(file, e.enemyVisible ? "true" : "false")
+      && writeString(file, ",\"enemy_heard\":")
+      && writeString(file, e.enemyHeard ? "true" : "false")
+      && writeString(file, ",\"friends_nearby\":") && writeInt(file, e.friendsNearby)
       && writeString(file, "}\n");
 }
 

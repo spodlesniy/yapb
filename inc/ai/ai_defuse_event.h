@@ -24,10 +24,10 @@ public:
 };
 
  
-enum class DefuseEventType : uint8_t { Attempt, Start, Interrupted, Complete, ApproachBlocked, ApproachFailed };
+enum class DefuseEventType : uint8_t { Attempt, Start, Interrupted, Complete, ApproachBlocked, ApproachFailed, Declined };
 enum class DefuseEventReason : uint8_t {
   None, BarTimeCleared, UseNotConfirmed, TaskEnded, RoundEnded, BotDied, BombExploded,
-  DirectPathBlocked, NoReachableInteractionNode, OutOfUseRange
+  DirectPathBlocked, NoReachableInteractionNode, OutOfUseRange, InsufficientTime, EnemyWithoutCover
 };
 enum class DefuseEvidence : uint8_t {
   UseButton, BarTimePositive, BarTimeZero, TaskLifecycle, UnconfirmedUseTimeout,
@@ -43,6 +43,7 @@ constexpr const char *defuseEventName(DefuseEventType v) {
   case DefuseEventType::Complete: return "defuse_complete";
   case DefuseEventType::ApproachBlocked: return "defuse_approach_blocked";
   case DefuseEventType::ApproachFailed: return "defuse_approach_failed";
+  case DefuseEventType::Declined: return "defuse_declined";
   }
   return "unknown";
 }
@@ -58,6 +59,8 @@ constexpr const char *defuseReasonName(DefuseEventReason v) {
   case DefuseEventReason::DirectPathBlocked: return "direct_path_blocked";
   case DefuseEventReason::NoReachableInteractionNode: return "no_reachable_interaction_node";
   case DefuseEventReason::OutOfUseRange: return "out_of_use_range";
+  case DefuseEventReason::InsufficientTime: return "insufficient_time";
+  case DefuseEventReason::EnemyWithoutCover: return "enemy_without_cover";
   }
   return "unknown";
 }
@@ -92,6 +95,8 @@ struct DefuseEvent {
   Vec3 bombPosition {}, botPosition {};
   bool hasBombPosition {}, hasBotPosition {};
   bool hasDefuseKit {}, hasProgressBar {}, isDucking {};
+  bool enemyVisible {}, enemyHeard {};
+  int32_t friendsNearby { -1 };
 };
 
 // BarTime=0 may precede the authoritative #Bomb_Defused TextMsg.

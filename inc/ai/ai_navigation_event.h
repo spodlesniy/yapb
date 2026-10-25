@@ -69,13 +69,13 @@ public:
 };
 
 enum class NavigationEventType : uint8_t {
-  TaskChange, RouteRequest, RouteObserved, WaypointChanged, LowDisplacement, DroppedBombGuard,
+  TaskChange, RouteRequest, RouteObserved, WaypointChanged, LowDisplacement, DroppedBombGuard, BombEscape,
 };
 
 enum class NavigationEventReason : uint8_t {
   TaskStarted, TaskCleared, TaskCompleted, GoalChanged, SameGoalRepath,
   RouteObserved, WaypointChanged, LowDisplacement,
-  DroppedBombAssigned, DroppedBombSupport, DroppedBombNoCover, DroppedBombReleased,
+  DroppedBombAssigned, DroppedBombSupport, DroppedBombNoCover, DroppedBombReleased, BombTimerExpiredForRoute,
 };
 
 constexpr const char *navigationEventName(NavigationEventType type) {
@@ -86,6 +86,7 @@ constexpr const char *navigationEventName(NavigationEventType type) {
   case NavigationEventType::WaypointChanged: return "waypoint_changed";
   case NavigationEventType::LowDisplacement: return "low_displacement";
   case NavigationEventType::DroppedBombGuard: return "dropped_bomb_guard";
+  case NavigationEventType::BombEscape: return "bomb_escape_decision";
   }
   return "unknown";
 }
@@ -104,6 +105,7 @@ constexpr const char *navigationEventReasonName(NavigationEventReason reason) {
   case NavigationEventReason::DroppedBombSupport: return "support_assigned";
   case NavigationEventReason::DroppedBombNoCover: return "no_safe_cover";
   case NavigationEventReason::DroppedBombReleased: return "guard_released";
+  case NavigationEventReason::BombTimerExpiredForRoute: return "bomb_timer_route";
   }
   return "unknown";
 }
@@ -125,6 +127,9 @@ struct NavigationEvent {
   // D186: explain objective cover choice without adding a training transition.
   int32_t guardExposure { -1 };
   float guardRouteDistance { -1.0f }, guardNearestAllyDistance { -1.0f };
+  float bombTimeRemaining { -1.0f }, distanceToBomb { -1.0f };
+  bool enemyVisible {}, enemyHeard {}, enemyAlive {};
+  int32_t enemiesRemaining { -1 };
   Vec3 position {}, velocity {};
 };
 

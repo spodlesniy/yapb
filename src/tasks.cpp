@@ -1049,6 +1049,8 @@ void Bot::defuseBomb_ () {
    else if (!m_hasProgressBar) {
       if (fullDefuseTime > timeToBlowUp) {
          defuseError = true;
+         recordDefuseEvent (ai::DefuseEventType::Declined,
+            ai::DefuseEventReason::InsufficientTime, ai::DefuseEvidence::TaskLifecycle);
       }
       else if (m_states & Sense::SeeingEnemy) {
          const int friends = numFriendsNear (pev->origin, 768.0f);
@@ -1058,6 +1060,10 @@ void Bot::defuseBomb_ () {
 
             if (fullDefuseTime + 2.0f > timeToBlowUp) {
                defuseError = false;
+            }
+            if (defuseError) {
+               recordDefuseEvent (ai::DefuseEventType::Declined,
+                  ai::DefuseEventReason::EnemyWithoutCover, ai::DefuseEvidence::TaskLifecycle);
             }
 
             if (m_numEnemiesLeft > 0 && m_numFriendsLeft > friends) {

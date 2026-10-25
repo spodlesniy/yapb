@@ -2029,3 +2029,13 @@ Preserve the no-hidden-bomb-information constraint: the earlier bombsite detour 
 No navigation radius, bomb timer, dataset schema or semiclip rule changes in this step.
 Add focused C++ policy and timer boundary regression tests.
 The reported gameplay capture contains no binary SHA, and D192.5 automatic CI is unavailable due to fork workflows being disabled; a local Windows x86 build and repeat capture are necessary before confirming behavior.
+
+## D192.8 — Observe CT defuse veto and T bomb-timer retreat decisions
+
+The October 25 `2026_10_25__13_16_08__ai_training.jsonl` capture shows a late 1v1 where the CT did not obtain BarTime and both sides departed from the planted-bomb area.
+Existing task and action transitions do not directly establish why a native defuse veto or escape-timer heuristic fired.
+Record event-only `defuse_declined` with separate insufficient-time and visible-enemy-without-cover reasons at the native `defuseBomb_()` rejection branches; include current C4 time, distance, kit, sight/hearing and nearby-friend count.
+Record a `bomb_escape_decision` at the native T bomb-timer escape transition, with current timer, distance, perceived enemy state and live enemy count.
+These are observations of the stated branches, not proof that a sighted or heard CT was defusing or that the T deliberately abandoned an active defuser.
+Do not alter action execution, pursuit, defuse time allowance, enemy detection or model-facing training samples.
+Require fresh Windows x86 gameplay capture to interpret decision ordering, and do not treat missing events as evidence that an uninstrumented branch cannot occur.
