@@ -43,7 +43,8 @@ D201 adds read-only topology diagnostics to the existing graph statistics comman
 D202 establishes the standalone `projects/aipb-map/` C++20/CMake foundation with independent tests and CI.
 D203 introduces independent MapModel/NavigationModel, structural checks and deterministic JSONL serialization with content SHA-256; BSP import, graph generation, and YaPB export remain pending.
 D203.1 excludes changes confined to `projects/**` or the Map Tool workflow from the legacy YaPB push CI, while retaining independent project CI and mixed-change verification.
-D204 introduces an independent GoldSrc BSP v30 render-geometry/entity importer and CLI, with synthetically tested BSP integrity checks; collision hulls, real-map acceptance, navigation generation and YaPB export remain pending.
+D204 introduces an independent GoldSrc BSP v30 render-geometry/entity importer and CLI, with synthetically tested BSP integrity checks.
+D205 extends map artifacts to v0.2.0 with GoldSrc hull 0 render-node/leaf and hull 1–3 clipnode collision partitions, backward map v0.1.0 reads and focused synthetic tests; real-map, in-game collision and navigation validation remain pending.
 This is instrumentation, not evidence that arbitrary maps have been measured or physically traversed; Windows x86/in-game acceptance is pending.
 Proposed progression: graph evaluation/generator; versioned map knowledge; bot profiles; match context and perception; independent policy; reproducible rewards/learning; opt-in inference and in-game comparisons.
 This parallel track does not change any existing Phase 7 exit criterion.

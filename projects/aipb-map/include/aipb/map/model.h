@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <map>
 #include <optional>
@@ -40,6 +41,45 @@ struct CollisionShape {
     bool operator==(const CollisionShape&) const = default;
 };
 
+// Indexed half-space partition trees are reusable collision geometry, not BSP file records.
+// Hull 0 branches terminate at indexed leaves; clip hull branches terminate at contents codes.
+struct CollisionPlane {
+    Vec3 normal {};
+    double distance {};
+    std::int32_t type {};
+    bool operator==(const CollisionPlane&) const = default;
+};
+
+struct CollisionBranch {
+    std::uint32_t planeIndex {};
+    std::int32_t front {};
+    std::int32_t back {};
+    bool operator==(const CollisionBranch&) const = default;
+};
+
+struct CollisionLeaf {
+    std::int32_t contents {};
+    bool operator==(const CollisionLeaf&) const = default;
+};
+
+struct CollisionPartitionModel {
+    ObjectId id {};
+    Vec3 mins {};
+    Vec3 maxs {};
+    Vec3 origin {};
+    std::array<std::int32_t, 4> headNodes {};
+    bool operator==(const CollisionPartitionModel&) const = default;
+};
+
+struct CollisionPartition {
+    std::vector<CollisionPlane> planes;
+    std::vector<CollisionBranch> renderNodes;
+    std::vector<CollisionBranch> clipNodes;
+    std::vector<CollisionLeaf> leaves;
+    std::vector<CollisionPartitionModel> models;
+    bool operator==(const CollisionPartition&) const = default;
+};
+
 struct MapEntity {
     ObjectId id {};
     std::string type;
@@ -47,6 +87,7 @@ struct MapEntity {
     std::map<std::string, std::string> properties;
     std::optional<ObjectId> meshId;
     std::optional<ObjectId> collisionId;
+    std::optional<ObjectId> partitionModelId {};
     bool operator==(const MapEntity&) const = default;
 };
 
@@ -58,6 +99,7 @@ struct MapModel {
     std::vector<Mesh> meshes;
     std::vector<CollisionShape> collision;
     std::vector<MapEntity> entities;
+    std::optional<CollisionPartition> partition {};
     bool operator==(const MapModel&) const = default;
 };
 

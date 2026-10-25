@@ -149,6 +149,27 @@ void testPersistence() {
     rejected([&]{ io::loadMap(mapPath); }, "modified artifact stream accepted");
 }
 
+void testLegacyMapCompatibility() {
+    using namespace aipb::map;
+    TestDirectory dir;
+    const auto path = dir.path / "legacy.aipbmap";
+    std::filesystem::create_directories(path);
+    io::Json::Object hashes;
+    for (const char* file : {"meshes.jsonl", "collision.jsonl", "entities.jsonl"}) {
+        std::ofstream(path / file, std::ios::binary).close();
+        hashes.emplace(file, io::sha256Hex(""));
+    }
+    io::Json::Object manifest{{"format", "aipb-map"}, {"schema_version", "0.1.0"},
+        {"name", "legacy"}, {"source_format", "synthetic"},
+        {"source_sha256", std::string(64, 'a')}, {"units", "goldsrc_units"},
+        {"file_sha256", std::move(hashes)}};
+    std::ofstream(path / "manifest.json") << io::writeJson(manifest) << '\n';
+    const auto legacy = io::loadMap(path);
+    check(legacy.model.name == "legacy" && legacy.model.meshes.empty() &&
+          !legacy.model.partition, "D203 v0.1 map artifact failed backward read");
+    check(legacy.sha256.size() == 64, "legacy artifact hash unavailable");
+}
+
 void testEmptyAndVersioning() {
     using namespace aipb::map;
     TestDirectory dir;
@@ -181,6 +202,7 @@ int main() {
         testStructuralValidation();
         testPersistence();
         testEmptyAndVersioning();
+        testLegacyMapCompatibility();
         std::cout << "D203 model/artifact checks passed\n";
         return 0;
     } catch (const std::exception& error) {

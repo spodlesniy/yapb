@@ -4,6 +4,8 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <iterator>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -54,7 +56,7 @@ void appendF32(Bytes& b, float v) {
 
 Bytes makeBsp(std::string_view entities =
     "{\n\"classname\" \"worldspawn\"\n\"wad\" \"c:\\valve\\test.wad\"\n}\n"
-    "{\n\"classname\" \"func_door\"\n\"model\" \"*1\"\n\"origin\" \"2 3 4\"\n}\n") {
+    "{\n\"classname\" \"func_door\"\n\"model\" \"*1\"\n\"origin\" \"2 3 4\"\n}\n", bool withCollision = false) {
     std::array<Bytes, 15> lumps;
     lumps[0].assign(entities.begin(), entities.end());
     lumps[0].push_back(0);
@@ -78,9 +80,26 @@ Bytes makeBsp(std::string_view entities =
         appendU32(b, 0); // light styles
         appendU32(b, 0xFFFFFFFFU); // light offset
     }
+    if (withCollision) {
+        appendF32(lumps[1], 0); appendF32(lumps[1], 0);
+        appendF32(lumps[1], 1); appendF32(lumps[1], 32);
+        appendU32(lumps[1], 2); // axial Z plane
+        appendU32(lumps[5], 0); // hull-0 node, plane 0
+        appendU16(lumps[5], 0xffff); appendU16(lumps[5], 0xfffe); // leaf 0 and leaf 1
+        for (int n = 0; n < 6; ++n) appendU16(lumps[5], 0); // bounds
+        appendU16(lumps[5], 0); appendU16(lumps[5], 0); // faces
+        appendU32(lumps[9], 0); // clipnode plane 0
+        appendU16(lumps[9], 0xfffe); appendU16(lumps[9], 0xffff); // solid, empty
+        for (int contents : {-2, -1}) {
+            appendU32(lumps[10], static_cast<std::uint32_t>(contents));
+            for (int n = 0; n < 24; ++n) lumps[10].push_back(0);
+        }
+    }
     for (int i = 0; i < 2; ++i) {
         auto& b = lumps[14];
-        for (int n = 0; n < 9; ++n) appendF32(b, 0);
+        for (int n = 0; n < 3; ++n) appendF32(b, withCollision ? -64.0f : 0.0f);
+        for (int n = 0; n < 3; ++n) appendF32(b, withCollision ? 64.0f : 0.0f);
+        for (int n = 0; n < 3; ++n) appendF32(b, 0);
         for (int n = 0; n < 4; ++n) appendU32(b, 0);
         appendU32(b, 0); // visleafs
         appendU32(b, static_cast<std::uint32_t>(i));
@@ -126,6 +145,97 @@ void testValidBsp(TempDir& dir) {
     write(secondPath, source);
     const auto second = importer.importFile(secondPath);
     check(map.sourceSha256 == second.sourceSha256, "BSP source fingerprint not content-based");
+}
+
+std::size_t lumpOffset(const Bytes& bsp, std::size_t index) {
+    return static_cast<std::size_t>(bsp[4 + index * 8]) |
+           (static_cast<std::size_t>(bsp[5 + index * 8]) << 8) |
+           (static_cast<std::size_t>(bsp[6 + index * 8]) << 16) |
+           (static_cast<std::size_t>(bsp[7 + index * 8]) << 24);
+}
+
+void testCollisionBsp(TempDir& dir) {
+    using namespace aipb::map;
+    importer::BspImporter importer;
+    const auto path = dir.root / "collision.bsp";
+    const auto source = makeBsp("{\"classname\" \"worldspawn\"} {\"classname\" \"func_door\" \"model\" \"*1\"}", true);
+    write(path, source);
+    const auto map = importer.importFile(path);
+    check(map.partition.has_value(), "missing partition after importing collision BSP");
+    const auto& p = *map.partition;
+    check(p.planes.size() == 1 && p.planes[0].normal == Vec3{0, 0, 1} &&
+          p.planes[0].distance == 32 && p.planes[0].type == 2, "plane values not imported");
+    check(p.renderNodes.size() == 1 && p.renderNodes[0].front == -1 &&
+          p.renderNodes[0].back == -2, "hull 0 node/leaf indexing corrupted");
+    check(p.clipNodes.size() == 1 && p.clipNodes[0].front == -2 &&
+          p.clipNodes[0].back == -1, "clipnode contents indexing corrupted");
+    check(p.leaves.size() == 2 && p.leaves[0].contents == -2 &&
+          p.leaves[1].contents == -1, "leaf contents lost");
+    check(p.models.size() == 2 && p.models[1].headNodes == std::array<std::int32_t,4>{0,0,0,0},
+          "model hull root mapping incorrect");
+    check(p.models[0].mins.x == -64 && p.models[0].maxs.x == 64, "collision bounds lost");
+    check(map.entities[0].partitionModelId == 1 && map.entities[1].partitionModelId == 2,
+          "entity collision model links missing");
+    const auto artifact = dir.root / "collision.aipbmap";
+    const auto hash = io::saveMap(map, artifact);
+    const auto decoded = io::loadMap(artifact);
+    check(hash == decoded.sha256 && decoded.model == map, "collision artifact round-trip failed");
+    std::ifstream manifest(artifact / "manifest.json");
+    std::string contents((std::istreambuf_iterator<char>(manifest)), {});
+    check(contents.find("0.2.0") != std::string::npos, "collision map schema not updated");
+
+    auto invalid = map;
+    invalid.partition->renderNodes[0].back = -3;
+    reject([&]{ validate(invalid); }, "missing hull-0 leaf accepted");
+    invalid = map;
+    invalid.partition->clipNodes[0].front = 3;
+    reject([&]{ validate(invalid); }, "missing clipnode accepted");
+    invalid = map;
+    invalid.partition->clipNodes[0].front = 0;
+    reject([&]{ validate(invalid); }, "clipnode cycle accepted");
+    invalid = map;
+    invalid.partition->planes[0].distance = std::numeric_limits<double>::infinity();
+    reject([&]{ validate(invalid); }, "non-finite collision plane accepted");
+    invalid = map;
+    invalid.entities[1].partitionModelId = 99;
+    reject([&]{ validate(invalid); }, "dangling collision-model entity accepted");
+
+    auto bad = source;
+    u32(bad, lumpOffset(bad, 9) + 0, 100); // invalid clipnode plane
+    write(path, bad);
+    reject([&]{ importer.importFile(path); }, "missing clipnode plane accepted");
+    bad = source;
+    u16(bad, lumpOffset(bad, 5) + 4, 0); // self-cycle in render tree
+    write(path, bad);
+    reject([&]{ importer.importFile(path); }, "BSP render-node cycle accepted");
+    bad = source;
+    u16(bad, lumpOffset(bad, 9) + 4, 0); // self-cycle in clip tree
+    write(path, bad);
+    reject([&]{ importer.importFile(path); }, "BSP clipnode cycle accepted");
+    bad = source;
+    u32(bad, 8 + 9 * 8, 7); // incomplete clipnode record
+    write(path, bad);
+    reject([&]{ importer.importFile(path); }, "partial clipnode accepted");
+    bad = source;
+    u32(bad, lumpOffset(bad, 14) + 36 + 4, 100); // invalid hull 1 root
+    write(path, bad);
+    reject([&]{ importer.importFile(path); }, "invalid hull root accepted");
+    bad = source;
+    u32(bad, lumpOffset(bad, 10), 0); // invalid leaf contents
+    write(path, bad);
+    reject([&]{ importer.importFile(path); }, "invalid BSP leaf contents accepted");
+    bad = source;
+    u32(bad, lumpOffset(bad, 1) + 16, 6); // unknown plane type
+    write(path, bad);
+    reject([&]{ importer.importFile(path); }, "invalid BSP plane type accepted");
+    bad = source;
+    u32(bad, lumpOffset(bad, 1) + 12, 0x7f800000); // infinite plane distance
+    write(path, bad);
+    reject([&]{ importer.importFile(path); }, "infinite BSP collision plane accepted");
+    std::ofstream tamper(artifact / "partition_clipnodes.jsonl", std::ios::app);
+    tamper << "{}\n";
+    tamper.close();
+    reject([&]{ io::loadMap(artifact); }, "tampered partition stream accepted");
 }
 
 void testCorruptBsp(TempDir& dir) {
@@ -178,8 +288,9 @@ int main() {
     try {
         TempDir dir;
         testValidBsp(dir);
+        testCollisionBsp(dir);
         testCorruptBsp(dir);
-        std::cout << "D204 BSP import checks passed\n";
+        std::cout << "D205 BSP collision import checks passed\n";
         return 0;
     } catch (const std::exception& error) {
         std::cerr << error.what() << '\n';

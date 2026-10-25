@@ -2168,3 +2168,12 @@ Import game entities, class names, origin, arbitrary unique key/value properties
 Add an opt-in CLI import command producing the existing D203 versioned `.aipbmap` artifact and tests with synthetic BSP fixtures and corrupt source cases.
 Keep collision hulls, texture semantics, runtime geometry physics, model transformations and navigation generation out of scope; geometry coverage on real Counter-Strike BSPs remains unverified.
 Move reusable SHA-256 calculation into map core to avoid importer-to-serializer coupling, leaving the D203 artifact codec interface unchanged.
+
+## D205 — Preserve GoldSrc collision partition trees in standalone map artifacts
+
+Extend standalone MapModel with an optional typed collision partition: planes, hull-0 render nodes and indexed contents leaves, hull-1–3 clipnodes with signed contents termini, and four signed headnodes plus model bounds/origin per world/brush model.
+Map entity links to collision partition models remain distinct from optional triangle collision shapes.
+Extend GoldSrc BSP v30 importer using bounded, explicit little-endian parsing and structural checks for record alignment, plane and tree references, cycles and finite values without introducing game-engine dependencies.
+Write a versioned `.aipbmap` v0.2.0 format with separate checksummed JSONL collision partition streams and preserve read support for existing v0.1.0 map artifacts.
+Keep `.aipbnav` at v0.1.0 and preserve exact map-artifact SHA-256 identity; no automatic re-binding after map reserialization.
+Do not infer walkability, implement collision traces or simulate dynamic brush movement; gameplay fidelity on real Counter-Strike maps remains unverified.

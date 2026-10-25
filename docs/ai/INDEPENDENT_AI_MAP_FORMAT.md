@@ -80,3 +80,10 @@ Per-stream size is bounded to 512 MiB and individual JSONL records to 16 MiB as 
 - Schema migrations and artifact-level transactional staging will require a dedicated follow-up if needed.
 
 To test, execute `cmake --preset debug`, `cmake --build --preset debug`, and `ctest --preset debug` from `projects/aipb-map/`.
+
+## D205 format update
+
+New map artifacts use `0.2.0` and include optional, separately checksummed collision partition streams.
+Old map artifacts `0.1.0` remain readable without rewriting them.
+Navigation artifacts remain at `0.1.0` and refer to exact map artifact hashes.
+See [D205 collision partition specification](INDEPENDENT_AI_COLLISION.md).

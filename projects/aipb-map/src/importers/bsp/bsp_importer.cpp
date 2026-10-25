@@ -27,6 +27,10 @@ constexpr std::size_t kHeaderBytes = 4 + kLumpCount * 8;
 constexpr std::size_t kMaxBspBytes = 512 * 1024 * 1024;
 constexpr std::size_t kMaxEntityBytes = 8 * 1024 * 1024;
 constexpr std::size_t kMaxEntityTokenBytes = 64 * 1024;
+constexpr std::size_t kPlanes = 1;
+constexpr std::size_t kNodes = 5;
+constexpr std::size_t kClipNodes = 9;
+constexpr std::size_t kLeaves = 10;
 constexpr std::size_t kVertices = 3;
 constexpr std::size_t kFaces = 7;
 constexpr std::size_t kEntities = 0;
@@ -56,6 +60,10 @@ public:
             }
             lumps_[i] = {start, size};
         }
+        checkRecords(kPlanes, 20);
+        checkRecords(kNodes, 24);
+        checkRecords(kClipNodes, 8);
+        checkRecords(kLeaves, 28);
         checkRecords(kVertices, 12);
         checkRecords(kFaces, 20);
         checkRecords(kEdges, 4);
@@ -91,6 +99,7 @@ public:
             (static_cast<std::uint32_t>(static_cast<unsigned char>(bytes_[offset + 2])) << 16) |
             (static_cast<std::uint32_t>(static_cast<unsigned char>(bytes_[offset + 3])) << 24);
     }
+    std::int16_t signed16(std::size_t offset) const { return std::bit_cast<std::int16_t>(u16(offset)); }
     std::int32_t signed32(std::size_t offset) const { return std::bit_cast<std::int32_t>(u32(offset)); }
     float f32(std::size_t offset) const { return std::bit_cast<float>(u32(offset)); }
     std::size_t count(std::size_t index, std::size_t recordSize) const {
@@ -187,6 +196,51 @@ std::vector<Mesh> meshes(const BspReader& bsp) {
     return result;
 }
 
+std::optional<CollisionPartition> readPartition(const BspReader& bsp) {
+    // Geometry-only BSP test fixtures and older imports may have no partition lumps.
+    if (!bsp.count(kPlanes, 20) && !bsp.count(kNodes, 24) &&
+        !bsp.count(kClipNodes, 8) && !bsp.count(kLeaves, 28)) return std::nullopt;
+
+    CollisionPartition partition;
+    for (std::size_t i = 0; i < bsp.count(kPlanes, 20); ++i) {
+        const auto o = bsp.record(kPlanes, 20, i);
+        const auto type = bsp.signed32(o + 16);
+        if (type < 0 || type > 5) throw std::runtime_error("BSP plane has invalid orientation type");
+        partition.planes.push_back({{bsp.f32(o), bsp.f32(o + 4), bsp.f32(o + 8)},
+                                    bsp.f32(o + 12), type});
+    }
+    for (std::size_t i = 0; i < bsp.count(kNodes, 24); ++i) {
+        const auto o = bsp.record(kNodes, 24, i);
+        const auto plane = bsp.signed32(o);
+        if (plane < 0) throw std::runtime_error("negative BSP render-node plane index");
+        partition.renderNodes.push_back({static_cast<std::uint32_t>(plane),
+                                          bsp.signed16(o + 4), bsp.signed16(o + 6)});
+    }
+    for (std::size_t i = 0; i < bsp.count(kClipNodes, 8); ++i) {
+        const auto o = bsp.record(kClipNodes, 8, i);
+        const auto plane = bsp.signed32(o);
+        if (plane < 0) throw std::runtime_error("negative BSP clip-node plane index");
+        partition.clipNodes.push_back({static_cast<std::uint32_t>(plane),
+                                        bsp.signed16(o + 4), bsp.signed16(o + 6)});
+    }
+    for (std::size_t i = 0; i < bsp.count(kLeaves, 28); ++i) {
+        partition.leaves.push_back({bsp.signed32(bsp.record(kLeaves, 28, i))});
+    }
+    for (std::size_t i = 0; i < bsp.count(kModels, 64); ++i) {
+        const auto o = bsp.record(kModels, 64, i);
+        CollisionPartitionModel model;
+        model.id = static_cast<ObjectId>(i) + 1;
+        model.mins = {bsp.f32(o), bsp.f32(o + 4), bsp.f32(o + 8)};
+        model.maxs = {bsp.f32(o + 12), bsp.f32(o + 16), bsp.f32(o + 20)};
+        model.origin = {bsp.f32(o + 24), bsp.f32(o + 28), bsp.f32(o + 32)};
+        for (std::size_t h = 0; h < model.headNodes.size(); ++h) {
+            model.headNodes[h] = bsp.signed32(o + 36 + 4 * h);
+        }
+        partition.models.push_back(model);
+    }
+    return partition;
+}
+
 class EntityParser {
 public:
     explicit EntityParser(std::string_view contents) : input_(contents) {}
@@ -277,7 +331,8 @@ private:
     }
 };
 
-void linkEntities(const BspReader& bsp, const std::vector<Mesh>& meshes, std::vector<MapEntity>& entities) {
+void linkEntities(const BspReader& bsp, const std::vector<Mesh>& meshes,
+                  const std::optional<CollisionPartition>& partition, std::vector<MapEntity>& entities) {
     const auto models = bsp.count(kModels, 64);
     for (auto& entity : entities) {
         std::size_t number = 0;
@@ -295,6 +350,7 @@ void linkEntities(const BspReader& bsp, const std::vector<Mesh>& meshes, std::ve
         });
         if (it == meshes.end()) throw std::runtime_error("BSP entity references empty model geometry");
         entity.meshId = it->id;
+        if (partition) entity.partitionModelId = static_cast<ObjectId>(number) + 1;
     }
 }
 
@@ -308,11 +364,12 @@ MapModel BspImporter::importFile(const std::filesystem::path& path) const {
     map.sourceSha256 = sha256Hex(bsp.contents());
     map.units = "goldsrc_units";
     map.meshes = meshes(bsp);
+    map.partition = readPartition(bsp);
     map.entities = EntityParser(bsp.lumpText(kEntities)).parse();
     if (map.entities.empty() || map.entities.front().type != "worldspawn") {
         throw std::runtime_error("BSP entity lump must begin with worldspawn");
     }
-    linkEntities(bsp, map.meshes, map.entities);
+    linkEntities(bsp, map.meshes, map.partition, map.entities);
     validate(map);
     return map;
 }

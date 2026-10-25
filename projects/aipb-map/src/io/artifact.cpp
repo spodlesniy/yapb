@@ -101,12 +101,62 @@ Json encodeOptional(const std::optional<ObjectId>& value) {
 std::optional<ObjectId> decodeOptional(const Json& value) {
     return value.isNull() ? std::nullopt : std::optional<ObjectId>{asId(value)};
 }
+std::int32_t asSigned32(const Json& value) {
+    const auto number = value.number();
+    if (!std::isfinite(number) || std::trunc(number) != number ||
+        number < std::numeric_limits<std::int32_t>::min() ||
+        number > std::numeric_limits<std::int32_t>::max()) {
+        throw std::runtime_error("invalid signed collision integer");
+    }
+    return static_cast<std::int32_t>(number);
+}
+
+Json encode(const CollisionPlane& p) {
+    return Object{{"normal", encode(p.normal)}, {"distance", p.distance},
+                  {"type", static_cast<double>(p.type)}};
+}
+CollisionPlane decodePlane(const Json& value) {
+    return {decodeVec(value.at("normal")), value.at("distance").number(),
+            asSigned32(value.at("type"))};
+}
+Json encode(const CollisionBranch& n) {
+    return Object{{"plane", static_cast<double>(n.planeIndex)},
+                  {"front", static_cast<double>(n.front)}, {"back", static_cast<double>(n.back)}};
+}
+CollisionBranch decodeBranch(const Json& value) {
+    return {asIndex(value.at("plane")), asSigned32(value.at("front")), asSigned32(value.at("back"))};
+}
+Json encode(const CollisionLeaf& leaf) {
+    return Object{{"contents", static_cast<double>(leaf.contents)}};
+}
+CollisionLeaf decodeLeaf(const Json& value) {
+    return {asSigned32(value.at("contents"))};
+}
+Json encode(const CollisionPartitionModel& m) {
+    Array heads;
+    for (const auto head : m.headNodes) heads.emplace_back(static_cast<double>(head));
+    return Object{{"id", id(m.id)}, {"mins", encode(m.mins)}, {"maxs", encode(m.maxs)},
+                  {"origin", encode(m.origin)}, {"heads", heads}};
+}
+CollisionPartitionModel decodePartitionModel(const Json& value) {
+    CollisionPartitionModel model;
+    model.id = asId(value.at("id"));
+    model.mins = decodeVec(value.at("mins"));
+    model.maxs = decodeVec(value.at("maxs"));
+    model.origin = decodeVec(value.at("origin"));
+    const auto& heads = value.at("heads").array();
+    if (heads.size() != model.headNodes.size()) throw std::runtime_error("expected four collision hull roots");
+    for (std::size_t i = 0; i < heads.size(); ++i) model.headNodes[i] = asSigned32(heads[i]);
+    return model;
+}
+
 Json encode(const MapEntity& e) {
     Object fields;
     for (const auto& [key, value] : e.properties) fields.emplace(key, value);
     return Object{{"id", id(e.id)}, {"type", e.type}, {"origin", encode(e.origin)},
                   {"properties", fields}, {"mesh_id", encodeOptional(e.meshId)},
-                  {"collision_id", encodeOptional(e.collisionId)}};
+                  {"collision_id", encodeOptional(e.collisionId)},
+                  {"partition_model_id", encodeOptional(e.partitionModelId)}};
 }
 MapEntity decodeEntity(const Json& value) {
     MapEntity entity;
@@ -118,6 +168,9 @@ MapEntity decodeEntity(const Json& value) {
     }
     entity.meshId = decodeOptional(value.at("mesh_id"));
     entity.collisionId = decodeOptional(value.at("collision_id"));
+    if (value.object().contains("partition_model_id")) {
+        entity.partitionModelId = decodeOptional(value.at("partition_model_id"));
+    }
     return entity;
 }
 Json encode(const NavigationRegion& r) {
@@ -233,11 +286,12 @@ Files read(const std::filesystem::path& dir, const std::vector<std::string>& fil
     return result;
 }
 
-std::string manifest(const std::string& format, Object fields, const Files& streams) {
+std::string manifest(const std::string& format, Object fields, const Files& streams,
+                     std::string_view version = "0.1.0") {
     Object hashes;
     for (const auto& [name, content] : streams) hashes.emplace(name, sha256Hex(content));
     fields.emplace("format", format);
-    fields.emplace("schema_version", "0.1.0");
+    fields.emplace("schema_version", std::string(version));
     fields.emplace("file_sha256", hashes);
     return writeJson(Json(std::move(fields))) + '\n';
 }
@@ -254,17 +308,41 @@ std::string saveMap(const MapModel& model, const std::filesystem::path& director
     validate(model);
     Files files{{"meshes.jsonl", asJsonLines(model.meshes)},
                 {"collision.jsonl", asJsonLines(model.collision)},
-                {"entities.jsonl", asJsonLines(model.entities)}};
+                {"entities.jsonl", asJsonLines(model.entities)},
+                {"partition_planes.jsonl", ""},
+                {"partition_nodes.jsonl", ""},
+                {"partition_clipnodes.jsonl", ""},
+                {"partition_leaves.jsonl", ""},
+                {"partition_models.jsonl", ""}};
+    if (model.partition) {
+        const auto& p = *model.partition;
+        files["partition_planes.jsonl"] = asJsonLines(p.planes);
+        files["partition_nodes.jsonl"] = asJsonLines(p.renderNodes);
+        files["partition_clipnodes.jsonl"] = asJsonLines(p.clipNodes);
+        files["partition_leaves.jsonl"] = asJsonLines(p.leaves);
+        files["partition_models.jsonl"] = asJsonLines(p.models);
+    }
     files.emplace("manifest.json", manifest("aipb-map", Object{
         {"name", model.name}, {"source_format", model.sourceFormat},
-        {"source_sha256", model.sourceSha256}, {"units", model.units}}, files));
+        {"source_sha256", model.sourceSha256}, {"units", model.units},
+        {"has_partition", model.partition.has_value()}}, files, "0.2.0"));
     return save(files, directory);
 }
 
 MapArtifact loadMap(const std::filesystem::path& directory) {
-    const auto files = read(directory, {"manifest.json", "meshes.jsonl", "collision.jsonl", "entities.jsonl"});
-    const auto info = parseJson(files.at("manifest.json"));
-    checkVersion(info, "aipb-map");
+    const auto info = parseJson(readFile(directory / "manifest.json"));
+    if (info.at("format").text() != "aipb-map") throw std::runtime_error("invalid map artifact format");
+    const auto version = info.at("schema_version").text();
+    if (version != "0.1.0" && version != "0.2.0") {
+        throw std::runtime_error("unsupported map artifact schema");
+    }
+    std::vector<std::string> required{"manifest.json", "meshes.jsonl", "collision.jsonl", "entities.jsonl"};
+    if (version == "0.2.0") {
+        for (const auto* name : {"partition_planes.jsonl", "partition_nodes.jsonl",
+                                 "partition_clipnodes.jsonl", "partition_leaves.jsonl",
+                                 "partition_models.jsonl"}) required.emplace_back(name);
+    }
+    const auto files = read(directory, required);
     MapModel model;
     model.name = info.at("name").text();
     model.sourceFormat = info.at("source_format").text();
@@ -273,6 +351,21 @@ MapArtifact loadMap(const std::filesystem::path& directory) {
     readLines(files.at("meshes.jsonl"), model.meshes, decodeMesh);
     readLines(files.at("collision.jsonl"), model.collision, decodeCollision);
     readLines(files.at("entities.jsonl"), model.entities, decodeEntity);
+    if (version == "0.2.0") {
+        const bool present = std::get<bool>(info.at("has_partition").data);
+        CollisionPartition partition;
+        readLines(files.at("partition_planes.jsonl"), partition.planes, decodePlane);
+        readLines(files.at("partition_nodes.jsonl"), partition.renderNodes, decodeBranch);
+        readLines(files.at("partition_clipnodes.jsonl"), partition.clipNodes, decodeBranch);
+        readLines(files.at("partition_leaves.jsonl"), partition.leaves, decodeLeaf);
+        readLines(files.at("partition_models.jsonl"), partition.models, decodePartitionModel);
+        if (present) model.partition = std::move(partition);
+        else if (!partition.planes.empty() || !partition.renderNodes.empty() ||
+                 !partition.clipNodes.empty() || !partition.leaves.empty() ||
+                 !partition.models.empty()) {
+            throw std::runtime_error("absent collision partition contains records");
+        }
+    }
     validate(model);
     return {std::move(model), digest(files)};
 }

@@ -1,6 +1,8 @@
 #include <aipb/map/model.h>
 
 #include <cmath>
+#include <cstdint>
+#include <vector>
 #include <set>
 #include <stdexcept>
 #include <string_view>
@@ -52,6 +54,65 @@ bool sha256(const std::string& hash) {
     return true;
 }
 
+void checkBranchGraph(const std::vector<CollisionBranch>& branches,
+                      std::size_t planes, std::size_t leaves, bool indexedLeaves) {
+    std::vector<std::uint8_t> state(branches.size(), 0);
+    for (std::size_t start = 0; start < branches.size(); ++start) {
+        if (state[start] != 0) continue;
+        std::vector<std::pair<std::size_t, bool>> pending{{start, false}};
+        while (!pending.empty()) {
+            const auto [index, finish] = pending.back();
+            pending.pop_back();
+            if (finish) { state[index] = 2; continue; }
+            if (state[index] == 2) continue;
+            require(state[index] != 1, "collision tree contains a cycle");
+            state[index] = 1;
+            const auto& node = branches[index];
+            require(node.planeIndex < planes, "collision branch references missing plane");
+            pending.emplace_back(index, true);
+            for (const auto child : {node.front, node.back}) {
+                if (child >= 0) {
+                    const auto next = static_cast<std::size_t>(child);
+                    require(next < branches.size(), "collision branch references missing node");
+                    if (state[next] == 1) throw std::invalid_argument("collision tree contains a cycle");
+                    if (state[next] == 0) pending.emplace_back(next, false);
+                } else if (indexedLeaves) {
+                    const auto leaf = -static_cast<std::int64_t>(child) - 1;
+                    require(static_cast<std::uint64_t>(leaf) < leaves, "collision branch references missing leaf");
+                }
+            }
+        }
+    }
+}
+
+void checkPartition(const CollisionPartition& partition) {
+    require(!partition.models.empty(), "collision partition has no models");
+    for (const auto& plane : partition.planes) {
+        require(finite(plane.normal) && std::isfinite(plane.distance), "collision plane has non-finite geometry");
+    }
+    for (const auto& leaf : partition.leaves) require(leaf.contents < 0, "collision leaf has invalid contents");
+    checkBranchGraph(partition.renderNodes, partition.planes.size(), partition.leaves.size(), true);
+    checkBranchGraph(partition.clipNodes, partition.planes.size(), 0, false);
+    uniqueIds(partition.models);
+    for (const auto& model : partition.models) {
+        require(finite(model.mins) && finite(model.maxs) && finite(model.origin), "collision model has invalid coordinates");
+        require(model.mins.x <= model.maxs.x && model.mins.y <= model.maxs.y &&
+                    model.mins.z <= model.maxs.z, "collision model bounds are inverted");
+        for (std::size_t hull = 0; hull < model.headNodes.size(); ++hull) {
+            const auto head = model.headNodes[hull];
+            if (head >= 0) {
+                require(static_cast<std::size_t>(head) <
+                            (hull == 0 ? partition.renderNodes.size() : partition.clipNodes.size()),
+                        "collision model references missing hull root");
+            } else if (hull == 0) {
+                const auto leaf = -static_cast<std::int64_t>(head) - 1;
+                require(static_cast<std::uint64_t>(leaf) < partition.leaves.size(),
+                        "collision model references missing root leaf");
+            }
+        }
+    }
+}
+
 } // namespace
 
 void validate(const MapModel& model) {
@@ -62,6 +123,11 @@ void validate(const MapModel& model) {
     const auto meshIds = uniqueIds(model.meshes);
     const auto collisionIds = uniqueIds(model.collision);
     uniqueIds(model.entities);
+    std::set<ObjectId> partitionIds;
+    if (model.partition) {
+        checkPartition(*model.partition);
+        partitionIds = uniqueIds(model.partition->models);
+    }
     for (const auto& mesh : model.meshes) {
         checkTriangles(mesh.vertices, mesh.triangles);
     }
@@ -74,6 +140,8 @@ void validate(const MapModel& model) {
         require(finite(entity.origin), "entity origin is non-finite");
         require(!entity.meshId || meshIds.contains(*entity.meshId), "entity references missing mesh");
         require(!entity.collisionId || collisionIds.contains(*entity.collisionId), "entity references missing collision");
+        require(!entity.partitionModelId || partitionIds.contains(*entity.partitionModelId),
+                "entity references missing collision partition model");
     }
 }
 
