@@ -109,3 +109,10 @@ Use `canOccupy` and `canTraverse` with `PlayerStance::Standing` (GoldSrc clip hu
 Hull 0 is a point query through render-node leaves; hulls 1–3 use native clipnode contents.
 These routines operate in each BSP model's local plane coordinate system, do not transform brush models or track dynamic door/lift state, and are not substitutes for actual GoldSrc gameplay collision and step/jump logic.
 D207 keeps the existing `.aipbmap` v0.3.0 schema unchanged; queries are computed after loading.
+
+## Offline collision validation (D207.1)
+
+Run `aipb-map validate-collision --input ./results/de_dust2.aipbmap --output ./results/de_dust2-collision.json` after import.
+The deterministic JSON report records source/artifact hashes, per-hull world/brush contents and trace statistics, spawn-origin probes and bounded consistency violations.
+It refuses existing output and paths inside the input artifact, preserving `.aipbmap` v0.3.0 unchanged.
+This samples static collision data and does not prove gameplay collision fidelity or walkability; dynamic brush actors remain separate.

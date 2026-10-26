@@ -12,6 +12,7 @@
 
 #include <aipb/map/analysis/inspector.h>
 #include <aipb/map/analysis/report_json.h>
+#include <aipb/map/collision/validation.h>
 #include <aipb/map/importer/bsp_importer.h>
 #include <aipb/map/io/artifact.h>
 #include <aipb/map/version.h>
@@ -72,7 +73,8 @@ void help() {
             << "Usage:\n"
             << "  aipb-map --help | --version\n"
             << "  aipb-map import --format bsp --input <map.bsp> --output <map.aipbmap> [--log-file <log.txt>]\n"
-            << "  aipb-map inspect --input <map.aipbmap> [--output <report.json>] [--log-file <log.txt>]\n";
+            << "  aipb-map inspect --input <map.aipbmap> [--output <report.json>] [--log-file <log.txt>]\n"
+            << "  aipb-map validate-collision --input <map.aipbmap> --output <report.json>\n";
 }
 
 int importCommand(
@@ -150,6 +152,46 @@ int importCommand(
   log("INFO", "Import completed successfully", false);
 
   return 0;
+}
+
+
+int validationCommand(
+  int argc,
+  char *argv[]
+) {
+  if (argc != 6 || std::string_view { argv[2] } != "--input" ||
+      std::string_view { argv[4] } != "--output") {
+    throw std::invalid_argument("validate-collision requires --input <map.aipbmap> --output <report.json>");
+  }
+  const std::filesystem::path input(argv[3]);
+  const std::filesystem::path output(argv[5]);
+
+  if (input.empty() || output.empty()) {
+    throw std::invalid_argument("validate-collision paths cannot be empty");
+  }
+  const auto artifact = aipb::map::io::loadMap(input);
+  const auto relative = std::filesystem::weakly_canonical(output).lexically_relative(std::filesystem::weakly_canonical(input));
+
+  if (!relative.empty() && *relative.begin() != "..") {
+    throw std::invalid_argument("validation report must be outside the map artifact directory");
+  }
+
+  if (std::filesystem::exists(output)) {
+    throw std::runtime_error("validation report already exists: " + output.string());
+  }
+  const auto report = aipb::map::collision::validateQueries(artifact.model, artifact.sha256);
+  const auto json = aipb::map::collision::validationJson(report);
+  std::ofstream stream(output, std::ios::binary);
+
+  if (!stream || !stream.write(json.data(), static_cast<std::streamsize>(json.size()))) {
+    stream.close();
+    std::filesystem::remove(output);
+    throw std::runtime_error("unable to write collision validation report: " + output.string());
+  }
+  std::cout << "Collision validation: " << report.mapName << ", models=" << report.modelCount
+            << ", spawn origins=" << report.sampledSpawnOrigins << ", violations=" << report.violations << '\n';
+
+  return report.violations == 0 ? 0 : 1;
 }
 
 int inspectCommand(
@@ -254,6 +296,9 @@ int main(
 
     if (argc >= 2 && std::string_view { argv[1] } == "inspect") {
       return inspectCommand(argc, argv);
+    }
+    if (argc >= 2 && std::string_view { argv[1] } == "validate-collision") {
+      return validationCommand(argc, argv);
     }
     throw std::invalid_argument("unsupported command");
   } catch (const std::exception &error) {

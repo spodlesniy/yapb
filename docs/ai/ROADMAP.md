@@ -57,7 +57,8 @@ D206.7 skips repeated-index degenerate BSP render triangles during fan triangula
 D206.7.1 removes an unused BSP regression-test variable that failed GCC, Clang and MSVC strict-warning compilation.
 D206.8 permits entity links to BSP models without render faces, preserving collision-model references and logging the missing mesh; real de_cbble acceptance is pending.
 D206.9 filters exactly zero-area render triangles with a shared Inspector/importer predicate, compacts accepted vertex references and preserves BSP collision partitions and entity links when a mesh disappears; its GCC/Clang/MSVC CI succeeded and 25-map import/inspection reports showed zero degenerate triangles.
-D207 adds standalone read-only static BSP collision queries (contents, hull segment traces and standing/crouching hull checks) without changing the map schema or claiming GoldSrc runtime physics equivalence; representative real-map query validation remains pending.
+D207 adds standalone read-only static BSP collision queries (contents, hull segment traces and standing/crouching hull checks) without changing the map schema or claiming GoldSrc runtime physics equivalence; its GCC/Clang/MSVC automatic CI passed.
+D207.1 adds a deterministic offline collision query validation report and CLI for saved maps, sampling world/brush bounds and spawn origins across all four hulls; 25-map and engine-comparison acceptance remain pending.
 This is instrumentation, not evidence that arbitrary maps have been measured or physically traversed; Windows x86/in-game acceptance is pending.
 Proposed progression: graph evaluation/generator; versioned map knowledge; bot profiles; match context and perception; independent policy; reproducible rewards/learning; opt-in inference and in-game comparisons.
 This parallel track does not change any existing Phase 7 exit criterion.

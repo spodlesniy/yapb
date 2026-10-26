@@ -2278,3 +2278,12 @@ Define plane-boundary preference consistently, avoid arbitrary geometric epsilon
 Reject missing partitions, invalid hull/model identifiers and nonfinite query coordinates.
 Document that BSP submodels require explicit coordinate-space handling, that static queries do not simulate moving entities or GoldSrc physics, and that the first navigation phase must use these results only after real-map validation.
 Add independent synthetic CTest coverage and preserve v0.3.0 map artifact serialization.
+
+## D207.1 — Deterministic offline collision query validation
+
+Add a separate read-only collision validation layer for existing map artifacts, without changing BSP parsing, collision query semantics, map schema or YaPB runtime.
+Sample reproducible model bounds and spawn origins across hulls 0–3, record contents and traces, and check stationary/occupancy/traversal invariants.
+Separate world and brush statistics because brush model planes are model-local and cannot be treated as assembled world collision.
+Emit versioned deterministic JSON with source/artifact SHA-256, counts and bounded example violations through an explicit CLI command.
+Reject report paths inside the artifact or existing report files, and keep original artifact bytes unchanged.
+This is internal consistency evidence only; comparing behavior with GoldSrc and examining 25 real maps remain follow-up acceptance work.

@@ -39,6 +39,13 @@ add_library(aipb_map_collision STATIC
 add_library(aipb::map_collision ALIAS aipb_map_collision)
 target_link_libraries(aipb_map_collision PUBLIC aipb::map_core)
 
+add_library(aipb_map_collision_validation STATIC
+    src/collision/validation.cpp
+)
+add_library(aipb::map_collision_validation ALIAS aipb_map_collision_validation)
+target_link_libraries(aipb_map_collision_validation PUBLIC aipb::map_collision PRIVATE aipb::map_io)
+target_include_directories(aipb_map_collision_validation PRIVATE src/io)
+
 add_library(aipb_map_report STATIC
     src/analysis/report_json.cpp
 )
@@ -47,7 +54,7 @@ target_link_libraries(aipb_map_report PUBLIC aipb::map_analysis PRIVATE aipb::ma
 target_include_directories(aipb_map_report PRIVATE src/io)
 
 add_executable(aipb-map src/cli/main.cpp)
-target_link_libraries(aipb-map PRIVATE aipb::map_bsp aipb::map_io aipb::map_report)
+target_link_libraries(aipb-map PRIVATE aipb::map_bsp aipb::map_io aipb::map_report aipb::map_collision_validation)
 
 include(CTest)
 if(BUILD_TESTING)
@@ -60,7 +67,17 @@ if(BUILD_TESTING)
     target_link_libraries(aipb_map_bsp_tests PRIVATE aipb::map_bsp aipb::map_io)
     add_executable(aipb_map_collision_tests tests/collision_queries_tests.cpp)
     target_link_libraries(aipb_map_collision_tests PRIVATE aipb::map_collision aipb::map_io)
-    add_test(NAME aipb_map_collision_queries COMMAND aipb_map_collision_tests)
+    add_test(NAME aipb_map_collision_queries COMMAND aipb_map_collision_tests aipb_map_validation_tests)
+    add_executable(aipb_map_validation_tests tests/validation_tests.cpp)
+    target_link_libraries(aipb_map_validation_tests PRIVATE aipb::map_collision_validation aipb::map_io)
+    add_test(NAME aipb_map_collision_validation COMMAND aipb_map_validation_tests)
+    add_test(NAME aipb_map_cli_collision_validation
+        COMMAND ${CMAKE_COMMAND}
+            -DCLI=$<TARGET_FILE:aipb-map>
+            -DFIXTURE=$<TARGET_FILE:aipb_map_validation_tests>
+            -DWORK=${CMAKE_CURRENT_BINARY_DIR}/aipb-map-validation-cli-test
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/validation_cli.cmake
+    )
     add_executable(aipb_map_inspector_tests tests/inspector_tests.cpp)
     target_link_libraries(aipb_map_inspector_tests PRIVATE aipb::map_report aipb::map_io)
     target_include_directories(aipb_map_inspector_tests PRIVATE src/io)
@@ -92,7 +109,7 @@ if(BUILD_TESTING)
     )
 endif()
 
-set(aipb_map_targets aipb_map_core aipb_map_io aipb_map_bsp aipb_map_analysis aipb_map_collision aipb_map_report aipb-map)
+set(aipb_map_targets aipb_map_core aipb_map_io aipb_map_bsp aipb_map_analysis aipb_map_collision aipb_map_collision_validation aipb_map_report aipb-map)
 if(BUILD_TESTING)
     list(APPEND aipb_map_targets aipb_map_tests aipb_map_model_tests aipb_map_bsp_tests aipb_map_inspector_tests aipb_map_collision_tests)
 endif()
