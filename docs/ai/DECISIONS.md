@@ -2311,3 +2311,11 @@ Report per-hull clear/blocked horizontal probes, floor-facing and ceiling-facing
 Retain D207.1 aggregated model-bound metrics for comparison, but version the independent diagnostic JSON as 0.2.0 with explicitly separate spawn-probe data.
 Treat a hit as evidence of static world BSP geometry only, not a proven floor, playable route, accurate actor step or engine physics behavior.
 Keep old .aipbmap v0.3.0 artifacts, their fingerprints and the YaPB runtime unchanged; add synthetic regression coverage and existing CLI smoke checks.
+
+## D208 — Sample multi-layer heightfield candidates from world collision
+
+Use the validated static BSP world model to sample a bounded uniform XY grid and descending Z intervals through standing and crouching clip hulls independently.
+Accept upward-facing solid entry planes as provisional surface candidates, preserve multiple disjoint floors per column and provide stance-occupancy metadata without asserting reachability.
+Keep a deterministic versioned JSON diagnostics report separate from unchanged `.aipbmap` v0.3.0; reject oversized grids, invalid settings and overwrites.
+Do not create navigation edges, merge brush model coordinate systems, or claim GoldSrc runtime equivalence.
+Add synthetic tests for stacked levels, determinism and invalid configurations; retain strict CI checks.

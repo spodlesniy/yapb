@@ -13,6 +13,7 @@
 #include <aipb/map/analysis/inspector.h>
 #include <aipb/map/analysis/report_json.h>
 #include <aipb/map/collision/validation.h>
+#include <aipb/map/heightfield/builder.h>
 #include <aipb/map/importer/bsp_importer.h>
 #include <aipb/map/io/artifact.h>
 #include <aipb/map/version.h>
@@ -74,7 +75,8 @@ void help() {
             << "  aipb-map --help | --version\n"
             << "  aipb-map import --format bsp --input <map.bsp> --output <map.aipbmap> [--log-file <log.txt>]\n"
             << "  aipb-map inspect --input <map.aipbmap> [--output <report.json>] [--log-file <log.txt>]\n"
-            << "  aipb-map validate-collision --input <map.aipbmap> --output <report.json> [--log-file <log.txt>]\n";
+            << "  aipb-map validate-collision --input <map.aipbmap> --output <report.json> [--log-file <log.txt>]\n"
+            << "  aipb-map heightfield --input <map.aipbmap> --output <report.json>\n";
 }
 
 int importCommand(
@@ -266,6 +268,45 @@ int validationCommand(
   return 0;
 }
 
+int heightfieldCommand(
+  int argc,
+  char *argv[]
+) {
+  if (argc != 6 || std::string_view { argv[2] } != "--input" ||
+      std::string_view { argv[4] } != "--output") {
+    throw std::invalid_argument("heightfield requires --input <map.aipbmap> --output <report.json>");
+  }
+  const std::filesystem::path input(argv[3]);
+  const std::filesystem::path output(argv[5]);
+
+  if (input.empty() || output.empty()) {
+    throw std::invalid_argument("heightfield paths must not be empty");
+  }
+  const auto relative = std::filesystem::weakly_canonical(output).lexically_relative(std::filesystem::weakly_canonical(input));
+
+  if (!relative.empty() && *relative.begin() != "..") {
+    throw std::invalid_argument("heightfield report must be outside the map artifact");
+  }
+
+  if (std::filesystem::exists(output)) {
+    throw std::runtime_error("heightfield report already exists: " + output.string());
+  }
+  const auto artifact = aipb::map::io::loadMap(input);
+  const auto result = aipb::map::heightfield::build(artifact.model, artifact.sha256);
+  const auto json = aipb::map::heightfield::toJson(result);
+  std::ofstream stream(output, std::ios::binary);
+
+  if (!stream || !stream.write(json.data(), static_cast<std::streamsize>(json.size()))) {
+    stream.close();
+    std::filesystem::remove(output);
+    throw std::runtime_error("unable to write heightfield report: " + output.string());
+  }
+  std::cout << "Heightfield: " << result.mapName << ", candidates=" << result.candidates.size()
+            << ", multi-layer columns=" << result.multiLayerColumns << '\n';
+
+  return 0;
+}
+
 int inspectCommand(
   int argc,
   char *argv[]
@@ -371,6 +412,9 @@ int main(
     }
     if (argc >= 2 && std::string_view { argv[1] } == "validate-collision") {
       return validationCommand(argc, argv);
+    }
+    if (argc >= 2 && std::string_view { argv[1] } == "heightfield") {
+      return heightfieldCommand(argc, argv);
     }
     throw std::invalid_argument("unsupported command");
   } catch (const std::exception &error) {

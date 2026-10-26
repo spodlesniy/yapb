@@ -127,3 +127,10 @@ The existing `validate-collision` command now includes a `spawn_probes` object i
 It samples all detected spawn origins on the static world collision model in four horizontal directions (32 units) and both vertical directions (96 units) using hulls 0–3.
 Results include per-hull horizontal clearance, floor/ceiling-oriented collision planes, standing/crouching occupancy differences and detailed per-entity fractions.
 Older `.aipbmap` artifacts are still read unchanged; successful probes are not evidence of true in-game navigability.
+
+## Multi-layer heightfield candidate sampling (D208)
+
+Run `aipb-map heightfield --input ./results/de_dust2.aipbmap --output ./results/de_dust2-heightfield.json` for deterministic static world-only candidate diagnostics.
+The sampler uses a bounded 128-unit XY grid, 32-unit vertical intervals, world BSP hulls 1 and 3 and upward-facing plane tests.
+It records stacked floor candidates and clearance flags without modifying map artifacts or creating navigation links.
+The fixed settings and sampling limitations are documented in [the D208 specification](../../docs/ai/INDEPENDENT_AI_HEIGHTFIELD.md).

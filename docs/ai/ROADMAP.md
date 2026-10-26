@@ -60,7 +60,8 @@ D206.9 filters exactly zero-area render triangles with a shared Inspector/import
 D207 adds standalone read-only static BSP collision queries (contents, hull segment traces and standing/crouching hull checks) without changing the map schema or claiming GoldSrc runtime physics equivalence; its GCC/Clang/MSVC automatic CI passed.
 D207.1 adds a deterministic offline collision query validation report and CLI for saved maps, sampling world/brush bounds and spawn origins across all four hulls; its D207.1.1 correction passed GCC/Clang/MSVC automatic CI.
 D207.1.2 enables opt-in detailed collision-validation logs and integrates validation after inspection in the Windows all-BSP script; automatic GCC/Clang/MSVC CI passed, and the supplied 25-map reports had zero internal-consistency violations.
-D207.2 adds reproducible short horizontal and vertical spawn-centered traces across hulls 0–3, annotated floor/ceiling hits and standing/crouching differences; real-map and engine comparison remain acceptance gates.
+D207.2 adds reproducible short horizontal and vertical spawn-centered traces across hulls 0–3, annotated floor/ceiling hits and standing/crouching differences; GCC/Clang/MSVC CI passed and 25-map diagnostics produced no consistency violations.
+D208 introduces a bounded world-only multi-layer static heightfield candidate sampler using pre-expanded standing/crouching BSP hulls and a deterministic read-only diagnostic JSON output; real-map and engine validation remain pending.
 This is instrumentation, not evidence that arbitrary maps have been measured or physically traversed; Windows x86/in-game acceptance is pending.
 Proposed progression: graph evaluation/generator; versioned map knowledge; bot profiles; match context and perception; independent policy; reproducible rewards/learning; opt-in inference and in-game comparisons.
 This parallel track does not change any existing Phase 7 exit criterion.
