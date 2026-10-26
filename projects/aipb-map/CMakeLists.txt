@@ -64,6 +64,13 @@ if(BUILD_TESTING)
             -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/inspect_cli.cmake
     )
     add_test(NAME aipb_map_bsp_import COMMAND aipb_map_bsp_tests)
+    add_test(NAME aipb_map_cli_import
+        COMMAND ${CMAKE_COMMAND}
+            -DCLI=$<TARGET_FILE:aipb-map>
+            -DFIXTURE=$<TARGET_FILE:aipb_map_bsp_tests>
+            -DWORK=${CMAKE_CURRENT_BINARY_DIR}/aipb-map-import-cli-test
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/import_cli.cmake
+    )
     add_test(NAME aipb_map_cli_help COMMAND aipb-map --help)
     set_tests_properties(aipb_map_cli_help PROPERTIES
         PASS_REGULAR_EXPRESSION "aipb-map import"

@@ -2218,3 +2218,10 @@ Keep single-parameter functions and function calls out of this requirement; do n
 Set `BinPackParameters: AlwaysOnePerLine` and `AllowAllParametersOfDeclarationOnNextLine: false` in `projects/.clang-format` to support one-per-line layouts, while documenting that short signatures and compact designated lists still require code-review enforcement.
 Apply the rules across standalone Map Tool C++ source, headers and tests, then verify strict-warning GCC/Clang builds and existing CTest cases.
 Do not modify the legacy YaPB runtime or the project's artifact formats.
+
+## D206.5 — Correct CLI import argument counting and cover the end-to-end command
+
+The import command has three key/value option pairs after the executable and subcommand, so its correct process argument count is eight, not nine.
+Correct the count without changing the mandatory options or artifact format.
+Add an end-to-end CTest test that generates a synthetic GoldSrc BSP, runs the public `aipb-map import` command, verifies the saved map with `aipb-map inspect`, and confirms output overwrite is rejected.
+Keep real-map acceptance pending; avoid changes to the legacy YaPB runtime.

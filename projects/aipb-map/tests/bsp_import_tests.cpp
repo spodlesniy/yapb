@@ -360,8 +360,21 @@ void testCorruptBsp(TempDir &dir) {
 
 } // namespace
 
-int main() {
+int main(
+  int argc,
+  char *argv[]
+) {
   try {
+    if (argc == 3 && std::string_view { argv[1] } == "--write-cli-fixture") {
+      write(argv[2], makeBsp());
+
+      return 0;
+    }
+
+    if (argc != 1) {
+      throw std::invalid_argument("unsupported BSP test invocation");
+    }
+
     TempDir dir;
     testValidBsp(dir);
     testCollisionBsp(dir);

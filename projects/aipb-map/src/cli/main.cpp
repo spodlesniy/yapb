@@ -32,7 +32,7 @@ int importCommand(
   bool seenInput = false;
   bool seenOutput = false;
 
-  if (argc != 9) {
+  if (argc != 8) {
     throw std::invalid_argument("import requires --format, --input and --output");
   }
 
