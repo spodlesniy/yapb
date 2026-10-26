@@ -2399,3 +2399,12 @@ Test a bounded set of points above individual brush models and at spawn XY posit
 Exclude moving, rotating, breakable, trigger and otherwise changeable brush entities, and reject candidate stances colliding with any enabled fixed brush or world solid.
 Recalculate spawn coverage after merging candidates; emit navigation diagnostic schema v0.3.0 without modifying the map artifact or creating graph edges.
 The support is an offline static approximation and requires explicit in-engine comparison for models with nontrivial origin/transform conventions.
+
+## D209.3.1 — Correct brush provenance and retain stable candidate IDs
+
+Emit mutually exclusive source fields for world-heightfield, spawn-refinement and static-brush candidates.
+A static brush candidate uses `support_kind=static_brush`, non-null supporting entity/model references, a non-null brush sample index and null world heightfield/grid indices.
+A spawn-refinement candidate uses `support_kind=spawn_refinement`, a non-null spawn and sample reference and null heightfield/grid indices.
+A coarse world candidate retains its source heightfield index and grid coordinates; no brush sample or entity is invented.
+Preserve the original ID of every surviving world/refinement candidate after static brush filtering, and append new static brush IDs above the original maximum to avoid aliasing removed IDs.
+Resolve per-spawn references by candidate ID, not vector offset, and update diagnostics schema to v0.3.1 without modifying `.aipbmap` or generating graph edges.

@@ -69,7 +69,8 @@ D209 derives standalone, provenance-tagged navigation candidates from D208.3 hei
 D209.1 adds a separate Windows bulk navigation-candidates script for existing map artifacts, preserving earlier stage outputs and skipping existing reports.
 D209.2 adds bounded local collision resampling around uncovered spawns, retaining base candidate provenance and recording adaptive sample provenance and spawn coverage at 64/128/256 units; offline 25-map acceptance and engine parity remain pending.
 D209.2.2 corrects a signed/unsigned comparison in navigation candidate tests reported by a local MSVC x86 /WX build; a local x86 rebuild remains the target-platform verification.
-D209.3 adds bounded static func_wall collision support and world/brush clearance checks to Navigation Candidates, preserving source entity/model identity; 25-map and in-game collision acceptance remain pending.
+D209.3 adds bounded static func_wall collision support and world/brush clearance checks to Navigation Candidates, preserving source entity/model identity; the 25-map report recovered all 690 spawn and revealed incorrect brush sample provenance.
+D209.3.1 fixes mutually exclusive world, spawn-refinement and static-brush JSON provenance and retains surviving world candidate IDs after static-brush clearance filtering; in-game validation remains pending.
 This is instrumentation, not evidence that arbitrary maps have been measured or physically traversed; Windows x86/in-game acceptance is pending.
 Proposed progression: graph evaluation/generator; versioned map knowledge; bot profiles; match context and perception; independent policy; reproducible rewards/learning; opt-in inference and in-game comparisons.
 This parallel track does not change any existing Phase 7 exit criterion.

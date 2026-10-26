@@ -186,3 +186,5 @@ Delete the existing `navigation-candidates.json` files before rerunning; no BSP 
 Regenerate `navigation-candidates.json` using `navigation_candidates_all_bsp.bat` to include static `func_wall` supports and per-candidate source model/entity provenance.
 The output diagnostic schema is v0.3.0; `heightfield.json`, source `.aipbmap` and previous processing steps do not need regeneration.
 Doors, breakables and moving brush entities are deliberately excluded from permanent navigation support.
+
+D209.3.1 updates navigation-candidates.json to schema v0.3.1, fixes brush/sample provenance and preserves stable IDs across filtering; delete old reports before using `navigation_candidates_all_bsp.bat`.

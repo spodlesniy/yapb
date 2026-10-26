@@ -107,9 +107,7 @@ void updateCoverage(CandidateReport &report) {
   report.refinementCandidates = 0;
   report.staticBrushCandidates = 0;
 
-  for (std::size_t i = 0; i < report.candidates.size(); ++i) {
-    auto &candidate = report.candidates[i];
-    candidate.id = i + 1;
+  for (auto &candidate : report.candidates) {
     report.standingOnly += candidate.standingFree && !candidate.crouchingFree;
     report.crouchingOnly += !candidate.standingFree && candidate.crouchingFree;
     report.bothStances += candidate.standingFree && candidate.crouchingFree;
@@ -193,6 +191,8 @@ CandidateReport generateStaticBrushCandidates(
   const auto worldId = map.partition->models.front().id;
   report.staticBrushModels = brushes.size();
   const double lift = heightfield.config.clearanceLift;
+
+  std::size_t nextCandidateId = report.candidates.size() + 1;
 
   // Revalidate existing world support with all enabled static brush colliders.
   for (auto &candidate : report.candidates) {
@@ -287,7 +287,7 @@ CandidateReport generateStaticBrushCandidates(
       return;
     }
     report.candidates.push_back({
-      .id = report.candidates.size() + 1,
+      .id = nextCandidateId++,
       .heightfieldIndex = 0,
       .refined = false,
       .sourceSpawnId = 0,

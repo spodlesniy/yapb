@@ -1,5 +1,6 @@
 #include <aipb/map/navigation/candidates.h>
 
+#include <algorithm>
 #include <stdexcept>
 #include <string>
 
@@ -92,12 +93,20 @@ void testStaticBrush() {
   check(result.coveredSpawns == 1, "spawn on brush remains uncovered");
   check(!result.spawns.empty() && result.spawns[0].coveredCandidateId.has_value(), "missing brush coverage");
 
-  const auto &candidate = result.candidates[*result.spawns[0].coveredCandidateId - 1];
+  const auto found = std::find_if(result.candidates.begin(), result.candidates.end(), [&](const auto &item) {
+    return item.id == *result.spawns[0].coveredCandidateId;
+  });
+  check(found != result.candidates.end(), "covered candidate ID not found");
+  const auto &candidate = *found;
   check(candidate.supportModelId == ObjectId { 2 } &&
         candidate.supportEntityId == ObjectId { 2 }, "incorrect brush provenance");
   check(candidate.position.z == -272 && (candidate.standingFree || candidate.crouchingFree),
         "incorrect brush contact/clearance");
-  check(candidatesJson(result) == candidatesJson(generateStaticBrushCandidates(map, heightfield)),
+  const auto json = candidatesJson(result);
+  check(json.find("\"support_kind\":\"static_brush\"") != std::string::npos, "brush kind missing");
+  check(json.find("\"heightfield_index\":null") != std::string::npos, "brush heightfield index not null");
+  check(json.find("\"sample_index\":1") != std::string::npos, "brush sample index missing");
+  check(json == candidatesJson(generateStaticBrushCandidates(map, heightfield)),
         "non-deterministic brush report");
 
   // A dynamic brush does not provide static support.

@@ -48,3 +48,12 @@ Spawn coordinates are sampled first for each supported brush, followed by bounde
 These extra contacts do not alter the D208 world-only heightfield; the navigation report separately counts static brush models, samples and emitted candidates.
 Existing world candidates are checked against the static brushes for occupied stances and retained only when at least one stance remains free.
 The reported surface support is provisional and does not prove collision equivalence for nontrivial entity transforms or live gameplay movement.
+
+## D209.3.1 — Provenance and identity correction
+
+Navigation-candidates diagnostics advance to schema v0.3.1.
+World-heightfield candidates carry `support_kind=world`, `heightfield_index`, `source_column` and `source_row`; their sample index is null.
+Spawn-refinement candidates carry `support_kind=spawn_refinement`, `source_spawn_id` and `sample_index`; their heightfield and grid indices are null.
+Static brush candidates carry `support_kind=static_brush`, `support_model_id`, `support_entity_id` and `sample_index`; their heightfield and grid indices are null.
+Surviving candidate IDs do not change when a brush blocks an earlier world candidate, and new brush IDs start above the original source candidate range.
+IDs may therefore have gaps; consumers must look up `covered_candidate_id` by ID instead of treating it as a one-based array offset.

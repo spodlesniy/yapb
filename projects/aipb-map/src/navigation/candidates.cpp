@@ -41,18 +41,56 @@ Json optionalId(const std::optional<std::size_t> &value) {
   return Json {};
 }
 
+enum class SourceKind {
+  WorldHeightfield,
+  SpawnRefinement,
+  StaticBrush
+};
+
+SourceKind sourceKind(const Candidate &candidate) {
+  if (candidate.supportEntityId != 0) {
+    if (candidate.refined || candidate.supportModelId == 0 ||
+        candidate.sourceSpawnId != 0 || candidate.sampleIndex == 0) {
+      throw std::invalid_argument("invalid static brush candidate provenance");
+    }
+
+    return SourceKind::StaticBrush;
+  }
+
+  if (candidate.refined) {
+    if (candidate.sourceSpawnId == 0 || candidate.sampleIndex == 0) {
+      throw std::invalid_argument("invalid spawn refinement candidate provenance");
+    }
+
+    return SourceKind::SpawnRefinement;
+  }
+
+  if (candidate.sourceSpawnId != 0 || candidate.sampleIndex != 0) {
+    throw std::invalid_argument("invalid world heightfield candidate provenance");
+  }
+
+  return SourceKind::WorldHeightfield;
+}
+
 Json candidateJson(const Candidate &candidate) {
+  const auto kind = sourceKind(candidate);
+  const bool world = kind == SourceKind::WorldHeightfield;
+  const bool sampled = kind != SourceKind::WorldHeightfield;
+  const bool spawn = kind == SourceKind::SpawnRefinement;
+  const bool brush = kind == SourceKind::StaticBrush;
+  const char *label = world ? "world" : (spawn ? "spawn_refinement" : "static_brush");
+
   return Json::Object {
     { "id", count(candidate.id) },
-    { "heightfield_index", candidate.refined ? Json {} : count(candidate.heightfieldIndex) },
+    { "heightfield_index", world ? count(candidate.heightfieldIndex) : Json {} },
     { "refined", candidate.refined },
-    { "source_spawn_id", candidate.refined ? Json(std::to_string(candidate.sourceSpawnId)) : Json {} },
-    { "sample_index", candidate.refined ? count(candidate.sampleIndex) : Json {} },
+    { "source_spawn_id", spawn ? Json(std::to_string(candidate.sourceSpawnId)) : Json {} },
+    { "sample_index", sampled ? count(candidate.sampleIndex) : Json {} },
     { "support_model_id", candidate.supportModelId ? Json(std::to_string(candidate.supportModelId)) : Json {} },
-    { "support_entity_id", candidate.supportEntityId ? Json(std::to_string(candidate.supportEntityId)) : Json {} },
-    { "support_kind", candidate.supportEntityId ? "static_brush" : "world" },
-    { "source_column", count(candidate.column) },
-    { "source_row", count(candidate.row) },
+    { "support_entity_id", brush ? Json(std::to_string(candidate.supportEntityId)) : Json {} },
+    { "support_kind", label },
+    { "source_column", world ? count(candidate.column) : Json {} },
+    { "source_row", world ? count(candidate.row) : Json {} },
     { "position", vectorJson(candidate.position) },
     { "floor_normal", vectorJson(candidate.floorNormal) },
     { "hull_mask", count(candidate.hullMask) },
@@ -413,7 +451,7 @@ std::string candidatesJson(const CandidateReport &report) {
 
   return io::writeJson(Json::Object {
     { "format", "aipb-navigation-candidates" },
-    { "schema_version", "0.3.0" },
+    { "schema_version", "0.3.1" },
     { "source_heightfield_schema", "0.3.0" },
     { "map_name", report.mapName },
     { "source_sha256", report.sourceSha256 },
