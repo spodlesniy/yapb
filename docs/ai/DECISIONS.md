@@ -2376,3 +2376,10 @@ Append only genuinely new local candidates with `refined`, `source_spawn_id` and
 Recalculate nearest candidates and spawn coverage with separate 64-, 128- and 256-unit planar radius metrics and the existing 96-unit vertical criterion.
 Upgrade the independent diagnostic report to v0.2.0, keeping `.aipbmap` and navigation artifact schemas unchanged.
 Retain the distinction between spatial proximity and actual route reachability.
+
+## D209.2.1 — Correct cumulative spawn-radius fixture expectation
+
+D209.2's GCC and Clang CTest failed on the synthetic `radius coverage` assertion.
+The spawn 240 units from a surface is outside 64/128-unit radii but is inside the independent 256-unit coverage metric, even though the main coverage radius in the fixture is 100 units.
+Correct the test's expected 256-unit count from two to three, preserving production sampling and output schema.
+Check fresh automatic GCC, Clang and MSVC CTest before accepting the step.
