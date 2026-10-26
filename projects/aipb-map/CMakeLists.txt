@@ -107,6 +107,13 @@ if(BUILD_TESTING)
     add_executable(aipb_map_validation_tests tests/validation_tests.cpp)
     target_link_libraries(aipb_map_validation_tests PRIVATE aipb::map_collision_validation aipb::map_io)
     add_test(NAME aipb_map_collision_validation COMMAND aipb_map_validation_tests)
+    add_test(NAME aipb_map_cli_navigation_viewer
+        COMMAND ${CMAKE_COMMAND}
+            -DCLI=$<TARGET_FILE:aipb-map>
+            -DFIXTURE=$<TARGET_FILE:aipb_map_validation_tests>
+            -DWORK=${CMAKE_CURRENT_BINARY_DIR}/aipb-map-navvis-cli-test
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/navigation_viewer_cli.cmake
+    )
     add_test(NAME aipb_map_cli_preliminary_connectivity
         COMMAND ${CMAKE_COMMAND}
             -DCLI=$<TARGET_FILE:aipb-map>

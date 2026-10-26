@@ -68,3 +68,16 @@ Crouched landing targets `floorRise - (standingHalfHeight - crouchingHalfHeight)
 The landing can stay crouched; a `can_stand_after_landing` boolean describes candidate standing clearance without requiring an immediate unduck.
 Connectivity v0.4.0 adds crouched-landing counters and the duck delay parameter.
 Synthetic analytic landing cases cover surface rises 44, 48, 56 and 63 units; game-side input/frame timing remains pending.
+
+## D210.4 — In-game navigation visualization
+
+The independent Map Tool adds `export-navvis --input <map.aipbmap> --output <map.nviz>`.
+The ASCII `AIPBNAVVIS 1` snapshot includes a `COUNT` header, `V` nodes, `E` directed transitions and an `END` terminator.
+Its map name and candidate SHA-256 identify the generated source snapshot.
+The in-game viewer reads `addons/yapb/data/navvis/<map>.nviz`, not the editable YaPB waypoint graph.
+Use `yapb menu` → Features → AiPB Navigation Viewer, subject to existing `setinfo` admin access.
+Menu toggles visibility of the viewer, world/refinement/fixed-brush/conditional candidates, and walk/jump/crouch-jump links independently.
+Use `yapb navvis radius 500` in the client console; the radius never appears as an editable menu item.
+Nearby marker beams use distinct source colors and directed edges originate from the nearest visible candidate.
+This feature performs no runtime path planning or gameplay collision updates.
+The Map Tool export is automatically CTest-validated, whereas compatibility with the 32-bit Counter-Strike DLL must be verified by user-started `windows-x86` CI and in-game checks.

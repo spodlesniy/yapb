@@ -76,6 +76,7 @@ D210.1 shares brush collision classification between candidate sampling and conn
 D210.2 adds distinct tentative jump and crouch-jump directed transitions with bounded arc collision checks, destination support validation, component recalculation and candidate-report SHA-256 binding; 25-map diagnostics improved preliminary connectivity but engine parity remains pending.
 D210.3 introduces a parameterized ballistic GoldSrc jump profile from the public Half-Life movement code; 25-map reports exposed missing crouch landings above the standing apex.
 D210.3.1 adds airborne duck hull switching without changing player origin, crouched landing origin/height calculations and independent standing eligibility, with synthetic 44/48/56/63-unit landing tests; real game frame-timing parity remains pending.
+D210.4 introduces read-only in-game Navigation Candidates/Connectivity visualization from bounded Map Tool `.nviz` exports, using existing setinfo admin authorization and a new Features submenu; radius is console-only and no YaPB waypoint storage or navigation behavior changes. Windows x86 build and in-game acceptance remain pending.
 This is instrumentation, not evidence that arbitrary maps have been measured or physically traversed; Windows x86/in-game acceptance is pending.
 Proposed progression: graph evaluation/generator; versioned map knowledge; bot profiles; match context and perception; independent policy; reproducible rewards/learning; opt-in inference and in-game comparisons.
 This parallel track does not change any existing Phase 7 exit criterion.

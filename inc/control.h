@@ -106,6 +106,7 @@ private:
    int cmdSaveTraining ();
    int cmdTrainingStatus ();
    int cmdClearTraining ();
+   int cmdNavVis ();
    int cmdNode ();
    int cmdNodeOn ();
    int cmdNodeOff ();
@@ -138,6 +139,7 @@ private:
 private:
    int menuMain (int item);
    int menuFeatures (int item);
+   int menuNavVis (int item);
    int menuControl (int item);
    int menuWeaponMode (int item);
    int menuPersonality (int item);

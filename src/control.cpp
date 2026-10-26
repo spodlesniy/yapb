@@ -6,6 +6,7 @@
 //
 
 #include <yapb.h>
+#include <ai/ai_navvis.h>
 
 #include <ctime>
 
@@ -1288,9 +1289,46 @@ int BotControl::menuFeatures (int item) {
       }
       break;
 
+   case 6:
+      showMenu(Menu::NavVis);
+      break;
+
    case 10:
       closeMenu ();
       break;
+   }
+   return BotCommandResult::Handled;
+}
+
+int BotControl::menuNavVis (int item) {
+   closeMenu ();
+
+   if (item >= 1 && item <= 8) {
+      ai::navvis::toggle(m_ent, item - 1);
+      showMenu(Menu::NavVis);
+   }
+   else if (item == 9) {
+      showMenu(Menu::Features);
+   }
+   return BotCommandResult::Handled;
+}
+
+int BotControl::cmdNavVis () {
+   enum args { root = 0, name, option, value };
+
+   if (arg <StringRef>(option) == "menu") {
+      showMenu(Menu::NavVis);
+   }
+   else if (arg <StringRef>(option) == "radius") {
+      const float proposed = arg<float>(value);
+      if (!hasArg(value) || proposed < 64.0f || proposed > 2048.0f) {
+         return BotCommandResult::BadFormat;
+      }
+      ai::navvis::radius(proposed);
+      msg("AiPB viewer radius: %.0f", ai::navvis::radius());
+   }
+   else {
+      return BotCommandResult::BadFormat;
    }
    return BotCommandResult::Handled;
 }
@@ -2394,6 +2432,12 @@ BotControl::BotControl () {
          &BotControl::cmdList
       },
       {
+         "navvis",
+         "navvis [menu|radius <64..2048>]",
+         "Controls AiPB navigation viewer; radius is console-only.",
+         &BotControl::cmdNavVis
+      },
+      {
          "graph/g/w/wp/wpt/waypoint",
          "graph [help]",
          "Handles graph operations.",
@@ -2534,15 +2578,32 @@ void BotControl::createMenus () {
 
    // bots features menu
    m_menus.emplace (
-      Menu::Features, keys (5),
+      Menu::Features, keys (6),
       "\\yBots Features\\w\n\n"
       "1. Weapon mode menu\n"
       "2. Graph editor\n"
       "3. Select personality\n\n"
       "4. Toggle debug mode\n"
-      "5. Command menu\n\n"
+      "5. Command menu\n"
+      "6. AiPB Navigation Viewer\n\n"
       "0. Exit",
       &BotControl::menuFeatures);
+
+   // Read-only navigation diagnostic viewer.
+   m_menus.emplace (
+      Menu::NavVis, keys (9),
+      "\\yAiPB Navigation Viewer\\w\n\n"
+      "1. Toggle viewer\n"
+      "2. Toggle world points\n"
+      "3. Toggle spawn points\n"
+      "4. Toggle brush points\n"
+      "5. Toggle conditional points\n"
+      "6. Toggle walk edges\n"
+      "7. Toggle jump edges\n"
+      "8. Toggle crouch-jump edges\n"
+      "9. Back\n\n"
+      "0. Exit",
+      &BotControl::menuNavVis);
 
    // bot control menu
    m_menus.emplace (

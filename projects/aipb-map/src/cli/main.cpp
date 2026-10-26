@@ -3,6 +3,8 @@
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
+#include <sstream>
+#include <set>
 #include <iostream>
 #include <map>
 #include <sstream>
@@ -80,7 +82,8 @@ void help() {
             << "  aipb-map validate-collision --input <map.aipbmap> --output <report.json> [--log-file <log.txt>]\n"
             << "  aipb-map heightfield --input <map.aipbmap> --output <report.json>\n"
             << "  aipb-map navigation-candidates --input <map.aipbmap> --output <report.json>\n"
-            << "  aipb-map preliminary-connectivity --input <map.aipbmap> --output <report.json>\n";
+            << "  aipb-map preliminary-connectivity --input <map.aipbmap> --output <report.json>\n"
+            << "  aipb-map export-navvis --input <map.aipbmap> --output <map.nviz>\n";
 }
 
 int importCommand(
@@ -311,6 +314,83 @@ int heightfieldCommand(
   return 0;
 }
 
+int exportNavvisCommand(
+  int argc,
+  char *argv[]
+) {
+  if (argc != 6 || std::string_view { argv[2] } != "--input" ||
+      std::string_view { argv[4] } != "--output") {
+    throw std::invalid_argument("export-navvis requires --input <map.aipbmap> --output <map.nviz>");
+  }
+  const std::filesystem::path input(argv[3]);
+  const std::filesystem::path output(argv[5]);
+
+  if (input.empty() || output.empty() || output.extension() != ".nviz") {
+    throw std::invalid_argument("export-navvis requires a nonempty .nviz output filename");
+  }
+
+  const auto relative = std::filesystem::weakly_canonical(output).lexically_relative(std::filesystem::weakly_canonical(input));
+
+  if (!relative.empty() && *relative.begin() != "..") {
+    throw std::invalid_argument("navigation viewer file must be outside the map artifact");
+  }
+
+  if (std::filesystem::exists(output)) {
+    throw std::runtime_error("navigation viewer file already exists: " + output.string());
+  }
+  const auto artifact = aipb::map::io::loadMap(input);
+  const auto heightfield = aipb::map::heightfield::build(artifact.model, artifact.sha256);
+  const auto candidates = aipb::map::navigation::generateStaticBrushCandidates(artifact.model, heightfield);
+  const auto connectivity = aipb::map::navigation::buildConnectivity(artifact.model, candidates);
+  const auto &mapName = candidates.mapName;
+
+  if (mapName.empty() || mapName.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_") != std::string::npos ||
+      connectivity.candidatesSha256.size() != 64) {
+    throw std::runtime_error("invalid map name or candidate digest for navigation visualization");
+  }
+  std::ostringstream data;
+  data << std::setprecision(17);
+  data << "AIPBNAVVIS 1 " << mapName << ' ' << connectivity.candidatesSha256 << '\n';
+  data << "COUNT " << candidates.candidates.size() << ' ' << connectivity.edges.size() << '\n';
+
+  std::set<std::size_t> connectedIds;
+  for (const auto &edge : connectivity.edges) {
+    connectedIds.insert(edge.from);
+    connectedIds.insert(edge.to);
+  }
+
+  for (const auto &candidate : candidates.candidates) {
+    const int kind = candidate.conditionalSupport ? 3 :
+                     candidate.supportEntityId ? 2 : candidate.refined ? 1 : 0;
+    data << "V " << candidate.id << ' ' << candidate.position.x << ' ' << candidate.position.y << ' '
+         << candidate.position.z << ' ' << kind << ' '
+         << static_cast<int>(candidate.standingFree) << ' '
+         << static_cast<int>(candidate.crouchingFree) << ' '
+         << static_cast<int>(!connectedIds.contains(candidate.id)) << '\n';
+  }
+
+  for (const auto &edge : connectivity.edges) {
+    const int kind = edge.traversal == aipb::map::navigation::TraversalKind::Walk ? 0 :
+                     edge.traversal == aipb::map::navigation::TraversalKind::Jump ? 1 : 2;
+    data << "E " << edge.from << ' ' << edge.to << ' ' << kind << '\n';
+  }
+  data << "END\n";
+  const auto outputText = data.str();
+  std::ofstream stream(output, std::ios::binary);
+
+  if (!stream || !stream.write(outputText.data(), static_cast<std::streamsize>(outputText.size()))) {
+    stream.close();
+    std::filesystem::remove(output);
+    throw std::runtime_error("unable to write navigation viewer file: " + output.string());
+  }
+  std::cout << "Navigation viewer export: " << mapName
+            << ", nodes=" << candidates.candidates.size()
+            << ", edges=" << connectivity.edges.size()
+            << ", candidates_sha256=" << connectivity.candidatesSha256 << '\n';
+
+  return 0;
+}
+
 int connectivityCommand(
   int argc,
   char *argv[]
@@ -503,6 +583,9 @@ int main(
     }
     if (argc >= 2 && std::string_view { argv[1] } == "navigation-candidates") {
       return navigationCandidatesCommand(argc, argv);
+    }
+    if (argc >= 2 && std::string_view { argv[1] } == "export-navvis") {
+      return exportNavvisCommand(argc, argv);
     }
     if (argc >= 2 && std::string_view { argv[1] } == "preliminary-connectivity") {
       return connectivityCommand(argc, argv);

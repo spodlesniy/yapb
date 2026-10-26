@@ -295,6 +295,7 @@ sources = files(
    'src/ai/ai_yapb_action_execution_context.cpp',
    'src/ai/ai_action_runtime.cpp',
    'src/ai/ai_bot_runtime.cpp',
+   'src/ai/ai_navvis.cpp',
    'src/ai/ai_training_collector.cpp',
    'src/ai/ai_goal_navigation_policy.cpp',
    'src/ai/ai_inference_features.cpp',

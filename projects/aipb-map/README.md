@@ -221,3 +221,15 @@ Standing and crouched landing behavior above the ballistic apex must be calibrat
 Connectivity v0.4.0 evaluates the original airborne origin during the crouch hull transition and permits crouched landings at provisional floor rises up to 63 units.
 Standing after landing is reported separately, not assumed.
 Delete old `preliminary-connectivity.json` files and rerun the standalone connectivity batch; no BSP re-import or candidate regeneration is required.
+
+## In-game navigation viewer export (D210.4)
+
+Run `aipb-map export-navvis --input <map.aipbmap> --output <map.nviz>` to create a bounded, read-only ASCII v1 debug snapshot from the same navigation candidates and connectivity pipeline.
+On Windows, `tools/export_navvis_all_bsp.bat` writes `<build>/results/<map>/<map>.nviz`, skipping files already present.
+Copy the intended `.nviz` files into `cstrike/addons/yapb/data/navvis/` before loading the matching map with the game DLL.
+The viewer never reads or modifies the YaPB `.graph` files.
+In CS 1.6, an authorized administrator opens `yapb menu` → Features → AiPB Navigation Viewer and toggles point/transition visibility.
+Use `yapb navvis radius 500` in the player console (64–2048 units); radius is intentionally not included in the menu.
+Rendering is limited to 48 nearby markers and 24 outgoing arrows at five updates per second, so not every candidate appears at once.
+An updated `.nviz` file is only picked up when the map changes or the game DLL reloads.
+Use the appropriate user-started `windows-x86` CI build for in-game verification; the standalone Map Tool CI does not build the CS 1.6 DLL.

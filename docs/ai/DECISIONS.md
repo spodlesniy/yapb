@@ -2480,3 +2480,16 @@ These remain provisional offline movement hypotheses pending GoldSrc frame-timin
 Automatic GCC/Clang CTest exposed a small negative discriminant at the exact 45-unit ballistic apex, causing a valid 63-unit crouch-height plan to be incorrectly rejected.
 Allow only a relative floating-point tolerance of 1e-10 times the squared launch speed when testing the discriminant, then clamp the infinitesimal negative to zero for the square root.
 Keep the physical 45/63-unit limits, input validation and trajectory behavior otherwise unchanged.
+
+## D210.4 — Read-only in-game navigation viewer and admin menu
+
+Export a bounded deterministic ASCII v1 `.nviz` snapshot directly from the same candidate and preliminary connectivity generators used by the Map Tool reports.
+Header records map name and the full SHA-256 of the canonical Navigation Candidates v0.3.2 report; entries carry candidate IDs, surface coordinates/source/stance, and directed edge endpoints/types.
+Keep the original YaPB waypoint graph fully independent: the viewer cannot add, change, delete, or save graph nodes.
+Game-side reading is opt-in and strict: reject incorrect map names, schema versions, malformed values, excessive counts, missing endpoints, duplicate candidate IDs and invalid edge types.
+Load only `addons/yapb/data/navvis/<map>.nviz` for the current map.
+Use the existing YaPB `setinfo` administrator flag, existing Features menu, and `Game::drawLine` to draw bounded nearby candidate markers and outgoing links for the nearest candidate, per player.
+Expose per-category visibility toggles and viewer enablement through the in-game menu; keep viewer radius adjustment exclusively on the `yapb navvis radius <64..2048>` client-console command.
+Render a maximum of 48 markers and 24 links per administrator at approximately five updates per second.
+Disable visibility when admin rights are revoked or the map changes.
+Do not claim in-engine accuracy from a successfully generated viewer file; the Windows x86 game build and visual validation are a distinct acceptance gate.

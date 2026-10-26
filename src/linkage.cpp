@@ -6,6 +6,7 @@
 //
 
 #include <yapb.h>
+#include <ai/ai_navvis.h>
 
 ConVar cv_version ("version", product.version.chars (), Var::ReadOnly);
 
@@ -376,6 +377,13 @@ CR_EXPORT int GetEntityAPI (gamefuncs_t *table, int interfaceVersion) {
 
       // update some stats for clients
       util.updateClients ();
+
+      // The viewer is independent of the editable YaPB waypoint graph.
+      for (const auto &client : util.getClients ()) {
+         if (client.flags & ClientFlags::Used) {
+            ai::navvis::frame(client.ent);
+         }
+      }
 
       if (graph.hasEditFlag (GraphEdit::On) && graph.hasEditor ()) {
          graph.frame ();
