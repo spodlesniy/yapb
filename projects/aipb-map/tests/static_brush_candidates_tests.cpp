@@ -109,6 +109,24 @@ void testStaticBrush() {
   check(json == candidatesJson(generateStaticBrushCandidates(map, heightfield)),
         "non-deterministic brush report");
 
+  // Only Trigger supplies conditional support, while mutable breakables do not.
+  map.entities[1].type = "func_breakable";
+  map.entities[1].properties["spawnflags"] = "1";
+  const auto trigger = generateStaticBrushCandidates(map, heightfield);
+  check(trigger.staticBrushCandidates > 0 && trigger.candidates.front().conditionalSupport,
+        "trigger-only breakable must be conditional support");
+  check(candidatesJson(trigger).find("\\"support_condition\\":\\"until_trigger\\"") != std::string::npos,
+        "conditional support serialization missing");
+
+  for (const char *flags : { "0", "2", "4", "256", "3", "257", "invalid" }) {
+    map.entities[1].properties["spawnflags"] = flags;
+    const auto mutableResult = generateStaticBrushCandidates(map, heightfield);
+    check(mutableResult.staticBrushCandidates == 0, "player-breakable object became support");
+  }
+  map.entities[1].properties["spawnflags"] = "5";
+  check(generateStaticBrushCandidates(map, heightfield).staticBrushCandidates > 0,
+        "Only Trigger must take priority over Pressure");
+
   // A dynamic brush does not provide static support.
   map.entities[1].type = "func_door";
   const auto excluded = generateStaticBrushCandidates(map, heightfield);

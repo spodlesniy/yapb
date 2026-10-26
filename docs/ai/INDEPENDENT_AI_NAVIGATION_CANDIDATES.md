@@ -57,3 +57,10 @@ Spawn-refinement candidates carry `support_kind=spawn_refinement`, `source_spawn
 Static brush candidates carry `support_kind=static_brush`, `support_model_id`, `support_entity_id` and `sample_index`; their heightfield and grid indices are null.
 Surviving candidate IDs do not change when a brush blocks an earlier world candidate, and new brush IDs start above the original source candidate range.
 IDs may therefore have gaps; consumers must look up `covered_candidate_id` by ID instead of treating it as a one-based array offset.
+
+## D210.1 — Conditional breakable supports
+
+`func_breakable` with bit 1 `Only Trigger` and without bits 2 or 256 is sampled as conditional initial geometry.
+Other breakables, including pressure-sensitive models and models lacking spawnflags, block initial-world collision but do not supply navigation candidate support.
+Every candidate has `support_condition`, with `until_trigger` on conditional breakable surfaces and `fixed` otherwise.
+The JSON schema is `0.3.2`; no dynamic re-evaluation is performed.

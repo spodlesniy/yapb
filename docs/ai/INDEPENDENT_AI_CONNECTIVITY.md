@@ -33,3 +33,10 @@ An undirected union of accepted directed links is used only for the **weak** com
 CLI output is strictly outside the map artifact and existing reports are never overwritten.
 Tests cover directed links, candidate IDs with gaps, rejected height differences, deterministic output and no input mutation.
 The automatic GCC/Clang/MSVC Map Tool CI checks the independent implementation; real-map and in-engine evaluation remain separate acceptance gates.
+
+## D210.1 — Initial breakable collision
+
+The candidate builder and connectivity checker share the same func_breakable spawnflags policy.
+All breakables are initial collision obstacles; trigger-only models can supply conditional support until a trigger destroys them.
+Player-breakable and pressure-sensitive models are never considered reliable intermediate support.
+This static snapshot can become outdated during a round; collision state will need an explicit runtime version in a later step.

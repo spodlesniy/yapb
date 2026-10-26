@@ -28,6 +28,7 @@ struct Candidate {
   std::size_t sampleIndex {};
   ObjectId supportModelId {};
   ObjectId supportEntityId {};
+  bool conditionalSupport {};
   std::size_t column {};
   std::size_t row {};
   Vec3 position {};

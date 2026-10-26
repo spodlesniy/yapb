@@ -1,6 +1,8 @@
 #include <aipb/map/navigation/candidates.h>
 #include <aipb/map/collision/queries.h>
 
+#include "brush_policy.h"
+
 #include <algorithm>
 #include <cmath>
 #include <limits>
@@ -12,10 +14,7 @@
 namespace aipb::map::navigation {
 namespace {
 
-struct Brush {
-  const MapEntity *entity {};
-  const CollisionPartitionModel *model {};
-};
+using detail::Brush;
 
 bool finite(Vec3 p) {
   return std::isfinite(p.x) && std::isfinite(p.y) && std::isfinite(p.z);
@@ -35,26 +34,6 @@ double playerOriginOffset(
   const double halfHeight = hull == 1 ? 36.0 : 18.0;
 
   return (16.0 * (std::abs(normal.x) + std::abs(normal.y)) + halfHeight * normal.z) / normal.z;
-}
-
-std::vector<Brush> staticBrushes(const MapModel &map) {
-  std::vector<Brush> result;
-
-  for (const auto &entity : map.entities) {
-    if (entity.type != "func_wall" || !entity.partitionModelId) {
-      continue;
-    }
-    const auto it = std::find_if(map.partition->models.begin(), map.partition->models.end(),
-                                 [&](const CollisionPartitionModel &model) {
-                                   return model.id == *entity.partitionModelId;
-                                 });
-
-    if (it != map.partition->models.end() && it != map.partition->models.begin()) {
-      result.push_back({ &entity, &*it });
-    }
-  }
-
-  return result;
 }
 
 bool overlaps(
@@ -182,14 +161,16 @@ CandidateReport generateStaticBrushCandidates(
   CandidateConfig config
 ) {
   auto report = generateAdaptiveCandidates(map, heightfield, config);
-  const auto brushes = staticBrushes(map);
+  const auto brushes = detail::collectBrushes(map);
 
   if (brushes.empty()) {
     return report;
   }
   collision::CollisionQueries queries(map);
   const auto worldId = map.partition->models.front().id;
-  report.staticBrushModels = brushes.size();
+  report.staticBrushModels = std::count_if(brushes.begin(), brushes.end(), [](const Brush &brush) {
+    return detail::suppliesSupport(brush.role);
+  });
   const double lift = heightfield.config.clearanceLift;
 
   std::size_t nextCandidateId = report.candidates.size() + 1;
@@ -294,6 +275,7 @@ CandidateReport generateStaticBrushCandidates(
       .sampleIndex = report.staticBrushSamples,
       .supportModelId = brush.model->id,
       .supportEntityId = brush.entity->id,
+      .conditionalSupport = brush.role == detail::BrushRole::TriggerSupport,
       .column = 0,
       .row = 0,
       .position = floor,
@@ -306,6 +288,10 @@ CandidateReport generateStaticBrushCandidates(
 
   // Spawn-first sampling ensures late-numbered brushes such as model *180 get a budget.
   for (const auto &brush : brushes) {
+    if (!detail::suppliesSupport(brush.role)) {
+      continue;
+    }
+
     for (const auto &spawn : report.spawns) {
       attempt(brush, spawn.origin.x, spawn.origin.y);
     }
@@ -314,6 +300,10 @@ CandidateReport generateStaticBrushCandidates(
   for (const auto &brush : brushes) {
     if (report.staticBrushSamples >= config.maximumStaticBrushSamples) {
       break;
+    }
+
+    if (!detail::suppliesSupport(brush.role)) {
+      continue;
     }
     const double width = brush.model->maxs.x - brush.model->mins.x;
     const double depth = brush.model->maxs.y - brush.model->mins.y;

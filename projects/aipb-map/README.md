@@ -196,3 +196,10 @@ The independent CLI `aipb-map preliminary-connectivity --input <map.aipbmap> --o
 The JSON schema `aipb-preliminary-connectivity` v0.1.0 retains map/source SHA-256, candidate IDs, directed edges, standing/crouching labels, rejected checks and weak-component diagnostics.
 Default checks limit XY neighbor distance to 192 units, upward/downward steps to 18/36 units, and require clear static collision and intermediate support.
 This is not an `.aipbnav` artifact or a certified GoldSrc path graph; in-game validation and dynamic obstacles remain out of scope.
+
+## Breakable initial collision (D210.1)
+
+The Map Tool now treats `func_breakable` with `spawnflags` bit 1 (Only Trigger) as conditional initial-state collision support, and all other breakables as initial obstacles without dependable support.
+The two navigation stages share the classification, and Navigation Candidates v0.3.2 labels trigger-only support `until_trigger`.
+Existing `.aipbmap` imports remain valid; regenerate both candidate and connectivity JSON reports to use the updated initial collision snapshot.
+Actual round-time removal after a bomb/trigger remains outside this offline model.

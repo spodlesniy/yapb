@@ -89,6 +89,7 @@ Json candidateJson(const Candidate &candidate) {
     { "support_model_id", candidate.supportModelId ? Json(std::to_string(candidate.supportModelId)) : Json {} },
     { "support_entity_id", brush ? Json(std::to_string(candidate.supportEntityId)) : Json {} },
     { "support_kind", label },
+    { "support_condition", candidate.conditionalSupport ? "until_trigger" : "fixed" },
     { "source_column", world ? count(candidate.column) : Json {} },
     { "source_row", world ? count(candidate.row) : Json {} },
     { "position", vectorJson(candidate.position) },
@@ -451,7 +452,7 @@ std::string candidatesJson(const CandidateReport &report) {
 
   return io::writeJson(Json::Object {
     { "format", "aipb-navigation-candidates" },
-    { "schema_version", "0.3.1" },
+    { "schema_version", "0.3.2" },
     { "source_heightfield_schema", "0.3.0" },
     { "map_name", report.mapName },
     { "source_sha256", report.sourceSha256 },

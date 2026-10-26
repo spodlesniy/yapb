@@ -1,6 +1,7 @@
 #include <aipb/map/navigation/connectivity.h>
 
 #include "json.h"
+#include "brush_policy.h"
 
 #include <algorithm>
 #include <cmath>
@@ -16,10 +17,7 @@ namespace aipb::map::navigation {
 namespace {
 using io::Json;
 
-struct Brush {
-  ObjectId id {};
-  Vec3 origin {};
-};
+using detail::Brush;
 
 Json number(std::size_t value) {
   return static_cast<double>(value);
@@ -27,19 +25,6 @@ Json number(std::size_t value) {
 
 bool finite(double n) {
   return std::isfinite(n);
-}
-
-std::vector<Brush> brushesFor(const MapModel &map) {
-  std::vector<Brush> result;
-
-  for (const auto &entity : map.entities) {
-    if (entity.type == "func_wall" && entity.partitionModelId &&
-        *entity.partitionModelId != map.partition->models.front().id) {
-      result.push_back({ *entity.partitionModelId, entity.origin });
-    }
-  }
-
-  return result;
 }
 
 Vec3 originFor(const Candidate &candidate, std::size_t hull, double lift) {
@@ -69,9 +54,9 @@ bool clearSegment(
   }
 
   for (const auto &brush : brushes) {
-    const Vec3 a { start.x - brush.origin.x, start.y - brush.origin.y, start.z - brush.origin.z };
-    const Vec3 b { end.x - brush.origin.x, end.y - brush.origin.y, end.z - brush.origin.z };
-    const auto hit = queries.traceSegment(brush.id, hull, a, b);
+    const Vec3 a { start.x - brush.entity->origin.x, start.y - brush.entity->origin.y, start.z - brush.entity->origin.z };
+    const Vec3 b { end.x - brush.entity->origin.x, end.y - brush.entity->origin.y, end.z - brush.entity->origin.z };
+    const auto hit = queries.traceSegment(brush.model->id, hull, a, b);
 
     if (hit.startSolid || hit.impactPlane) {
       return false;
@@ -101,9 +86,12 @@ bool supported(
   }
 
   for (const auto &brush : brushes) {
-    const Vec3 a { top.x - brush.origin.x, top.y - brush.origin.y, top.z - brush.origin.z };
-    const Vec3 b { bottom.x - brush.origin.x, bottom.y - brush.origin.y, bottom.z - brush.origin.z };
-    const auto hit = queries.traceSegment(brush.id, hull, a, b);
+    if (!detail::suppliesSupport(brush.role)) {
+      continue;
+    }
+    const Vec3 a { top.x - brush.entity->origin.x, top.y - brush.entity->origin.y, top.z - brush.entity->origin.z };
+    const Vec3 b { bottom.x - brush.entity->origin.x, bottom.y - brush.entity->origin.y, bottom.z - brush.entity->origin.z };
+    const auto hit = queries.traceSegment(brush.model->id, hull, a, b);
 
     if (!hit.startSolid && hit.impactPlane && hit.impactPlane->normal.z >= 0.7) {
       return true;
@@ -165,7 +153,7 @@ ConnectivityReport buildConnectivity(
   report.candidateCount = candidates.candidates.size();
   collision::CollisionQueries queries(map);
   const auto world = map.partition->models.front().id;
-  const auto brushes = brushesFor(map);
+  const auto brushes = detail::collectBrushes(map);
   const auto side = config.maximumPlanarDistance;
   using Cell = std::pair<std::int64_t, std::int64_t>;
   std::map<Cell, std::vector<std::size_t>> cells;
@@ -339,7 +327,7 @@ std::string connectivityJson(const ConnectivityReport &report) {
   return io::writeJson(Json::Object {
     { "format", "aipb-preliminary-connectivity" },
     { "schema_version", "0.1.0" },
-    { "source_candidates_schema", "0.3.1" },
+    { "source_candidates_schema", "0.3.2" },
     { "map_name", report.mapName },
     { "source_sha256", report.sourceSha256 },
     { "artifact_sha256", report.artifactSha256 },

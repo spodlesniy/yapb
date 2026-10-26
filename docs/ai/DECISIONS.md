@@ -2423,3 +2423,12 @@ For each direction require an XY displacement of at least one unit, upward chang
 Trace candidate-origin hull 1 or 3 movement against the world and static func_wall models in their translated local spaces and require intermediate downward support checks at quarter, half and three-quarter segments.
 Record rejection reasons, stance-specific edge counts, weakly connected components, largest component and isolated candidates in a separate reproducible JSON v0.1.0.
 Treat these connections as provisional and conservative: no dynamic doors, jumping, ladders, moving support, engine-side route verification or learned navigation behavior is modeled.
+
+## D210.1 — Classify breakable brush collision by trigger and player interaction
+
+Use a single policy for the static brush candidate builder and preliminary connectivity checker.
+Include `func_wall` as permanent support and `func_breakable` with `Only Trigger` (spawnflags bit 1) as conditional initial-state support.
+Treat `Pressure` (bit 4), `Touch` (bit 2), `Instant Crowbar` (bit 256), missing or invalid flags, and ambiguous trigger/player-breakable combinations as mutable initial-state obstacles that cannot provide dependable navigation support.
+Parse `spawnflags` as a bitmask, not as mutually exclusive enum values.
+Keep conditional candidate provenance explicit with `support_condition=until_trigger`; advance navigation candidate diagnostics to 0.3.2 and annotate preliminary connectivity source schema.
+Do not claim runtime obstacle removal when the C4 trigger fires; that requires future dynamic collision state integration.
