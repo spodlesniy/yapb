@@ -59,3 +59,12 @@ Theoretical duck clearance is therefore 63 units relative to the same foot refer
 D210.3 uses displacement `v*t-g*t*t/2`, descending landing time, sampled static hull traces and a distance/time speed bound instead of hand-shaped quadratic arcs.
 Connectivity JSON advances to v0.3.0 and exposes physics profile, estimated flight time, horizontal speed and a physics-rejection counter, retaining the candidate fingerprint.
 It does not simulate command timings, actual CS 1.6 physics frame order, movement acceleration, crouched landings above standing apex, or runtime entity changes.
+
+## D210.3.1 — Airborne duck and crouched landing
+
+`PM_Duck` changes collision hull without applying the origin displacement reserved for ground ducking.
+The 24-segment airborne trajectory now samples the standing hull until the configured duck delay, then the crouch hull at the same origin.
+Crouched landing targets `floorRise - (standingHalfHeight - crouchingHalfHeight)` in player-origin space, and uses crouch hull 3 for touchdown and support verification.
+The landing can stay crouched; a `can_stand_after_landing` boolean describes candidate standing clearance without requiring an immediate unduck.
+Connectivity v0.4.0 adds crouched-landing counters and the duck delay parameter.
+Synthetic analytic landing cases cover surface rises 44, 48, 56 and 63 units; game-side input/frame timing remains pending.

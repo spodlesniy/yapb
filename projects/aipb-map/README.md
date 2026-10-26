@@ -215,3 +215,9 @@ The 44/62 unit rise limits and arc checks are uncalibrated offline hypotheses, a
 The independent jump transition checker now uses parameterized GoldSrc-style vertical ballistics and a conservative horizontal speed constraint rather than an invented parabola.
 Preliminary Connectivity v0.3.0 records the profile and estimated flight/speed values; delete earlier connectivity reports and rerun `preliminary_connectivity_all_bsp.bat`.
 Standing and crouched landing behavior above the ballistic apex must be calibrated in CS 1.6; no physics-equivalent claim is made.
+
+## Airborne duck landings (D210.3.1)
+
+Connectivity v0.4.0 evaluates the original airborne origin during the crouch hull transition and permits crouched landings at provisional floor rises up to 63 units.
+Standing after landing is reported separately, not assumed.
+Delete old `preliminary-connectivity.json` files and rerun the standalone connectivity batch; no BSP re-import or candidate regeneration is required.

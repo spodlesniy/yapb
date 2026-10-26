@@ -43,6 +43,7 @@ struct ProvisionalEdge {
   bool conditionalSupport {};
   double estimatedFlightSeconds {};
   double estimatedHorizontalSpeed {};
+  bool canStandAfterLanding { true };
 };
 
 struct ConnectivityReport {
@@ -65,6 +66,8 @@ struct ConnectivityReport {
   std::size_t rejectedJumpCollision {};
   std::size_t rejectedJumpLanding {};
   std::size_t rejectedJumpPhysics {};
+  std::size_t crouchedLandings {};
+  std::size_t crouchedLandingsWithoutStanding {};
   std::size_t conditionalEdges {};
   std::size_t conditionalIslands {};
   std::size_t weakComponents {};

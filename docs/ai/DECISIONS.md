@@ -2463,3 +2463,14 @@ Calculate vertical flight with `z(t)=v0*t-g*t²/2` and descending landing time f
 Record `estimated_flight_seconds`, `estimated_horizontal_speed`, physics rejection counters and profile values in preliminary-connectivity schema v0.3.0.
 Keep crouch-jump as a distinct hull-clearance action; do not misrepresent the geometric 63-unit duck-adjusted clearance as a guaranteed 63-unit standing-origin ballistic rise.
 Actual GoldSrc command timing, duck hull changes, air acceleration, map gravity overrides, landing while crouched, and server modifications require instrumentation and engine-side validation, so offline physics estimates are provisional.
+
+## D210.3.1 — Airborne duck and crouched landing
+
+The Half-Life SDK `PM_Duck` switches to the crouch hull in the air without the ground-only origin shift.
+Retain the ballistic player origin while switching collision hulls, with a configurable minimum airborne duck delay; do not artificially lower the sampled trajectory by the 18-unit hull-height difference.
+For crouch landing, target origin rise equals candidate floor rise minus the standing/crouching half-height difference, allowing 45–63-unit surfaces to be evaluated using the same jump impulse.
+Trace the crouching hull through touchdown and downward support, and annotate whether the destination offers standing clearance for a subsequent independent unduck.
+Accept crouch-only destinations when they provide valid crouched support, without requiring an immediate stand transition.
+Keep conservative speed, collision and static brush rules and retain the candidate fingerprint.
+Advance Connectivity JSON diagnostics to v0.4.0, adding `can_stand_after_landing`, `crouched_landings` and `crouched_landings_without_standing`.
+These remain provisional offline movement hypotheses pending GoldSrc frame-timing and actual in-game calibration.

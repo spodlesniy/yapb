@@ -12,7 +12,8 @@ void requirePhysics(const JumpPhysics &physics) {
       !std::isfinite(physics.maximumHorizontalSpeed) || physics.maximumHorizontalSpeed <= 0 ||
       !std::isfinite(physics.standingHalfHeight) || physics.standingHalfHeight <= 0 ||
       !std::isfinite(physics.crouchingHalfHeight) || physics.crouchingHalfHeight <= 0 ||
-      physics.crouchingHalfHeight >= physics.standingHalfHeight) {
+      physics.crouchingHalfHeight >= physics.standingHalfHeight ||
+      !std::isfinite(physics.airborneDuckDelay) || physics.airborneDuckDelay < 0) {
     throw std::invalid_argument("invalid GoldSrc jump physics profile");
   }
 }
@@ -52,6 +53,44 @@ std::optional<double> descendingJumpTime(
   }
 
   return (speed + std::sqrt(discriminant)) / physics.gravity;
+}
+
+std::optional<JumpLandingPlan> planJumpLanding(
+  const JumpPhysics &physics,
+  double floorRise,
+  double planarDistance,
+  bool crouched
+) {
+  requirePhysics(physics);
+
+  if (!std::isfinite(floorRise) || !std::isfinite(planarDistance) ||
+      planarDistance <= 0) {
+    throw std::invalid_argument("invalid jump landing displacement");
+  }
+
+  if (floorRise > theoreticalJumpRise(physics, crouched)) {
+    return std::nullopt;
+  }
+
+  const double duckHeight = crouched ?
+    physics.standingHalfHeight - physics.crouchingHalfHeight : 0.0;
+  const double originRise = floorRise - duckHeight;
+  const auto descending = descendingJumpTime(physics, originRise);
+
+  if (!descending || *descending <= physics.airborneDuckDelay * static_cast<double>(crouched)) {
+    return std::nullopt;
+  }
+  const double speed = planarDistance / *descending;
+
+  if (!std::isfinite(speed) || speed > physics.maximumHorizontalSpeed) {
+    return std::nullopt;
+  }
+
+  return JumpLandingPlan {
+    .flightSeconds = *descending,
+    .requiredHorizontalSpeed = speed,
+    .targetOriginRise = originRise
+  };
 }
 
 double jumpDisplacement(

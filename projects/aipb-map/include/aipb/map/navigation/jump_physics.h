@@ -10,6 +10,7 @@ struct JumpPhysics {
   double maximumHorizontalSpeed { 250.0 };
   double standingHalfHeight { 36.0 };
   double crouchingHalfHeight { 18.0 };
+  double airborneDuckDelay { 0.04 };
 };
 
 // GoldSrc's default jump impulse; game-specific movevars must be verified in-engine.
@@ -27,6 +28,21 @@ double theoreticalJumpRise(
 std::optional<double> descendingJumpTime(
   const JumpPhysics &physics,
   double targetOriginRise
+);
+
+// A candidate landing plan, using the unchanged origin during an airborne duck.
+struct JumpLandingPlan {
+  double flightSeconds {};
+  double requiredHorizontalSpeed {};
+  double targetOriginRise {};
+};
+
+// Crouched landing shifts the feet-to-origin relation, not airborne origin.
+std::optional<JumpLandingPlan> planJumpLanding(
+  const JumpPhysics &physics,
+  double floorRise,
+  double planarDistance,
+  bool crouched
 );
 
 // Vertical movement relative to the standing jump origin at elapsed time.

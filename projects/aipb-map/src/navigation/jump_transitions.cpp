@@ -95,17 +95,15 @@ bool flight(
   const JumpPhysics &physics
 ) {
   constexpr std::size_t segments = 24;
-  const double difference = physics.standingHalfHeight - physics.crouchingHalfHeight;
 
   for (std::size_t step = 0; step < segments; ++step) {
     const double t0 = static_cast<double>(step) / static_cast<double>(segments);
     const double t1 = static_cast<double>(step + 1) / static_cast<double>(segments);
-    const std::size_t hull = crouched && step >= 4 && step < segments - 4 ? 3u : 1u;
-    const double offset = hull == 3 ? difference : 0.0;
+    const std::size_t hull = crouched && t0 >= physics.airborneDuckDelay / flightSeconds ? 3u : 1u;
     const auto a = trajectoryPoint(start, target, t0, flightSeconds, physics);
     const auto b = trajectoryPoint(start, target, t1, flightSeconds, physics);
-    const Vec3 p { a.x, a.y, a.z - offset };
-    const Vec3 q { b.x, b.y, b.z - offset };
+    const Vec3 p { a.x, a.y, a.z };
+    const Vec3 q { b.x, b.y, b.z };
 
     if (!clear(queries, world, brushes, hull, p, q)) {
       return false;
@@ -195,7 +193,7 @@ void appendJumpTransitions(
         for (const auto j : cell->second) {
           const auto &to = candidates.candidates[j];
 
-          if (to.id == from.id || !to.standingFree) {
+          if (to.id == from.id || (!to.standingFree && !to.crouchingFree)) {
             continue;
           }
           const double rise = to.position.z - from.position.z;
@@ -229,34 +227,33 @@ void appendJumpTransitions(
       const auto target = playerOrigin(to, 36.0, config.clearanceLift);
       const double rise = to.position.z - from.position.z;
       const auto &physics = config.jumpPhysics;
-      const bool simple = rise <= config.maximumJumpRise &&
-                          rise <= theoreticalJumpRise(physics, false);
-      const bool crouchedAllowed = rise <= config.maximumCrouchJumpRise &&
-                                   rise <= theoreticalJumpRise(physics, true);
-      const auto ordinaryTime = simple ? descendingJumpTime(physics, rise) : std::nullopt;
-      const auto crouchTime = crouchedAllowed ?
-                               descendingJumpTime(physics, rise) :
-                               std::nullopt;
-      const bool ordinarySpeed = ordinaryTime && xy / *ordinaryTime <= physics.maximumHorizontalSpeed;
-      const bool crouchSpeed = crouchTime && xy / *crouchTime <= physics.maximumHorizontalSpeed;
+      const auto ordinaryPlan = to.standingFree && rise <= config.maximumJumpRise ?
+        planJumpLanding(physics, rise, xy, false) : std::nullopt;
+      const auto crouchPlan = to.crouchingFree && rise <= config.maximumCrouchJumpRise ?
+        planJumpLanding(physics, rise, xy, true) : std::nullopt;
 
-      if (!ordinarySpeed && !crouchSpeed) {
+      if (!ordinaryPlan && !crouchPlan) {
         ++report.rejectedJumpPhysics;
         continue;
       }
-      const bool ordinaryPass = ordinarySpeed &&
-                                flight(queries, world, brushes, start, target, false, *ordinaryTime, physics);
-      const bool crouchPass = !ordinaryPass && crouchSpeed &&
-                              flight(queries, world, brushes, start, target, true, *crouchTime, physics);
+      const bool ordinaryPass = ordinaryPlan &&
+        flight(queries, world, brushes, start, target, false, ordinaryPlan->flightSeconds, physics);
+      const bool crouchPass = !ordinaryPass && crouchPlan &&
+        flight(queries, world, brushes, start, target, true, crouchPlan->flightSeconds, physics);
 
       if (!ordinaryPass && !crouchPass) {
         ++report.rejectedJumpCollision;
         continue;
       }
-      const auto touchdown = playerOrigin(to, 36.0, config.clearanceLift);
-      const Vec3 floorProbe { touchdown.x, touchdown.y, touchdown.z - 36.0 - config.groundTolerance - 1.0 };
+      const bool crouchedLanding = !ordinaryPass;
+      const std::size_t landingHull = crouchedLanding ? 3u : 1u;
+      const double halfHeight = crouchedLanding ? physics.crouchingHalfHeight : physics.standingHalfHeight;
+      const double riseAtLanding = crouchedLanding ? crouchPlan->targetOriginRise : ordinaryPlan->targetOriginRise;
+      const Vec3 touchdown { target.x, target.y, start.z + riseAtLanding };
+      const Vec3 floorProbe { touchdown.x, touchdown.y, touchdown.z - halfHeight -
+                               config.groundTolerance - 1.0 };
       bool landed = false;
-      const auto worldHit = queries.traceSegment(world, 1, touchdown, floorProbe);
+      const auto worldHit = queries.traceSegment(world, landingHull, touchdown, floorProbe);
       landed = !worldHit.startSolid && worldHit.impactPlane && worldHit.impactPlane->normal.z >= 0.7;
 
       for (const auto &brush : brushes) {
@@ -266,10 +263,9 @@ void appendJumpTransitions(
         const auto origin = brush.entity->origin;
         const Vec3 a { touchdown.x - origin.x, touchdown.y - origin.y, touchdown.z - origin.z };
         const Vec3 b { floorProbe.x - origin.x, floorProbe.y - origin.y, floorProbe.z - origin.z };
-        const auto hit = queries.traceSegment(brush.model->id, 1, a, b);
+        const auto hit = queries.traceSegment(brush.model->id, landingHull, a, b);
         landed = !hit.startSolid && hit.impactPlane && hit.impactPlane->normal.z >= 0.7;
       }
-
       if (!landed) {
         ++report.rejectedJumpLanding;
         continue;
@@ -282,14 +278,17 @@ void appendJumpTransitions(
         .to = to.id,
         .planarDistance = xy,
         .heightChange = rise,
-        .stance = collision::PlayerStance::Standing,
+        .stance = crouchedLanding ? collision::PlayerStance::Crouching : collision::PlayerStance::Standing,
         .traversal = traversal,
         .conditionalSupport = conditional,
-        .estimatedFlightSeconds = ordinaryPass ? *ordinaryTime : *crouchTime,
-        .estimatedHorizontalSpeed = xy / (ordinaryPass ? *ordinaryTime : *crouchTime)
+        .estimatedFlightSeconds = ordinaryPass ? ordinaryPlan->flightSeconds : crouchPlan->flightSeconds,
+        .estimatedHorizontalSpeed = ordinaryPass ? ordinaryPlan->requiredHorizontalSpeed : crouchPlan->requiredHorizontalSpeed,
+        .canStandAfterLanding = to.standingFree
       });
       report.jumpEdges += ordinaryPass;
       report.crouchJumpEdges += crouchPass;
+      report.crouchedLandings += crouchedLanding;
+      report.crouchedLandingsWithoutStanding += crouchedLanding && !to.standingFree;
       report.conditionalEdges += conditional;
       ++accepted;
     }

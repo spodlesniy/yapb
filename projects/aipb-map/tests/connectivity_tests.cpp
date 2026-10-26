@@ -96,7 +96,7 @@ void testConnectivity() {
           "candidate input modified");
   const auto json = connectivityJson(result);
   require(json == connectivityJson(buildConnectivity(map, candidates)), "non-deterministic connectivity JSON");
-  require(json.find("\"schema_version\":\"0.3.0\"") != std::string::npos, "wrong schema");
+  require(json.find("\"schema_version\":\"0.4.0\"") != std::string::npos, "wrong schema");
 
   candidates.candidates[1].standingFree = false;
   candidates.candidates[1].crouchingFree = false;
@@ -180,6 +180,16 @@ int main() {
   require(theoreticalJumpRise(profile, false) == 45.0 &&
           theoreticalJumpRise(profile, true) == 63.0, "crouch clearance mismatch");
   require(!descendingJumpTime(profile, 50.0), "unreachable apex accepted");
+  for (const double height : { 44.0, 48.0, 56.0, 63.0 }) {
+    const auto standing = planJumpLanding(profile, height, 64.0, false);
+    const auto crouching = planJumpLanding(profile, height, 64.0, true);
+    require(crouching.has_value(), "reachable crouch landing missing");
+    require(standing.has_value() == (height <= 45.0), "incorrect standing apex bound");
+    require(std::abs(jumpDisplacement(profile, crouching->flightSeconds) -
+                     (height - 18.0)) < 0.001, "crouch landing origin mismatch");
+  }
+  require(!planJumpLanding(profile, 64.0, 64.0, true), "over-height crouch jump accepted");
+  require(!planJumpLanding(profile, 48.0, 500.0, true), "excessive horizontal speed accepted");
 
   return 0;
 }

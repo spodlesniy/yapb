@@ -294,7 +294,8 @@ ConnectivityReport buildConnectivity(
           .traversal = TraversalKind::Walk,
           .conditionalSupport = from.conditionalSupport || to.conditionalSupport,
           .estimatedFlightSeconds = 0.0,
-          .estimatedHorizontalSpeed = 0.0
+          .estimatedHorizontalSpeed = 0.0,
+          .canStandAfterLanding = to.standingFree
         });
         report.conditionalEdges += from.conditionalSupport || to.conditionalSupport;
         report.standingEdges += hull == 1;
@@ -346,13 +347,14 @@ std::string connectivityJson(const ConnectivityReport &report) {
                        e.traversal == TraversalKind::Jump ? "jump" : "crouch_jump" },
       { "conditional_support", e.conditionalSupport },
       { "estimated_flight_seconds", e.estimatedFlightSeconds },
-      { "estimated_horizontal_speed", e.estimatedHorizontalSpeed }
+      { "estimated_horizontal_speed", e.estimatedHorizontalSpeed },
+      { "can_stand_after_landing", e.canStandAfterLanding }
     });
   }
 
   return io::writeJson(Json::Object {
     { "format", "aipb-preliminary-connectivity" },
-    { "schema_version", "0.3.0" },
+    { "schema_version", "0.4.0" },
     { "source_candidates_schema", "0.3.2" },
     { "candidates_sha256", report.candidatesSha256 },
     { "map_name", report.mapName },
@@ -378,6 +380,7 @@ std::string connectivityJson(const ConnectivityReport &report) {
         { "maximum_horizontal_speed", report.config.jumpPhysics.maximumHorizontalSpeed },
         { "standing_half_height", report.config.jumpPhysics.standingHalfHeight },
         { "crouching_half_height", report.config.jumpPhysics.crouchingHalfHeight },
+        { "airborne_duck_delay", report.config.jumpPhysics.airborneDuckDelay },
         { "jump_impulse", jumpImpulse(report.config.jumpPhysics) },
         { "theoretical_jump_rise", theoreticalJumpRise(report.config.jumpPhysics, false) },
         { "theoretical_crouch_jump_rise", theoreticalJumpRise(report.config.jumpPhysics, true) }
@@ -401,6 +404,8 @@ std::string connectivityJson(const ConnectivityReport &report) {
     { "rejected_jump_collision", number(report.rejectedJumpCollision) },
     { "rejected_jump_landing", number(report.rejectedJumpLanding) },
     { "rejected_jump_physics", number(report.rejectedJumpPhysics) },
+    { "crouched_landings", number(report.crouchedLandings) },
+    { "crouched_landings_without_standing", number(report.crouchedLandingsWithoutStanding) },
     { "conditional_edges", number(report.conditionalEdges) },
     { "conditional_islands", number(report.conditionalIslands) },
     { "weak_components", number(report.weakComponents) },
