@@ -205,6 +205,9 @@ CR_EXPORT int GetEntityAPI (gamefuncs_t *table, int interfaceVersion) {
          }
       }
 
+      // Avoid leaking the previous occupant's viewer settings to a new client.
+      ai::navvis::resetPlayer (ent);
+
       // refresh clients immediately
       util.updateClients ();
 
@@ -233,6 +236,9 @@ CR_EXPORT int GetEntityAPI (gamefuncs_t *table, int interfaceVersion) {
             break;
          }
       }
+
+      // Avoid leaking the previous occupant's viewer settings to a new client.
+      ai::navvis::resetPlayer (ent);
 
       // refresh clients immediately
       util.updateClients ();

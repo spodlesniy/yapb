@@ -1,5 +1,6 @@
 #include <yapb.h>
 #include <ai/ai_navvis.h>
+#include <ai/ai_navvis_select.h>
 
 #include <algorithm>
 #include <cmath>
@@ -24,7 +25,7 @@ struct Setting {
    float nextHud {};
    unsigned lastNearest {};
 };
-Setting settings[kMaxPlayers + 1] {};
+Setting settings[kMaxPlayers] {};
 Data data {};
 bool loaded {};
 std::string currentMap;
@@ -61,7 +62,7 @@ bool authorized(edict_t *ent) {
       return false;
    }
    const int index = game.indexOfPlayer(ent);
-   return index >= 1 && index <= kMaxPlayers &&
+   return validPlayerIndex(index, kMaxPlayers) &&
       (ent == game.getLocalEntity() || (util.getClient(index).flags & ClientFlags::Admin));
 }
 
@@ -153,32 +154,24 @@ void frame(edict_t *editor) {
    }
    const int index = game.indexOfPlayer(editor);
    auto &setting = settings[index];
+
    if (!setting.enabled || game.time() < setting.nextDraw) {
       return;
    }
    setting.nextDraw = game.time() + 0.2f;
-   const Vector view = editor->v.origin;
-   const float squaredRadius = drawRadius * drawRadius;
-   const Point *nearest = nullptr;
-   float nearestDistance = squaredRadius;
-   int drawn = 0;
 
-   for (const auto &point : data.points) {
-      if (!allowed(setting, point)) {
-         continue;
-      }
+   const Vector view = editor->v.origin;
+   NearbyPoint <Point> nearby[kNodesPerFrame] {};
+   const std::size_t count = selectNearby(data.points, setting.mask,
+      view.x, view.y, view.z, drawRadius, nearby);
+
+   if (count == 0) {
+      return;
+   }
+
+   for (std::size_t i = 0; i < count; ++i) {
+      const Point &point = *nearby[i].point;
       const Vector pos = coords(point);
-      const float distance = (pos - view).lengthSq();
-      if (distance > squaredRadius) {
-         continue;
-      }
-      if (distance < nearestDistance) {
-         nearestDistance = distance;
-         nearest = &point;
-      }
-      if (++drawn > kNodesPerFrame) {
-         continue;
-      }
       const Color color = point.isolated ? Color { 240, 70, 70 } :
                           point.source == 3 ? Color { 230, 160, 55 } :
                           point.source == 2 ? Color { 50, 210, 80 } :
@@ -187,21 +180,21 @@ void frame(edict_t *editor) {
          4, 0, color, 220, 0, 3);
    }
 
-   if (!nearest) {
-      return;
-   }
-   if (setting.lastNearest != nearest->id || game.time() >= setting.nextHud) {
-      game.centerPrint(editor, strings.format("AiPB node %u | Z %.1f | %s",
-         nearest->id, nearest->z, nearest->standing ? "standing" : "crouching"));
-      setting.lastNearest = nearest->id;
-      setting.nextHud = game.time() + 1.0f;
-   }
+   const Point *nearest = nearby[0].point;
    int edgeCount = 0;
+   unsigned outgoing = 0;
+
    for (const auto &edge : data.edges) {
-      if (edge.from != nearest->id || (setting.mask & (1u << (edge.type + 4))) == 0) {
+      if (edge.from != nearest->id) {
+         continue;
+      }
+      ++outgoing;
+
+      if (edgeCount >= kEdgesPerFrame || (setting.mask & (1u << (edge.type + 4))) == 0) {
          continue;
       }
       const auto *target = findPoint(edge.to);
+
       if (!target || !allowed(setting, *target)) {
          continue;
       }
@@ -210,9 +203,16 @@ void frame(edict_t *editor) {
       game.drawLine(editor, coords(*nearest) + Vector(0, 0, 12),
          coords(*target) + Vector(0, 0, 12), 4, 0, color, 220, 0, 3,
          DrawLine::Arrow);
-      if (++edgeCount == kEdgesPerFrame) {
-         break;
-      }
+      ++edgeCount;
+   }
+
+   if (setting.lastNearest != nearest->id || game.time() >= setting.nextHud) {
+      const char *sources[] = { "world", "spawn", "brush", "conditional" };
+      const char *stance = nearest->standing ? (nearest->crouching ? "stand/duck" : "stand") : "duck";
+      game.centerPrint(editor, strings.format("AiPB %u (%.0f %.0f %.0f) %s %s | out %u",
+         nearest->id, nearest->x, nearest->y, nearest->z, sources[nearest->source], stance, outgoing));
+      setting.lastNearest = nearest->id;
+      setting.nextHud = game.time() + 1.0f;
    }
 }
 
@@ -241,6 +241,21 @@ void radius(float value) {
 
 float radius() {
    return drawRadius;
+}
+
+bool canView(edict_t *editor) {
+   return authorized(editor);
+}
+
+void resetPlayer(edict_t *editor) {
+   if (!editor) {
+      return;
+   }
+   const int index = game.indexOfPlayer(editor);
+
+   if (validPlayerIndex(index, kMaxPlayers)) {
+      settings[index] = {};
+   }
 }
 
 void reset() {

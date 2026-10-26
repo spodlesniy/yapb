@@ -1290,7 +1290,9 @@ int BotControl::menuFeatures (int item) {
       break;
 
    case 6:
-      showMenu(Menu::NavVis);
+      if (ai::navvis::canView(m_ent)) {
+         showMenu(Menu::NavVis);
+      }
       break;
 
    case 10:
@@ -1302,6 +1304,10 @@ int BotControl::menuFeatures (int item) {
 
 int BotControl::menuNavVis (int item) {
    closeMenu ();
+
+   if (!ai::navvis::canView(m_ent)) {
+      return BotCommandResult::Handled;
+   }
 
    if (item >= 1 && item <= 8) {
       ai::navvis::toggle(m_ent, item - 1);

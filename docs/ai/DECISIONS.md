@@ -2493,3 +2493,12 @@ Expose per-category visibility toggles and viewer enablement through the in-game
 Render a maximum of 48 markers and 24 links per administrator at approximately five updates per second.
 Disable visibility when admin rights are revoked or the map changes.
 Do not claim in-engine accuracy from a successfully generated viewer file; the Windows x86 game build and visual validation are a distinct acceptance gate.
+
+## D210.4.1 — Correct player slot validation and bounded nearest-node selection
+
+Correct GoldSrc player slot validation to the zero-based contract of `Game::indexOfPlayer()`; the first slot must be authorized normally, and slot 32 is out of range.
+Clear each viewer slot when a client connects or disconnects, so a newly authorized administrator cannot inherit a previous player's display state.
+Use a bounded max-heap to select the nearest 48 eligible candidates before drawing, rather than relying on file ID order; ties use candidate ID for stability.
+Keep the directed edges limited to the nearest rendered candidate and the existing 24-arrow budget.
+Show nearest candidate ID, full coordinates, source provenance, stance and outgoing edge count in the existing throttled center HUD.
+Recheck authorization in the viewer menu handler, while preserving the console-only radius and read-only graph separation.

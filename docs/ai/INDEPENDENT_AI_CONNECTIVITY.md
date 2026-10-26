@@ -81,3 +81,11 @@ Use `yapb navvis radius 500` in the client console; the radius never appears as 
 Nearby marker beams use distinct source colors and directed edges originate from the nearest visible candidate.
 This feature performs no runtime path planning or gameplay collision updates.
 The Map Tool export is automatically CTest-validated, whereas compatibility with the 32-bit Counter-Strike DLL must be verified by user-started `windows-x86` CI and in-game checks.
+
+## D210.4.1 — Viewer slot and proximity corrections
+
+The first player slot is valid because `Game::indexOfPlayer()` is zero-based.
+Viewer preferences reset on client connection and disconnection, as well as on map changes.
+A bounded nearest-node selection renders up to 48 eligible candidates by actual distance (stable candidate-ID ties), rather than by export order.
+The nearest-node HUD includes XYZ, source provenance, stance and outgoing transition count, throttled to the existing refresh cadence.
+Independent unit tests cover slot bounds, proximity ordering, radius/category filtering and ties; CS 1.6 display verification still requires a user-started Windows x86 build.

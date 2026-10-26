@@ -233,3 +233,10 @@ Use `yapb navvis radius 500` in the player console (64–2048 units); radius is 
 Rendering is limited to 48 nearby markers and 24 outgoing arrows at five updates per second, so not every candidate appears at once.
 An updated `.nviz` file is only picked up when the map changes or the game DLL reloads.
 Use the appropriate user-started `windows-x86` CI build for in-game verification; the standalone Map Tool CI does not build the CS 1.6 DLL.
+
+### Viewer correction (D210.4.1)
+
+The runtime now renders the closest 48 allowed candidates in the chosen radius, independently of candidate ID ordering.
+Nearest-node diagnostics report full position, provenance, stance and outgoing transition count.
+Viewer state is cleared when a client joins or leaves, and the first player slot supports ordinary administrator access.
+The Map Tool `.nviz` version is unchanged; no re-export is needed.
