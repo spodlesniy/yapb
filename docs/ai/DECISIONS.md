@@ -2383,3 +2383,10 @@ D209.2's GCC and Clang CTest failed on the synthetic `radius coverage` assertion
 The spawn 240 units from a surface is outside 64/128-unit radii but is inside the independent 256-unit coverage metric, even though the main coverage radius in the fixture is 100 units.
 Correct the test's expected 256-unit count from two to three, preserving production sampling and output schema.
 Check fresh automatic GCC, Clang and MSVC CTest before accepting the step.
+## D209.2.2 — Avoid MSVC x86 signed/unsigned optional comparison warnings
+
+The locally reported MSVC 14.44 x86 Map Tool build failed with C4389 under /W4 /WX in `navigation_candidates_tests.cpp` because an `std::optional<std::size_t>` was compared directly to signed integer literals.
+Type the expected candidate IDs explicitly as `std::size_t` and include `<cstddef>` directly in the test.
+Do not suppress compiler warnings or alter the navigation-candidate implementation, report format, or original game runtime.
+Validate the correction with automatic GCC, Clang and MSVC x64 CTest; manual Windows x86 local compilation remains the platform-specific acceptance check.
+

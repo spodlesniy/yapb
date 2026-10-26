@@ -1,5 +1,6 @@
 #include <aipb/map/navigation/candidates.h>
 
+#include <cstddef>
 #include <stdexcept>
 #include <string>
 
@@ -63,9 +64,9 @@ void testCandidates() {
         report.crouchingOnly == 1, "stance stats incorrect");
   check(report.spawnCount == 3 && report.coveredSpawns == 2 &&
         report.spawnsWithinPlanarRadius == 2, "spawn coverage incorrect");
-  check(report.spawns[0].coveredCandidateId == 1 &&
+  check(report.spawns[0].coveredCandidateId == std::size_t { 1 } &&
         !report.spawns[1].coveredCandidateId &&
-        report.spawns[2].coveredCandidateId == 2, "spawn matching incorrect");
+        report.spawns[2].coveredCandidateId == std::size_t { 2 }, "spawn matching incorrect");
   const auto json = candidatesJson(report);
   check(json == candidatesJson(generateCandidates(map, heightfield, config)),
         "non-deterministic candidate JSON");
