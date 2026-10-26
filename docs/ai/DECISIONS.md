@@ -2474,3 +2474,9 @@ Accept crouch-only destinations when they provide valid crouched support, withou
 Keep conservative speed, collision and static brush rules and retain the candidate fingerprint.
 Advance Connectivity JSON diagnostics to v0.4.0, adding `can_stand_after_landing`, `crouched_landings` and `crouched_landings_without_standing`.
 These remain provisional offline movement hypotheses pending GoldSrc frame-timing and actual in-game calibration.
+
+## D210.3.2 — Stabilize apex discriminant at 63-unit crouch reach
+
+Automatic GCC/Clang CTest exposed a small negative discriminant at the exact 45-unit ballistic apex, causing a valid 63-unit crouch-height plan to be incorrectly rejected.
+Allow only a relative floating-point tolerance of 1e-10 times the squared launch speed when testing the discriminant, then clamp the infinitesimal negative to zero for the square root.
+Keep the physical 45/63-unit limits, input validation and trajectory behavior otherwise unchanged.

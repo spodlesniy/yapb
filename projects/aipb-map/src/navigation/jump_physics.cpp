@@ -1,5 +1,6 @@
 #include <aipb/map/navigation/jump_physics.h>
 
+#include <algorithm>
 #include <cmath>
 #include <stdexcept>
 
@@ -48,11 +49,13 @@ std::optional<double> descendingJumpTime(
   const double speed = jumpImpulse(physics);
   const double discriminant = speed * speed - 2.0 * physics.gravity * targetOriginRise;
 
-  if (discriminant < 0) {
+  const double tolerance = 1e-10 * speed * speed;
+
+  if (discriminant < -tolerance) {
     return std::nullopt;
   }
 
-  return (speed + std::sqrt(discriminant)) / physics.gravity;
+  return (speed + std::sqrt(std::max(0.0, discriminant))) / physics.gravity;
 }
 
 std::optional<JumpLandingPlan> planJumpLanding(
