@@ -106,3 +106,10 @@ The sample budget is capped at 64 per direction; these offline checks are conser
 The jump classifier suppresses duplicate directed jump edges when a walk was already accepted.
 Connectivity JSON v0.5.0 records walk sample and rejection counters.
 Run fresh preliminary-connectivity reports and regenerate .nviz snapshots to inspect these changed connections in-game.
+
+## D210.5.1 — Non-interactive CI regression checks
+
+The jump fixture now counts actual airborne edges, allowing an independent downhill walk to coexist with an uphill jump.
+The test executable returns a nonzero error code and prints exception messages rather than invoking an interactive MSVC terminate dialog.
+The Map Tool workflows invoke CTest with non-interactive debug mode and bounded test/step timeouts.
+No change to connectivity JSON v0.5.0 or the runtime .nviz v1 format.

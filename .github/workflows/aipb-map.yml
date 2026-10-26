@@ -35,7 +35,8 @@ jobs:
       - name: Build
         run: cmake --build build/aipb-map --parallel
       - name: Test
-        run: ctest --test-dir build/aipb-map --output-on-failure
+        timeout-minutes: 10
+        run: ctest --test-dir build/aipb-map --output-on-failure --interactive-debug-mode 0 --timeout 60
 
   windows:
     name: Map Tool Windows (MSVC x64)
@@ -54,4 +55,5 @@ jobs:
       - name: Build
         run: cmake --build build/aipb-map --parallel
       - name: Test
-        run: ctest --test-dir build/aipb-map --output-on-failure
+        timeout-minutes: 10
+        run: ctest --test-dir build/aipb-map --output-on-failure --interactive-debug-mode 0 --timeout 60

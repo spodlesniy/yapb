@@ -2521,3 +2521,11 @@ Reject missing support, steep slopes, excessive local steps, collision and endpo
 Do not add a jump edge where a directed walk edge already exists, even when the total rise is greater than the legacy 18-unit threshold.
 Retain bounded directed neighbor trials, existing provisional jump physics and candidate provenance.
 Connectivity JSON advances to 0.5.0; .nviz v1 remains compatible and must be regenerated to reflect new edges.
+
+## D210.5.1 — Non-interactive connectivity test failure handling
+
+D210.5 GCC/Clang CTest identified a stale jump-fixture assertion: a directed downhill walk can now coexist with an uphill jump, so the total number of edges cannot be treated as the jump count.
+Only count airborne edges when asserting jump cardinality and inspect the matching transition, not the first edge.
+Catch exceptions in the connectivity test entry point and return failure with a stderr diagnostic instead of invoking interactive MSVC termination.
+Run Map Tool CI tests with CTest non-interactive debug mode, 60-second per-test timeouts, and a ten-minute test-step limit to prevent unattended Windows GUI dialogs from blocking workflow completion.
+Do not change production connectivity behavior or artifact schemas.

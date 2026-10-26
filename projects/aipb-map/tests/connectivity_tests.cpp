@@ -1,6 +1,9 @@
 #include <aipb/map/navigation/connectivity.h>
 
+#include <algorithm>
 #include <cmath>
+#include <cstdio>
+#include <exception>
 #include <stdexcept>
 #include <string>
 
@@ -153,14 +156,24 @@ void testJumpTransitions(
   candidates.candidates[1].supportEntityId = 2;
   candidates.candidates[1].sampleIndex = 1;
   const auto report = buildConnectivity(map, candidates);
-  require(report.edges.size() <= 1, "unexpected excessive jump count");
-  if (report.edges.empty()) {
-    require(report.rejectedJumpCollision + report.rejectedJumpPhysics > 0,
+  // Downhill walk can coexist with the uphill jump; count airborne edges only.
+  const auto isJump = [](const ProvisionalEdge &edge) {
+    return edge.traversal != TraversalKind::Walk;
+  };
+  const auto jumpCount = std::count_if(report.edges.begin(), report.edges.end(), isJump);
+  const auto jump = std::find_if(report.edges.begin(), report.edges.end(), isJump);
+  require(jumpCount <= 1, "unexpected excessive jump count");
+
+  if (jump == report.edges.end()) {
+    const bool forwardWalk = std::any_of(report.edges.begin(), report.edges.end(), [](const ProvisionalEdge &edge) {
+      return edge.from == 11 && edge.to == 19 && edge.traversal == TraversalKind::Walk;
+    });
+    require(forwardWalk || report.rejectedJumpCollision + report.rejectedJumpPhysics > 0,
             "jump unexpectedly rejected without a diagnostic");
     return;
   }
-  require(report.edges[0].from == 11 && report.edges[0].to == 19, "jump direction incorrect");
-  require(report.edges[0].traversal == expected, "incorrect jump variant");
+  require(jump->from == 11 && jump->to == 19, "jump direction incorrect");
+  require(jump->traversal == expected, "incorrect jump variant");
   require(report.jumpEdges + report.crouchJumpEdges == 1, "jump counters incorrect");
   require(report.weakComponents == 1 && report.isolatedCandidates == 0, "jump did not connect islands");
   require(report.candidatesSha256.size() == 64, "missing candidate fingerprint");
@@ -254,7 +267,7 @@ void testContinuousWalkRejectsNarrowGap() {
 
 } // namespace
 
-int main() {
+int runTests() {
   testConnectivity();
   testContinuousWalkRejectsNarrowGap();
   testContinuousWalkClimbsGradualSlope();
@@ -276,4 +289,17 @@ int main() {
   require(!planJumpLanding(profile, 48.0, 500.0, true), "excessive horizontal speed accepted");
 
   return 0;
+}
+
+ // Failure must be reported as an exit code, not an interactive MSVC dialog.
+int main() {
+  try {
+    return runTests();
+  } catch (const std::exception &error) {
+    std::fprintf(stderr, "aipb_map_preliminary_connectivity: %s\n", error.what());
+  } catch (...) {
+    std::fputs("aipb_map_preliminary_connectivity: unknown exception\n", stderr);
+  }
+
+  return 1;
 }

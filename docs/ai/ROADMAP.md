@@ -80,6 +80,7 @@ D210.4 introduces read-only in-game Navigation Candidates/Connectivity visualiza
 D210.4.1 fixes zero-based GoldSrc player indexing, resets client-slot viewer state on connection changes, and replaces file-ordered marker truncation with deterministic bounded nearest-node selection; automatic unit tests cover the selection contract, while Windows x86 and in-game acceptance remain pending.
 D210.4.2 replaces the viewer's iostream-based loader after an MSVC x86 C4530/C2220 failure under `/EHs-c- /WX`, adds independent parser regression tests, and preserves `.nviz` v1; target-platform rebuild and in-game acceptance remain pending.
 D210.5 replaces endpoint-only step classification and three ground probes with bounded 4-unit walk hull sampling, short local step clearance, floor/grade checks and separate walk rejection diagnostics; engine movement parity and 25-map comparison remain pending.
+D210.5.1 fixes a CI jump-fixture regression from counting downhill walk and uphill jump together, and makes CTest non-interactive with per-test and workflow timeouts; target CI and real-map validation remain pending.
 This is instrumentation, not evidence that arbitrary maps have been measured or physically traversed; Windows x86/in-game acceptance is pending.
 Proposed progression: graph evaluation/generator; versioned map knowledge; bot profiles; match context and perception; independent policy; reproducible rewards/learning; opt-in inference and in-game comparisons.
 This parallel track does not change any existing Phase 7 exit criterion.
