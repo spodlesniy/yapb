@@ -118,7 +118,9 @@ int importCommand(
   openLog(logPath);
   log("INFO", "Import started: " + input.string());
   aipb::map::importer::BspImporter importer;
-  const auto map = importer.importFile(input);
+  const auto map = importer.importWithWarnings(input, [](const std::string &warning) {
+    log("WARN", warning);
+  });
   log("DEBUG", "Parsed: " + std::to_string(map.meshes.size()) + " meshes, " + std::to_string(map.entities.size()) +
                   " entities, " + (map.partition ? std::to_string(map.partition->clipNodes.size()) : "no") + " clipnodes", false);
 
