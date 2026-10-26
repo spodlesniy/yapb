@@ -2245,3 +2245,9 @@ Emit a structured model/face/count warning through an optional import callback, 
 Keep valid triangles and all original BSP collision trees; do not infer walkability or drop arbitrary surfaces.
 Add a synthetic BSP regression test checking valid triangle retention, diagnostic provenance and map artifact round-trip.
 Recheck real de_inferno BSP separately; its successful import is not yet verified.
+
+## D206.7.1 — Remove unused BSP test variable
+
+Remove the unused `face` offset local from `testRepeatedFaceVertices` introduced in D206.7.
+The variable triggers GCC/Clang `-Werror=unused-variable` and MSVC C4189/C2220 with `/WX`; the test's surfedge mutation, behavior and assertions are unchanged.
+Keep strict warnings-as-errors and validate the standalone Map Tool in automatic CI.

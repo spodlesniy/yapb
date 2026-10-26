@@ -243,7 +243,6 @@ void testRepeatedFaceVertices(TempDir &dir) {
   const auto path = dir.root / "repeated-face.bsp";
   auto bsp = makeBsp();
   const auto surf = lumpOffset(bsp, 13);
-  const auto face = lumpOffset(bsp, 7);
   u32(bsp, surf + 3 * 4, 1);
   write(path, bsp);
   std::vector<std::string> warnings;
