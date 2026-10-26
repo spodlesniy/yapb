@@ -1,6 +1,8 @@
+#include <algorithm>
 #include <array>
 #include <bit>
 #include <concepts>
+#include <functional>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
@@ -12,6 +14,7 @@
 #include <string_view>
 #include <vector>
 
+#include <aipb/map/geometry.h>
 #include <aipb/map/importer/bsp_importer.h>
 #include <aipb/map/io/artifact.h>
 
@@ -293,6 +296,93 @@ void testRepeatedFaceVertices(TempDir &dir) {
   check(aipb::map::io::loadMap(artifact).model == map, "repeated face artifact roundtrip failed");
 }
 
+
+void replaceVertex(
+  Bytes &bsp,
+  std::size_t vertex,
+  std::array<float, 3> coordinates
+) {
+  const auto offset = lumpOffset(bsp, 3) + vertex * 12;
+
+  for (std::size_t i = 0; i < 3; ++i) {
+    u32(bsp, offset + i * 4, std::bit_cast<std::uint32_t>(coordinates[i]));
+  }
+}
+
+void testGeometryCleanup(TempDir &dir) {
+  using namespace aipb::map;
+  importer::BspImporter importer;
+  const auto path = dir.root / "geometry-cleanup.bsp";
+  const auto fixture = makeBsp(R"({"classname" "worldspawn"} {"classname" "func_door" "model" "*1"})", true);
+  write(path, fixture);
+  const auto baseline = importer.importFile(path);
+  const auto checkGeometry = [](const MapModel &map) {
+    for (const auto &mesh : map.meshes) {
+      std::vector<bool> referenced(mesh.vertices.size(), false);
+
+      for (const auto &triangle : mesh.triangles) {
+        check(triangle.a < referenced.size() && triangle.b < referenced.size() && triangle.c < referenced.size(),
+              "cleaned triangle references missing vertex");
+        check(!zeroAreaTriangle(mesh.vertices[triangle.a], mesh.vertices[triangle.b], mesh.vertices[triangle.c]),
+              "cleaned mesh contains zero-area triangles");
+        referenced[triangle.a] = referenced[triangle.b] = referenced[triangle.c] = true;
+      }
+      check(std::ranges::all_of(referenced, std::identity {}), "cleaned mesh has unused vertices");
+    }
+  };
+  auto import = [&](const Bytes &bsp) {
+    write(path, bsp);
+    std::vector<std::string> warnings;
+    auto map = importer.importWithWarnings(path, [&](const std::string &message) { warnings.push_back(message); });
+    check(map.partition == baseline.partition, "render cleanup changed collision partition");
+    checkGeometry(map);
+
+    return std::pair { std::move(map), std::move(warnings) };
+  };
+
+  auto partial = fixture;
+  replaceVertex(partial, 2, { 32, 0, 0 });
+  auto [map, warnings] = import(partial);
+  check(map.meshes.size() == 2 && map.meshes[0].triangles.size() == 1, "collinear partial fan lost valid triangle");
+  check(map.meshes[0].vertices.size() == 3 &&
+        map.meshes[0].triangles[0] == (Triangle { 0, 1, 2 }), "partial fan vertices or winding changed");
+  check(std::ranges::any_of(warnings, [](const auto &value) {
+    return value.find("model 0, face 0: skipped 0 repeated-index triangles and 1 exact-zero-area") != std::string::npos;
+  }), "missing source face / collinear triangle diagnostic");
+  const auto partialArtifact = dir.root / "partial-cleanup.aipbmap";
+  io::saveMap(map, partialArtifact);
+  check(io::loadMap(partialArtifact).model == map, "partial cleanup artifact round-trip failed");
+
+  auto coincident = fixture;
+  replaceVertex(coincident, 1, { 0, 0, 0 });
+  auto [samePosition, positionWarnings] = import(coincident);
+  check(samePosition.meshes[0].triangles.size() == 1, "coincident coordinates were not filtered");
+  check(!positionWarnings.empty(), "coincident coordinates were not reported");
+
+  auto emptyBrush = fixture;
+  replaceVertex(emptyBrush, 4, { 0, 0, 32 });
+  replaceVertex(emptyBrush, 5, { 32, 0, 32 });
+  replaceVertex(emptyBrush, 6, { 64, 0, 32 });
+  auto [brush, brushWarnings] = import(emptyBrush);
+  check(brush.meshes.size() == 1 && brush.meshes[0].id == 1, "fully degenerate brush mesh not omitted");
+  check(!brush.entities[1].meshId && brush.entities[1].partitionModelId == 2, "brush collision link lost");
+  check(std::ranges::any_of(brushWarnings, [](const auto &value) {
+    return value.find("model 1: no usable render triangles after cleanup") != std::string::npos;
+  }), "fully degenerate model diagnostic missing");
+  const auto emptyArtifact = dir.root / "empty-cleanup.aipbmap";
+  io::saveMap(brush, emptyArtifact);
+  check(io::loadMap(emptyArtifact).model == brush, "collision-only brush artifact round-trip failed");
+
+  auto emptyWorld = fixture;
+  for (std::size_t i = 0; i < 4; ++i) {
+    replaceVertex(emptyWorld, i, { static_cast<float>(i * 16), 0, 0 });
+  }
+  const auto [world, worldWarnings] = import(emptyWorld);
+  check(world.meshes.size() == 1 && world.meshes[0].id == 2, "fully degenerate world mesh not omitted");
+  check(!world.entities[0].meshId && world.entities[0].partitionModelId == 1, "world collision link lost");
+  check(!worldWarnings.empty(), "world cleanup warning missing");
+}
+
 void testCollisionBsp(TempDir &dir) {
   using namespace aipb::map;
   importer::BspImporter importer;
@@ -448,10 +538,11 @@ int main(
     TempDir dir;
     testValidBsp(dir);
     testRepeatedFaceVertices(dir);
+    testGeometryCleanup(dir);
     testEmptyRenderModel(dir);
     testCollisionBsp(dir);
     testCorruptBsp(dir);
-    std::cout << "D205 BSP collision import checks passed\n";
+    std::cout << "D206.9 BSP render cleanup checks passed\n";
 
     return 0;
   } catch (const std::exception &error) {

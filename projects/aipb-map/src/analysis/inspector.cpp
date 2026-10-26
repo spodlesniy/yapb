@@ -1,4 +1,5 @@
 #include <aipb/map/analysis/inspector.h>
+#include <aipb/map/geometry.h>
 
 #include <algorithm>
 #include <array>
@@ -41,21 +42,6 @@ void extend(
   extend(target, source.maximum);
 }
 
-bool zeroArea(
-  const Vec3 &a,
-  const Vec3 &b,
-  const Vec3 &c
-) {
-  const auto x = static_cast<long double>(b.x) - a.x;
-  const auto y = static_cast<long double>(b.y) - a.y;
-  const auto z = static_cast<long double>(b.z) - a.z;
-  const auto u = static_cast<long double>(c.x) - a.x;
-  const auto v = static_cast<long double>(c.y) - a.y;
-  const auto w = static_cast<long double>(c.z) - a.z;
-
-  return (y * w - z * v) == 0 && (z * u - x * w) == 0 && (x * v - y * u) == 0;
-}
-
 MeshMetrics inspectMesh(
   ObjectId id,
   std::span<const Vec3> vertices,
@@ -75,7 +61,7 @@ MeshMetrics inspectMesh(
   for (const auto &triangle : triangles) {
     used[triangle.a] = used[triangle.b] = used[triangle.c] = 1;
 
-    if (zeroArea(vertices[triangle.a], vertices[triangle.b], vertices[triangle.c])) {
+    if (zeroAreaTriangle(vertices[triangle.a], vertices[triangle.b], vertices[triangle.c])) {
       ++result.zeroAreaTriangles;
     }
   }

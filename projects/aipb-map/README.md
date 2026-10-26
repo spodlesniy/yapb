@@ -96,4 +96,7 @@ Import logs include timestamps, outcome, input/output paths, hashes, counts and 
 Inspect logs also include the detailed JSON metrics report.
 Logs are appended to the selected file, and normal console messages remain available.
 
-BSP entities can reference models with no render faces; import preserves their collision-model links and logs a warning rather than inventing meshes.
+BSP entities can reference models with no render faces or no usable render triangles; import preserves their collision-model links and logs a warning rather than inventing meshes.
+D206.9 removes exact-zero-area render triangles before committing mesh vertices, preserving the winding and original collision partitions.
+Import warnings identify BSP model/face indices and skipped triangle reasons, with totals in console output and optional detailed file logs.
+Re-import an existing BSP into a new output directory to obtain cleaned geometry; old artifacts remain readable and report their original metrics.

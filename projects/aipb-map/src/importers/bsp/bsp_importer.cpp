@@ -1,3 +1,4 @@
+#include <aipb/map/geometry.h>
 #include <aipb/map/hash.h>
 #include <aipb/map/importer/bsp_importer.h>
 
@@ -199,6 +200,9 @@ std::vector<Mesh> meshes(
   const auto points = vertices(bsp);
   std::vector<Mesh> result;
   const auto modelCount = bsp.count(kModels, 64);
+  std::size_t keptTotal = 0;
+  std::size_t repeatedTotal = 0;
+  std::size_t zeroAreaTotal = 0;
 
   if (modelCount == 0) {
     throw std::runtime_error("BSP has no world model");
@@ -222,9 +226,6 @@ std::vector<Mesh> meshes(
     mesh.id = static_cast<ObjectId>(modelIndex) + 1;
     std::map<std::uint32_t, std::uint32_t> vertexMap;
     auto internVertex = [&](std::uint32_t index) {
-      if (index >= points.size()) {
-        throw std::runtime_error("BSP face references missing vertex");
-      }
       const auto [it, inserted] = vertexMap.emplace(index, static_cast<std::uint32_t>(mesh.vertices.size()));
 
       if (inserted) {
@@ -257,28 +258,57 @@ std::vector<Mesh> meshes(
         const auto index = static_cast<std::size_t>(signedEdge < 0 ? -signedEdge : signedEdge);
         const auto eo = bsp.record(kEdges, 4, index);
         const auto vertex = bsp.u16(eo + (signedEdge < 0 ? 2 : 0));
-        polygon.push_back(internVertex(vertex));
+
+        if (vertex >= points.size()) {
+          throw std::runtime_error("BSP face references missing vertex");
+        }
+        polygon.push_back(vertex);
       }
 
-      std::size_t skipped = 0;
+      std::size_t skippedRepeated = 0;
+      std::size_t skippedZeroArea = 0;
 
       for (std::size_t n = 1; n + 1 < polygon.size(); ++n) {
-        const Triangle triangle { polygon.front(), polygon[n], polygon[n + 1] };
+        const Triangle source { polygon.front(), polygon[n], polygon[n + 1] };
 
-        if (triangle.a == triangle.b || triangle.a == triangle.c || triangle.b == triangle.c) {
-          ++skipped;
+        if (source.a == source.b || source.a == source.c || source.b == source.c) {
+          ++skippedRepeated;
           continue;
         }
 
-        mesh.triangles.push_back(triangle);
+        if (zeroAreaTriangle(points[source.a], points[source.b], points[source.c])) {
+          ++skippedZeroArea;
+          continue;
+        }
+        mesh.triangles.push_back({ internVertex(source.a), internVertex(source.b), internVertex(source.c) });
       }
+      repeatedTotal += skippedRepeated;
+      zeroAreaTotal += skippedZeroArea;
 
-      if (skipped > 0 && onWarning) {
+      if ((skippedRepeated != 0 || skippedZeroArea != 0) && onWarning) {
         onWarning("BSP model " + std::to_string(modelIndex) + ", face " + std::to_string(face) +
-                  ": skipped " + std::to_string(skipped) + " repeated-vertex triangles");
+                  ": skipped " + std::to_string(skippedRepeated) + " repeated-index triangles and " +
+                  std::to_string(skippedZeroArea) + " exact-zero-area triangles");
       }
     }
+    keptTotal += mesh.triangles.size();
+
+    if (mesh.triangles.empty()) {
+      if (onWarning) {
+        onWarning("BSP model " + std::to_string(modelIndex) + ": no usable render triangles after cleanup (" +
+                  std::to_string(count) + " source faces); collision model retained");
+      }
+
+      continue;
+    }
     result.push_back(std::move(mesh));
+  }
+
+  if ((repeatedTotal != 0 || zeroAreaTotal != 0) && onWarning) {
+    onWarning("BSP render cleanup summary: " + std::to_string(keptTotal) + " triangles kept, " +
+              std::to_string(repeatedTotal) + " repeated-index triangles skipped, " +
+              std::to_string(zeroAreaTotal) + " exact-zero-area triangles skipped across " +
+              std::to_string(modelCount) + " BSP models");
   }
 
   return result;
@@ -517,7 +547,7 @@ void linkEntities(
       entity.meshId = it->id;
     } else if (onWarning) {
       onWarning("BSP entity " + std::to_string(entity.id) + " (" + entity.type + "), model *" + std::to_string(number) +
-                ": no render faces; mesh reference omitted");
+                ": no render faces or usable triangles; mesh reference omitted");
     }
 
     if (partition) {

@@ -2259,3 +2259,12 @@ Only set `MapEntity.meshId` when a corresponding render mesh exists, while prese
 Continue rejecting malformed model indices and do not fabricate triangle geometry or collision information.
 Emit a model/identity warning for absent render geometry, and verify import, artifact round-trip, CLI logs and inspection with synthetic BSP fixtures.
 Acceptance of real `de_cbble.bsp` remains pending.
+
+## D206.9 — Remove exact-zero-area triangles from imported render geometry
+
+Share the Inspector's long-double, exact-zero-cross-product predicate with BSP fan triangulation, without an epsilon or altered winding.
+Reject repeated-index triangles and geometrically zero-area triangles before interning mesh vertices, so surviving triangles reference only used vertices.
+Emit per-face model/face/reason counts and import-wide cleanup totals through the existing warning callback and console/optional file logs.
+Omit models whose source faces yield no valid render triangles, preserving their collision-partition entries and the collision-only links of worldspawn and brush entities.
+Do not modify source BSP bytes, collision trees, MapModel public structures, inspection report schema or .aipbmap v0.3.0 artifact format.
+Use synthetic importer/artifact regression tests and automatic GCC, Clang and MSVC CI; repeat all 25 real-map import/inspection checks separately.

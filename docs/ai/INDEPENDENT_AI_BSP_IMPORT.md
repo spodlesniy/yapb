@@ -24,7 +24,7 @@ The initial entity must be `worldspawn`.
 Brush entities referring to `model "*N"` link to the corresponding generated mesh, and `worldspawn` links to the world mesh.
 Entities without a BSP brush model retain their ordinary properties and position without a mesh reference.
 Duplicate property keys are retained in source order in `sourceProperties` and the last encountered value is exposed through the effective `properties` map.
-Malformed entity syntax, invalid brush indices or references to brush models without faces still fail import.
+Malformed entity syntax and invalid brush indices still fail import; missing render geometry does not invalidate an otherwise valid collision-model reference.
 
 A 512 MiB overall input limit, an 8 MiB entity lump limit and a 64 KiB quoted token limit protect the offline utility from unbounded allocations.
 These are defensive parser limits and do not constrain future navigation node counts.
@@ -69,3 +69,16 @@ A valid BSP brush-model reference does not require a render mesh.
 When source model faces are absent, entity `meshId` remains unset while `partitionModelId` retains the collision partition model if available.
 The CLI emits a warning identifying the entity and source model, but no fake triangles are added.
 Malformed model indices still fail, and real `de_cbble` acceptance remains pending.
+
+## D206.9 exact render geometry cleanup
+
+Each BSP face is read and its original directed surfedge winding is retained while constructing triangle-fan candidates.
+Reject triangles with repeated BSP vertex indices and independently reject candidates for which the Inspector's shared long-double cross-product components are all exactly zero.
+No epsilon is applied; triangles with nonzero cross products are retained with their original orientation.
+Intern source vertices into the render mesh only after a candidate survives filtering, compacting removed-only vertices without rewriting the BSP or collision geometry.
+For each affected source face, warnings identify the zero-based BSP model index, global face index and counts of both skipped reasons.
+An import-wide warning summarizes accepted and skipped triangle counts across all BSP models.
+If a model has faces but produces no valid triangles, it has no render mesh; entities still retain the original partition model identity, including worldspawn when applicable.
+The generated artifact remains schema v0.3.0; older map reads and the Inspector JSON schema remain unchanged.
+The Inspector continues to diagnose exact degeneracy in historical or externally constructed maps, not to silently alter their geometry.
+This cleanup cannot establish physical walkability or reachability; GoldSrc collision queries remain a prerequisite for navigation.
