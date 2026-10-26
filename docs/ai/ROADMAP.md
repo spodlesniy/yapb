@@ -55,6 +55,7 @@ D206.6 preserves repeated BSP entity keys in ordered source properties, upgrades
 D206.6.1 corrects the BSP regression test's fully qualified `aipb::map::io` references after compiler CI rejected the initial test source.
 D206.7 skips repeated-index degenerate BSP render triangles during fan triangulation, reports per-face diagnostics, and retains strict validation; real de_inferno import must be rechecked.
 D206.7.1 removes an unused BSP regression-test variable that failed GCC, Clang and MSVC strict-warning compilation.
+D206.8 permits entity links to BSP models without render faces, preserving collision-model references and logging the missing mesh; real de_cbble acceptance is pending.
 This is instrumentation, not evidence that arbitrary maps have been measured or physically traversed; Windows x86/in-game acceptance is pending.
 Proposed progression: graph evaluation/generator; versioned map knowledge; bot profiles; match context and perception; independent policy; reproducible rewards/learning; opt-in inference and in-game comparisons.
 This parallel track does not change any existing Phase 7 exit criterion.

@@ -62,3 +62,10 @@ Some BSP faces can generate fan triangles whose source vertex indices repeat.
 The importer skips only those triangles, leaves other face triangles and BSP collision trees intact, and reports the source model/face and skipped count through CLI warnings and optional log files.
 Zero-area triangles with distinct indices remain available for Inspector diagnostics; strict MapModel repeated-index triangle validation is unchanged.
 A real de_inferno import remains an acceptance check after publication.
+
+## D206.8 empty render models
+
+A valid BSP brush-model reference does not require a render mesh.
+When source model faces are absent, entity `meshId` remains unset while `partitionModelId` retains the collision partition model if available.
+The CLI emits a warning identifying the entity and source model, but no fake triangles are added.
+Malformed model indices still fail, and real `de_cbble` acceptance remains pending.

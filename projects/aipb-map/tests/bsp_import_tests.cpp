@@ -238,6 +238,42 @@ std::size_t lumpOffset(
 }
 
 
+Bytes makeEmptyRenderBsp(bool withCollision) {
+  auto bsp = makeBsp(R"({"classname" "worldspawn"} {"classname" "func_door" "model" "*1"})", withCollision);
+  const auto modelFaceCount = lumpOffset(bsp, 14) + 64 + 60;
+  u32(bsp, modelFaceCount, 0);
+
+  return bsp;
+}
+
+void testEmptyRenderModel(TempDir &dir) {
+  aipb::map::importer::BspImporter importer;
+  const auto path = dir.root / "empty-render.bsp";
+  write(path, makeEmptyRenderBsp(true));
+  std::vector<std::string> warnings;
+  const auto map = importer.importWithWarnings(path, [&](const std::string &warning) {
+    warnings.push_back(warning);
+  });
+  check(map.meshes.size() == 1 && map.meshes[0].id == 1, "empty brush model unexpectedly created a render mesh");
+  check(map.partition && map.partition->models.size() == 2, "empty brush model lost collision partition");
+  check(map.entities.size() == 2 && map.entities[0].meshId == 1 && map.entities[0].partitionModelId == 1,
+        "worldspawn model links changed");
+  check(!map.entities[1].meshId && map.entities[1].partitionModelId == 2,
+        "empty brush model must retain collision link without fabricated mesh");
+  check(warnings.size() == 1 && warnings.front().find("entity 2 (func_door), model *1") != std::string::npos,
+        "empty brush model warning must identify the entity and BSP model");
+  const auto artifact = dir.root / "empty-render.aipbmap";
+  const auto digest = aipb::map::io::saveMap(map, artifact);
+  const auto loaded = aipb::map::io::loadMap(artifact);
+  check(loaded.sha256 == digest && loaded.model == map, "empty render model artifact round-trip failed");
+
+  write(path, makeEmptyRenderBsp(false));
+  const auto withoutPartition = importer.importFile(path);
+  check(withoutPartition.meshes.size() == 1 && !withoutPartition.partition, "empty render model invented collision");
+  check(!withoutPartition.entities[1].meshId && !withoutPartition.entities[1].partitionModelId,
+        "empty render model without collision must remain unlinked");
+}
+
 void testRepeatedFaceVertices(TempDir &dir) {
   aipb::map::importer::BspImporter importer;
   const auto path = dir.root / "repeated-face.bsp";
@@ -399,6 +435,12 @@ int main(
       return 0;
     }
 
+    if (argc == 3 && std::string_view { argv[1] } == "--write-empty-render-fixture") {
+      write(argv[2], makeEmptyRenderBsp(true));
+
+      return 0;
+    }
+
     if (argc != 1) {
       throw std::invalid_argument("unsupported BSP test invocation");
     }
@@ -406,6 +448,7 @@ int main(
     TempDir dir;
     testValidBsp(dir);
     testRepeatedFaceVertices(dir);
+    testEmptyRenderModel(dir);
     testCollisionBsp(dir);
     testCorruptBsp(dir);
     std::cout << "D205 BSP collision import checks passed\n";

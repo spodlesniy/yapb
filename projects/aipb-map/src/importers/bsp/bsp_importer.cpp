@@ -492,7 +492,8 @@ void linkEntities(
   const BspReader &bsp,
   const std::vector<Mesh> &meshes,
   const std::optional<CollisionPartition> &partition,
-  std::vector<MapEntity> &entities
+  std::vector<MapEntity> &entities,
+  const BspImporter::WarningHandler &onWarning
 ) {
   const auto models = bsp.count(kModels, 64);
 
@@ -512,10 +513,12 @@ void linkEntities(
     const auto it =
         std::find_if(meshes.begin(), meshes.end(), [&](const Mesh &mesh) { return mesh.id == static_cast<ObjectId>(number) + 1; });
 
-    if (it == meshes.end()) {
-      throw std::runtime_error("BSP entity references empty model geometry");
+    if (it != meshes.end()) {
+      entity.meshId = it->id;
+    } else if (onWarning) {
+      onWarning("BSP entity " + std::to_string(entity.id) + " (" + entity.type + "), model *" + std::to_string(number) +
+                ": no render faces; mesh reference omitted");
     }
-    entity.meshId = it->id;
 
     if (partition) {
       entity.partitionModelId = static_cast<ObjectId>(number) + 1;
@@ -546,7 +549,7 @@ MapModel BspImporter::importWithWarnings(
   if (map.entities.empty() || map.entities.front().type != "worldspawn") {
     throw std::runtime_error("BSP entity lump must begin with worldspawn");
   }
-  linkEntities(bsp, map.meshes, map.partition, map.entities);
+  linkEntities(bsp, map.meshes, map.partition, map.entities, onWarning);
   validate(map);
 
   return map;

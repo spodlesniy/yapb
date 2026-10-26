@@ -95,3 +95,5 @@ The optional `--log-file <path>` argument is supported by both `import` and `ins
 Import logs include timestamps, outcome, input/output paths, hashes, counts and duplicate entity-key warnings without key values.
 Inspect logs also include the detailed JSON metrics report.
 Logs are appended to the selected file, and normal console messages remain available.
+
+BSP entities can reference models with no render faces; import preserves their collision-model links and logs a warning rather than inventing meshes.

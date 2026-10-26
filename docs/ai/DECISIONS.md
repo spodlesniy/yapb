@@ -2251,3 +2251,11 @@ Recheck real de_inferno BSP separately; its successful import is not yet verifie
 Remove the unused `face` offset local from `testRepeatedFaceVertices` introduced in D206.7.
 The variable triggers GCC/Clang `-Werror=unused-variable` and MSVC C4189/C2220 with `/WX`; the test's surfedge mutation, behavior and assertions are unchanged.
 Keep strict warnings-as-errors and validate the standalone Map Tool in automatic CI.
+
+## D206.8 — Allow valid BSP model references without render meshes
+
+A valid GoldSrc brush-model index may refer to a model with no render faces; render and collision models are independent.
+Only set `MapEntity.meshId` when a corresponding render mesh exists, while preserving `partitionModelId` whenever the collision partition exists.
+Continue rejecting malformed model indices and do not fabricate triangle geometry or collision information.
+Emit a model/identity warning for absent render geometry, and verify import, artifact round-trip, CLI logs and inspection with synthetic BSP fixtures.
+Acceptance of real `de_cbble.bsp` remains pending.
