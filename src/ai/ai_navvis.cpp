@@ -4,18 +4,10 @@
 
 #include <algorithm>
 #include <cmath>
-#include <fstream>
-#include <limits>
-#include <sstream>
-#include <utility>
-#include <string>
-#include <vector>
 
 namespace ai::navvis {
 namespace {
 constexpr int kMaxPlayers = 32;
-constexpr unsigned kMaxPoints = 100000;
-constexpr unsigned kMaxEdges = 150000;
 constexpr int kNodesPerFrame = 48;
 constexpr int kEdgesPerFrame = 24;
 struct Setting {
@@ -30,18 +22,6 @@ Data data {};
 bool loaded {};
 std::string currentMap;
 float drawRadius = 450.0f;
-
-bool validDigest(const std::string &s) {
-   if (s.size() != 64) {
-      return false;
-   }
-   for (const char ch : s) {
-      if (!((ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f'))) {
-         return false;
-      }
-   }
-   return true;
-}
 
 const Point *findPoint(unsigned id) {
    const auto it = std::lower_bound(data.points.begin(), data.points.end(), id,
@@ -82,67 +62,6 @@ void ensureMap() {
    loaded = load(filename.chars(), mapName.c_str(), data);
 }
 } // namespace
-
-bool load(const char *filename, const char *expectedMap, Data &out) {
-   std::ifstream input(filename, std::ios::binary);
-   std::string marker, version, map, digest;
-   unsigned count = 0, edges = 0;
-
-   if (!(input >> marker >> version >> map >> digest) ||
-       marker != "AIPBNAVVIS" || version != "1" || map != expectedMap ||
-       !validDigest(digest) || !(input >> marker >> count >> edges) ||
-       marker != "COUNT" || count > kMaxPoints || edges > kMaxEdges) {
-      return false;
-   }
-   Data candidate;
-   candidate.map = map;
-   candidate.sha256 = digest;
-   candidate.points.reserve(count);
-   candidate.edges.reserve(edges);
-
-   for (unsigned i = 0; i < count; ++i) {
-      Point p;
-      int standing = 0, crouching = 0, isolated = 0;
-      if (!(input >> marker >> p.id >> p.x >> p.y >> p.z >> p.source >> standing >> crouching >> isolated) ||
-          marker != "V" || !p.id || p.source < 0 || p.source > 3 ||
-          (standing != 0 && standing != 1) || (crouching != 0 && crouching != 1) || (isolated != 0 && isolated != 1) ||
-          !std::isfinite(p.x) || !std::isfinite(p.y) || !std::isfinite(p.z) ||
-          (!standing && !crouching)) {
-         return false;
-      }
-      p.standing = standing != 0;
-      p.crouching = crouching != 0;
-      p.isolated = isolated != 0;
-      candidate.points.push_back(p);
-   }
-   std::sort(candidate.points.begin(), candidate.points.end(),
-      [](const Point &a, const Point &b) { return a.id < b.id; });
-   for (size_t i = 1; i < candidate.points.size(); ++i) {
-      if (candidate.points[i - 1].id == candidate.points[i].id) {
-         return false;
-      }
-   }
-   const auto exists = [&candidate](unsigned id) {
-      const auto it = std::lower_bound(candidate.points.begin(), candidate.points.end(), id,
-         [](const Point &p, unsigned value) { return p.id < value; });
-      return it != candidate.points.end() && it->id == id;
-   };
-
-   for (unsigned i = 0; i < edges; ++i) {
-      Edge edge;
-      if (!(input >> marker >> edge.from >> edge.to >> edge.type) ||
-          marker != "E" || edge.type < 0 || edge.type > 2 ||
-          !exists(edge.from) || !exists(edge.to) || edge.from == edge.to) {
-         return false;
-      }
-      candidate.edges.push_back(edge);
-   }
-   if (!(input >> marker) || marker != "END" || (input >> marker)) {
-      return false;
-   }
-   out = std::move(candidate);
-   return true;
-}
 
 void frame(edict_t *editor) {
    if (!authorized(editor)) {

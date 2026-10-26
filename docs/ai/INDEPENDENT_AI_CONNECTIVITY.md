@@ -89,3 +89,9 @@ Viewer preferences reset on client connection and disconnection, as well as on m
 A bounded nearest-node selection renders up to 48 eligible candidates by actual distance (stable candidate-ID ties), rather than by export order.
 The nearest-node HUD includes XYZ, source provenance, stance and outgoing transition count, throttled to the existing refresh cadence.
 Independent unit tests cover slot bounds, proximity ordering, radius/category filtering and ties; CS 1.6 display verification still requires a user-started Windows x86 build.
+
+## D210.4.2 — Exception-free runtime parser
+
+The `.nviz` v1 schema and standalone Map Tool exporter remain unchanged.
+The game DLL loads snapshots using a bounded line/token parser without `std::istream` extraction, retaining strict structural and numeric validation while preserving the existing output on failure.
+The engine-independent parser shares production code with normal AI unit tests; the MSVC x86 `/EHs-c- /WX` game build and actual rendering remain separate verification gates.

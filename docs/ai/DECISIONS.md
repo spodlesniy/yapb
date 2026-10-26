@@ -2502,3 +2502,11 @@ Use a bounded max-heap to select the nearest 48 eligible candidates before drawi
 Keep the directed edges limited to the nearest rendered candidate and the existing 24-arrow budget.
 Show nearest candidate ID, full coordinates, source provenance, stance and outgoing edge count in the existing throttled center HUD.
 Recheck authorization in the viewer menu handler, while preserving the console-only radius and read-only graph separation.
+
+## D210.4.2 — Exception-free navigation viewer file parsing
+
+The user-triggered MSVC Windows x86 game build for D210.4.1 failed with C4530/C2220 in `std::operator>>(istream, std::string)` under the legacy DLL's `/EHs-c- /WX` configuration.
+Keep the existing exception-disabled C++17 runtime flags and replace the game DLL's iostream-based `.nviz` loader with a standalone parser using C stdio and bounded line/token conversion.
+Retain strict map, schema, SHA-256 spelling, counts, ID uniqueness, finite coordinate, stance, traversal, endpoint and terminator checks, and do not modify output on a failed load.
+Compile the same engine-independent parser into the game DLL and AI unit-test target; exercise valid and malformed snapshots with no-exception GCC and Clang builds.
+The on-disk `.nviz` v1 contract and Map Tool exporter remain unchanged; Windows x86 and in-game verification remain pending.
