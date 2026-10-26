@@ -193,13 +193,21 @@ Json encode(const MapEntity &e) {
   for (const auto &[key, value] : e.properties) {
     fields.emplace(key, value);
   }
+  Array original;
+  original.reserve(e.sourceProperties.size());
+
+  for (const auto &[key, value] : e.sourceProperties) {
+    original.emplace_back(Array { key, value });
+  }
+
   return Object { { "id", id(e.id) },
                   { "type", e.type },
                   { "origin", encode(e.origin) },
                   { "properties", fields },
                   { "mesh_id", encodeOptional(e.meshId) },
                   { "collision_id", encodeOptional(e.collisionId) },
-                  { "partition_model_id", encodeOptional(e.partitionModelId) } };
+                  { "partition_model_id", encodeOptional(e.partitionModelId) },
+                  { "source_properties", std::move(original) } };
 }
 MapEntity decodeEntity(const Json &value) {
   MapEntity entity;
@@ -209,6 +217,18 @@ MapEntity decodeEntity(const Json &value) {
 
   for (const auto &[key, item] : value.at("properties").object()) {
     entity.properties.emplace(key, item.text());
+  }
+
+  if (value.object().contains("source_properties")) {
+    for (const auto &pair : value.at("source_properties").array()) {
+      const auto &entries = pair.array();
+
+      if (entries.size() != 2) {
+        throw std::runtime_error("entity source property must contain a key and value");
+      }
+
+      entity.sourceProperties.emplace_back(entries[0].text(), entries[1].text());
+    }
   }
   entity.meshId = decodeOptional(value.at("mesh_id"));
   entity.collisionId = decodeOptional(value.at("collision_id"));
@@ -437,7 +457,7 @@ std::string saveMap(
                                                    { "source_sha256", model.sourceSha256 },
                                                    { "units", model.units },
                                                    { "has_partition", model.partition.has_value() } },
-                                          files, "0.2.0"));
+                                          files, "0.3.0"));
 
   return save(files, directory);
 }
@@ -450,12 +470,12 @@ MapArtifact loadMap(const std::filesystem::path &directory) {
   }
   const auto version = info.at("schema_version").text();
 
-  if (version != "0.1.0" && version != "0.2.0") {
+  if (version != "0.1.0" && version != "0.2.0" && version != "0.3.0") {
     throw std::runtime_error("unsupported map artifact schema");
   }
   std::vector<std::string> required { "manifest.json", "meshes.jsonl", "collision.jsonl", "entities.jsonl" };
 
-  if (version == "0.2.0") {
+  if (version == "0.2.0" || version == "0.3.0") {
     for (const auto *name : { "partition_planes.jsonl", "partition_nodes.jsonl", "partition_clipnodes.jsonl", "partition_leaves.jsonl",
                               "partition_models.jsonl" }) {
       required.emplace_back(name);
@@ -471,7 +491,7 @@ MapArtifact loadMap(const std::filesystem::path &directory) {
   readLines(files.at("collision.jsonl"), model.collision, decodeCollision);
   readLines(files.at("entities.jsonl"), model.entities, decodeEntity);
 
-  if (version == "0.2.0") {
+  if (version == "0.2.0" || version == "0.3.0") {
     const bool present = std::get<bool>(info.at("has_partition").data);
     CollisionPartition partition;
     readLines(files.at("partition_planes.jsonl"), partition.planes, decodePlane);

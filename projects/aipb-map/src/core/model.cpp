@@ -171,6 +171,16 @@ void validate(const MapModel &model) {
 
   for (const auto &entity : model.entities) {
     require(!entity.type.empty(), "entity type is empty");
+
+    if (!entity.sourceProperties.empty()) {
+      std::map<std::string, std::string> effective;
+
+      for (const auto &[key, value] : entity.sourceProperties) {
+        effective.insert_or_assign(key, value);
+      }
+
+      require(effective == entity.properties, "entity source properties disagree with effective properties");
+    }
     require(finite(entity.origin), "entity origin is non-finite");
     require(!entity.meshId || meshIds.contains(*entity.meshId), "entity references missing mesh");
     require(!entity.collisionId || collisionIds.contains(*entity.collisionId), "entity references missing collision");

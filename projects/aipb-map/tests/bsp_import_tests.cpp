@@ -260,7 +260,7 @@ void testCollisionBsp(TempDir &dir) {
   check(hash == decoded.sha256 && decoded.model == map, "collision artifact round-trip failed");
   std::ifstream manifest(artifact / "manifest.json");
   std::string contents((std::istreambuf_iterator<char>(manifest)), {});
-  check(contents.find("0.2.0") != std::string::npos, "collision map schema not updated");
+  check(contents.find("0.3.0") != std::string::npos, "collision map schema not updated");
 
   auto invalid = map;
   invalid.partition->renderNodes[0].back = -3;
@@ -344,9 +344,17 @@ void testCorruptBsp(TempDir &dir) {
   u32(bad, surfOffset, 999999);
   write(path, bad);
   reject([&] { importer.importFile(path); }, "invalid edge index accepted");
-  const auto duplicateKey = makeBsp("{\"classname\" \"worldspawn\" \"classname\" \"worldspawn\"}");
+  const auto duplicateKey = makeBsp(R"({"classname" "light" "classname" "worldspawn" "message" "first" "message" "last"})");
   write(path, duplicateKey);
-  reject([&] { importer.importFile(path); }, "duplicate entity key accepted silently");
+  const auto repeated = importer.importFile(path);
+  check(repeated.entities[0].sourceProperties.size() == 4, "duplicate BSP entity properties not preserved");
+  check(repeated.entities[0].sourceProperties[2].second == "first" && repeated.entities[0].sourceProperties[3].second == "last",
+        "ordered duplicate BSP property values lost");
+  check(repeated.entities[0].properties.at("message") == "last", "effective BSP property must use last value");
+  check(repeated.entities[0].properties.at("classname") == "worldspawn", "effective entity classname incorrect");
+  const auto repeatedArtifact = dir.root / "repeated.aipbmap";
+  io::saveMap(repeated, repeatedArtifact);
+  check(io::loadMap(repeatedArtifact).model == repeated, "ordered duplicate properties lost on artifact round-trip");
   const auto invalidModel = makeBsp("{\"classname\" \"worldspawn\"} {\"classname\" \"func_door\" \"model\" \"*99\"}");
   write(path, invalidModel);
   reject([&] { importer.importFile(path); }, "invalid brush model accepted");

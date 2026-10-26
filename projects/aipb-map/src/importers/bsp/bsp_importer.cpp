@@ -358,10 +358,8 @@ public:
         const auto key = quoted();
         const auto value = quoted();
 
-        if (!entity.properties.emplace(key, value).second) {
-          // D203 map properties do not support duplicate keys; do not silently discard them.
-          fail("BSP entity has duplicate key unsupported by MapModel");
-        }
+        entity.sourceProperties.emplace_back(key, value);
+        entity.properties.insert_or_assign(key, value);
       }
       const auto type = entity.properties.find("classname");
 

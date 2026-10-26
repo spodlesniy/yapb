@@ -5,6 +5,7 @@
 #include <map>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace aipb::map {
@@ -88,6 +89,8 @@ struct MapEntity {
   std::optional<ObjectId> meshId;
   std::optional<ObjectId> collisionId;
   std::optional<ObjectId> partitionModelId {};
+  // Original ordered BSP key/value pairs, including duplicates. Empty for legacy/constructed entities.
+  std::vector<std::pair<std::string, std::string>> sourceProperties {};
   bool operator==(const MapEntity &) const = default;
 };
 

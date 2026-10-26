@@ -55,3 +55,5 @@ Run standalone CMake/CTest (Debug and Release) and optionally sanitizers.
 Real Counter-Strike maps and in-game collision behavior still need acceptance testing; no claim of physical path correctness is made by D205.
 
 The BSP record layout and contents-code meanings follow [Valve's public GoldSrc BSP declarations](https://github.com/ValveSoftware/halflife/blob/master/utils/common/bspfile.h), consulted read-only.
+
+D206.6 advances newly written map artifacts to `0.3.0` for lossless ordered entity properties, with unchanged collision partition fields and continued read support for map `0.2.0`.

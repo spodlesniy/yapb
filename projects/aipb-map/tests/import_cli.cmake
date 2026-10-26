@@ -3,6 +3,7 @@ file(REMOVE_RECURSE "${WORK}")
 file(MAKE_DIRECTORY "${WORK}")
 set(BSP "${WORK}/fixture.bsp")
 set(MAP "${WORK}/fixture.aipbmap")
+set(LOG "${WORK}/import.log")
 
 execute_process(COMMAND "${FIXTURE}" --write-cli-fixture "${BSP}"
     RESULT_VARIABLE status ERROR_VARIABLE error)
@@ -10,10 +11,18 @@ if(NOT status EQUAL 0)
     message(FATAL_ERROR "Failed to generate BSP fixture: ${error}")
 endif()
 
-execute_process(COMMAND "${CLI}" import --format bsp --input "${BSP}" --output "${MAP}"
+execute_process(COMMAND "${CLI}" import --format bsp --input "${BSP}" --output "${MAP}" --log-file "${LOG}"
     RESULT_VARIABLE status OUTPUT_VARIABLE output ERROR_VARIABLE error)
 if(NOT status EQUAL 0 OR NOT output MATCHES "Imported fixture:")
     message(FATAL_ERROR "CLI import failed: ${status}: ${output}: ${error}")
+endif()
+
+if(NOT EXISTS "${LOG}")
+    message(FATAL_ERROR "CLI import did not create a diagnostic log")
+endif()
+file(READ "${LOG}" logtext)
+if(NOT logtext MATCHES "Import completed successfully")
+    message(FATAL_ERROR "CLI import log lacks completion marker: ${logtext}")
 endif()
 
 if(NOT EXISTS "${MAP}/manifest.json")

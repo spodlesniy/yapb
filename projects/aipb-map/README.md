@@ -3,7 +3,8 @@
 Independent native C++20 tool for offline map import, navigation generation, comparison and export.
 D203 provides engine-independent `MapModel` and `NavigationModel`, validation and deterministic `.aipbmap`/`.aipbnav` JSONL artifacts with SHA-256 fingerprints.
 D204 adds a separate GoldSrc BSP v30 importer and the `aipb-map import` CLI command.
-D205 adds collision planes, render nodes, clipnodes, leaves and hull references, stored in map artifacts v0.2.0 (v0.1.0 map loading remains supported).
+D205 adds collision planes, render nodes, clipnodes, leaves and hull references in map artifacts v0.2.0.
+D206.6 writes map artifacts v0.3.0 with losslessly ordered entity properties, retaining read support for v0.1.0 and v0.2.0.
 D206 adds read-only map inspection metrics and optional deterministic JSON reports without altering imported map artifacts.
 Navigation builders, physical traversal validation and YaPB `.graph` export remain future work.
 
@@ -39,7 +40,7 @@ The output contains render face geometry and collision partition trees for hulls
 Imported collision data is structural and is **not yet** suitable for proving player reachability.
 
 Face textures, visibility, lighting, runtime collision traces and dynamic object simulation are intentionally deferred.
-Entity properties with duplicate keys are rejected rather than silently discarded because `MapModel` currently stores a string-keyed map.
+Repeated entity keys are retained in ordered `sourceProperties` while the existing `properties` map holds the last occurrence for each key.
 Entity strings must be valid UTF-8 for the D203 JSON writer; legacy non-UTF-8 encodings require a future explicit import policy.
 Only GoldSrc BSP version 30 is supported; malformed source files fail with an error rather than producing a partial artifact.
 See [D204 BSP importer notes](../../docs/ai/INDEPENDENT_AI_BSP_IMPORT.md) and [D205 collision format](../../docs/ai/INDEPENDENT_AI_COLLISION.md).
@@ -54,7 +55,7 @@ See [D204 BSP importer notes](../../docs/ai/INDEPENDENT_AI_BSP_IMPORT.md) and [D
 
 `--output` is optional; summary and diagnostic findings are always printed to stdout.
 The JSON report must be outside the `.aipbmap` directory, and existing reports are not overwritten.
-Inspection reads validated `.aipbmap` artifacts (v0.1.0 and v0.2.0), measures render geometry, collision shapes, entities and partition hull reachability and reports informational or warning findings.
+Inspection reads validated `.aipbmap` artifacts (v0.1.0, v0.2.0 and v0.3.0), measures render geometry, collision shapes, entities and partition hull reachability and reports informational or warning findings.
 It does not prove physical traversability, map coverage or correct GoldSrc runtime collision.
 Actual de_dust2 import and inspection remain to be verified with a real BSP fixture.
 See [D206 map-inspection specification](../../docs/ai/INDEPENDENT_AI_MAP_INSPECTION.md).
@@ -86,3 +87,11 @@ See [shared C++20 conventions](../STYLE.md) for initialization, non-owning spans
 
 D206.4 formats each designated initializer on its own line (including a single field) and each parameter of multi-parameter function signatures on a separate line.
 These rules apply to production and test code; function-call argument formatting is unchanged.
+
+To save detailed import diagnostics, append `--log-file results/de_dust2-import.log` to the import command.
+The log is append-only with timestamps, import steps, source/artifact hashes and duplicate-key warnings without property values.
+
+The optional `--log-file <path>` argument is supported by both `import` and `inspect`.
+Import logs include timestamps, outcome, input/output paths, hashes, counts and duplicate entity-key warnings without key values.
+Inspect logs also include the detailed JSON metrics report.
+Logs are appended to the selected file, and normal console messages remain available.

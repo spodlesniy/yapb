@@ -87,3 +87,12 @@ New map artifacts use `0.2.0` and include optional, separately checksummed colli
 Old map artifacts `0.1.0` remain readable without rewriting them.
 Navigation artifacts remain at `0.1.0` and refer to exact map artifact hashes.
 See [D205 collision partition specification](INDEPENDENT_AI_COLLISION.md).
+
+## D206.6 entity schema v0.3.0
+
+Map artifacts now write `0.3.0`, and continue to read `0.1.0` and `0.2.0`.
+Map entities retain the existing `properties` object for effective last-value lookup and add an ordered `source_properties` array of two-element `[key, value]` arrays.
+This records original repeated keys without losing their order or changing the existing property-lookup API.
+Legacy entities without the new array remain valid and load with an empty `sourceProperties` sequence.
+When source entries are present, model validation requires the effective dictionary to match their last-value projection.
+Navigation artifact schema remains `0.1.0`.

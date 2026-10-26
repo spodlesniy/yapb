@@ -23,7 +23,8 @@ Each entity requires `classname`; entity `origin` is parsed as exactly three fin
 The initial entity must be `worldspawn`.
 Brush entities referring to `model "*N"` link to the corresponding generated mesh, and `worldspawn` links to the world mesh.
 Entities without a BSP brush model retain their ordinary properties and position without a mesh reference.
-Duplicate property keys, malformed entity syntax, invalid brush indices or references to brush models without faces are rejected rather than losing data silently.
+Duplicate property keys are retained in source order in `sourceProperties` and the last encountered value is exposed through the effective `properties` map.
+Malformed entity syntax, invalid brush indices or references to brush models without faces still fail import.
 
 A 512 MiB overall input limit, an 8 MiB entity lump limit and a 64 KiB quoted token limit protect the offline utility from unbounded allocations.
 These are defensive parser limits and do not constrain future navigation node counts.
@@ -51,5 +52,6 @@ A real Counter-Strike BSP integration test and in-game verification remain pendi
 This step **does not extract** BSP clipnodes, player collision hulls, brushes, texture/material mapping, PVS, lightmaps, or entity motion.
 It must not claim the imported render mesh proves a bot can physically walk, jump or crouch between locations.
 The D203 `CollisionShape` collection remains empty for this importer; accurate collision is deferred to a separately reviewed extension of the map model/schema.
-The current entity property map cannot represent duplicate keys, and raw non-UTF-8 entity strings cannot round-trip via JSONL without an explicit encoding policy.
+D206.6 adds ordered duplicate-key preservation without changing the last-value effective property lookup.
+Raw non-UTF-8 entity strings still cannot round-trip via JSONL without an explicit encoding policy.
 The importer recognizes v30 BSP files and their referenced render geometry; it is not a general validator of every unused BSP lump or game engine behavior.

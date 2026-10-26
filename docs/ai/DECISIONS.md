@@ -2225,3 +2225,10 @@ The import command has three key/value option pairs after the executable and sub
 Correct the count without changing the mandatory options or artifact format.
 Add an end-to-end CTest test that generates a synthetic GoldSrc BSP, runs the public `aipb-map import` command, verifies the saved map with `aipb-map inspect`, and confirms output overwrite is rejected.
 Keep real-map acceptance pending; avoid changes to the legacy YaPB runtime.
+
+## D206.6 — Preserve repeated entity keys and emit import diagnostics
+
+Store original ordered entity key/value pairs, including duplicates, separately from the last-value effective property map.
+Write new map artifact schema v0.3.0 and continue loading v0.1.0 and v0.2.0.
+Allow optional `--log-file` with append-only timestamped import diagnostics and duplicate-key warnings without printing property values.
+Keep logs outside artifact output when possible and avoid changes to the YaPB runtime.
