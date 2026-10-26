@@ -100,3 +100,12 @@ BSP entities can reference models with no render faces or no usable render trian
 D206.9 removes exact-zero-area render triangles before committing mesh vertices, preserving the winding and original collision partitions.
 Import warnings identify BSP model/face indices and skipped triangle reasons, with totals in console output and optional detailed file logs.
 Re-import an existing BSP into a new output directory to obtain cleaned geometry; old artifacts remain readable and report their original metrics.
+
+## Static collision queries (D207)
+
+Include `<aipb/map/collision/queries.h>` and construct `aipb::map::collision::CollisionQueries` with a validated, lifetime-stable `MapModel` containing a collision partition.
+Use `pointContents(modelId, hull, position)` for BSP contents and `traceSegment(modelId, hull, start, end)` for static hull intersection details.
+Use `canOccupy` and `canTraverse` with `PlayerStance::Standing` (GoldSrc clip hull 1) or `PlayerStance::Crouching` (clip hull 3).
+Hull 0 is a point query through render-node leaves; hulls 1–3 use native clipnode contents.
+These routines operate in each BSP model's local plane coordinate system, do not transform brush models or track dynamic door/lift state, and are not substitutes for actual GoldSrc gameplay collision and step/jump logic.
+D207 keeps the existing `.aipbmap` v0.3.0 schema unchanged; queries are computed after loading.

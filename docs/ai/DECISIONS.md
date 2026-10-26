@@ -2268,3 +2268,13 @@ Emit per-face model/face/reason counts and import-wide cleanup totals through th
 Omit models whose source faces yield no valid render triangles, preserving their collision-partition entries and the collision-only links of worldspawn and brush entities.
 Do not modify source BSP bytes, collision trees, MapModel public structures, inspection report schema or .aipbmap v0.3.0 artifact format.
 Use synthetic importer/artifact regression tests and automatic GCC, Clang and MSVC CI; repeat all 25 real-map import/inspection checks separately.
+
+## D207 — Query static collision BSP hulls before navigation generation
+
+Implement read-only standalone collision queries against the validated MapModel partition with no change to the artifact schema or original YaPB runtime.
+Decode hull-0 negative child indexes through the indexed leaf contents and hulls 1–3 negative terminals as signed contents codes.
+Expose model-local point contents, segment traces, first solid crossing details, and checks using the pre-expanded standing hull 1 and crouching hull 3.
+Define plane-boundary preference consistently, avoid arbitrary geometric epsilon in this initial deterministic analyzer, and limit traversal work for malformed or pathological inputs.
+Reject missing partitions, invalid hull/model identifiers and nonfinite query coordinates.
+Document that BSP submodels require explicit coordinate-space handling, that static queries do not simulate moving entities or GoldSrc physics, and that the first navigation phase must use these results only after real-map validation.
+Add independent synthetic CTest coverage and preserve v0.3.0 map artifact serialization.

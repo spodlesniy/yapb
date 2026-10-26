@@ -33,6 +33,12 @@ add_library(aipb_map_analysis STATIC
 add_library(aipb::map_analysis ALIAS aipb_map_analysis)
 target_link_libraries(aipb_map_analysis PUBLIC aipb::map_core)
 
+add_library(aipb_map_collision STATIC
+    src/collision/queries.cpp
+)
+add_library(aipb::map_collision ALIAS aipb_map_collision)
+target_link_libraries(aipb_map_collision PUBLIC aipb::map_core)
+
 add_library(aipb_map_report STATIC
     src/analysis/report_json.cpp
 )
@@ -52,6 +58,9 @@ if(BUILD_TESTING)
     target_include_directories(aipb_map_model_tests PRIVATE src/io)
     add_executable(aipb_map_bsp_tests tests/bsp_import_tests.cpp)
     target_link_libraries(aipb_map_bsp_tests PRIVATE aipb::map_bsp aipb::map_io)
+    add_executable(aipb_map_collision_tests tests/collision_queries_tests.cpp)
+    target_link_libraries(aipb_map_collision_tests PRIVATE aipb::map_collision aipb::map_io)
+    add_test(NAME aipb_map_collision_queries COMMAND aipb_map_collision_tests)
     add_executable(aipb_map_inspector_tests tests/inspector_tests.cpp)
     target_link_libraries(aipb_map_inspector_tests PRIVATE aipb::map_report aipb::map_io)
     target_include_directories(aipb_map_inspector_tests PRIVATE src/io)
@@ -83,9 +92,9 @@ if(BUILD_TESTING)
     )
 endif()
 
-set(aipb_map_targets aipb_map_core aipb_map_io aipb_map_bsp aipb_map_analysis aipb_map_report aipb-map)
+set(aipb_map_targets aipb_map_core aipb_map_io aipb_map_bsp aipb_map_analysis aipb_map_collision aipb_map_report aipb-map)
 if(BUILD_TESTING)
-    list(APPEND aipb_map_targets aipb_map_tests aipb_map_model_tests aipb_map_bsp_tests aipb_map_inspector_tests)
+    list(APPEND aipb_map_targets aipb_map_tests aipb_map_model_tests aipb_map_bsp_tests aipb_map_inspector_tests aipb_map_collision_tests)
 endif()
 foreach(target IN LISTS aipb_map_targets)
     if(MSVC)
