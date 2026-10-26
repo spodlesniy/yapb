@@ -353,8 +353,8 @@ void testCorruptBsp(TempDir &dir) {
   check(repeated.entities[0].properties.at("message") == "last", "effective BSP property must use last value");
   check(repeated.entities[0].properties.at("classname") == "worldspawn", "effective entity classname incorrect");
   const auto repeatedArtifact = dir.root / "repeated.aipbmap";
-  io::saveMap(repeated, repeatedArtifact);
-  check(io::loadMap(repeatedArtifact).model == repeated, "ordered duplicate properties lost on artifact round-trip");
+  aipb::map::io::saveMap(repeated, repeatedArtifact);
+  check(aipb::map::io::loadMap(repeatedArtifact).model == repeated, "ordered duplicate properties lost on artifact round-trip");
   const auto invalidModel = makeBsp("{\"classname\" \"worldspawn\"} {\"classname\" \"func_door\" \"model\" \"*99\"}");
   write(path, invalidModel);
   reject([&] { importer.importFile(path); }, "invalid brush model accepted");

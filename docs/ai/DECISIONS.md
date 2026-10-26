@@ -2232,3 +2232,8 @@ Store original ordered entity key/value pairs, including duplicates, separately 
 Write new map artifact schema v0.3.0 and continue loading v0.1.0 and v0.2.0.
 Allow optional `--log-file` with append-only timestamped import diagnostics and duplicate-key warnings without printing property values.
 Keep logs outside artifact output when possible and avoid changes to the YaPB runtime.
+
+## D206.6.1 — Qualify artifact IO in BSP duplicate-key regression test
+
+Fix two missing `aipb::map::io` namespace qualifications in the new D206.6 duplicate-key artifact round-trip test, as evidenced by failed GCC and Clang job build logs.
+No importer, artifact or CLI behavior is changed.
