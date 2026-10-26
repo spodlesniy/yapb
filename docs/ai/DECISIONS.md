@@ -2319,3 +2319,11 @@ Accept upward-facing solid entry planes as provisional surface candidates, prese
 Keep a deterministic versioned JSON diagnostics report separate from unchanged `.aipbmap` v0.3.0; reject oversized grids, invalid settings and overwrites.
 Do not create navigation edges, merge brush model coordinate systems, or claim GoldSrc runtime equivalence.
 Add synthetic tests for stacked levels, determinism and invalid configurations; retain strict CI checks.
+
+## D208.1 — Split Windows bulk BSP processing into independent stages
+
+Keep `projects/aipb-map/tools/import_all_bsp.bat` responsible only for importing source BSP files to individual map artifacts.
+Introduce `inspect_all_bsp.bat`, `validate_collision_all_bsp.bat` and `heightfield_all_bsp.bat` to operate independently on previously imported map artifacts in the results directory.
+Use the existing sibling report names and log files; the heightfield stage writes `heightfield.json` without inventing unsupported CLI logging options.
+Skip existing artifacts or reports instead of overwriting them; emit errors for missing prerequisites and preserve a nonzero exit status when individual operations fail.
+No changes to C++ collision algorithms, artifact formats or original YaPB runtime are required.

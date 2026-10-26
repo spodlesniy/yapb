@@ -134,3 +134,20 @@ Run `aipb-map heightfield --input ./results/de_dust2.aipbmap --output ./results/
 The sampler uses a bounded 128-unit XY grid, 32-unit vertical intervals, world BSP hulls 1 and 3 and upward-facing plane tests.
 It records stacked floor candidates and clearance flags without modifying map artifacts or creating navigation links.
 The fixed settings and sampling limitations are documented in [the D208 specification](../../docs/ai/INDEPENDENT_AI_HEIGHTFIELD.md).
+
+## Independent Windows bulk stages (D208.1)
+
+Run the following scripts from `projects/aipb-map/tools/` in order when building a fresh result set:
+
+```bat
+import_all_bsp.bat
+inspect_all_bsp.bat
+validate_collision_all_bsp.bat
+heightfield_all_bsp.bat
+```
+
+`import_all_bsp.bat` discovers `build/debug/maps/*.bsp` recursively, imports each into `build/debug/results/<map>/<map>.aipbmap` and writes `import.log`.
+The other scripts scan existing imported artifacts under `build/debug/results/<map>/` and respectively create `inspection.json` / `inspect.log`, `collision-validation.json` / `collision-validation.log`, or `heightfield.json`.
+Each script independently skips already-generated output, reports per-map failures and exits nonzero on error.
+Delete an individual report to regenerate only that stage; remove an artifact directory to re-import its BSP.
+The heightfield CLI currently has no `--log-file` parameter; its standalone script uses the JSON report and console status.

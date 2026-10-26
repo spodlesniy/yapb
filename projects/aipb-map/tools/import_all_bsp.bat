@@ -1,53 +1,59 @@
-
 @echo off
-setlocal EnableExtensions
+setlocal EnableExtensions DisableDelayedExpansion
 
-set "ROOT=%~dp0\..\build\debug"
+set "ROOT=%~dp0..\build\debug"
 set "CLI=%ROOT%\aipb-map.exe"
-set "RESULTS=%ROOT%\results"
 set "MAPS=%ROOT%\maps"
+set "RESULTS=%ROOT%\results"
+set "failed=0"
+set "found=0"
 
 if not exist "%CLI%" (
-    echo [ERROR] aipb-map.exe not found.
+    echo [ERROR] aipb-map.exe not found: %CLI%
+    exit /b 1
+)
+if not exist "%MAPS%\" (
+    echo [ERROR] BSP map directory not found: %MAPS%
+    exit /b 1
+)
+if not exist "%RESULTS%\" mkdir "%RESULTS%"
+if not exist "%RESULTS%\" (
+    echo [ERROR] Cannot create results directory: %RESULTS%
     exit /b 1
 )
 
-if not exist "%RESULTS%" mkdir "%RESULTS%"
-
 for /r "%MAPS%" %%F in (*.bsp) do (
+    set "found=1"
     echo.
     echo ===== %%~nxF =====
 
-    if exist "%RESULTS%\%%~nF\" (
-        echo [SKIP] Folder already exists: %RESULTS%\%%~nF
+    if exist "%RESULTS%\%%~nF\%%~nF.aipbmap\manifest.json" (
+        echo [SKIP] Already imported: %%~nxF
     ) else (
-        mkdir "%RESULTS%\%%~nF"
-
-        echo [IMPORT] %%~nxF
-        "%CLI%" import --format bsp --input "%%~fF" --output "%RESULTS%\%%~nF\%%~nF.aipbmap" --log-file "%RESULTS%\%%~nF\import.log"
-
-        if errorlevel 1 (
-            echo [ERROR] Import failed: %%~nxF
+        if exist "%RESULTS%\%%~nF\%%~nF.aipbmap\" (
+            echo [ERROR] Incomplete artifact directory: %%~nF.aipbmap
+            set "failed=1"
         ) else (
-            echo [INSPECT] %%~nxF
-            "%CLI%" inspect --input "%RESULTS%\%%~nF\%%~nF.aipbmap" --output "%RESULTS%\%%~nF\inspection.json" --log-file "%RESULTS%\%%~nF\inspect.log"
-
-            if errorlevel 1 (
-                echo [ERROR] Inspect failed: %%~nxF
+            if not exist "%RESULTS%\%%~nF\" mkdir "%RESULTS%\%%~nF"
+            if not exist "%RESULTS%\%%~nF\" (
+                echo [ERROR] Cannot create results directory for %%~nxF
+                set "failed=1"
             ) else (
-                echo [VALIDATE COLLISION] %%~nxF
-                "%CLI%" validate-collision --input "%RESULTS%\%%~nF\%%~nF.aipbmap" --output "%RESULTS%\%%~nF\collision-validation.json" --log-file "%RESULTS%\%%~nF\collision-validation.log"
-
+                echo [IMPORT] %%~nxF
+                "%CLI%" import --format bsp --input "%%~fF" --output "%RESULTS%\%%~nF\%%~nF.aipbmap" --log-file "%RESULTS%\%%~nF\import.log"
                 if errorlevel 1 (
-                    echo [ERROR] Collision validation failed: %%~nxF
+                    echo [ERROR] Import failed: %%~nxF
+                    set "failed=1"
                 ) else (
-                    echo [OK] %%~nxF
+                    echo [OK] Imported: %%~nxF
                 )
             )
         )
     )
 )
 
-echo.
-echo All maps processed.
-endlocal
+if "%found%"=="0" (
+    echo [ERROR] No BSP files found in %MAPS%
+    exit /b 1
+)
+endlocal & exit /b %failed%
