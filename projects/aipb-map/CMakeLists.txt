@@ -64,6 +64,7 @@ target_include_directories(aipb_map_navigation_candidates PRIVATE src/io)
 add_library(aipb_map_connectivity STATIC
     src/navigation/connectivity.cpp
     src/navigation/jump_transitions.cpp
+    src/navigation/jump_physics.cpp
 )
 add_library(aipb::map_connectivity ALIAS aipb_map_connectivity)
 target_link_libraries(aipb_map_connectivity PUBLIC aipb::map_navigation_candidates PRIVATE aipb::map_io)

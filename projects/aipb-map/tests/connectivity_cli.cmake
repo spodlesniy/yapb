@@ -18,7 +18,7 @@ string(JSON format GET "${json}" format)
 string(JSON version GET "${json}" schema_version)
 string(JSON count GET "${json}" edge_count)
 string(JSON length LENGTH "${json}" edges)
-if(NOT format STREQUAL "aipb-preliminary-connectivity" OR NOT version STREQUAL "0.2.0" OR
+if(NOT format STREQUAL "aipb-preliminary-connectivity" OR NOT version STREQUAL "0.3.0" OR
    NOT count EQUAL length)
     message(FATAL_ERROR "Invalid preliminary connectivity report")
 endif()

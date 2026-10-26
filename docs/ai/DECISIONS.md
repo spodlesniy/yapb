@@ -2454,3 +2454,12 @@ Upgrade the separate preliminary-connectivity report to v0.2.0 without changing 
 D210.2 strict CI rejected the synthetic jump fixture before testing its trajectory because candidate fingerprint generation serializes the canonical candidates report and requires a nonzero `sample_index` on static brush candidates.
 Add the expected synthetic brush sample index to the fixture; do not weaken provenance validation or change jump production logic.
 Require fresh GCC, Clang and MSVC Build/CTest success.
+
+## D210.3 — Introduce GoldSrc ballistic jump profile and auditable constraints
+
+Read Valve Half-Life SDK `pm_shared/pm_shared.c` as a public reference: ordinary jump sets vertical velocity to `sqrt(2 * 800 * 45)` and uses a crouch hull of lower vertical height without intrinsically increasing jump velocity.
+Represent a configurable baseline of gravity 800 units/s², jump apex 45 units, maximum candidate assumed horizontal launch speed 250 units/s, standing half height 36 and crouching half height 18.
+Calculate vertical flight with `z(t)=v0*t-g*t²/2` and descending landing time from the ballistic discriminant, checking travel speed and static collision along segmented trajectories.
+Record `estimated_flight_seconds`, `estimated_horizontal_speed`, physics rejection counters and profile values in preliminary-connectivity schema v0.3.0.
+Keep crouch-jump as a distinct hull-clearance action; do not misrepresent the geometric 63-unit duck-adjusted clearance as a guaranteed 63-unit standing-origin ballistic rise.
+Actual GoldSrc command timing, duck hull changes, air acceleration, map gravity overrides, landing while crouched, and server modifications require instrumentation and engine-side validation, so offline physics estimates are provisional.

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <aipb/map/navigation/candidates.h>
+#include <aipb/map/navigation/jump_physics.h>
 #include <aipb/map/collision/queries.h>
 
 #include <cstddef>
@@ -25,8 +26,7 @@ struct ConnectivityConfig {
   double maximumJumpDistance { 160.0 };
   double maximumJumpRise { 44.0 };
   double maximumCrouchJumpRise { 62.0 };
-  double jumpArcHeight { 56.0 };
-  double crouchJumpArcHeight { 64.0 };
+  JumpPhysics jumpPhysics {};
   std::size_t maximumJumpNeighborTrials { 24 };
   std::size_t maximumJumpEdgesPerCandidate { 4 };
   std::size_t maximumJumpChecks { 150000 };
@@ -41,6 +41,8 @@ struct ProvisionalEdge {
   collision::PlayerStance stance { collision::PlayerStance::Standing };
   TraversalKind traversal { TraversalKind::Walk };
   bool conditionalSupport {};
+  double estimatedFlightSeconds {};
+  double estimatedHorizontalSpeed {};
 };
 
 struct ConnectivityReport {
@@ -62,6 +64,7 @@ struct ConnectivityReport {
   std::size_t jumpTrials {};
   std::size_t rejectedJumpCollision {};
   std::size_t rejectedJumpLanding {};
+  std::size_t rejectedJumpPhysics {};
   std::size_t conditionalEdges {};
   std::size_t conditionalIslands {};
   std::size_t weakComponents {};

@@ -209,3 +209,9 @@ Actual round-time removal after a bomb/trigger remains outside this offline mode
 The `preliminary-connectivity` CLI now emits JSON v0.2.0 with typed `walk`, `jump` and `crouch_jump` edges, candidate source SHA-256 binding and updated weak-component diagnostics.
 Run `preliminary_connectivity_all_bsp.bat` after deleting old connectivity reports; BSP re-import or Navigation Candidates regeneration is unnecessary.
 The 44/62 unit rise limits and arc checks are uncalibrated offline hypotheses, and actual movement and conditional brush disappearance need separate GoldSrc testing.
+
+## Ballistic jump baseline (D210.3)
+
+The independent jump transition checker now uses parameterized GoldSrc-style vertical ballistics and a conservative horizontal speed constraint rather than an invented parabola.
+Preliminary Connectivity v0.3.0 records the profile and estimated flight/speed values; delete earlier connectivity reports and rerun `preliminary_connectivity_all_bsp.bat`.
+Standing and crouched landing behavior above the ballistic apex must be calibrated in CS 1.6; no physics-equivalent claim is made.

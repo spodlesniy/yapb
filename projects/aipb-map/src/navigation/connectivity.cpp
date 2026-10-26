@@ -142,8 +142,6 @@ ConnectivityReport buildConnectivity(
       !finite(config.maximumJumpDistance) || config.maximumJumpDistance <= config.minimumPlanarDistance ||
       !finite(config.maximumJumpRise) || config.maximumJumpRise <= config.maximumStepUp ||
       !finite(config.maximumCrouchJumpRise) || config.maximumCrouchJumpRise <= config.maximumJumpRise ||
-      !finite(config.jumpArcHeight) || config.jumpArcHeight <= 0 ||
-      !finite(config.crouchJumpArcHeight) || config.crouchJumpArcHeight <= 0 ||
       config.maximumJumpNeighborTrials == 0 || config.maximumJumpEdgesPerCandidate == 0 ||
       config.maximumJumpChecks == 0) {
     throw std::invalid_argument("invalid connectivity configuration");
@@ -153,6 +151,7 @@ ConnectivityReport buildConnectivity(
       candidates.mapName != map.name || candidates.sourceSha256 != map.sourceSha256) {
     throw std::invalid_argument("connectivity map identity or collision partition mismatch");
   }
+  (void)jumpImpulse(config.jumpPhysics);
   ConnectivityReport report;
   report.mapName = candidates.mapName;
   report.sourceSha256 = candidates.sourceSha256;
@@ -293,7 +292,9 @@ ConnectivityReport buildConnectivity(
           .heightChange = rise,
           .stance = stance,
           .traversal = TraversalKind::Walk,
-          .conditionalSupport = from.conditionalSupport || to.conditionalSupport
+          .conditionalSupport = from.conditionalSupport || to.conditionalSupport,
+          .estimatedFlightSeconds = 0.0,
+          .estimatedHorizontalSpeed = 0.0
         });
         report.conditionalEdges += from.conditionalSupport || to.conditionalSupport;
         report.standingEdges += hull == 1;
@@ -343,13 +344,15 @@ std::string connectivityJson(const ConnectivityReport &report) {
       { "stance", e.stance == collision::PlayerStance::Standing ? "standing" : "crouching" },
       { "traversal", e.traversal == TraversalKind::Walk ? "walk" :
                        e.traversal == TraversalKind::Jump ? "jump" : "crouch_jump" },
-      { "conditional_support", e.conditionalSupport }
+      { "conditional_support", e.conditionalSupport },
+      { "estimated_flight_seconds", e.estimatedFlightSeconds },
+      { "estimated_horizontal_speed", e.estimatedHorizontalSpeed }
     });
   }
 
   return io::writeJson(Json::Object {
     { "format", "aipb-preliminary-connectivity" },
-    { "schema_version", "0.2.0" },
+    { "schema_version", "0.3.0" },
     { "source_candidates_schema", "0.3.2" },
     { "candidates_sha256", report.candidatesSha256 },
     { "map_name", report.mapName },
@@ -369,8 +372,16 @@ std::string connectivityJson(const ConnectivityReport &report) {
       { "maximum_jump_distance", report.config.maximumJumpDistance },
       { "maximum_jump_rise", report.config.maximumJumpRise },
       { "maximum_crouch_jump_rise", report.config.maximumCrouchJumpRise },
-      { "jump_arc_height", report.config.jumpArcHeight },
-      { "crouch_jump_arc_height", report.config.crouchJumpArcHeight },
+      { "jump_physics", Json::Object {
+        { "gravity", report.config.jumpPhysics.gravity },
+        { "jump_apex", report.config.jumpPhysics.jumpApex },
+        { "maximum_horizontal_speed", report.config.jumpPhysics.maximumHorizontalSpeed },
+        { "standing_half_height", report.config.jumpPhysics.standingHalfHeight },
+        { "crouching_half_height", report.config.jumpPhysics.crouchingHalfHeight },
+        { "jump_impulse", jumpImpulse(report.config.jumpPhysics) },
+        { "theoretical_jump_rise", theoreticalJumpRise(report.config.jumpPhysics, false) },
+        { "theoretical_crouch_jump_rise", theoreticalJumpRise(report.config.jumpPhysics, true) }
+      } },
       { "maximum_jump_neighbor_trials", number(report.config.maximumJumpNeighborTrials) },
       { "maximum_jump_edges_per_candidate", number(report.config.maximumJumpEdgesPerCandidate) },
       { "maximum_jump_checks", number(report.config.maximumJumpChecks) }
@@ -389,6 +400,7 @@ std::string connectivityJson(const ConnectivityReport &report) {
     { "jump_trials", number(report.jumpTrials) },
     { "rejected_jump_collision", number(report.rejectedJumpCollision) },
     { "rejected_jump_landing", number(report.rejectedJumpLanding) },
+    { "rejected_jump_physics", number(report.rejectedJumpPhysics) },
     { "conditional_edges", number(report.conditionalEdges) },
     { "conditional_islands", number(report.conditionalIslands) },
     { "weak_components", number(report.weakComponents) },

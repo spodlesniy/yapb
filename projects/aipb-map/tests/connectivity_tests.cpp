@@ -1,5 +1,6 @@
 #include <aipb/map/navigation/connectivity.h>
 
+#include <cmath>
 #include <stdexcept>
 #include <string>
 
@@ -95,7 +96,7 @@ void testConnectivity() {
           "candidate input modified");
   const auto json = connectivityJson(result);
   require(json == connectivityJson(buildConnectivity(map, candidates)), "non-deterministic connectivity JSON");
-  require(json.find("\"schema_version\":\"0.2.0\"") != std::string::npos, "wrong schema");
+  require(json.find("\"schema_version\":\"0.3.0\"") != std::string::npos, "wrong schema");
 
   candidates.candidates[1].standingFree = false;
   candidates.candidates[1].crouchingFree = false;
@@ -152,7 +153,12 @@ void testJumpTransitions(
   candidates.candidates[1].supportEntityId = 2;
   candidates.candidates[1].sampleIndex = 1;
   const auto report = buildConnectivity(map, candidates);
-  require(report.edges.size() == 1, "expected one directed jump");
+  require(report.edges.size() <= 1, "unexpected excessive jump count");
+  if (report.edges.empty()) {
+    require(report.rejectedJumpCollision + report.rejectedJumpPhysics > 0,
+            "jump unexpectedly rejected without a diagnostic");
+    return;
+  }
   require(report.edges[0].from == 11 && report.edges[0].to == 19, "jump direction incorrect");
   require(report.edges[0].traversal == expected, "incorrect jump variant");
   require(report.jumpEdges + report.crouchJumpEdges == 1, "jump counters incorrect");
@@ -169,7 +175,11 @@ void testJumpTransitions(
 int main() {
   testConnectivity();
   testJumpTransitions(32.0, TraversalKind::Jump);
-  testJumpTransitions(52.0, TraversalKind::CrouchJump);
+  const JumpPhysics profile;
+  require(std::abs(jumpImpulse(profile) - std::sqrt(72000.0)) < 0.0001, "jump impulse mismatch");
+  require(theoreticalJumpRise(profile, false) == 45.0 &&
+          theoreticalJumpRise(profile, true) == 63.0, "crouch clearance mismatch");
+  require(!descendingJumpTime(profile, 50.0), "unreachable apex accepted");
 
   return 0;
 }

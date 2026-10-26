@@ -50,3 +50,12 @@ Each landing must have upward-facing hull support beneath the candidate from wor
 The arc parameters are conservative engineering hypotheses, not verified GoldSrc movement constants or a claim that ducking increases maximum ballistic apex.
 Jump edges can bridge previously weakly disconnected pieces; component and isolated-candidate metrics are recomputed for all accepted edges and conditional-source components are counted separately.
 No ladders, long falls, ledge grabs, moving platforms, air acceleration, friction or round-time destruction are simulated yet.
+
+## D210.3 — GoldSrc ballistic baseline
+
+The public Half-Life SDK `pm_shared/pm_shared.c` gives the ordinary vertical jump impulse as `sqrt(2*800*45)` and handles crouching by selecting a different collision hull.
+The standalone `JumpPhysics` profile defaults to gravity 800, ballistic apex 45, maximum assumed horizontal speed 250, standing hull half height 36 and ducked half height 18.
+Theoretical duck clearance is therefore 63 units relative to the same foot reference, but the airborne path checker conservatively requires a standing-origin landing at or below the 45-unit ballistic apex.
+D210.3 uses displacement `v*t-g*t*t/2`, descending landing time, sampled static hull traces and a distance/time speed bound instead of hand-shaped quadratic arcs.
+Connectivity JSON advances to v0.3.0 and exposes physics profile, estimated flight time, horizontal speed and a physics-rejection counter, retaining the candidate fingerprint.
+It does not simulate command timings, actual CS 1.6 physics frame order, movement acceleration, crouched landings above standing apex, or runtime entity changes.

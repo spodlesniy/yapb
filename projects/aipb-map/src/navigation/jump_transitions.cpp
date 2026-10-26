@@ -40,11 +40,19 @@ Vec3 playerOrigin(const Candidate &point, double halfHeight, double lift) {
   return { point.position.x, point.position.y, point.position.z + halfHeight + slope + lift };
 }
 
-Vec3 arcPoint(Vec3 a, Vec3 b, double t, double apex) {
+Vec3 trajectoryPoint(
+  Vec3 start,
+  Vec3 end,
+  double t,
+  double flightSeconds,
+  const JumpPhysics &physics
+) {
+  const double time = flightSeconds * t;
+
   return {
-    a.x + (b.x - a.x) * t,
-    a.y + (b.y - a.y) * t,
-    a.z + (b.z - a.z) * t + apex * 4.0 * t * (1.0 - t)
+    start.x + (end.x - start.x) * t,
+    start.y + (end.y - start.y) * t,
+    start.z + jumpDisplacement(physics, time)
   };
 }
 
@@ -83,20 +91,19 @@ bool flight(
   Vec3 start,
   Vec3 target,
   bool crouched,
-  double apex
+  double flightSeconds,
+  const JumpPhysics &physics
 ) {
-  constexpr std::size_t segments = 12;
-  const double standingHalf = 36.0;
-  const double crouchingHalf = 18.0;
-  const double difference = standingHalf - crouchingHalf;
+  constexpr std::size_t segments = 24;
+  const double difference = physics.standingHalfHeight - physics.crouchingHalfHeight;
 
   for (std::size_t step = 0; step < segments; ++step) {
     const double t0 = static_cast<double>(step) / static_cast<double>(segments);
     const double t1 = static_cast<double>(step + 1) / static_cast<double>(segments);
-    const std::size_t hull = crouched && step >= 2 && step < segments - 2 ? 3u : 1u;
+    const std::size_t hull = crouched && step >= 4 && step < segments - 4 ? 3u : 1u;
     const double offset = hull == 3 ? difference : 0.0;
-    const auto a = arcPoint(start, target, t0, apex);
-    const auto b = arcPoint(start, target, t1, apex);
+    const auto a = trajectoryPoint(start, target, t0, flightSeconds, physics);
+    const auto b = trajectoryPoint(start, target, t1, flightSeconds, physics);
     const Vec3 p { a.x, a.y, a.z - offset };
     const Vec3 q { b.x, b.y, b.z - offset };
 
@@ -221,11 +228,26 @@ void appendJumpTransitions(
       const auto start = playerOrigin(from, 36.0, config.clearanceLift);
       const auto target = playerOrigin(to, 36.0, config.clearanceLift);
       const double rise = to.position.z - from.position.z;
-      const bool simple = rise <= config.maximumJumpRise;
-      const bool ordinaryPass = simple && flight(queries, world, brushes, start, target, false,
-                                                  config.jumpArcHeight);
-      const bool crouchPass = !ordinaryPass &&
-                              flight(queries, world, brushes, start, target, true, config.crouchJumpArcHeight);
+      const auto &physics = config.jumpPhysics;
+      const bool simple = rise <= config.maximumJumpRise &&
+                          rise <= theoreticalJumpRise(physics, false);
+      const bool crouchedAllowed = rise <= config.maximumCrouchJumpRise &&
+                                   rise <= theoreticalJumpRise(physics, true);
+      const auto ordinaryTime = simple ? descendingJumpTime(physics, rise) : std::nullopt;
+      const auto crouchTime = crouchedAllowed ?
+                               descendingJumpTime(physics, rise) :
+                               std::nullopt;
+      const bool ordinarySpeed = ordinaryTime && xy / *ordinaryTime <= physics.maximumHorizontalSpeed;
+      const bool crouchSpeed = crouchTime && xy / *crouchTime <= physics.maximumHorizontalSpeed;
+
+      if (!ordinarySpeed && !crouchSpeed) {
+        ++report.rejectedJumpPhysics;
+        continue;
+      }
+      const bool ordinaryPass = ordinarySpeed &&
+                                flight(queries, world, brushes, start, target, false, *ordinaryTime, physics);
+      const bool crouchPass = !ordinaryPass && crouchSpeed &&
+                              flight(queries, world, brushes, start, target, true, *crouchTime, physics);
 
       if (!ordinaryPass && !crouchPass) {
         ++report.rejectedJumpCollision;
@@ -262,7 +284,9 @@ void appendJumpTransitions(
         .heightChange = rise,
         .stance = collision::PlayerStance::Standing,
         .traversal = traversal,
-        .conditionalSupport = conditional
+        .conditionalSupport = conditional,
+        .estimatedFlightSeconds = ordinaryPass ? *ordinaryTime : *crouchTime,
+        .estimatedHorizontalSpeed = xy / (ordinaryPass ? *ordinaryTime : *crouchTime)
       });
       report.jumpEdges += ordinaryPass;
       report.crouchJumpEdges += crouchPass;
