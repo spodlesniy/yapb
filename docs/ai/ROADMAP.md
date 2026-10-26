@@ -53,6 +53,7 @@ D206.4 requires one designated member per line and one parameter per line in mul
 D206.5 fixes the CLI import argument count and adds a real CLI-to-importer-to-inspector smoke test on a synthetic BSP; acceptance on an actual game BSP remains outstanding.
 D206.6 preserves repeated BSP entity keys in ordered source properties, upgrades map artifacts to v0.3, and adds optional detailed CLI import logs; validation against real game BSPs remains pending.
 D206.6.1 corrects the BSP regression test's fully qualified `aipb::map::io` references after compiler CI rejected the initial test source.
+D206.7 skips repeated-index degenerate BSP render triangles during fan triangulation, reports per-face diagnostics, and retains strict validation; real de_inferno import must be rechecked.
 This is instrumentation, not evidence that arbitrary maps have been measured or physically traversed; Windows x86/in-game acceptance is pending.
 Proposed progression: graph evaluation/generator; versioned map knowledge; bot profiles; match context and perception; independent policy; reproducible rewards/learning; opt-in inference and in-game comparisons.
 This parallel track does not change any existing Phase 7 exit criterion.

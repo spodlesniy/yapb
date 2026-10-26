@@ -2237,3 +2237,11 @@ Keep logs outside artifact output when possible and avoid changes to the YaPB ru
 
 Fix two missing `aipb::map::io` namespace qualifications in the new D206.6 duplicate-key artifact round-trip test, as evidenced by failed GCC and Clang job build logs.
 No importer, artifact or CLI behavior is changed.
+
+## D206.7 — Skip repeated-index BSP triangles with source diagnostics
+
+Preserve strict MapModel triangle validation while filtering triangles with duplicate vertex indices during BSP face fan triangulation.
+Emit a structured model/face/count warning through an optional import callback, presented in the CLI console and existing diagnostic log.
+Keep valid triangles and all original BSP collision trees; do not infer walkability or drop arbitrary surfaces.
+Add a synthetic BSP regression test checking valid triangle retention, diagnostic provenance and map artifact round-trip.
+Recheck real de_inferno BSP separately; its successful import is not yet verified.

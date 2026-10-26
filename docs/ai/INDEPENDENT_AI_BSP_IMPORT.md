@@ -55,3 +55,10 @@ The D203 `CollisionShape` collection remains empty for this importer; accurate c
 D206.6 adds ordered duplicate-key preservation without changing the last-value effective property lookup.
 Raw non-UTF-8 entity strings still cannot round-trip via JSONL without an explicit encoding policy.
 The importer recognizes v30 BSP files and their referenced render geometry; it is not a general validator of every unused BSP lump or game engine behavior.
+
+## D206.7 repeated-vertex triangulation
+
+Some BSP faces can generate fan triangles whose source vertex indices repeat.
+The importer skips only those triangles, leaves other face triangles and BSP collision trees intact, and reports the source model/face and skipped count through CLI warnings and optional log files.
+Zero-area triangles with distinct indices remain available for Inspector diagnostics; strict MapModel repeated-index triangle validation is unchanged.
+A real de_inferno import remains an acceptance check after publication.

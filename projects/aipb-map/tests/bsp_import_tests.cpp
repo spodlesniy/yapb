@@ -237,6 +237,27 @@ std::size_t lumpOffset(
          (static_cast<std::size_t>(bsp[6 + index * 8]) << 16) | (static_cast<std::size_t>(bsp[7 + index * 8]) << 24);
 }
 
+
+void testRepeatedFaceVertices(TempDir &dir) {
+  aipb::map::importer::BspImporter importer;
+  const auto path = dir.root / "repeated-face.bsp";
+  auto bsp = makeBsp();
+  const auto surf = lumpOffset(bsp, 13);
+  const auto face = lumpOffset(bsp, 7);
+  u32(bsp, surf + 3 * 4, 1);
+  write(path, bsp);
+  std::vector<std::string> warnings;
+  const auto map = importer.importWithWarnings(path, [&](const std::string &warning) {
+    warnings.push_back(warning);
+  });
+  check(map.meshes[0].triangles.size() == 1, "repeated face vertex must not create an invalid triangle");
+  check(!warnings.empty() && warnings.front().find("model 0, face 0") != std::string::npos,
+        "repeated vertex diagnostic omits source BSP face");
+  const auto artifact = dir.root / "repeated-face.aipbmap";
+  aipb::map::io::saveMap(map, artifact);
+  check(aipb::map::io::loadMap(artifact).model == map, "repeated face artifact roundtrip failed");
+}
+
 void testCollisionBsp(TempDir &dir) {
   using namespace aipb::map;
   importer::BspImporter importer;
@@ -385,6 +406,7 @@ int main(
 
     TempDir dir;
     testValidBsp(dir);
+    testRepeatedFaceVertices(dir);
     testCollisionBsp(dir);
     testCorruptBsp(dir);
     std::cout << "D205 BSP collision import checks passed\n";

@@ -192,7 +192,10 @@ std::vector<Vec3> vertices(const BspReader &bsp) {
   return result;
 }
 
-std::vector<Mesh> meshes(const BspReader &bsp) {
+std::vector<Mesh> meshes(
+  const BspReader &bsp,
+  const BspImporter::WarningHandler &onWarning
+) {
   const auto points = vertices(bsp);
   std::vector<Mesh> result;
   const auto modelCount = bsp.count(kModels, 64);
@@ -257,8 +260,22 @@ std::vector<Mesh> meshes(const BspReader &bsp) {
         polygon.push_back(internVertex(vertex));
       }
 
+      std::size_t skipped = 0;
+
       for (std::size_t n = 1; n + 1 < polygon.size(); ++n) {
-        mesh.triangles.push_back({ polygon.front(), polygon[n], polygon[n + 1] });
+        const Triangle triangle { polygon.front(), polygon[n], polygon[n + 1] };
+
+        if (triangle.a == triangle.b || triangle.a == triangle.c || triangle.b == triangle.c) {
+          ++skipped;
+          continue;
+        }
+
+        mesh.triangles.push_back(triangle);
+      }
+
+      if (skipped > 0 && onWarning) {
+        onWarning("BSP model " + std::to_string(modelIndex) + ", face " + std::to_string(face) +
+                  ": skipped " + std::to_string(skipped) + " repeated-vertex triangles");
       }
     }
     result.push_back(std::move(mesh));
@@ -509,13 +526,20 @@ void linkEntities(
 } // namespace
 
 MapModel BspImporter::importFile(const std::filesystem::path &path) const {
+  return importWithWarnings(path, {});
+}
+
+MapModel BspImporter::importWithWarnings(
+  const std::filesystem::path &path,
+  const WarningHandler &onWarning
+) const {
   const auto bsp = BspReader::readFile(path);
   MapModel map;
   map.name = path.stem().string();
   map.sourceFormat = "goldsrc-bsp-v30";
   map.sourceSha256 = sha256Hex(bsp.contents());
   map.units = "goldsrc_units";
-  map.meshes = meshes(bsp);
+  map.meshes = meshes(bsp, onWarning);
   map.partition = readPartition(bsp);
   map.entities = EntityParser(bsp.lumpText(kEntities)).parse();
 
