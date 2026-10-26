@@ -2448,3 +2448,9 @@ Require an initially standing source, a standable destination, static world/brus
 Bound candidate-neighbor discovery and the number of jump trials per map; record collision/landing rejections, jump variants, conditional-source edges and recomputed weak connectivity diagnostics.
 Bind each connectivity report to an exact deterministic SHA-256 of the generated versioned Navigation Candidates JSON, so regenerated reports with changed candidate IDs cannot silently be combined.
 Upgrade the separate preliminary-connectivity report to v0.2.0 without changing `.aipbmap`, candidate schema v0.3.2, game runtime or learning behavior.
+
+## D210.2.1 — Supply complete static brush test provenance
+
+D210.2 strict CI rejected the synthetic jump fixture before testing its trajectory because candidate fingerprint generation serializes the canonical candidates report and requires a nonzero `sample_index` on static brush candidates.
+Add the expected synthetic brush sample index to the fixture; do not weaken provenance validation or change jump production logic.
+Require fresh GCC, Clang and MSVC Build/CTest success.

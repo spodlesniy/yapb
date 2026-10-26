@@ -150,6 +150,7 @@ void testJumpTransitions(
   };
   candidates.candidates[1].supportModelId = 2;
   candidates.candidates[1].supportEntityId = 2;
+  candidates.candidates[1].sampleIndex = 1;
   const auto report = buildConnectivity(map, candidates);
   require(report.edges.size() == 1, "expected one directed jump");
   require(report.edges[0].from == 11 && report.edges[0].to == 19, "jump direction incorrect");
