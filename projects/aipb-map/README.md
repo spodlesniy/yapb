@@ -188,3 +188,11 @@ The output diagnostic schema is v0.3.0; `heightfield.json`, source `.aipbmap` an
 Doors, breakables and moving brush entities are deliberately excluded from permanent navigation support.
 
 D209.3.1 updates navigation-candidates.json to schema v0.3.1, fixes brush/sample provenance and preserves stable IDs across filtering; delete old reports before using `navigation_candidates_all_bsp.bat`.
+
+## Preliminary connectivity (D210)
+
+The independent CLI `aipb-map preliminary-connectivity --input <map.aipbmap> --output <preliminary-connectivity.json>` recomputes the D209.3.1 candidates and builds a bounded directed candidate adjacency report.
+`projects/aipb-map/tools/preliminary_connectivity_all_bsp.bat` processes imported maps independently and skips existing reports.
+The JSON schema `aipb-preliminary-connectivity` v0.1.0 retains map/source SHA-256, candidate IDs, directed edges, standing/crouching labels, rejected checks and weak-component diagnostics.
+Default checks limit XY neighbor distance to 192 units, upward/downward steps to 18/36 units, and require clear static collision and intermediate support.
+This is not an `.aipbnav` artifact or a certified GoldSrc path graph; in-game validation and dynamic obstacles remain out of scope.

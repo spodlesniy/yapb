@@ -17,6 +17,7 @@
 #include <aipb/map/importer/bsp_importer.h>
 #include <aipb/map/io/artifact.h>
 #include <aipb/map/navigation/candidates.h>
+#include <aipb/map/navigation/connectivity.h>
 #include <aipb/map/version.h>
 
 namespace {
@@ -78,7 +79,8 @@ void help() {
             << "  aipb-map inspect --input <map.aipbmap> [--output <report.json>] [--log-file <log.txt>]\n"
             << "  aipb-map validate-collision --input <map.aipbmap> --output <report.json> [--log-file <log.txt>]\n"
             << "  aipb-map heightfield --input <map.aipbmap> --output <report.json>\n"
-            << "  aipb-map navigation-candidates --input <map.aipbmap> --output <report.json>\n";
+            << "  aipb-map navigation-candidates --input <map.aipbmap> --output <report.json>\n"
+            << "  aipb-map preliminary-connectivity --input <map.aipbmap> --output <report.json>\n";
 }
 
 int importCommand(
@@ -309,6 +311,47 @@ int heightfieldCommand(
   return 0;
 }
 
+int connectivityCommand(
+  int argc,
+  char *argv[]
+) {
+  if (argc != 6 || std::string_view { argv[2] } != "--input" ||
+      std::string_view { argv[4] } != "--output") {
+    throw std::invalid_argument("preliminary-connectivity requires --input <map.aipbmap> --output <report.json>");
+  }
+  const std::filesystem::path input(argv[3]);
+  const std::filesystem::path output(argv[5]);
+
+  if (input.empty() || output.empty()) {
+    throw std::invalid_argument("preliminary-connectivity paths must not be empty");
+  }
+  const auto relative = std::filesystem::weakly_canonical(output).lexically_relative(std::filesystem::weakly_canonical(input));
+
+  if (!relative.empty() && *relative.begin() != "..") {
+    throw std::invalid_argument("connectivity report must be outside the map artifact");
+  }
+
+  if (std::filesystem::exists(output)) {
+    throw std::runtime_error("connectivity report already exists: " + output.string());
+  }
+  const auto artifact = aipb::map::io::loadMap(input);
+  const auto heightfield = aipb::map::heightfield::build(artifact.model, artifact.sha256);
+  const auto candidates = aipb::map::navigation::generateStaticBrushCandidates(artifact.model, heightfield);
+  const auto report = aipb::map::navigation::buildConnectivity(artifact.model, candidates);
+  const auto json = aipb::map::navigation::connectivityJson(report);
+  std::ofstream stream(output, std::ios::binary);
+
+  if (!stream || !stream.write(json.data(), static_cast<std::streamsize>(json.size()))) {
+    stream.close();
+    std::filesystem::remove(output);
+    throw std::runtime_error("unable to write connectivity report: " + output.string());
+  }
+  std::cout << "Preliminary connectivity: " << report.mapName << ", candidates=" << report.candidateCount
+            << ", edges=" << report.edges.size() << ", components=" << report.weakComponents << '\n';
+
+  return 0;
+}
+
 int navigationCandidatesCommand(
   int argc,
   char *argv[]
@@ -460,6 +503,9 @@ int main(
     }
     if (argc >= 2 && std::string_view { argv[1] } == "navigation-candidates") {
       return navigationCandidatesCommand(argc, argv);
+    }
+    if (argc >= 2 && std::string_view { argv[1] } == "preliminary-connectivity") {
+      return connectivityCommand(argc, argv);
     }
     throw std::invalid_argument("unsupported command");
   } catch (const std::exception &error) {

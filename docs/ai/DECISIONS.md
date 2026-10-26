@@ -2414,3 +2414,12 @@ Resolve per-spawn references by candidate ID, not vector offset, and update diag
 Automatic GCC and Clang CTest exposed an outdated navigation-candidates unit-test expectation of schema v0.3.0 after D209.3.1 upgraded JSON diagnostics to v0.3.1.
 Update the fixture assertion to v0.3.1 while leaving runtime candidate generation and ID semantics unchanged.
 Check strict GCC, Clang and MSVC CTest again.
+
+## D210 — Preliminary directed navigation connectivity
+
+Derive a deterministic static directed-edge diagnostic from the versioned D209 candidate set without modifying MapModel, NavigationModel, saved map artifacts or the independent AI runtime.
+Find spatial neighbors within 192 GoldSrc units using a bounded XY bucket index; enforce a maximum of 32 neighbor trials and eight outgoing edges per candidate, one million directed collision checks and 150,000 edges per map.
+For each direction require an XY displacement of at least one unit, upward change no more than 18 and downward change no more than 36 units, plus compatible standing or crouching stances.
+Trace candidate-origin hull 1 or 3 movement against the world and static func_wall models in their translated local spaces and require intermediate downward support checks at quarter, half and three-quarter segments.
+Record rejection reasons, stance-specific edge counts, weakly connected components, largest component and isolated candidates in a separate reproducible JSON v0.1.0.
+Treat these connections as provisional and conservative: no dynamic doors, jumping, ladders, moving support, engine-side route verification or learned navigation behavior is modeled.

@@ -61,6 +61,13 @@ add_library(aipb::map_navigation_candidates ALIAS aipb_map_navigation_candidates
 target_link_libraries(aipb_map_navigation_candidates PUBLIC aipb::map_heightfield PRIVATE aipb::map_io)
 target_include_directories(aipb_map_navigation_candidates PRIVATE src/io)
 
+add_library(aipb_map_connectivity STATIC
+    src/navigation/connectivity.cpp
+)
+add_library(aipb::map_connectivity ALIAS aipb_map_connectivity)
+target_link_libraries(aipb_map_connectivity PUBLIC aipb::map_navigation_candidates PRIVATE aipb::map_io)
+target_include_directories(aipb_map_connectivity PRIVATE src/io)
+
 add_library(aipb_map_report STATIC
     src/analysis/report_json.cpp
 )
@@ -69,7 +76,7 @@ target_link_libraries(aipb_map_report PUBLIC aipb::map_analysis PRIVATE aipb::ma
 target_include_directories(aipb_map_report PRIVATE src/io)
 
 add_executable(aipb-map src/cli/main.cpp)
-target_link_libraries(aipb-map PRIVATE aipb::map_bsp aipb::map_io aipb::map_report aipb::map_collision_validation aipb::map_heightfield aipb::map_navigation_candidates)
+target_link_libraries(aipb-map PRIVATE aipb::map_bsp aipb::map_io aipb::map_report aipb::map_collision_validation aipb::map_heightfield aipb::map_navigation_candidates aipb::map_connectivity)
 
 include(CTest)
 if(BUILD_TESTING)
@@ -89,12 +96,22 @@ if(BUILD_TESTING)
     add_executable(aipb_map_navigation_candidates_tests tests/navigation_candidates_tests.cpp)
     target_link_libraries(aipb_map_navigation_candidates_tests PRIVATE aipb::map_navigation_candidates)
     add_test(NAME aipb_map_navigation_candidates COMMAND aipb_map_navigation_candidates_tests)
+    add_executable(aipb_map_connectivity_tests tests/connectivity_tests.cpp)
+    target_link_libraries(aipb_map_connectivity_tests PRIVATE aipb::map_connectivity)
+    add_test(NAME aipb_map_preliminary_connectivity COMMAND aipb_map_connectivity_tests)
     add_executable(aipb_map_static_brush_tests tests/static_brush_candidates_tests.cpp)
     target_link_libraries(aipb_map_static_brush_tests PRIVATE aipb::map_navigation_candidates)
     add_test(NAME aipb_map_static_brush_candidates COMMAND aipb_map_static_brush_tests)
     add_executable(aipb_map_validation_tests tests/validation_tests.cpp)
     target_link_libraries(aipb_map_validation_tests PRIVATE aipb::map_collision_validation aipb::map_io)
     add_test(NAME aipb_map_collision_validation COMMAND aipb_map_validation_tests)
+    add_test(NAME aipb_map_cli_preliminary_connectivity
+        COMMAND ${CMAKE_COMMAND}
+            -DCLI=$<TARGET_FILE:aipb-map>
+            -DFIXTURE=$<TARGET_FILE:aipb_map_validation_tests>
+            -DWORK=${CMAKE_CURRENT_BINARY_DIR}/aipb-map-connectivity-cli-test
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/connectivity_cli.cmake
+    )
     add_test(NAME aipb_map_cli_navigation_candidates
         COMMAND ${CMAKE_COMMAND}
             -DCLI=$<TARGET_FILE:aipb-map>
@@ -140,9 +157,9 @@ if(BUILD_TESTING)
     )
 endif()
 
-set(aipb_map_targets aipb_map_core aipb_map_io aipb_map_bsp aipb_map_analysis aipb_map_collision aipb_map_collision_validation aipb_map_heightfield aipb_map_navigation_candidates aipb_map_report aipb-map)
+set(aipb_map_targets aipb_map_core aipb_map_io aipb_map_bsp aipb_map_analysis aipb_map_collision aipb_map_collision_validation aipb_map_heightfield aipb_map_navigation_candidates aipb_map_connectivity aipb_map_report aipb-map)
 if(BUILD_TESTING)
-    list(APPEND aipb_map_targets aipb_map_tests aipb_map_model_tests aipb_map_bsp_tests aipb_map_inspector_tests aipb_map_collision_tests aipb_map_heightfield_tests aipb_map_navigation_candidates_tests aipb_map_static_brush_tests)
+    list(APPEND aipb_map_targets aipb_map_tests aipb_map_model_tests aipb_map_bsp_tests aipb_map_inspector_tests aipb_map_collision_tests aipb_map_heightfield_tests aipb_map_navigation_candidates_tests aipb_map_static_brush_tests aipb_map_connectivity_tests)
 endif()
 foreach(target IN LISTS aipb_map_targets)
     if(MSVC)
