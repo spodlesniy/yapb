@@ -120,3 +120,10 @@ This samples static collision data and does not prove gameplay collision fidelit
 D207.1.2 supports `aipb-map validate-collision --input <map.aipbmap> --output <report.json> [--log-file <log.txt>]` with append-only timestamped source/artifact digests, detailed world/brush hull metrics and violation diagnostics.
 The `tools/import_all_bsp.bat` driver runs import, inspect and collision validation sequentially and writes sibling `collision-validation.json` and `collision-validation.log` after inspection succeeds.
 Existing per-map result directories are skipped; use a fresh results directory or remove a previous map's results before rerunning the full pipeline.
+
+## Spawn collision probes (D207.2)
+
+The existing `validate-collision` command now includes a `spawn_probes` object in version 0.2.0 of its diagnostic JSON report.
+It samples all detected spawn origins on the static world collision model in four horizontal directions (32 units) and both vertical directions (96 units) using hulls 0–3.
+Results include per-hull horizontal clearance, floor/ceiling-oriented collision planes, standing/crouching occupancy differences and detailed per-entity fractions.
+Older `.aipbmap` artifacts are still read unchanged; successful probes are not evidence of true in-game navigability.

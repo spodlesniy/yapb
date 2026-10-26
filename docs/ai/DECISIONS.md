@@ -2302,3 +2302,12 @@ Reject duplicate or unknown options, empty paths and log paths inside the source
 Add collision validation after successful import and inspect in `projects/aipb-map/tools/import_all_bsp.bat`, writing sibling `collision-validation.json` and `collision-validation.log` files.
 Report `[OK]` only if all three operations succeed; preserve existing skip behavior for already processed map directories.
 Cover CLI logging, argument ordering, error handling and report immutability in CTest; do not alter `.aipbmap` v0.3.0 or YaPB runtime.
+
+## D207.2 — Sample gameplay-oriented collision near spawn points
+
+Extend offline collision validation with deterministic directional probes centered on stored world-space spawn origins rather than model bounding-box endpoints.
+For hulls 0–3 trace 32 GoldSrc units in four horizontal directions and 96 units vertically up and down, preserving raw start-solid, contents, fraction and impact-plane evidence.
+Report per-hull clear/blocked horizontal probes, floor-facing and ceiling-facing vertical hits, and origin occupancy differences between standing hull 1 and crouching hull 3.
+Retain D207.1 aggregated model-bound metrics for comparison, but version the independent diagnostic JSON as 0.2.0 with explicitly separate spawn-probe data.
+Treat a hit as evidence of static world BSP geometry only, not a proven floor, playable route, accurate actor step or engine physics behavior.
+Keep old .aipbmap v0.3.0 artifacts, their fingerprints and the YaPB runtime unchanged; add synthetic regression coverage and existing CLI smoke checks.

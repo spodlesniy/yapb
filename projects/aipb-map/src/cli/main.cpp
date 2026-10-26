@@ -225,6 +225,21 @@ int validationCommand(
                      ", impacts=" + std::to_string(sample.impacts), false);
   }
 
+  for (const auto &metric : report.spawnProbes.hulls) {
+    log("DEBUG", "Spawn hull " + std::to_string(metric.hull) +
+                     ": origins=" + std::to_string(metric.origins) +
+                     ", solid_origins=" + std::to_string(metric.solidOrigins) +
+                     ", horizontal_clear=" + std::to_string(metric.horizontalClear) +
+                     ", horizontal_impacts=" + std::to_string(metric.horizontalImpacts) +
+                     ", horizontal_start_solid=" + std::to_string(metric.horizontalStartSolid) +
+                     ", floor_hits=" + std::to_string(metric.floorHits) +
+                     ", ceiling_hits=" + std::to_string(metric.ceilingHits), false);
+  }
+  log("DEBUG", "Spawn clearance differences: standing_blocked_crouching_free=" +
+                   std::to_string(report.spawnProbes.standingBlockedCrouchingFree) +
+                   ", standing_free_crouching_blocked=" +
+                   std::to_string(report.spawnProbes.standingFreeCrouchingBlocked), false);
+
   for (const auto &example : report.examples) {
     log("WARN", "Collision validation violation: " + example, false);
   }

@@ -20,7 +20,7 @@ if(NOT EXISTS "${LOG}")
 endif()
 file(READ "${LOG}" logtext)
 foreach(expected IN ITEMS "Collision validation started" "Source SHA-256:"
-        "Artifact SHA-256:" "World hull 0:" "Brush hull 3:"
+        "Artifact SHA-256:" "World hull 0:" "Brush hull 3:" "Spawn hull 0:"
         "Collision validation report JSON:" "violations=0"
         "Collision validation completed successfully")
     if(NOT logtext MATCHES "${expected}")
@@ -32,8 +32,11 @@ string(JSON schema GET "${json}" schema_version)
 string(JSON count GET "${json}" model_count)
 string(JSON violations GET "${json}" violations)
 string(JSON samples LENGTH "${json}" samples)
-if(NOT schema STREQUAL "0.1.0" OR NOT count EQUAL 2 OR
-   NOT violations EQUAL 0 OR NOT samples EQUAL 8)
+string(JSON spawnHulls LENGTH "${json}" spawn_probes hulls)
+string(JSON spawnSamples LENGTH "${json}" spawn_probes samples)
+if(NOT schema STREQUAL "0.2.0" OR NOT count EQUAL 2 OR
+   NOT violations EQUAL 0 OR NOT samples EQUAL 8 OR
+   NOT spawnHulls EQUAL 4 OR NOT spawnSamples EQUAL 4)
     message(FATAL_ERROR "Unexpected validation JSON: ${json}")
 endif()
 execute_process(COMMAND "${CLI}" validate-collision --input "${MAP}" --output "${REPORT}"

@@ -41,3 +41,14 @@ The console remains concise and `collision-validation.json` remains deterministi
 Log and JSON report paths must be outside the input artifact; duplicate options and empty paths are rejected.
 The Windows `tools/import_all_bsp.bat` script runs `validate-collision` only after successful `inspect`, producing `collision-validation.json` and `collision-validation.log` per map.
 Existing result directories are still skipped, so users need new output directories for a fresh end-to-end run.
+
+## D207.2 — Spawn-oriented short traces
+
+The collision validation report advances independently to schema 0.2.0 and retains the earlier model-bound statistics.
+A new `spawn_probes` object records fixed horizontal distance 32 and vertical distance 96 GoldSrc units, aggregate metrics per hull, clearance differences and each sampled entity ID, class, origin, hull contents and six directional traces.
+Directions are ordered `x_positive`, `x_negative`, `y_positive`, `y_negative`, `down` and `up`.
+Every trace records fraction, end, start-solid, all-solid, open/liquid flags and nullable impact-plane normal/distance/type.
+Directional aggregates count free horizontal segments, non-solid-start impacts, solid starts, downward hits with positive-Z impact normals, and upward hits with negative-Z impact normals.
+A floor/ceiling hit is only a collision-plane orientation classification, not a semantic determination of floor support or step reachability.
+Standing/crouching differences compare hulls 1 and 3 at exactly the same spawn origin.
+All probes use the world model alone, without moving or combining brush submodels; this is not independent GoldSrc gameplay verification.

@@ -54,6 +54,178 @@ Json encode(const SampleStatistics &value) {
   };
 }
 
+struct ProbeDirection {
+  const char *name;
+  Vec3 offset;
+};
+
+constexpr std::array<ProbeDirection, 6> kSpawnDirections {
+  ProbeDirection { "x_positive", { 32, 0, 0 } },
+  ProbeDirection { "x_negative", { -32, 0, 0 } },
+  ProbeDirection { "y_positive", { 0, 32, 0 } },
+  ProbeDirection { "y_negative", { 0, -32, 0 } },
+  ProbeDirection { "down", { 0, 0, -96 } },
+  ProbeDirection { "up", { 0, 0, 96 } }
+};
+
+bool spawnEntity(const MapEntity &entity) {
+  return entity.type == "info_player_start" || entity.type == "info_player_deathmatch" ||
+         entity.type == "info_vip_start";
+}
+
+SpawnProbeReport probeSpawns(
+  const MapModel &map,
+  const CollisionQueries &queries
+) {
+  SpawnProbeReport report;
+
+  for (std::size_t hull = 0; hull < 4; ++hull) {
+    SpawnHullMetrics metrics;
+    metrics.hull = hull;
+    report.hulls.push_back(metrics);
+  }
+  const auto world = map.partition->models.front().id;
+
+  for (const auto &entity : map.entities) {
+    if (!spawnEntity(entity)) {
+      continue;
+    }
+    const bool standingBlocked = queries.pointContents(world, 1, entity.origin) == kContentsSolid;
+    const bool crouchingBlocked = queries.pointContents(world, 3, entity.origin) == kContentsSolid;
+    report.standingBlockedCrouchingFree += standingBlocked && !crouchingBlocked;
+    report.standingFreeCrouchingBlocked += !standingBlocked && crouchingBlocked;
+
+    for (std::size_t hull = 0; hull < 4; ++hull) {
+      auto &metrics = report.hulls[hull];
+      SpawnHullSample sample;
+      sample.entityId = entity.id;
+      sample.entityType = entity.type;
+      sample.origin = entity.origin;
+      sample.hull = hull;
+      sample.contents = queries.pointContents(world, hull, entity.origin);
+      ++metrics.origins;
+      metrics.solidOrigins += sample.contents == kContentsSolid;
+      metrics.emptyOrigins += sample.contents == kContentsEmpty;
+      metrics.otherOrigins += sample.contents != kContentsSolid && sample.contents != kContentsEmpty;
+
+      for (std::size_t direction = 0; direction < kSpawnDirections.size(); ++direction) {
+        const auto &probe = kSpawnDirections[direction];
+        const Vec3 end {
+          entity.origin.x + probe.offset.x,
+          entity.origin.y + probe.offset.y,
+          entity.origin.z + probe.offset.z
+        };
+        const auto trace = queries.traceSegment(world, hull, entity.origin, end);
+        sample.traces.push_back({ probe.name, trace });
+
+        if (direction < 4) {
+          metrics.horizontalStartSolid += trace.startSolid;
+
+          if (!trace.startSolid && trace.impactPlane) {
+            ++metrics.horizontalImpacts;
+          } else if (!trace.startSolid) {
+            ++metrics.horizontalClear;
+          }
+        } else if (direction == 4) {
+          metrics.downwardStartSolid += trace.startSolid;
+          metrics.floorHits += !trace.startSolid && trace.impactPlane && trace.impactPlane->normal.z > 0;
+        } else {
+          metrics.upwardStartSolid += trace.startSolid;
+          metrics.ceilingHits += !trace.startSolid && trace.impactPlane && trace.impactPlane->normal.z < 0;
+        }
+      }
+      report.samples.push_back(std::move(sample));
+    }
+  }
+
+  return report;
+}
+
+Json encode(const Vec3 &point) {
+  return Json::Array { point.x, point.y, point.z };
+}
+
+Json encode(const TraceResult &trace) {
+  Json impact;
+
+  if (trace.impactPlane) {
+    impact = Json::Object {
+      { "normal", encode(trace.impactPlane->normal) },
+      { "distance", trace.impactPlane->distance },
+      { "type", static_cast<double>(trace.impactPlane->type) }
+    };
+  }
+
+  return Json::Object {
+    { "fraction", trace.fraction },
+    { "end", encode(trace.endPosition) },
+    { "start_solid", trace.startSolid },
+    { "all_solid", trace.allSolid },
+    { "in_open", trace.inOpen },
+    { "in_liquid", trace.inLiquid },
+    { "impact_plane", std::move(impact) }
+  };
+}
+
+Json encode(const SpawnHullMetrics &metrics) {
+  return Json::Object {
+    { "hull", static_cast<double>(metrics.hull) },
+    { "origins", static_cast<double>(metrics.origins) },
+    { "solid_origins", static_cast<double>(metrics.solidOrigins) },
+    { "empty_origins", static_cast<double>(metrics.emptyOrigins) },
+    { "other_origins", static_cast<double>(metrics.otherOrigins) },
+    { "horizontal_clear", static_cast<double>(metrics.horizontalClear) },
+    { "horizontal_impacts", static_cast<double>(metrics.horizontalImpacts) },
+    { "horizontal_start_solid", static_cast<double>(metrics.horizontalStartSolid) },
+    { "floor_hits", static_cast<double>(metrics.floorHits) },
+    { "ceiling_hits", static_cast<double>(metrics.ceilingHits) },
+    { "downward_start_solid", static_cast<double>(metrics.downwardStartSolid) },
+    { "upward_start_solid", static_cast<double>(metrics.upwardStartSolid) }
+  };
+}
+
+Json encode(const SpawnHullSample &sample) {
+  Json::Array traces;
+
+  for (const auto &probe : sample.traces) {
+    traces.push_back(Json::Object {
+      { "direction", probe.direction },
+      { "trace", encode(probe.result) }
+    });
+  }
+
+  return Json::Object {
+    { "entity_id", std::to_string(sample.entityId) },
+    { "entity_type", sample.entityType },
+    { "origin", encode(sample.origin) },
+    { "hull", static_cast<double>(sample.hull) },
+    { "contents", static_cast<double>(sample.contents) },
+    { "traces", std::move(traces) }
+  };
+}
+
+Json encode(const SpawnProbeReport &report) {
+  Json::Array hulls;
+  Json::Array samples;
+
+  for (const auto &metrics : report.hulls) {
+    hulls.push_back(encode(metrics));
+  }
+
+  for (const auto &sample : report.samples) {
+    samples.push_back(encode(sample));
+  }
+
+  return Json::Object {
+    { "horizontal_distance", static_cast<double>(report.horizontalDistance) },
+    { "vertical_distance", static_cast<double>(report.verticalDistance) },
+    { "standing_blocked_crouching_free", static_cast<double>(report.standingBlockedCrouchingFree) },
+    { "standing_free_crouching_blocked", static_cast<double>(report.standingFreeCrouchingBlocked) },
+    { "hulls", std::move(hulls) },
+    { "samples", std::move(samples) }
+  };
+}
+
 } // namespace
 
 ValidationReport validateQueries(
@@ -69,7 +241,8 @@ ValidationReport validateQueries(
     .sampledSpawnOrigins = 0,
     .violations = 0,
     .samples = {},
-    .examples = {}
+    .examples = {},
+    .spawnProbes = {}
   };
   const auto &models = map.partition->models;
   report.modelCount = models.size();
@@ -175,6 +348,8 @@ ValidationReport validateQueries(
     }
   }
 
+  report.spawnProbes = probeSpawns(map, queries);
+
   for (const auto &group : counters) {
     for (const auto &metric : group) {
       report.samples.push_back(metric);
@@ -198,7 +373,7 @@ std::string validationJson(const ValidationReport &report) {
 
   return io::writeJson(Json::Object {
     { "format", "aipb-collision-validation" },
-    { "schema_version", "0.1.0" },
+    { "schema_version", "0.2.0" },
     { "map_name", report.mapName },
     { "source_sha256", report.sourceSha256 },
     { "artifact_sha256", report.artifactSha256 },
@@ -206,7 +381,8 @@ std::string validationJson(const ValidationReport &report) {
     { "spawn_origins", static_cast<double>(report.sampledSpawnOrigins) },
     { "violations", static_cast<double>(report.violations) },
     { "samples", std::move(samples) },
-    { "examples", std::move(examples) }
+    { "examples", std::move(examples) },
+    { "spawn_probes", encode(report.spawnProbes) }
   }) + "\n";
 }
 
