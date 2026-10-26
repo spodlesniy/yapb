@@ -64,7 +64,12 @@ ValidationReport validateQueries(
   ValidationReport report {
     .mapName = map.name,
     .sourceSha256 = map.sourceSha256,
-    .artifactSha256 = std::move(artifactSha256)
+    .artifactSha256 = std::move(artifactSha256),
+    .modelCount = 0,
+    .sampledSpawnOrigins = 0,
+    .violations = 0,
+    .samples = {},
+    .examples = {}
   };
   const auto &models = map.partition->models;
   report.modelCount = models.size();

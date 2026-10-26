@@ -2287,3 +2287,9 @@ Separate world and brush statistics because brush model planes are model-local a
 Emit versioned deterministic JSON with source/artifact SHA-256, counts and bounded example violations through an explicit CLI command.
 Reject report paths inside the artifact or existing report files, and keep original artifact bytes unchanged.
 This is internal consistency evidence only; comparing behavior with GoldSrc and examining 25 real maps remain follow-up acceptance work.
+
+## D207.1.1 — Initialize all validation report aggregate fields
+
+Explicitly initialize each `ValidationReport` field in the D207.1 designated aggregate initializer.
+The D207.1 GCC and Clang CI builds failed on `-Werror=missing-field-initializers` in `src/collision/validation.cpp` before executing CTest.
+Preserve all validation logic and data formats, keep warnings as errors, and verify the correction through automatic Map Tool CI.
