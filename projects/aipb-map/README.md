@@ -174,3 +174,9 @@ Run `projects/aipb-map/tools/navigation_candidates_all_bsp.bat` after compiling 
 The script scans `build/debug/results/<map>/<map>.aipbmap`, saves `navigation-candidates.json` next to the other per-map reports, skips files that already exist and returns an error if any map fails.
 It does not require an existing `heightfield.json` because the D209 CLI regenerates heightfield candidates from the imported artifact.
 No import or previous processing stage is rerun.
+
+## Adaptive spawn candidate coverage (D209.2)
+
+The existing `navigation_candidates_all_bsp.bat` runs adaptive generation using the same CLI command.
+It samples limited additional XY positions only near uncovered spawn origins, preserves provenance and emits `navigation-candidates.json` schema v0.2.0 with 64/128/256-unit coverage metrics.
+Delete the existing `navigation-candidates.json` files before rerunning; no BSP re-import is necessary.

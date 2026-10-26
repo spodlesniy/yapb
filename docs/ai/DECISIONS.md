@@ -2367,3 +2367,12 @@ Add `projects/aipb-map/tools/navigation_candidates_all_bsp.bat` matching the ind
 Scan saved `.aipbmap` artifacts and write sibling `navigation-candidates.json` reports through the existing `navigation-candidates` CLI command.
 Skip existing reports, reject missing executable/results or absence of artifacts and report individual failures using a nonzero script exit status.
 Do not change native C++ code, map artifacts or previous stage scripts; note that the automatic CMake/CTest workflow does not execute the Windows BAT file.
+
+## D209.2 — Adaptively refine navigation candidate coverage near uncovered spawns
+
+Keep D209's coarse heightfield grid and its deterministic candidate identifiers unchanged, but additionally sample bounded XY locations around uncovered spawn origins using D208.3's collision filters.
+Use the same world-only collision surface checks and explicitly limit the extra locations per map and the maximum candidate count.
+Append only genuinely new local candidates with `refined`, `source_spawn_id` and `sample_index` provenance, without inventing heightfield indices or navigation edges.
+Recalculate nearest candidates and spawn coverage with separate 64-, 128- and 256-unit planar radius metrics and the existing 96-unit vertical criterion.
+Upgrade the independent diagnostic report to v0.2.0, keeping `.aipbmap` and navigation artifact schemas unchanged.
+Retain the distinction between spatial proximity and actual route reachability.

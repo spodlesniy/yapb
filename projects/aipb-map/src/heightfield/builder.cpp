@@ -55,6 +55,165 @@ bool finite(Vec3 p) {
   return std::isfinite(p.x) && std::isfinite(p.y) && std::isfinite(p.z);
 }
 
+
+struct ScanContext {
+  const collision::CollisionQueries &queries;
+  const CollisionPartitionModel &world;
+  const Config &config;
+  double top {};
+  double bottom {};
+  bool renderAvailable {};
+  double renderMinZ {};
+  double renderMaxZ {};
+};
+
+void scanColumn(
+  const ScanContext &context,
+  Result &result,
+  double x,
+  double y,
+  std::size_t column,
+  std::size_t row
+) {
+  const auto &queries = context.queries;
+  const auto &world = context.world;
+  const auto &config = context.config;
+  const double top = context.top;
+  const double bottom = context.bottom;
+  const bool renderAvailable = context.renderAvailable;
+  const double renderMinZ = context.renderMinZ;
+  const double renderMaxZ = context.renderMaxZ;
+  std::vector<Candidate> local;
+
+  for (const auto hull : std::array<std::size_t, 2> { 1, 3 }) {
+    double upper = top;
+
+    while (upper > bottom) {
+      const auto lower = std::max(bottom, upper - config.verticalStep);
+      const Vec3 start { x, y, upper };
+      const Vec3 end { x, y, lower };
+      ++result.scannedIntervals;
+      const auto startContents = queries.pointContents(world.id, hull, start);
+      const auto endContents = queries.pointContents(world.id, hull, end);
+      // Trace even when both endpoints are empty: a thin solid interval can lie between them.
+      if (startContents != collision::kContentsSolid) {
+        const auto hit = queries.traceSegment(world.id, hull, start, end);
+
+        if (hit.impactPlane) {
+          if (endContents != collision::kContentsSolid) {
+            ++result.thinIntervalHits;
+          }
+          const auto normal = hit.impactPlane->normal;
+          const bool slope = normal.z < 0.9999;
+          result.slopeImpacts += slope;
+
+          if (normal.z < config.minimumUpNormal) {
+            ++result.rejectedImpacts;
+          } else {
+            const double estimateZ = hit.endPosition.z - offset(hull, normal);
+            const double footprintOffset = 16.0 * (std::abs(normal.x) + std::abs(normal.y)) / normal.z;
+            const double tolerance = config.surfaceHeightTolerance + footprintOffset;
+
+            if (!std::isfinite(estimateZ) || !std::isfinite(tolerance)) {
+              ++result.rejectedInvalidHeight;
+            } else {
+              const Vec3 lifted { x, y, hit.endPosition.z + config.clearanceLift };
+
+              if (queries.pointContents(world.id, hull, lifted) == collision::kContentsSolid) {
+                ++result.rejectedOwnSolid;
+              } else {
+                // Start at the clip contact's free side so slope support can be found below it.
+                const Vec3 pointStart { x, y, hit.endPosition.z + config.clearanceLift };
+                const Vec3 pointEnd { x, y, estimateZ - tolerance - config.clearanceLift };
+                const auto pointTrace = queries.traceSegment(world.id, 0, pointStart, pointEnd);
+
+                if (pointTrace.startSolid) {
+                  ++result.rejectedPointStartSolid;
+                  ++result.rejectedUnverifiedPointHull;
+                } else if (!pointTrace.impactPlane) {
+                  ++result.rejectedMissingPointImpact;
+                  ++result.rejectedUnverifiedPointHull;
+                } else if (pointTrace.impactPlane->normal.z < config.minimumUpNormal) {
+                  ++result.rejectedPointNormal;
+                  ++result.rejectedUnverifiedPointHull;
+                } else if (std::abs(pointTrace.endPosition.z - estimateZ) > tolerance) {
+                  ++result.rejectedSurfaceMismatch;
+                  ++result.rejectedUnverifiedPointHull;
+                } else {
+                  // Hull 0 provides the physical contact height and plane normal.
+                  const auto physical = pointTrace.endPosition;
+                  const auto pointNormal = pointTrace.impactPlane->normal;
+                  const double standingZ = physical.z + offset(1, pointNormal) + config.clearanceLift;
+                  const double crouchingZ = physical.z + offset(3, pointNormal) + config.clearanceLift;
+
+                  if (!finite(physical) || !std::isfinite(standingZ) || !std::isfinite(crouchingZ)) {
+                    ++result.rejectedInvalidHeight;
+                  } else if (physical.z < world.mins.z || physical.z > world.maxs.z) {
+                    ++result.rejectedOutsideWorld;
+                  } else if (renderAvailable && (physical.z < renderMinZ || physical.z > renderMaxZ)) {
+                    ++result.rejectedOutsideRender;
+                  } else {
+                    const bool standingFree = queries.canOccupy(
+                      world.id, collision::PlayerStance::Standing, { x, y, standingZ });
+                    const bool crouchingFree = queries.canOccupy(
+                      world.id, collision::PlayerStance::Crouching, { x, y, crouchingZ });
+
+                    if (!standingFree && !crouchingFree) {
+                      ++result.rejectedNoClearance;
+                    } else {
+                      ++result.floorHits;
+                      result.acceptedSlopeContacts += slope;
+                      result.correctedPointContacts +=
+                        std::abs(physical.z - estimateZ) > config.mergeHeightTolerance;
+                      const auto match = std::find_if(local.begin(), local.end(), [&](const Candidate &candidate) {
+                        return std::abs(candidate.position.z - physical.z) <= config.mergeHeightTolerance;
+                      });
+
+                      if (match != local.end()) {
+                        match->hullMask |= static_cast<std::uint32_t>(1u << hull);
+                        match->standingFree |= standingFree;
+                        match->crouchingFree |= crouchingFree;
+                        ++result.mergedContacts;
+                      } else {
+                        local.push_back({
+                          column,
+                          row,
+                          static_cast<std::uint32_t>(1u << hull),
+                          physical,
+                          pointNormal,
+                          standingFree,
+                          crouchingFree
+                        });
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      upper = lower;
+    }
+  }
+
+  if (!local.empty()) {
+    ++result.columnsWithCandidates;
+  }
+  if (local.size() > 1) {
+    ++result.multiLayerColumns;
+  }
+  result.maximumLayers = std::max(result.maximumLayers, local.size());
+  std::sort(local.begin(), local.end(), [](const Candidate &a, const Candidate &b) {
+    return a.position.z > b.position.z;
+  });
+
+  for (const auto &candidate : local) {
+    result.candidates.push_back(candidate);
+  }
+
+}
+
 } // namespace
 
 Result build(
@@ -139,6 +298,17 @@ Result build(
     }
   }
 
+  const ScanContext context {
+    .queries = queries,
+    .world = world,
+    .config = config,
+    .top = top,
+    .bottom = bottom,
+    .renderAvailable = renderAvailable,
+    .renderMinZ = renderMinZ,
+    .renderMaxZ = renderMaxZ
+  };
+
   for (std::size_t row = 0; row < rows; ++row) {
     const double lowY = world.mins.y + static_cast<double>(row) * config.cellSize;
     const double y = lowY + (std::min(world.maxs.y, lowY + config.cellSize) - lowY) * 0.5;
@@ -146,138 +316,79 @@ Result build(
     for (std::size_t column = 0; column < columns; ++column) {
       const double lowX = world.mins.x + static_cast<double>(column) * config.cellSize;
       const double x = lowX + (std::min(world.maxs.x, lowX + config.cellSize) - lowX) * 0.5;
-      std::vector<Candidate> local;
-
-      for (const auto hull : std::array<std::size_t, 2> { 1, 3 }) {
-        double upper = top;
-
-        while (upper > bottom) {
-          const auto lower = std::max(bottom, upper - config.verticalStep);
-          const Vec3 start { x, y, upper };
-          const Vec3 end { x, y, lower };
-          ++result.scannedIntervals;
-          const auto startContents = queries.pointContents(world.id, hull, start);
-          const auto endContents = queries.pointContents(world.id, hull, end);
-          // Trace even when both endpoints are empty: a thin solid interval can lie between them.
-          if (startContents != collision::kContentsSolid) {
-            const auto hit = queries.traceSegment(world.id, hull, start, end);
-
-            if (hit.impactPlane) {
-              if (endContents != collision::kContentsSolid) {
-                ++result.thinIntervalHits;
-              }
-              const auto normal = hit.impactPlane->normal;
-              const bool slope = normal.z < 0.9999;
-              result.slopeImpacts += slope;
-
-              if (normal.z < config.minimumUpNormal) {
-                ++result.rejectedImpacts;
-              } else {
-                const double estimateZ = hit.endPosition.z - offset(hull, normal);
-                const double footprintOffset = 16.0 * (std::abs(normal.x) + std::abs(normal.y)) / normal.z;
-                const double tolerance = config.surfaceHeightTolerance + footprintOffset;
-
-                if (!std::isfinite(estimateZ) || !std::isfinite(tolerance)) {
-                  ++result.rejectedInvalidHeight;
-                } else {
-                  const Vec3 lifted { x, y, hit.endPosition.z + config.clearanceLift };
-
-                  if (queries.pointContents(world.id, hull, lifted) == collision::kContentsSolid) {
-                    ++result.rejectedOwnSolid;
-                  } else {
-                    // Start at the clip contact's free side so slope support can be found below it.
-                    const Vec3 pointStart { x, y, hit.endPosition.z + config.clearanceLift };
-                    const Vec3 pointEnd { x, y, estimateZ - tolerance - config.clearanceLift };
-                    const auto pointTrace = queries.traceSegment(world.id, 0, pointStart, pointEnd);
-
-                    if (pointTrace.startSolid) {
-                      ++result.rejectedPointStartSolid;
-                      ++result.rejectedUnverifiedPointHull;
-                    } else if (!pointTrace.impactPlane) {
-                      ++result.rejectedMissingPointImpact;
-                      ++result.rejectedUnverifiedPointHull;
-                    } else if (pointTrace.impactPlane->normal.z < config.minimumUpNormal) {
-                      ++result.rejectedPointNormal;
-                      ++result.rejectedUnverifiedPointHull;
-                    } else if (std::abs(pointTrace.endPosition.z - estimateZ) > tolerance) {
-                      ++result.rejectedSurfaceMismatch;
-                      ++result.rejectedUnverifiedPointHull;
-                    } else {
-                      // Hull 0 provides the physical contact height and plane normal.
-                      const auto physical = pointTrace.endPosition;
-                      const auto pointNormal = pointTrace.impactPlane->normal;
-                      const double standingZ = physical.z + offset(1, pointNormal) + config.clearanceLift;
-                      const double crouchingZ = physical.z + offset(3, pointNormal) + config.clearanceLift;
-
-                      if (!finite(physical) || !std::isfinite(standingZ) || !std::isfinite(crouchingZ)) {
-                        ++result.rejectedInvalidHeight;
-                      } else if (physical.z < world.mins.z || physical.z > world.maxs.z) {
-                        ++result.rejectedOutsideWorld;
-                      } else if (renderAvailable && (physical.z < renderMinZ || physical.z > renderMaxZ)) {
-                        ++result.rejectedOutsideRender;
-                      } else {
-                        const bool standingFree = queries.canOccupy(
-                          world.id, collision::PlayerStance::Standing, { x, y, standingZ });
-                        const bool crouchingFree = queries.canOccupy(
-                          world.id, collision::PlayerStance::Crouching, { x, y, crouchingZ });
-
-                        if (!standingFree && !crouchingFree) {
-                          ++result.rejectedNoClearance;
-                        } else {
-                          ++result.floorHits;
-                          result.acceptedSlopeContacts += slope;
-                          result.correctedPointContacts +=
-                            std::abs(physical.z - estimateZ) > config.mergeHeightTolerance;
-                          const auto match = std::find_if(local.begin(), local.end(), [&](const Candidate &candidate) {
-                            return std::abs(candidate.position.z - physical.z) <= config.mergeHeightTolerance;
-                          });
-
-                          if (match != local.end()) {
-                            match->hullMask |= static_cast<std::uint32_t>(1u << hull);
-                            match->standingFree |= standingFree;
-                            match->crouchingFree |= crouchingFree;
-                            ++result.mergedContacts;
-                          } else {
-                            local.push_back({
-                              column,
-                              row,
-                              static_cast<std::uint32_t>(1u << hull),
-                              physical,
-                              pointNormal,
-                              standingFree,
-                              crouchingFree
-                            });
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-          upper = lower;
-        }
-      }
-
-      if (!local.empty()) {
-        ++result.columnsWithCandidates;
-      }
-      if (local.size() > 1) {
-        ++result.multiLayerColumns;
-      }
-      result.maximumLayers = std::max(result.maximumLayers, local.size());
-      std::sort(local.begin(), local.end(), [](const Candidate &a, const Candidate &b) {
-        return a.position.z > b.position.z;
-      });
-
-      for (const auto &candidate : local) {
-        result.candidates.push_back(candidate);
-      }
+      scanColumn(context, result, x, y, column, row);
     }
   }
 
   return result;
+}
+
+std::vector<Candidate> sampleLocations(
+  const MapModel &map,
+  const std::vector<Vec3> &locations,
+  Config config
+) {
+  if (!std::isfinite(config.verticalStep) || config.verticalStep <= 0 ||
+      !std::isfinite(config.minimumUpNormal) || config.minimumUpNormal <= 0 || config.minimumUpNormal > 1 ||
+      !std::isfinite(config.mergeHeightTolerance) || config.mergeHeightTolerance < 0 ||
+      !std::isfinite(config.clearanceLift) || config.clearanceLift <= 0 ||
+      !std::isfinite(config.surfaceHeightTolerance) || config.surfaceHeightTolerance < 0 ||
+      config.maximumVerticalSteps == 0 || config.maximumSamples == 0 ||
+      locations.size() > config.maximumColumns || locations.size() > config.maximumSamples) {
+    throw std::invalid_argument("invalid local heightfield sampling budget or configuration");
+  }
+  collision::CollisionQueries queries(map);
+  const auto &world = map.partition->models.front();
+  const double top = world.maxs.z + config.verticalStep;
+  const double bottom = world.mins.z - config.verticalStep;
+
+  if (!finite(world.mins) || !finite(world.maxs) || !std::isfinite(top) || !std::isfinite(bottom) ||
+      top <= bottom || count(top - bottom, config.verticalStep) > config.maximumVerticalSteps) {
+    throw std::invalid_argument("invalid local heightfield world bounds");
+  }
+  bool renderAvailable = false;
+  double renderMinZ = std::numeric_limits<double>::infinity();
+  double renderMaxZ = -std::numeric_limits<double>::infinity();
+
+  for (const auto &mesh : map.meshes) {
+    if (mesh.id != world.id) {
+      continue;
+    }
+
+    for (const auto &vertex : mesh.vertices) {
+      renderAvailable = true;
+      renderMinZ = std::min(renderMinZ, vertex.z);
+      renderMaxZ = std::max(renderMaxZ, vertex.z);
+    }
+  }
+  const ScanContext context {
+    .queries = queries,
+    .world = world,
+    .config = config,
+    .top = top,
+    .bottom = bottom,
+    .renderAvailable = renderAvailable,
+    .renderMinZ = renderMinZ,
+    .renderMaxZ = renderMaxZ
+  };
+  Result result {};
+  const auto intervals = count(top - bottom, config.verticalStep);
+
+  if (!locations.empty() && intervals > config.maximumSamples / locations.size()) {
+    throw std::invalid_argument("local heightfield sampling budget exceeded");
+  }
+
+  for (std::size_t i = 0; i < locations.size(); ++i) {
+    const auto point = locations[i];
+
+    if (!finite(point) || point.x < world.mins.x || point.x > world.maxs.x ||
+        point.y < world.mins.y || point.y > world.maxs.y) {
+      throw std::invalid_argument("local heightfield XY position outside world bounds");
+    }
+    scanColumn(context, result, point.x, point.y, i, 0);
+  }
+
+  return result.candidates;
 }
 
 std::string toJson(const Result &result) {

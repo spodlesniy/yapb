@@ -14,11 +14,16 @@ struct CandidateConfig {
   double spawnPlanarRadius { 256.0 };
   double spawnVerticalTolerance { 96.0 };
   std::size_t maximumCandidates { 100000 };
+  double refinementStep { 32.0 };
+  std::size_t maximumRefinementLocations { 256 };
 };
 
 struct Candidate {
   std::size_t id {};
   std::size_t heightfieldIndex {};
+  bool refined {};
+  ObjectId sourceSpawnId {};
+  std::size_t sampleIndex {};
   std::size_t column {};
   std::size_t row {};
   Vec3 position {};
@@ -36,6 +41,9 @@ struct SpawnCoverage {
   double nearestPlanarDistance { -1.0 };
   double nearestVerticalDistance { -1.0 };
   std::optional<std::size_t> coveredCandidateId {};
+  std::optional<std::size_t> covered64 {};
+  std::optional<std::size_t> covered128 {};
+  std::optional<std::size_t> covered256 {};
 };
 
 struct CandidateReport {
@@ -54,12 +62,25 @@ struct CandidateReport {
   std::size_t spawnCount {};
   std::size_t spawnsWithinPlanarRadius {};
   std::size_t coveredSpawns {};
+  std::size_t covered64 {};
+  std::size_t covered128 {};
+  std::size_t covered256 {};
+  std::size_t refinedSpawns {};
+  std::size_t refinementLocations {};
+  std::size_t refinementCandidates {};
   std::vector<Candidate> candidates;
   std::vector<SpawnCoverage> spawns;
 };
 
 // Deterministic provisional nodes; spatial proximity is not reachability.
 CandidateReport generateCandidates(
+  const MapModel &map,
+  const heightfield::Result &heightfield,
+  CandidateConfig config = {}
+);
+
+// Build once, then sample bounded local XY positions only for uncovered spawns.
+CandidateReport generateAdaptiveCandidates(
   const MapModel &map,
   const heightfield::Result &heightfield,
   CandidateConfig config = {}

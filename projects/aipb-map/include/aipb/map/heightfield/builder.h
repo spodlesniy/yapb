@@ -62,6 +62,14 @@ struct Result {
   std::vector<Candidate> candidates;
 };
 
+// Evaluate bounded, explicit XY locations with exactly the same collision filters as build().
+// Returned candidates use column as the input location index and row 0.
+std::vector<Candidate> sampleLocations(
+  const MapModel &map,
+  const std::vector<Vec3> &locations,
+  Config config = {}
+);
+
 // Provisional world-space floor surfaces; no navigation links or physics equivalence.
 Result build(
   const MapModel &map,

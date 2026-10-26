@@ -28,3 +28,13 @@ The JSON report uses format `aipb-navigation-candidates` and schema v0.1.0 and i
 Existing reports are never overwritten; no graph edges, `.aipbnav` exports or other source artifacts are produced.
 Synthetic unit tests and CLI smoke tests cover provenance, stance counts, stacked levels, height-separated spawns, deterministic output, invalid input and preservation of the input artifact.
 Before graph construction, compare reports from all 25 real maps and inspect weak spawn coverage and sparse surfaces separately.
+
+## D209.2 — Adaptive spawn coverage
+
+The navigation-candidates diagnostic schema advances to 0.2.0 and preserves all original coarse candidates and stable one-based IDs.
+For spawn entities without a point inside the configured XY/Z coverage window, the algorithm attempts bounded local XY probes at a 32-unit step using the existing heightfield collision checks.
+The default budget is at most 256 additional XY locations per map; both the original heightfield budget and candidate limit remain enforced.
+Extra accepted candidates are appended with `refined=true`, `source_spawn_id` and deterministic `sample_index`; their `heightfield_index` is null.
+Coarse candidates retain their original `heightfield_index`, `refined=false` and null refinement provenance.
+The separate `covered_64`, `covered_128` and `covered_256` counts use the same 96-unit vertical threshold; per-spawn fields contain matched candidate IDs or null.
+These proximity counts are not proof of connectivity or engine-side reachability.

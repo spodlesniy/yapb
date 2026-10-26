@@ -334,7 +334,7 @@ int navigationCandidatesCommand(
   }
   const auto artifact = aipb::map::io::loadMap(input);
   const auto heightfield = aipb::map::heightfield::build(artifact.model, artifact.sha256);
-  const auto report = aipb::map::navigation::generateCandidates(artifact.model, heightfield);
+  const auto report = aipb::map::navigation::generateAdaptiveCandidates(artifact.model, heightfield);
   const auto json = aipb::map::navigation::candidatesJson(report);
   std::ofstream stream(output, std::ios::binary);
 

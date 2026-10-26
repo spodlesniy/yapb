@@ -69,7 +69,8 @@ void testCandidates() {
   const auto json = candidatesJson(report);
   check(json == candidatesJson(generateCandidates(map, heightfield, config)),
         "non-deterministic candidate JSON");
-  check(json.find("\"schema_version\":\"0.1.0\"") != std::string::npos, "report version incorrect");
+  check(json.find("\"schema_version\":\"0.2.0\"") != std::string::npos, "report version incorrect");
+  check(report.covered64 == 2 && report.covered128 == 2 && report.covered256 == 2, "radius coverage");
   heightfield.candidates[0].standingFree = false;
   heightfield.candidates[0].crouchingFree = false;
 

@@ -18,7 +18,7 @@ string(JSON format GET "${json}" format)
 string(JSON version GET "${json}" schema_version)
 string(JSON count GET "${json}" candidate_count)
 string(JSON length LENGTH "${json}" candidates)
-if(NOT format STREQUAL "aipb-navigation-candidates" OR NOT version STREQUAL "0.1.0" OR
+if(NOT format STREQUAL "aipb-navigation-candidates" OR NOT version STREQUAL "0.2.0" OR
    NOT count EQUAL length)
     message(FATAL_ERROR "Invalid navigation candidates report")
 endif()
