@@ -2432,3 +2432,9 @@ Treat `Pressure` (bit 4), `Touch` (bit 2), `Instant Crowbar` (bit 256), missing 
 Parse `spawnflags` as a bitmask, not as mutually exclusive enum values.
 Keep conditional candidate provenance explicit with `support_condition=until_trigger`; advance navigation candidate diagnostics to 0.3.2 and annotate preliminary connectivity source schema.
 Do not claim runtime obstacle removal when the C4 trigger fires; that requires future dynamic collision state integration.
+
+## D210.1.1 — Correct conditional provenance regression-test literal
+
+D210.1 GCC/Clang builds rejected a malformed C++ escaped string literal in the new `support_condition` assertion.
+Use a C++ raw string literal for this diagnostic JSON substring, preserving the runtime brush classification, reports and schema.
+Require successful fresh GCC, Clang and MSVC CTest before accepting D210.1.

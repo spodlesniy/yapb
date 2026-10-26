@@ -115,7 +115,7 @@ void testStaticBrush() {
   const auto trigger = generateStaticBrushCandidates(map, heightfield);
   check(trigger.staticBrushCandidates > 0 && trigger.candidates.front().conditionalSupport,
         "trigger-only breakable must be conditional support");
-  check(candidatesJson(trigger).find("\\"support_condition\\":\\"until_trigger\\"") != std::string::npos,
+  check(candidatesJson(trigger).find(R"("support_condition":"until_trigger")") != std::string::npos,
         "conditional support serialization missing");
 
   for (const char *flags : { "0", "2", "4", "256", "3", "257", "invalid" }) {
