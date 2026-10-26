@@ -74,7 +74,7 @@ void help() {
             << "  aipb-map --help | --version\n"
             << "  aipb-map import --format bsp --input <map.bsp> --output <map.aipbmap> [--log-file <log.txt>]\n"
             << "  aipb-map inspect --input <map.aipbmap> [--output <report.json>] [--log-file <log.txt>]\n"
-            << "  aipb-map validate-collision --input <map.aipbmap> --output <report.json>\n";
+            << "  aipb-map validate-collision --input <map.aipbmap> --output <report.json> [--log-file <log.txt>]\n";
 }
 
 int importCommand(
@@ -159,28 +159,78 @@ int validationCommand(
   int argc,
   char *argv[]
 ) {
-  if (argc != 6 || std::string_view { argv[2] } != "--input" ||
-      std::string_view { argv[4] } != "--output") {
-    throw std::invalid_argument("validate-collision requires --input <map.aipbmap> --output <report.json>");
+  if (argc != 6 && argc != 8) {
+    throw std::invalid_argument("validate-collision requires --input, --output and optional --log-file");
   }
-  const std::filesystem::path input(argv[3]);
-  const std::filesystem::path output(argv[5]);
+  std::filesystem::path input;
+  std::filesystem::path output;
+  std::filesystem::path logPath;
+  bool seenInput = false;
+  bool seenOutput = false;
+  bool seenLog = false;
 
-  if (input.empty() || output.empty()) {
-    throw std::invalid_argument("validate-collision paths cannot be empty");
+  for (int i = 2; i < argc; i += 2) {
+    const std::string_view key(argv[i]);
+
+    if (key == "--input" && !seenInput) {
+      input = argv[i + 1];
+      seenInput = true;
+    } else if (key == "--output" && !seenOutput) {
+      output = argv[i + 1];
+      seenOutput = true;
+    } else if (key == "--log-file" && !seenLog) {
+      logPath = argv[i + 1];
+      seenLog = true;
+    } else {
+      throw std::invalid_argument("duplicate or unrecognized validate-collision option: " + std::string(key));
+    }
   }
-  const auto artifact = aipb::map::io::loadMap(input);
-  const auto relative = std::filesystem::weakly_canonical(output).lexically_relative(std::filesystem::weakly_canonical(input));
 
-  if (!relative.empty() && *relative.begin() != "..") {
-    throw std::invalid_argument("validation report must be outside the map artifact directory");
+  if (!seenInput || !seenOutput || input.empty() || output.empty() || (seenLog && logPath.empty())) {
+    throw std::invalid_argument("validate-collision requires nonempty --input, --output and --log-file paths");
+  }
+  const auto artifactPath = std::filesystem::weakly_canonical(input);
+  const auto insideArtifact = [&](const std::filesystem::path &path) {
+    const auto relative = std::filesystem::weakly_canonical(path).lexically_relative(artifactPath);
+
+    return !relative.empty() && *relative.begin() != "..";
+  };
+
+  if (insideArtifact(output) || (seenLog && insideArtifact(logPath))) {
+    throw std::invalid_argument("collision validation output and log must be outside the map artifact directory");
   }
 
   if (std::filesystem::exists(output)) {
     throw std::runtime_error("validation report already exists: " + output.string());
   }
+  openLog(logPath);
+  log("INFO", "Collision validation started: " + input.string());
+  log("INFO", "Validation report path: " + output.string(), false);
+  const auto artifact = aipb::map::io::loadMap(input);
+  log("INFO", "Source SHA-256: " + artifact.model.sourceSha256, false);
+  log("INFO", "Artifact SHA-256: " + artifact.sha256, false);
   const auto report = aipb::map::collision::validateQueries(artifact.model, artifact.sha256);
   const auto json = aipb::map::collision::validationJson(report);
+  log("DEBUG", "Collision validation report JSON: " + json, false);
+
+  for (const auto &sample : report.samples) {
+    log("DEBUG", std::string(sample.world ? "World" : "Brush") + " hull " + std::to_string(sample.hull) +
+                     ": models=" + std::to_string(sample.models) + ", points=" + std::to_string(sample.points) +
+                     ", solid=" + std::to_string(sample.solid) + ", empty=" + std::to_string(sample.empty) +
+                     ", other=" + std::to_string(sample.other) +
+                     ", stationary_traces=" + std::to_string(sample.stationaryTraces) +
+                     ", segment_traces=" + std::to_string(sample.segmentTraces) +
+                     ", clear_segments=" + std::to_string(sample.clearSegments) +
+                     ", solid_starts=" + std::to_string(sample.solidStarts) +
+                     ", impacts=" + std::to_string(sample.impacts), false);
+  }
+
+  for (const auto &example : report.examples) {
+    log("WARN", "Collision validation violation: " + example, false);
+  }
+  log("INFO", "Collision validation summary: models=" + std::to_string(report.modelCount) +
+                  ", spawn origins=" + std::to_string(report.sampledSpawnOrigins) +
+                  ", violations=" + std::to_string(report.violations), false);
   std::ofstream stream(output, std::ios::binary);
 
   if (!stream || !stream.write(json.data(), static_cast<std::streamsize>(json.size()))) {
@@ -191,7 +241,14 @@ int validationCommand(
   std::cout << "Collision validation: " << report.mapName << ", models=" << report.modelCount
             << ", spawn origins=" << report.sampledSpawnOrigins << ", violations=" << report.violations << '\n';
 
-  return report.violations == 0 ? 0 : 1;
+  if (report.violations != 0) {
+    log("WARN", "Collision validation completed with violations", false);
+
+    return 1;
+  }
+  log("INFO", "Collision validation completed successfully", false);
+
+  return 0;
 }
 
 int inspectCommand(

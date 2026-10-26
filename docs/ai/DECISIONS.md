@@ -2293,3 +2293,12 @@ This is internal consistency evidence only; comparing behavior with GoldSrc and 
 Explicitly initialize each `ValidationReport` field in the D207.1 designated aggregate initializer.
 The D207.1 GCC and Clang CI builds failed on `-Werror=missing-field-initializers` in `src/collision/validation.cpp` before executing CTest.
 Preserve all validation logic and data formats, keep warnings as errors, and verify the correction through automatic Map Tool CI.
+
+## D207.1.2 — Log collision validation and include it in bulk imports
+
+Extend the existing `validate-collision` CLI with optional `--log-file` using the established append-only timestamped logger, without changing its JSON report schema or collision queries.
+Record input and report paths, source and artifact digests, per-hull world/brush statistics, bounded violation examples, summary and completion status.
+Reject duplicate or unknown options, empty paths and log paths inside the source artifact; retain operation without a log file.
+Add collision validation after successful import and inspect in `projects/aipb-map/tools/import_all_bsp.bat`, writing sibling `collision-validation.json` and `collision-validation.log` files.
+Report `[OK]` only if all three operations succeed; preserve existing skip behavior for already processed map directories.
+Cover CLI logging, argument ordering, error handling and report immutability in CTest; do not alter `.aipbmap` v0.3.0 or YaPB runtime.

@@ -32,3 +32,12 @@ Generate the map artifacts through the ordinary `aipb-map import` command.
 For each map run `aipb-map validate-collision --input <map.aipbmap> --output <map-collision-validation.json>`.
 Keep the generated JSON files and source/artifact SHA-256 fingerprints for comparing the 25 standard maps.
 Run CMake/CTest on GCC, Clang and MSVC before interpreting gameplay collision results.
+
+## D207.1.2 — Optional log file and bulk driver
+
+`validate-collision` accepts optional `--log-file <path>` in any order after the subcommand alongside required `--input` and `--output`.
+The append-only timestamped log contains the validation start, input and report paths, source/artifact SHA-256, full validation JSON, world/brush hull counts, bounded violation examples, summary and final success or violation status.
+The console remains concise and `collision-validation.json` remains deterministic and independent of the log.
+Log and JSON report paths must be outside the input artifact; duplicate options and empty paths are rejected.
+The Windows `tools/import_all_bsp.bat` script runs `validate-collision` only after successful `inspect`, producing `collision-validation.json` and `collision-validation.log` per map.
+Existing result directories are still skipped, so users need new output directories for a fresh end-to-end run.

@@ -35,7 +35,14 @@ for /r "%MAPS%" %%F in (*.bsp) do (
             if errorlevel 1 (
                 echo [ERROR] Inspect failed: %%~nxF
             ) else (
-                echo [OK] %%~nxF
+                echo [VALIDATE COLLISION] %%~nxF
+                "%CLI%" validate-collision --input "%RESULTS%\%%~nF\%%~nF.aipbmap" --output "%RESULTS%\%%~nF\collision-validation.json" --log-file "%RESULTS%\%%~nF\collision-validation.log"
+
+                if errorlevel 1 (
+                    echo [ERROR] Collision validation failed: %%~nxF
+                ) else (
+                    echo [OK] %%~nxF
+                )
             )
         )
     )
