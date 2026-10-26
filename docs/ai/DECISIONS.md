@@ -2408,3 +2408,9 @@ A spawn-refinement candidate uses `support_kind=spawn_refinement`, a non-null sp
 A coarse world candidate retains its source heightfield index and grid coordinates; no brush sample or entity is invented.
 Preserve the original ID of every surviving world/refinement candidate after static brush filtering, and append new static brush IDs above the original maximum to avoid aliasing removed IDs.
 Resolve per-spawn references by candidate ID, not vector offset, and update diagnostics schema to v0.3.1 without modifying `.aipbmap` or generating graph edges.
+
+## D209.3.2 — Align navigation unit-test schema expectation
+
+Automatic GCC and Clang CTest exposed an outdated navigation-candidates unit-test expectation of schema v0.3.0 after D209.3.1 upgraded JSON diagnostics to v0.3.1.
+Update the fixture assertion to v0.3.1 while leaving runtime candidate generation and ID semantics unchanged.
+Check strict GCC, Clang and MSVC CTest again.
