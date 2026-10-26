@@ -9,6 +9,8 @@
 
 namespace aipb::map::navigation {
 
+enum class TraversalKind { Walk, Jump, CrouchJump };
+
 struct ConnectivityConfig {
   double maximumPlanarDistance { 192.0 };
   double maximumStepUp { 18.0 };
@@ -20,6 +22,14 @@ struct ConnectivityConfig {
   std::size_t maximumOutgoingEdges { 8 };
   std::size_t maximumDirectedChecks { 1000000 };
   std::size_t maximumEdges { 150000 };
+  double maximumJumpDistance { 160.0 };
+  double maximumJumpRise { 44.0 };
+  double maximumCrouchJumpRise { 62.0 };
+  double jumpArcHeight { 56.0 };
+  double crouchJumpArcHeight { 64.0 };
+  std::size_t maximumJumpNeighborTrials { 24 };
+  std::size_t maximumJumpEdgesPerCandidate { 4 };
+  std::size_t maximumJumpChecks { 150000 };
 };
 
 struct ProvisionalEdge {
@@ -29,12 +39,15 @@ struct ProvisionalEdge {
   double planarDistance {};
   double heightChange {};
   collision::PlayerStance stance { collision::PlayerStance::Standing };
+  TraversalKind traversal { TraversalKind::Walk };
+  bool conditionalSupport {};
 };
 
 struct ConnectivityReport {
   std::string mapName;
   std::string sourceSha256;
   std::string artifactSha256;
+  std::string candidatesSha256;
   ConnectivityConfig config {};
   std::size_t candidateCount {};
   std::size_t testedDirections {};
@@ -44,6 +57,13 @@ struct ConnectivityReport {
   std::size_t rejectedGround {};
   std::size_t standingEdges {};
   std::size_t crouchingEdges {};
+  std::size_t jumpEdges {};
+  std::size_t crouchJumpEdges {};
+  std::size_t jumpTrials {};
+  std::size_t rejectedJumpCollision {};
+  std::size_t rejectedJumpLanding {};
+  std::size_t conditionalEdges {};
+  std::size_t conditionalIslands {};
   std::size_t weakComponents {};
   std::size_t largestComponent {};
   std::size_t isolatedCandidates {};
@@ -55,6 +75,13 @@ ConnectivityReport buildConnectivity(
   const MapModel &map,
   const CandidateReport &candidates,
   ConnectivityConfig config = {}
+);
+
+// Adds bounded candidate-to-candidate jump hypotheses and recomputes component diagnostics.
+void appendJumpTransitions(
+  const MapModel &map,
+  const CandidateReport &candidates,
+  ConnectivityReport &report
 );
 
 std::string connectivityJson(const ConnectivityReport &report);

@@ -95,7 +95,7 @@ void testConnectivity() {
           "candidate input modified");
   const auto json = connectivityJson(result);
   require(json == connectivityJson(buildConnectivity(map, candidates)), "non-deterministic connectivity JSON");
-  require(json.find("\"schema_version\":\"0.1.0\"") != std::string::npos, "wrong schema");
+  require(json.find("\"schema_version\":\"0.2.0\"") != std::string::npos, "wrong schema");
 
   candidates.candidates[1].standingFree = false;
   candidates.candidates[1].crouchingFree = false;
@@ -107,10 +107,68 @@ void testConnectivity() {
   }
 }
 
+
+void testJumpTransitions(
+  double height,
+  TraversalKind expected
+) {
+  auto map = fixture();
+  auto &p = *map.partition;
+  p.planes.push_back({ { 1, 0, 0 }, 80, 0 });
+  p.planes.push_back({ { 0, 0, 1 }, height, 2 });
+  p.planes.push_back({ { 1, 0, 0 }, 64, 0 });
+  p.planes.push_back({ { 0, 0, 1 }, height + 36, 2 });
+  p.planes.push_back({ { 1, 0, 0 }, 64, 0 });
+  p.planes.push_back({ { 0, 0, 1 }, height + 18, 2 });
+  p.renderNodes.push_back({ 3, 2, -1 });
+  p.renderNodes.push_back({ 4, -1, -2 });
+  p.clipNodes.push_back({ 5, 3, -1 });
+  p.clipNodes.push_back({ 6, -1, -2 });
+  p.clipNodes.push_back({ 7, 5, -1 });
+  p.clipNodes.push_back({ 8, -1, -2 });
+  p.models.push_back({
+    .id = 2,
+    .mins = { 80, 0, -10 },
+    .maxs = { 160, 128, height },
+    .origin = {},
+    .headNodes = { 1, 2, 2, 4 }
+  });
+  MapEntity brush;
+  brush.id = 2;
+  brush.type = "func_wall";
+  brush.partitionModelId = 2;
+  map.entities.push_back(brush);
+  validate(map);
+
+  CandidateReport candidates;
+  candidates.mapName = map.name;
+  candidates.sourceSha256 = map.sourceSha256;
+  candidates.artifactSha256 = std::string(64, 'b');
+  candidates.candidates = {
+    makeCandidate(11, { 32, 32, 0 }),
+    makeCandidate(19, { 128, 32, height })
+  };
+  candidates.candidates[1].supportModelId = 2;
+  candidates.candidates[1].supportEntityId = 2;
+  const auto report = buildConnectivity(map, candidates);
+  require(report.edges.size() == 1, "expected one directed jump");
+  require(report.edges[0].from == 11 && report.edges[0].to == 19, "jump direction incorrect");
+  require(report.edges[0].traversal == expected, "incorrect jump variant");
+  require(report.jumpEdges + report.crouchJumpEdges == 1, "jump counters incorrect");
+  require(report.weakComponents == 1 && report.isolatedCandidates == 0, "jump did not connect islands");
+  require(report.candidatesSha256.size() == 64, "missing candidate fingerprint");
+  const auto json = connectivityJson(report);
+  require(json.find(expected == TraversalKind::Jump ? "\"traversal\":\"jump\"" :
+                   "\"traversal\":\"crouch_jump\"") != std::string::npos,
+          "jump kind omitted from JSON");
+}
+
 } // namespace
 
 int main() {
   testConnectivity();
+  testJumpTransitions(32.0, TraversalKind::Jump);
+  testJumpTransitions(52.0, TraversalKind::CrouchJump);
 
   return 0;
 }

@@ -40,3 +40,13 @@ The candidate builder and connectivity checker share the same func_breakable spa
 All breakables are initial collision obstacles; trigger-only models can supply conditional support until a trigger destroys them.
 Player-breakable and pressure-sensitive models are never considered reliable intermediate support.
 This static snapshot can become outdated during a round; collision state will need an explicit runtime version in a later step.
+
+## D210.2 — Jump and crouch-jump hypotheses
+
+The preliminary connectivity report advances to v0.2.0, adding `traversal=walk|jump|crouch_jump`, `conditional_support`, jump rejection counters and a `candidates_sha256` of the canonical versioned Navigation Candidates JSON.
+Directed jump edges are generated only for height increases above the normal 18-unit step limit, within 160 XY units, with separate maximum rises of 44 for ordinary jump and 62 for crouch-jump.
+The airborne sweep uses 12 bounded hull-traced arc segments; crouch-jump changes from standing hull 1 to crouching hull 3 during the middle portion then returns to standing for landing.
+Each landing must have upward-facing hull support beneath the candidate from world or nonmutable static brush; player-breakable brushes do not provide reliable support.
+The arc parameters are conservative engineering hypotheses, not verified GoldSrc movement constants or a claim that ducking increases maximum ballistic apex.
+Jump edges can bridge previously weakly disconnected pieces; component and isolated-candidate metrics are recomputed for all accepted edges and conditional-source components are counted separately.
+No ladders, long falls, ledge grabs, moving platforms, air acceleration, friction or round-time destruction are simulated yet.

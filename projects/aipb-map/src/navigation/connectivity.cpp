@@ -1,4 +1,5 @@
 #include <aipb/map/navigation/connectivity.h>
+#include <aipb/map/hash.h>
 
 #include "json.h"
 #include "brush_policy.h"
@@ -137,7 +138,14 @@ ConnectivityReport buildConnectivity(
       !finite(config.groundTolerance) || config.groundTolerance <= 0 ||
       !finite(config.clearanceLift) || config.clearanceLift <= 0 ||
       config.maximumNeighborTrials == 0 || config.maximumOutgoingEdges == 0 ||
-      config.maximumDirectedChecks == 0 || config.maximumEdges == 0) {
+      config.maximumDirectedChecks == 0 || config.maximumEdges == 0 ||
+      !finite(config.maximumJumpDistance) || config.maximumJumpDistance <= config.minimumPlanarDistance ||
+      !finite(config.maximumJumpRise) || config.maximumJumpRise <= config.maximumStepUp ||
+      !finite(config.maximumCrouchJumpRise) || config.maximumCrouchJumpRise <= config.maximumJumpRise ||
+      !finite(config.jumpArcHeight) || config.jumpArcHeight <= 0 ||
+      !finite(config.crouchJumpArcHeight) || config.crouchJumpArcHeight <= 0 ||
+      config.maximumJumpNeighborTrials == 0 || config.maximumJumpEdgesPerCandidate == 0 ||
+      config.maximumJumpChecks == 0) {
     throw std::invalid_argument("invalid connectivity configuration");
   }
 
@@ -149,6 +157,7 @@ ConnectivityReport buildConnectivity(
   report.mapName = candidates.mapName;
   report.sourceSha256 = candidates.sourceSha256;
   report.artifactSha256 = candidates.artifactSha256;
+  report.candidatesSha256 = sha256Hex(candidatesJson(candidates));
   report.config = config;
   report.candidateCount = candidates.candidates.size();
   collision::CollisionQueries queries(map);
@@ -276,7 +285,17 @@ ConnectivityReport buildConnectivity(
           continue;
         }
         const auto stance = hull == 1 ? collision::PlayerStance::Standing : collision::PlayerStance::Crouching;
-        report.edges.push_back({ report.edges.size() + 1, from.id, to.id, planar, rise, stance });
+        report.edges.push_back({
+          .id = report.edges.size() + 1,
+          .from = from.id,
+          .to = to.id,
+          .planarDistance = planar,
+          .heightChange = rise,
+          .stance = stance,
+          .traversal = TraversalKind::Walk,
+          .conditionalSupport = from.conditionalSupport || to.conditionalSupport
+        });
+        report.conditionalEdges += from.conditionalSupport || to.conditionalSupport;
         report.standingEdges += hull == 1;
         report.crouchingEdges += hull == 3;
         ++accepted;
@@ -305,6 +324,7 @@ ConnectivityReport buildConnectivity(
     (void)root;
     report.largestComponent = std::max(report.largestComponent, size);
   }
+  appendJumpTransitions(map, candidates, report);
 
   return report;
 }
@@ -320,14 +340,18 @@ std::string connectivityJson(const ConnectivityReport &report) {
       { "to", number(e.to) },
       { "planar_distance", e.planarDistance },
       { "height_change", e.heightChange },
-      { "stance", e.stance == collision::PlayerStance::Standing ? "standing" : "crouching" }
+      { "stance", e.stance == collision::PlayerStance::Standing ? "standing" : "crouching" },
+      { "traversal", e.traversal == TraversalKind::Walk ? "walk" :
+                       e.traversal == TraversalKind::Jump ? "jump" : "crouch_jump" },
+      { "conditional_support", e.conditionalSupport }
     });
   }
 
   return io::writeJson(Json::Object {
     { "format", "aipb-preliminary-connectivity" },
-    { "schema_version", "0.1.0" },
+    { "schema_version", "0.2.0" },
     { "source_candidates_schema", "0.3.2" },
+    { "candidates_sha256", report.candidatesSha256 },
     { "map_name", report.mapName },
     { "source_sha256", report.sourceSha256 },
     { "artifact_sha256", report.artifactSha256 },
@@ -341,7 +365,15 @@ std::string connectivityJson(const ConnectivityReport &report) {
       { "maximum_neighbor_trials", number(report.config.maximumNeighborTrials) },
       { "maximum_outgoing_edges", number(report.config.maximumOutgoingEdges) },
       { "maximum_directed_checks", number(report.config.maximumDirectedChecks) },
-      { "maximum_edges", number(report.config.maximumEdges) }
+      { "maximum_edges", number(report.config.maximumEdges) },
+      { "maximum_jump_distance", report.config.maximumJumpDistance },
+      { "maximum_jump_rise", report.config.maximumJumpRise },
+      { "maximum_crouch_jump_rise", report.config.maximumCrouchJumpRise },
+      { "jump_arc_height", report.config.jumpArcHeight },
+      { "crouch_jump_arc_height", report.config.crouchJumpArcHeight },
+      { "maximum_jump_neighbor_trials", number(report.config.maximumJumpNeighborTrials) },
+      { "maximum_jump_edges_per_candidate", number(report.config.maximumJumpEdgesPerCandidate) },
+      { "maximum_jump_checks", number(report.config.maximumJumpChecks) }
     } },
     { "candidate_count", number(report.candidateCount) },
     { "edge_count", number(report.edges.size()) },
@@ -352,6 +384,13 @@ std::string connectivityJson(const ConnectivityReport &report) {
     { "rejected_ground", number(report.rejectedGround) },
     { "standing_edges", number(report.standingEdges) },
     { "crouching_edges", number(report.crouchingEdges) },
+    { "jump_edges", number(report.jumpEdges) },
+    { "crouch_jump_edges", number(report.crouchJumpEdges) },
+    { "jump_trials", number(report.jumpTrials) },
+    { "rejected_jump_collision", number(report.rejectedJumpCollision) },
+    { "rejected_jump_landing", number(report.rejectedJumpLanding) },
+    { "conditional_edges", number(report.conditionalEdges) },
+    { "conditional_islands", number(report.conditionalIslands) },
     { "weak_components", number(report.weakComponents) },
     { "largest_component", number(report.largestComponent) },
     { "isolated_candidates", number(report.isolatedCandidates) },

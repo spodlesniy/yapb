@@ -203,3 +203,9 @@ The Map Tool now treats `func_breakable` with `spawnflags` bit 1 (Only Trigger) 
 The two navigation stages share the classification, and Navigation Candidates v0.3.2 labels trigger-only support `until_trigger`.
 Existing `.aipbmap` imports remain valid; regenerate both candidate and connectivity JSON reports to use the updated initial collision snapshot.
 Actual round-time removal after a bomb/trigger remains outside this offline model.
+
+## Separate preliminary jump transitions (D210.2)
+
+The `preliminary-connectivity` CLI now emits JSON v0.2.0 with typed `walk`, `jump` and `crouch_jump` edges, candidate source SHA-256 binding and updated weak-component diagnostics.
+Run `preliminary_connectivity_all_bsp.bat` after deleting old connectivity reports; BSP re-import or Navigation Candidates regeneration is unnecessary.
+The 44/62 unit rise limits and arc checks are uncalibrated offline hypotheses, and actual movement and conditional brush disappearance need separate GoldSrc testing.

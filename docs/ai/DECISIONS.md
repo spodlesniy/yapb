@@ -2438,3 +2438,13 @@ Do not claim runtime obstacle removal when the C4 trigger fires; that requires f
 D210.1 GCC/Clang builds rejected a malformed C++ escaped string literal in the new `support_condition` assertion.
 Use a C++ raw string literal for this diagnostic JSON substring, preserving the runtime brush classification, reports and schema.
 Require successful fresh GCC, Clang and MSVC CTest before accepting D210.1.
+
+## D210.2 — Separate ordinary jump and crouch-jump navigation hypotheses
+
+Keep D210 walk edges unchanged and add separately typed directed `jump` and `crouch_jump` edges for nearby upward transitions that exceed the standing step height.
+Distinguish crouch-jump by reduced collision hull during the airborne portion of an explicit static parabolic trial arc, not by assuming extra upward engine velocity.
+Use independent conservative 44/62 unit rise and 56/64 unit clearance arcs for jump and crouch-jump respectively; all figures remain provisional until measured in Counter-Strike 1.6.
+Require an initially standing source, a standable destination, static world/brush collision clearance and supported final landing; never replace the original D210 walk test with a jump.
+Bound candidate-neighbor discovery and the number of jump trials per map; record collision/landing rejections, jump variants, conditional-source edges and recomputed weak connectivity diagnostics.
+Bind each connectivity report to an exact deterministic SHA-256 of the generated versioned Navigation Candidates JSON, so regenerated reports with changed candidate IDs cannot silently be combined.
+Upgrade the separate preliminary-connectivity report to v0.2.0 without changing `.aipbmap`, candidate schema v0.3.2, game runtime or learning behavior.
