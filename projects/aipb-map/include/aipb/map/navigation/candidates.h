@@ -16,6 +16,8 @@ struct CandidateConfig {
   std::size_t maximumCandidates { 100000 };
   double refinementStep { 32.0 };
   std::size_t maximumRefinementLocations { 256 };
+  double staticBrushStep { 64.0 };
+  std::size_t maximumStaticBrushSamples { 4096 };
 };
 
 struct Candidate {
@@ -24,6 +26,8 @@ struct Candidate {
   bool refined {};
   ObjectId sourceSpawnId {};
   std::size_t sampleIndex {};
+  ObjectId supportModelId {};
+  ObjectId supportEntityId {};
   std::size_t column {};
   std::size_t row {};
   Vec3 position {};
@@ -68,6 +72,9 @@ struct CandidateReport {
   std::size_t refinedSpawns {};
   std::size_t refinementLocations {};
   std::size_t refinementCandidates {};
+  std::size_t staticBrushModels {};
+  std::size_t staticBrushSamples {};
+  std::size_t staticBrushCandidates {};
   std::vector<Candidate> candidates;
   std::vector<SpawnCoverage> spawns;
 };
@@ -81,6 +88,13 @@ CandidateReport generateCandidates(
 
 // Build once, then sample bounded local XY positions only for uncovered spawns.
 CandidateReport generateAdaptiveCandidates(
+  const MapModel &map,
+  const heightfield::Result &heightfield,
+  CandidateConfig config = {}
+);
+
+// Add fixed func_wall brush support and combined static clearance to the adaptive report.
+CandidateReport generateStaticBrushCandidates(
   const MapModel &map,
   const heightfield::Result &heightfield,
   CandidateConfig config = {}

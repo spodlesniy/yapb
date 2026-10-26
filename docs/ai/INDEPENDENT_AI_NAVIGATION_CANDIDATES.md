@@ -38,3 +38,13 @@ Extra accepted candidates are appended with `refined=true`, `source_spawn_id` an
 Coarse candidates retain their original `heightfield_index`, `refined=false` and null refinement provenance.
 The separate `covered_64`, `covered_128` and `covered_256` counts use the same 96-unit vertical threshold; per-spawn fields contain matched candidate IDs or null.
 These proximity counts are not proof of connectivity or engine-side reachability.
+
+## D209.3 — Static brush collision support
+
+Navigation candidate JSON advances to 0.3.0 and adds `support_kind`, `support_model_id` and `support_entity_id` provenance, with source model IDs referencing the unchanged `.aipbmap` partition.
+Only `func_wall` is treated as fixed collision support; doors, breakables, rotating movers and triggers are excluded.
+Brush-model coordinates are translated by their associated entity origin, with upward hull 0 and hull 1/3 contact traces and combined world/static-brush clearance.
+Spawn coordinates are sampled first for each supported brush, followed by bounded 64-unit local XY sampling up to 4096 probes per map.
+These extra contacts do not alter the D208 world-only heightfield; the navigation report separately counts static brush models, samples and emitted candidates.
+Existing world candidates are checked against the static brushes for occupied stances and retained only when at least one stance remains free.
+The reported surface support is provisional and does not prove collision equivalence for nontrivial entity transforms or live gameplay movement.

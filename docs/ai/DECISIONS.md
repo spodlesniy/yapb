@@ -2390,3 +2390,12 @@ Type the expected candidate IDs explicitly as `std::size_t` and include `<cstdde
 Do not suppress compiler warnings or alter the navigation-candidate implementation, report format, or original game runtime.
 Validate the correction with automatic GCC, Clang and MSVC x64 CTest; manual Windows x86 local compilation remains the platform-specific acceptance check.
 
+
+## D209.3 — Include fixed func_wall collision in navigation surface support
+
+Read already-imported BSP brush models referenced by static `func_wall` entities while retaining original world-only heightfield output.
+Use entity origin as the world-to-brush translation for unrotated, immovable brushes, and retain static source entity and partition model provenance on emitted candidates.
+Test a bounded set of points above individual brush models and at spawn XY positions, verifying upward-facing point and clip-hull collisions.
+Exclude moving, rotating, breakable, trigger and otherwise changeable brush entities, and reject candidate stances colliding with any enabled fixed brush or world solid.
+Recalculate spawn coverage after merging candidates; emit navigation diagnostic schema v0.3.0 without modifying the map artifact or creating graph edges.
+The support is an offline static approximation and requires explicit in-engine comparison for models with nontrivial origin/transform conventions.

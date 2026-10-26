@@ -48,6 +48,9 @@ Json candidateJson(const Candidate &candidate) {
     { "refined", candidate.refined },
     { "source_spawn_id", candidate.refined ? Json(std::to_string(candidate.sourceSpawnId)) : Json {} },
     { "sample_index", candidate.refined ? count(candidate.sampleIndex) : Json {} },
+    { "support_model_id", candidate.supportModelId ? Json(std::to_string(candidate.supportModelId)) : Json {} },
+    { "support_entity_id", candidate.supportEntityId ? Json(std::to_string(candidate.supportEntityId)) : Json {} },
+    { "support_kind", candidate.supportEntityId ? "static_brush" : "world" },
     { "source_column", count(candidate.column) },
     { "source_row", count(candidate.row) },
     { "position", vectorJson(candidate.position) },
@@ -83,7 +86,9 @@ CandidateReport generateCandidates(
   if (!std::isfinite(config.spawnPlanarRadius) || config.spawnPlanarRadius <= 0 ||
       !std::isfinite(config.spawnVerticalTolerance) || config.spawnVerticalTolerance < 0 ||
       config.maximumCandidates == 0 || !std::isfinite(config.refinementStep) ||
-      config.refinementStep <= 0 || config.maximumRefinementLocations == 0) {
+      config.refinementStep <= 0 || config.maximumRefinementLocations == 0 ||
+      !std::isfinite(config.staticBrushStep) || config.staticBrushStep <= 0 ||
+      config.maximumStaticBrushSamples == 0) {
     throw std::invalid_argument("invalid navigation candidate configuration");
   }
 
@@ -119,6 +124,9 @@ CandidateReport generateCandidates(
     .refinedSpawns = 0,
     .refinementLocations = 0,
     .refinementCandidates = 0,
+    .staticBrushModels = 0,
+    .staticBrushSamples = 0,
+    .staticBrushCandidates = 0,
     .candidates = {},
     .spawns = {}
   };
@@ -148,6 +156,8 @@ CandidateReport generateCandidates(
       .refined = false,
       .sourceSpawnId = 0,
       .sampleIndex = 0,
+      .supportModelId = map.partition ? map.partition->models.front().id : 0,
+      .supportEntityId = 0,
       .column = source.column,
       .row = source.row,
       .position = source.position,
@@ -311,6 +321,8 @@ CandidateReport generateAdaptiveCandidates(
       .refined = true,
       .sourceSpawnId = sourceIds[i],
       .sampleIndex = sampleIds[i],
+      .supportModelId = world.id,
+      .supportEntityId = 0,
       .column = 0,
       .row = 0,
       .position = source.position,
@@ -401,7 +413,7 @@ std::string candidatesJson(const CandidateReport &report) {
 
   return io::writeJson(Json::Object {
     { "format", "aipb-navigation-candidates" },
-    { "schema_version", "0.2.0" },
+    { "schema_version", "0.3.0" },
     { "source_heightfield_schema", "0.3.0" },
     { "map_name", report.mapName },
     { "source_sha256", report.sourceSha256 },
@@ -411,7 +423,9 @@ std::string candidatesJson(const CandidateReport &report) {
         { "spawn_vertical_tolerance", report.config.spawnVerticalTolerance },
         { "maximum_candidates", count(report.config.maximumCandidates) },
         { "refinement_step", report.config.refinementStep },
-        { "maximum_refinement_locations", count(report.config.maximumRefinementLocations) }
+        { "maximum_refinement_locations", count(report.config.maximumRefinementLocations) },
+        { "static_brush_step", report.config.staticBrushStep },
+        { "maximum_static_brush_samples", count(report.config.maximumStaticBrushSamples) }
       } },
     { "grid_columns", count(report.gridColumns) },
     { "grid_rows", count(report.gridRows) },
@@ -431,6 +445,9 @@ std::string candidatesJson(const CandidateReport &report) {
     { "refined_spawns", count(report.refinedSpawns) },
     { "refinement_locations", count(report.refinementLocations) },
     { "refinement_candidates", count(report.refinementCandidates) },
+    { "static_brush_models", count(report.staticBrushModels) },
+    { "static_brush_samples", count(report.staticBrushSamples) },
+    { "static_brush_candidates", count(report.staticBrushCandidates) },
     { "candidates", std::move(candidates) },
     { "spawns", std::move(spawns) }
   }) + "\n";

@@ -180,3 +180,9 @@ No import or previous processing stage is rerun.
 The existing `navigation_candidates_all_bsp.bat` runs adaptive generation using the same CLI command.
 It samples limited additional XY positions only near uncovered spawn origins, preserves provenance and emits `navigation-candidates.json` schema v0.2.0 with 64/128/256-unit coverage metrics.
 Delete the existing `navigation-candidates.json` files before rerunning; no BSP re-import is necessary.
+
+## Fixed brush navigation support (D209.3)
+
+Regenerate `navigation-candidates.json` using `navigation_candidates_all_bsp.bat` to include static `func_wall` supports and per-candidate source model/entity provenance.
+The output diagnostic schema is v0.3.0; `heightfield.json`, source `.aipbmap` and previous processing steps do not need regeneration.
+Doors, breakables and moving brush entities are deliberately excluded from permanent navigation support.
