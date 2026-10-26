@@ -160,3 +160,10 @@ The generator does not create navigation nodes, does not model dynamic BSP submo
 
 D208.3 updates the separate `heightfield.json` diagnostics to v0.3.0 with slope-aware point-hull confirmation, measured physical surface height, stance clearance rejection and per-reason counters.
 Regenerate only the existing `heightfield.json` files using `heightfield_all_bsp.bat` (the script skips files that already exist); re-import is unnecessary.
+
+## Navigation candidates (D209)
+
+Run `aipb-map navigation-candidates --input ./results/de_dust2.aipbmap --output ./results/de_dust2-navigation-candidates.json` to produce a standalone deterministic `aipb-navigation-candidates` v0.1.0 report.
+D209 regenerates the current heightfield from the checksummed artifact, assigns stable one-based candidate IDs and records heightfield source indices, XY cells, normals, hull masks, standing/crouching clearance and slope counts.
+Spawn coverage uses horizontal proximity within 256 units and absolute floor-height difference within 96 units; it does **not** establish walkability or route connectivity.
+No NavModel nodes/edges, `.aipbmap` data, game runtime or neural behavior are modified.

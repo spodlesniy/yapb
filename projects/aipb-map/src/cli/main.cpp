@@ -16,6 +16,7 @@
 #include <aipb/map/heightfield/builder.h>
 #include <aipb/map/importer/bsp_importer.h>
 #include <aipb/map/io/artifact.h>
+#include <aipb/map/navigation/candidates.h>
 #include <aipb/map/version.h>
 
 namespace {
@@ -76,7 +77,8 @@ void help() {
             << "  aipb-map import --format bsp --input <map.bsp> --output <map.aipbmap> [--log-file <log.txt>]\n"
             << "  aipb-map inspect --input <map.aipbmap> [--output <report.json>] [--log-file <log.txt>]\n"
             << "  aipb-map validate-collision --input <map.aipbmap> --output <report.json> [--log-file <log.txt>]\n"
-            << "  aipb-map heightfield --input <map.aipbmap> --output <report.json>\n";
+            << "  aipb-map heightfield --input <map.aipbmap> --output <report.json>\n"
+            << "  aipb-map navigation-candidates --input <map.aipbmap> --output <report.json>\n";
 }
 
 int importCommand(
@@ -307,6 +309,46 @@ int heightfieldCommand(
   return 0;
 }
 
+int navigationCandidatesCommand(
+  int argc,
+  char *argv[]
+) {
+  if (argc != 6 || std::string_view { argv[2] } != "--input" ||
+      std::string_view { argv[4] } != "--output") {
+    throw std::invalid_argument("navigation-candidates requires --input <map.aipbmap> --output <report.json>");
+  }
+  const std::filesystem::path input(argv[3]);
+  const std::filesystem::path output(argv[5]);
+
+  if (input.empty() || output.empty()) {
+    throw std::invalid_argument("navigation-candidates paths must not be empty");
+  }
+  const auto relative = std::filesystem::weakly_canonical(output).lexically_relative(std::filesystem::weakly_canonical(input));
+
+  if (!relative.empty() && *relative.begin() != "..") {
+    throw std::invalid_argument("navigation candidates report must be outside the map artifact");
+  }
+
+  if (std::filesystem::exists(output)) {
+    throw std::runtime_error("navigation candidates report already exists: " + output.string());
+  }
+  const auto artifact = aipb::map::io::loadMap(input);
+  const auto heightfield = aipb::map::heightfield::build(artifact.model, artifact.sha256);
+  const auto report = aipb::map::navigation::generateCandidates(artifact.model, heightfield);
+  const auto json = aipb::map::navigation::candidatesJson(report);
+  std::ofstream stream(output, std::ios::binary);
+
+  if (!stream || !stream.write(json.data(), static_cast<std::streamsize>(json.size()))) {
+    stream.close();
+    std::filesystem::remove(output);
+    throw std::runtime_error("unable to write navigation candidates report: " + output.string());
+  }
+  std::cout << "Navigation candidates: " << report.mapName << ", points=" << report.candidates.size()
+            << ", covered spawns=" << report.coveredSpawns << "/" << report.spawnCount << '\n';
+
+  return 0;
+}
+
 int inspectCommand(
   int argc,
   char *argv[]
@@ -415,6 +457,9 @@ int main(
     }
     if (argc >= 2 && std::string_view { argv[1] } == "heightfield") {
       return heightfieldCommand(argc, argv);
+    }
+    if (argc >= 2 && std::string_view { argv[1] } == "navigation-candidates") {
+      return navigationCandidatesCommand(argc, argv);
     }
     throw std::invalid_argument("unsupported command");
   } catch (const std::exception &error) {

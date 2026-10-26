@@ -2351,3 +2351,12 @@ Validate on synthetic stacked and sloped floors, strict CI and subsequent all-ma
 The D208.3 synthetic slope test incorrectly computed plane expansion distances for GoldSrc hulls using an extra normal-Z factor, so the fixture hulls did not match the intended ±16 XY and ±36/±18 Z dimensions.
 Correct standing plane distance to 38.4 and crouching distance to 24 for a normal of (0.6, 0, 0.8), retaining the independent hull-0 plane at distance zero.
 Keep production D208.3 slope validation unchanged and require fresh automatic CTest success on GCC, Clang and MSVC.
+
+## D209 — Generate provisional navigation candidates with provenance and spawn coverage
+
+Add an independent Navigation Candidates layer over D208.3's validated heightfield result, preserving each candidate's source index, grid coordinates, floor normal, hull mask, and standing/crouching clearance.
+Assign stable sequential IDs without creating NavigationModel edges or mutating map artifacts.
+Record occupied and multi-layer column counts, stance categories and sloped surfaces.
+For each supported player-spawn entity measure the nearest horizontal candidate distance and height separation and separately mark a candidate inside a fixed 256-unit XY and 96-unit Z window.
+Report deterministic JSON with source and artifact hashes; the numbers are geometric proximity indicators, not physical reachability.
+Validate source map identity, candidate metadata and sampling budgets, and cover synthetic spawn height differences, deterministic JSON, report overwrite safeguards and CI.
