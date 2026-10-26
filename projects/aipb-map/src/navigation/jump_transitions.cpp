@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <map>
 #include <numeric>
+#include <set>
 #include <utility>
 #include <vector>
 
@@ -165,6 +166,13 @@ void appendJumpTransitions(
   using Cell = std::pair<std::int64_t, std::int64_t>;
   std::map<Cell, std::vector<std::size_t>> cells;
   const double width = config.maximumJumpDistance;
+  std::set<std::pair<std::size_t, std::size_t>> existingWalk;
+
+  for (const auto &edge : report.edges) {
+    if (edge.traversal == TraversalKind::Walk) {
+      existingWalk.emplace(edge.from, edge.to);
+    }
+  }
 
   for (std::size_t i = 0; i < candidates.candidates.size(); ++i) {
     const auto &p = candidates.candidates[i].position;
@@ -193,7 +201,8 @@ void appendJumpTransitions(
         for (const auto j : cell->second) {
           const auto &to = candidates.candidates[j];
 
-          if (to.id == from.id || (!to.standingFree && !to.crouchingFree)) {
+          if (to.id == from.id || existingWalk.contains({ from.id, to.id }) ||
+              (!to.standingFree && !to.crouchingFree)) {
             continue;
           }
           const double rise = to.position.z - from.position.z;

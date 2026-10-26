@@ -96,7 +96,7 @@ void testConnectivity() {
           "candidate input modified");
   const auto json = connectivityJson(result);
   require(json == connectivityJson(buildConnectivity(map, candidates)), "non-deterministic connectivity JSON");
-  require(json.find("\"schema_version\":\"0.4.0\"") != std::string::npos, "wrong schema");
+  require(json.find("\"schema_version\":\"0.5.0\"") != std::string::npos, "wrong schema");
 
   candidates.candidates[1].standingFree = false;
   candidates.candidates[1].crouchingFree = false;
@@ -170,10 +170,94 @@ void testJumpTransitions(
           "jump kind omitted from JSON");
 }
 
+void testContinuousWalkClimbsGradualSlope() {
+  auto map = fixture();
+  const double ny = std::sqrt(1.0 - 0.2 * 0.2);
+  auto &partition = *map.partition;
+  partition.planes[1] = {
+    .normal = { -0.2, 0.0, ny },
+    .distance = 36.0 * ny,
+    .type = 3
+  };
+  partition.planes[2] = {
+    .normal = { -0.2, 0.0, ny },
+    .distance = 18.0 * ny,
+    .type = 3
+  };
+  validate(map);
+  const double grade = 0.2 / ny;
+
+  CandidateReport candidates;
+  candidates.mapName = map.name;
+  candidates.sourceSha256 = map.sourceSha256;
+  candidates.artifactSha256 = std::string(64, 'b');
+  candidates.candidates = {
+    makeCandidate(1, { 32, 32, grade * 32 }),
+    makeCandidate(2, { 160, 32, grade * 160 })
+  };
+  candidates.candidates[0].floorNormal = { -0.2, 0.0, ny };
+  candidates.candidates[1].floorNormal = { -0.2, 0.0, ny };
+  const auto result = buildConnectivity(map, candidates);
+  require(result.edges.size() == 2, "gentle slope should connect in both directions");
+  require(result.edges[0].traversal == TraversalKind::Walk &&
+          result.edges[1].traversal == TraversalKind::Walk,
+          "gentle slope should not require jumping");
+  require(result.jumpEdges == 0 && result.crouchJumpEdges == 0,
+          "accepted walk direction must not also produce a jump");
+}
+
+void testContinuousWalkRejectsNarrowGap() {
+  auto map = fixture();
+  auto &partition = *map.partition;
+
+  // A 16-unit hole lies between the endpoints and must not be crossed as walk.
+  partition.planes.push_back({
+    .normal = { 1, 0, 0 },
+    .distance = 72,
+    .type = 0
+  });
+  partition.planes.push_back({
+    .normal = { 1, 0, 0 },
+    .distance = 88,
+    .type = 0
+  });
+  const auto original = partition.models[0].headNodes[1];
+  const auto gapCheck = static_cast<std::int32_t>(partition.clipNodes.size());
+  partition.clipNodes.push_back({
+    .planeIndex = 4,
+    .front = original,
+    .back = -1
+  });
+  const auto gapStart = static_cast<std::int32_t>(partition.clipNodes.size());
+  partition.clipNodes.push_back({
+    .planeIndex = 3,
+    .front = gapCheck,
+    .back = original
+  });
+  partition.models[0].headNodes[1] = gapStart;
+  partition.models[0].headNodes[3] = gapStart;
+  validate(map);
+
+  CandidateReport candidates;
+  candidates.mapName = map.name;
+  candidates.sourceSha256 = map.sourceSha256;
+  candidates.artifactSha256 = std::string(64, 'b');
+  candidates.candidates = {
+    makeCandidate(1, { 32, 32, 0 }),
+    makeCandidate(2, { 128, 32, 0 })
+  };
+  const auto result = buildConnectivity(map, candidates);
+  require(result.edges.empty(), "walk may not bridge a floor gap");
+  require(result.rejectedWalkSupport > 0, "floor gap must report missing support");
+  require(result.walkSamples >= 9, "walk must inspect interior floor samples");
+}
+
 } // namespace
 
 int main() {
   testConnectivity();
+  testContinuousWalkRejectsNarrowGap();
+  testContinuousWalkClimbsGradualSlope();
   testJumpTransitions(32.0, TraversalKind::Jump);
   const JumpPhysics profile;
   require(std::abs(jumpImpulse(profile) - std::sqrt(72000.0)) < 0.0001, "jump impulse mismatch");

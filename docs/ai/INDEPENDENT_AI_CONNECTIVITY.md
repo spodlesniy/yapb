@@ -95,3 +95,14 @@ Independent unit tests cover slot bounds, proximity ordering, radius/category fi
 The `.nviz` v1 schema and standalone Map Tool exporter remain unchanged.
 The game DLL loads snapshots using a bounded line/token parser without `std::istream` extraction, retaining strict structural and numeric validation while preserving the existing output on failure.
 The engine-independent parser shares production code with normal AI unit tests; the MSVC x86 `/EHs-c- /WX` game build and actual rendering remain separate verification gates.
+
+## D210.5 — Ground-following walk links
+
+The walk classifier now tests short consecutive player-hull movements, rather than a straight endpoint hull trace and three intermediate floor probes.
+Each 4-unit planar sample probes downward for a valid world or supported-brush floor and repositions the candidate player hull on that floor.
+Reject missing support, steep floor normals, excessive local steps, blocked hull movement and endpoint mismatch; attempt a bounded up-across-down step only when the direct hull sweep fails.
+The 18-unit ascent threshold applies to local steps, not cumulative climbs, so gradual walkable inclines can exceed 18 units overall.
+The sample budget is capped at 64 per direction; these offline checks are conservative approximations and cannot prove physical continuous floor contact between samples.
+The jump classifier suppresses duplicate directed jump edges when a walk was already accepted.
+Connectivity JSON v0.5.0 records walk sample and rejection counters.
+Run fresh preliminary-connectivity reports and regenerate .nviz snapshots to inspect these changed connections in-game.

@@ -58,6 +58,12 @@ struct ConnectivityReport {
   std::size_t rejectedStance {};
   std::size_t rejectedCollision {};
   std::size_t rejectedGround {};
+  std::size_t walkSamples {};
+  std::size_t rejectedWalkCollision {};
+  std::size_t rejectedWalkSupport {};
+  std::size_t rejectedWalkSlope {};
+  std::size_t rejectedWalkStep {};
+  std::size_t rejectedWalkEndpoint {};
   std::size_t standingEdges {};
   std::size_t crouchingEdges {};
   std::size_t jumpEdges {};

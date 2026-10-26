@@ -63,6 +63,7 @@ target_include_directories(aipb_map_navigation_candidates PRIVATE src/io)
 
 add_library(aipb_map_connectivity STATIC
     src/navigation/connectivity.cpp
+    src/navigation/walk_validation.cpp
     src/navigation/jump_transitions.cpp
     src/navigation/jump_physics.cpp
 )

@@ -2510,3 +2510,14 @@ Keep the existing exception-disabled C++17 runtime flags and replace the game DL
 Retain strict map, schema, SHA-256 spelling, counts, ID uniqueness, finite coordinate, stance, traversal, endpoint and terminator checks, and do not modify output on a failed load.
 Compile the same engine-independent parser into the game DLL and AI unit-test target; exercise valid and malformed snapshots with no-exception GCC and Clang builds.
 The on-disk `.nviz` v1 contract and Map Tool exporter remain unchanged; Windows x86 and in-game verification remain pending.
+
+## D210.5 — Bounded ground-following walk validation
+
+Do not reject an ordinary walk merely because the total rise between candidate surfaces exceeds the local 18-unit step threshold.
+Trace the player hull along consecutive horizontal samples with a maximum planar gap of four GoldSrc units and a hard 64-sample budget, and dynamically probe downward for world or supported brush floors at each sample.
+Require an upward-facing floor normal of at least 0.7 and bound each local ascent/descent before testing the swept hull.
+Where direct movement is obstructed, try a bounded up-across-down step maneuver without ignoring static brush collisions.
+Reject missing support, steep slopes, excessive local steps, collision and endpoint mismatch with separate diagnostics; sparse sampling remains an approximation, not a mathematical continuous-support proof.
+Do not add a jump edge where a directed walk edge already exists, even when the total rise is greater than the legacy 18-unit threshold.
+Retain bounded directed neighbor trials, existing provisional jump physics and candidate provenance.
+Connectivity JSON advances to 0.5.0; .nviz v1 remains compatible and must be regenerated to reflect new edges.

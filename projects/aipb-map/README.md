@@ -240,3 +240,10 @@ The runtime now renders the closest 48 allowed candidates in the chosen radius, 
 Nearest-node diagnostics report full position, provenance, stance and outgoing transition count.
 Viewer state is cleared when a client joins or leaves, and the first player slot supports ordinary administrator access.
 The Map Tool `.nviz` version is unchanged; no re-export is needed.
+
+## Ground-following walk connectivity (D210.5)
+
+Walk connections now use bounded short hull steps and intermediate surface support rather than three fixed ground samples and the total endpoint rise limit.
+Connectivity reports use schema v0.5.0 and include walk rejection diagnostics; remove prior `preliminary-connectivity.json` files before regeneration.
+For game visualization, remove stale `*.nviz` snapshots and run `export_navvis_all_bsp.bat` again, then copy the regenerated files to `cstrike/addons/yapb/data/navvis/` and reload the map.
+Existing imports and Navigation Candidates artifacts need no re-import or regeneration.

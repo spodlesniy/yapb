@@ -3,6 +3,7 @@
 
 #include "json.h"
 #include "brush_policy.h"
+#include "walk_validation.h"
 
 #include <algorithm>
 #include <cmath>
@@ -26,79 +27,6 @@ Json number(std::size_t value) {
 
 bool finite(double n) {
   return std::isfinite(n);
-}
-
-Vec3 originFor(const Candidate &candidate, std::size_t hull, double lift) {
-  const auto &n = candidate.floorNormal;
-  const double height = hull == 1 ? 36.0 : 18.0;
-  const double support = 16.0 * (std::abs(n.x) + std::abs(n.y)) / n.z;
-
-  return { candidate.position.x, candidate.position.y, candidate.position.z + height + support + lift };
-}
-
-Vec3 interpolate(Vec3 a, Vec3 b, double t) {
-  return { a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, a.z + (b.z - a.z) * t };
-}
-
-bool clearSegment(
-  const collision::CollisionQueries &queries,
-  ObjectId world,
-  const std::vector<Brush> &brushes,
-  std::size_t hull,
-  Vec3 start,
-  Vec3 end
-) {
-  const auto worldTrace = queries.traceSegment(world, hull, start, end);
-
-  if (worldTrace.startSolid || worldTrace.impactPlane) {
-    return false;
-  }
-
-  for (const auto &brush : brushes) {
-    const Vec3 a { start.x - brush.entity->origin.x, start.y - brush.entity->origin.y, start.z - brush.entity->origin.z };
-    const Vec3 b { end.x - brush.entity->origin.x, end.y - brush.entity->origin.y, end.z - brush.entity->origin.z };
-    const auto hit = queries.traceSegment(brush.model->id, hull, a, b);
-
-    if (hit.startSolid || hit.impactPlane) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-bool supported(
-  const collision::CollisionQueries &queries,
-  ObjectId world,
-  const std::vector<Brush> &brushes,
-  Vec3 origin,
-  std::size_t hull,
-  double floorTolerance
-) {
-  const Vec3 top { origin.x, origin.y, origin.z };
-  const double halfHeight = hull == 1 ? 36.0 : 18.0;
-  const Vec3 bottom { origin.x, origin.y, origin.z - halfHeight - floorTolerance - 1.0 };
-  const auto worldHit = queries.traceSegment(world, hull, top, bottom);
-
-  if (!worldHit.startSolid && worldHit.impactPlane &&
-      worldHit.impactPlane->normal.z >= 0.7 &&
-      worldHit.endPosition.z >= origin.z - halfHeight - floorTolerance - 1.0) {
-    return true;
-  }
-
-  for (const auto &brush : brushes) {
-    if (!detail::suppliesSupport(brush.role)) {
-      continue;
-    }
-    const Vec3 a { top.x - brush.entity->origin.x, top.y - brush.entity->origin.y, top.z - brush.entity->origin.z };
-    const Vec3 b { bottom.x - brush.entity->origin.x, bottom.y - brush.entity->origin.y, bottom.z - brush.entity->origin.z };
-    const auto hit = queries.traceSegment(brush.model->id, hull, a, b);
-
-    if (!hit.startSolid && hit.impactPlane && hit.impactPlane->normal.z >= 0.7) {
-      return true;
-    }
-  }
-  return false;
 }
 
 struct UnionFind {
@@ -238,7 +166,12 @@ ConnectivityReport buildConnectivity(
       const auto &to = candidates.candidates[j];
       const double rise = to.position.z - from.position.z;
 
-      if (rise > config.maximumStepUp || rise < -config.maximumStepDown) {
+      // Bound impossible gradients, but allow a long climb made of local walkable steps.
+      constexpr double kMinimumUpNormal = 0.7;
+      const double maximumGrade = std::sqrt(1.0 / (kMinimumUpNormal * kMinimumUpNormal) - 1.0);
+
+      if (rise > planar * maximumGrade + config.maximumStepUp ||
+          rise < -planar * maximumGrade - config.maximumStepDown) {
         ++report.rejectedHeight;
         continue;
       }
@@ -254,33 +187,36 @@ ConnectivityReport buildConnectivity(
       bool acceptedEdge = false;
 
       for (const auto hull : { std::size_t { 1 }, std::size_t { 3 } }) {
-        if (hull == 1 && !standing) {
+        if ((hull == 1 && !standing) || (hull == 3 && !crouching)) {
           continue;
         }
+        const auto walk = detail::validateWalk(queries, world, brushes, from, to, hull, config);
+        report.walkSamples += walk.samples;
 
-        if (hull == 3 && !crouching) {
-          continue;
-        }
-        const auto a = originFor(from, hull, config.clearanceLift);
-        const auto b = originFor(to, hull, config.clearanceLift);
+        if (!walk.passed()) {
+          collisionRejected |= walk.failure == detail::WalkFailure::Collision;
+          groundRejected |= walk.failure != detail::WalkFailure::Collision;
 
-        if (!clearSegment(queries, world, brushes, hull, a, b)) {
-          collisionRejected = true;
-          continue;
-        }
-        bool grounded = true;
-
-        for (const double t : { 0.25, 0.5, 0.75 }) {
-          const auto middle = interpolate(a, b, t);
-
-          if (!supported(queries, world, brushes, middle, hull, config.groundTolerance)) {
-            grounded = false;
+          switch (walk.failure) {
+          case detail::WalkFailure::Collision:
+            ++report.rejectedWalkCollision;
+            break;
+          case detail::WalkFailure::Support:
+            ++report.rejectedWalkSupport;
+            break;
+          case detail::WalkFailure::Slope:
+            ++report.rejectedWalkSlope;
+            break;
+          case detail::WalkFailure::Step:
+            ++report.rejectedWalkStep;
+            break;
+          case detail::WalkFailure::Endpoint:
+            ++report.rejectedWalkEndpoint;
+            break;
+          case detail::WalkFailure::None:
             break;
           }
-        }
 
-        if (!grounded) {
-          groundRejected = true;
           continue;
         }
         const auto stance = hull == 1 ? collision::PlayerStance::Standing : collision::PlayerStance::Crouching;
@@ -354,7 +290,7 @@ std::string connectivityJson(const ConnectivityReport &report) {
 
   return io::writeJson(Json::Object {
     { "format", "aipb-preliminary-connectivity" },
-    { "schema_version", "0.4.0" },
+    { "schema_version", "0.5.0" },
     { "source_candidates_schema", "0.3.2" },
     { "candidates_sha256", report.candidatesSha256 },
     { "map_name", report.mapName },
@@ -367,6 +303,8 @@ std::string connectivityJson(const ConnectivityReport &report) {
       { "maximum_step_down", report.config.maximumStepDown },
       { "ground_tolerance", report.config.groundTolerance },
       { "clearance_lift", report.config.clearanceLift },
+      { "walk_sample_spacing", 4.0 },
+      { "maximum_walk_samples", 64.0 },
       { "maximum_neighbor_trials", number(report.config.maximumNeighborTrials) },
       { "maximum_outgoing_edges", number(report.config.maximumOutgoingEdges) },
       { "maximum_directed_checks", number(report.config.maximumDirectedChecks) },
@@ -396,6 +334,12 @@ std::string connectivityJson(const ConnectivityReport &report) {
     { "rejected_stance", number(report.rejectedStance) },
     { "rejected_collision", number(report.rejectedCollision) },
     { "rejected_ground", number(report.rejectedGround) },
+    { "walk_samples", number(report.walkSamples) },
+    { "rejected_walk_collision", number(report.rejectedWalkCollision) },
+    { "rejected_walk_support", number(report.rejectedWalkSupport) },
+    { "rejected_walk_slope", number(report.rejectedWalkSlope) },
+    { "rejected_walk_step", number(report.rejectedWalkStep) },
+    { "rejected_walk_endpoint", number(report.rejectedWalkEndpoint) },
     { "standing_edges", number(report.standingEdges) },
     { "crouching_edges", number(report.crouchingEdges) },
     { "jump_edges", number(report.jumpEdges) },
