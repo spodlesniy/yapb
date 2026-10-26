@@ -2345,3 +2345,9 @@ Use the independently recovered point-hull contact height and normal for accepte
 Reject candidates when neither standing nor crouching origin is free, including after hull-contact merging.
 Extend diagnostic schema to heightfield v0.3.0 with slope-contact acceptance, corrected heights, no-clearance and distinct point-hull failure counters; preserve map artifact v0.3.0.
 Validate on synthetic stacked and sloped floors, strict CI and subsequent all-map results before declaring candidate quality sufficient.
+
+## D208.3.1 — Correct synthetic inclined clip-hull support distances
+
+The D208.3 synthetic slope test incorrectly computed plane expansion distances for GoldSrc hulls using an extra normal-Z factor, so the fixture hulls did not match the intended ±16 XY and ±36/±18 Z dimensions.
+Correct standing plane distance to 38.4 and crouching distance to 24 for a normal of (0.6, 0, 0.8), retaining the independent hull-0 plane at distance zero.
+Keep production D208.3 slope validation unchanged and require fresh automatic CTest success on GCC, Clang and MSVC.

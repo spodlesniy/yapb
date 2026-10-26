@@ -98,8 +98,8 @@ void testSlope() {
   // A single inclined solid plane; hull-0 and clip-hull offsets reflect different actor extents.
   partition.planes = {
     { { 0.6, 0, 0.8 }, 0, 3 },
-    { { 0.6, 0, 0.8 }, 45.6, 3 },
-    { { 0.6, 0, 0.8 }, 31.2, 3 }
+    { { 0.6, 0, 0.8 }, 38.4, 3 },
+    { { 0.6, 0, 0.8 }, 24, 3 }
   };
   partition.renderNodes = { { 0, -1, -2 } };
   partition.clipNodes = { { 1, -1, -2 }, { 1, -1, -2 }, { 2, -1, -2 } };
