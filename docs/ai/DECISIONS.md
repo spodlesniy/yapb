@@ -2336,3 +2336,12 @@ Verify physical floor coordinates against BSP world hull 0 and render bounds, ch
 Merge standing and crouching impacts in the same XY cell when the reconstructed surface heights differ by at most a documented tolerance, preserving both hull origin contributions as a mask.
 Provide reproducible reason-counted diagnostics in heightfield JSON v0.2.0 while keeping map artifacts v0.3.0 and NavModel unmodified.
 All criteria are conservative sampling heuristics, not a proof of GoldSrc physics equivalence or traversable navigation edges.
+
+## D208.3 — Correct slope verification and reject blocked surface candidates
+
+Replace the half-unit symmetric point-hull check at a predicted height with a bounded downward hull-0 trace starting above the clip-hull contact and extending beneath the predicted surface.
+Allow a slope-dependent contact-height difference accounting for the horizontal extent of the player hull; retain explicit finite, normal and world/render-bound checks.
+Use the independently recovered point-hull contact height and normal for accepted surfaces, and evaluate standing and crouching clearance using plane-normal-dependent hull support offsets.
+Reject candidates when neither standing nor crouching origin is free, including after hull-contact merging.
+Extend diagnostic schema to heightfield v0.3.0 with slope-contact acceptance, corrected heights, no-clearance and distinct point-hull failure counters; preserve map artifact v0.3.0.
+Validate on synthetic stacked and sloped floors, strict CI and subsequent all-map results before declaring candidate quality sufficient.

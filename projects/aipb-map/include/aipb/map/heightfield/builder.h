@@ -15,6 +15,7 @@ struct Config {
   double minimumUpNormal { 0.7 };
   double mergeHeightTolerance { 1.0 };
   double clearanceLift { 0.5 };
+  double surfaceHeightTolerance { 4.0 };
   std::size_t maximumColumns { 16384 };
   std::size_t maximumVerticalSteps { 512 };
   std::size_t maximumSamples { 4000000 };
@@ -46,6 +47,14 @@ struct Result {
   std::size_t rejectedOutsideRender {};
   std::size_t rejectedOwnSolid {};
   std::size_t rejectedUnverifiedPointHull {};
+  std::size_t rejectedPointStartSolid {};
+  std::size_t rejectedMissingPointImpact {};
+  std::size_t rejectedPointNormal {};
+  std::size_t rejectedSurfaceMismatch {};
+  std::size_t rejectedNoClearance {};
+  std::size_t slopeImpacts {};
+  std::size_t acceptedSlopeContacts {};
+  std::size_t correctedPointContacts {};
   std::size_t mergedContacts {};
   std::size_t columnsWithCandidates {};
   std::size_t multiLayerColumns {};

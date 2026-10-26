@@ -67,6 +67,7 @@ Result build(
       !std::isfinite(config.minimumUpNormal) || config.minimumUpNormal <= 0 || config.minimumUpNormal > 1 ||
       !std::isfinite(config.mergeHeightTolerance) || config.mergeHeightTolerance < 0 ||
       !std::isfinite(config.clearanceLift) || config.clearanceLift <= 0 ||
+      !std::isfinite(config.surfaceHeightTolerance) || config.surfaceHeightTolerance < 0 ||
       config.maximumColumns == 0 || config.maximumVerticalSteps == 0 || config.maximumSamples == 0) {
     throw std::invalid_argument("invalid heightfield configuration");
   }
@@ -107,6 +108,14 @@ Result build(
     .rejectedOutsideRender = 0,
     .rejectedOwnSolid = 0,
     .rejectedUnverifiedPointHull = 0,
+    .rejectedPointStartSolid = 0,
+    .rejectedMissingPointImpact = 0,
+    .rejectedPointNormal = 0,
+    .rejectedSurfaceMismatch = 0,
+    .rejectedNoClearance = 0,
+    .slopeImpacts = 0,
+    .acceptedSlopeContacts = 0,
+    .correctedPointContacts = 0,
     .mergedContacts = 0,
     .columnsWithCandidates = 0,
     .multiLayerColumns = 0,
@@ -158,52 +167,89 @@ Result build(
                 ++result.thinIntervalHits;
               }
               const auto normal = hit.impactPlane->normal;
+              const bool slope = normal.z < 0.9999;
+              result.slopeImpacts += slope;
 
               if (normal.z < config.minimumUpNormal) {
                 ++result.rejectedImpacts;
               } else {
-                const double physicalZ = hit.endPosition.z - offset(hull, normal);
-                const Vec3 physical { x, y, physicalZ };
-                const Vec3 lifted { x, y, hit.endPosition.z + config.clearanceLift };
+                const double estimateZ = hit.endPosition.z - offset(hull, normal);
+                const double footprintOffset = 16.0 * (std::abs(normal.x) + std::abs(normal.y)) / normal.z;
+                const double tolerance = config.surfaceHeightTolerance + footprintOffset;
 
-                if (!finite(physical)) {
+                if (!std::isfinite(estimateZ) || !std::isfinite(tolerance)) {
                   ++result.rejectedInvalidHeight;
-                } else if (physicalZ < world.mins.z || physicalZ > world.maxs.z) {
-                  ++result.rejectedOutsideWorld;
-                } else if (renderAvailable &&
-                           (physicalZ < renderMinZ || physicalZ > renderMaxZ)) {
-                  ++result.rejectedOutsideRender;
-                } else if (queries.pointContents(world.id, hull, lifted) == collision::kContentsSolid) {
-                  ++result.rejectedOwnSolid;
                 } else {
-                  // A point hull query independently checks that the normalized contact borders world solid.
-                  const Vec3 above { x, y, physicalZ + config.clearanceLift };
-                  const Vec3 below { x, y, physicalZ - config.clearanceLift };
-                  const auto pointTrace = queries.traceSegment(world.id, 0, above, below);
+                  const Vec3 lifted { x, y, hit.endPosition.z + config.clearanceLift };
 
-                  if (pointTrace.startSolid || !pointTrace.impactPlane ||
-                      pointTrace.impactPlane->normal.z < config.minimumUpNormal ||
-                      std::abs(pointTrace.endPosition.z - physicalZ) > config.mergeHeightTolerance + config.clearanceLift) {
-                    ++result.rejectedUnverifiedPointHull;
+                  if (queries.pointContents(world.id, hull, lifted) == collision::kContentsSolid) {
+                    ++result.rejectedOwnSolid;
                   } else {
-                    ++result.floorHits;
-                    const auto match = std::find_if(local.begin(), local.end(), [&](const Candidate &candidate) {
-                      return std::abs(candidate.position.z - physicalZ) <= config.mergeHeightTolerance;
-                    });
+                    // Start at the clip contact's free side so slope support can be found below it.
+                    const Vec3 pointStart { x, y, hit.endPosition.z + config.clearanceLift };
+                    const Vec3 pointEnd { x, y, estimateZ - tolerance - config.clearanceLift };
+                    const auto pointTrace = queries.traceSegment(world.id, 0, pointStart, pointEnd);
 
-                    if (match != local.end()) {
-                      match->hullMask |= 1u << hull;
-                      ++result.mergedContacts;
+                    if (pointTrace.startSolid) {
+                      ++result.rejectedPointStartSolid;
+                      ++result.rejectedUnverifiedPointHull;
+                    } else if (!pointTrace.impactPlane) {
+                      ++result.rejectedMissingPointImpact;
+                      ++result.rejectedUnverifiedPointHull;
+                    } else if (pointTrace.impactPlane->normal.z < config.minimumUpNormal) {
+                      ++result.rejectedPointNormal;
+                      ++result.rejectedUnverifiedPointHull;
+                    } else if (std::abs(pointTrace.endPosition.z - estimateZ) > tolerance) {
+                      ++result.rejectedSurfaceMismatch;
+                      ++result.rejectedUnverifiedPointHull;
                     } else {
-                      local.push_back({
-                        column,
-                        row,
-                        static_cast<std::uint32_t>(1u << hull),
-                        physical,
-                        normal,
-                        queries.canOccupy(world.id, collision::PlayerStance::Standing, { x, y, physicalZ + 36.0 + config.clearanceLift }),
-                        queries.canOccupy(world.id, collision::PlayerStance::Crouching, { x, y, physicalZ + 18.0 + config.clearanceLift })
-                      });
+                      // Hull 0 provides the physical contact height and plane normal.
+                      const auto physical = pointTrace.endPosition;
+                      const auto pointNormal = pointTrace.impactPlane->normal;
+                      const double standingZ = physical.z + offset(1, pointNormal) + config.clearanceLift;
+                      const double crouchingZ = physical.z + offset(3, pointNormal) + config.clearanceLift;
+
+                      if (!finite(physical) || !std::isfinite(standingZ) || !std::isfinite(crouchingZ)) {
+                        ++result.rejectedInvalidHeight;
+                      } else if (physical.z < world.mins.z || physical.z > world.maxs.z) {
+                        ++result.rejectedOutsideWorld;
+                      } else if (renderAvailable && (physical.z < renderMinZ || physical.z > renderMaxZ)) {
+                        ++result.rejectedOutsideRender;
+                      } else {
+                        const bool standingFree = queries.canOccupy(
+                          world.id, collision::PlayerStance::Standing, { x, y, standingZ });
+                        const bool crouchingFree = queries.canOccupy(
+                          world.id, collision::PlayerStance::Crouching, { x, y, crouchingZ });
+
+                        if (!standingFree && !crouchingFree) {
+                          ++result.rejectedNoClearance;
+                        } else {
+                          ++result.floorHits;
+                          result.acceptedSlopeContacts += slope;
+                          result.correctedPointContacts +=
+                            std::abs(physical.z - estimateZ) > config.mergeHeightTolerance;
+                          const auto match = std::find_if(local.begin(), local.end(), [&](const Candidate &candidate) {
+                            return std::abs(candidate.position.z - physical.z) <= config.mergeHeightTolerance;
+                          });
+
+                          if (match != local.end()) {
+                            match->hullMask |= static_cast<std::uint32_t>(1u << hull);
+                            match->standingFree |= standingFree;
+                            match->crouchingFree |= crouchingFree;
+                            ++result.mergedContacts;
+                          } else {
+                            local.push_back({
+                              column,
+                              row,
+                              static_cast<std::uint32_t>(1u << hull),
+                              physical,
+                              pointNormal,
+                              standingFree,
+                              crouchingFree
+                            });
+                          }
+                        }
+                      }
                     }
                   }
                 }
@@ -244,7 +290,7 @@ std::string toJson(const Result &result) {
 
   return io::writeJson(Json::Object {
     { "format", "aipb-heightfield-candidates" },
-    { "schema_version", "0.2.0" },
+    { "schema_version", "0.3.0" },
     { "map_name", result.mapName },
     { "source_sha256", result.sourceSha256 },
     { "artifact_sha256", result.artifactSha256 },
@@ -254,6 +300,7 @@ std::string toJson(const Result &result) {
         { "minimum_up_normal", result.config.minimumUpNormal },
         { "merge_height_tolerance", result.config.mergeHeightTolerance },
         { "clearance_lift", result.config.clearanceLift },
+        { "surface_height_tolerance", result.config.surfaceHeightTolerance },
         { "maximum_columns", number(result.config.maximumColumns) },
         { "maximum_vertical_steps", number(result.config.maximumVerticalSteps) },
         { "maximum_samples", number(result.config.maximumSamples) }
@@ -269,6 +316,14 @@ std::string toJson(const Result &result) {
     { "rejected_outside_render", number(result.rejectedOutsideRender) },
     { "rejected_own_solid", number(result.rejectedOwnSolid) },
     { "rejected_unverified_point_hull", number(result.rejectedUnverifiedPointHull) },
+    { "rejected_point_start_solid", number(result.rejectedPointStartSolid) },
+    { "rejected_missing_point_impact", number(result.rejectedMissingPointImpact) },
+    { "rejected_point_normal", number(result.rejectedPointNormal) },
+    { "rejected_surface_mismatch", number(result.rejectedSurfaceMismatch) },
+    { "rejected_no_clearance", number(result.rejectedNoClearance) },
+    { "slope_impacts", number(result.slopeImpacts) },
+    { "accepted_slope_contacts", number(result.acceptedSlopeContacts) },
+    { "corrected_point_contacts", number(result.correctedPointContacts) },
     { "merged_contacts", number(result.mergedContacts) },
     { "columns_with_candidates", number(result.columnsWithCandidates) },
     { "multi_layer_columns", number(result.multiLayerColumns) },

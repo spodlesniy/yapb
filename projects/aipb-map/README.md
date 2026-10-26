@@ -157,3 +157,6 @@ The heightfield CLI currently has no `--log-file` parameter; its standalone scri
 Re-run `heightfield_all_bsp.bat` after removing old `heightfield.json` reports; the source `.aipbmap` artifacts do not require re-import.
 Heightfield diagnostic schema v0.2.0 reports physical floor coordinates, merged standing/crouching `hull_mask`, point-hull support checks, thin-solid detections and rejection reasons.
 The generator does not create navigation nodes, does not model dynamic BSP submodels and has not been validated against engine traces.
+
+D208.3 updates the separate `heightfield.json` diagnostics to v0.3.0 with slope-aware point-hull confirmation, measured physical surface height, stance clearance rejection and per-reason counters.
+Regenerate only the existing `heightfield.json` files using `heightfield_all_bsp.bat` (the script skips files that already exist); re-import is unnecessary.

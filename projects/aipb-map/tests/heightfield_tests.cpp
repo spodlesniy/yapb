@@ -80,8 +80,9 @@ void testStacked() {
         "unexpected rejection");
   const auto json = toJson(result);
   check(json == toJson(build(map, std::string(64, 'b'), config)), "non-deterministic output");
-  check(json.find("\"schema_version\":\"0.2.0\"") != std::string::npos, "incorrect JSON version");
+  check(json.find("\"schema_version\":\"0.3.0\"") != std::string::npos, "incorrect JSON version");
   check(json.find("\"merged_contacts\":2") != std::string::npos, "missing merged contacts");
+  check(result.candidates[0].standingFree || result.candidates[0].crouchingFree, "no clearance");
   config.maximumColumns = 0;
 
   try {
@@ -91,10 +92,40 @@ void testStacked() {
   }
 }
 
+void testSlope() {
+  auto map = fixture();
+  auto &partition = *map.partition;
+  // A single inclined solid plane; hull-0 and clip-hull offsets reflect different actor extents.
+  partition.planes = {
+    { { 0.6, 0, 0.8 }, 0, 3 },
+    { { 0.6, 0, 0.8 }, 45.6, 3 },
+    { { 0.6, 0, 0.8 }, 31.2, 3 }
+  };
+  partition.renderNodes = { { 0, -1, -2 } };
+  partition.clipNodes = { { 1, -1, -2 }, { 1, -1, -2 }, { 2, -1, -2 } };
+  partition.models[0].headNodes = { 0, 0, 0, 2 };
+  partition.models[0].mins = { 0, 0, -64 };
+  partition.models[0].maxs = { 64, 64, 128 };
+  validate(map);
+  Config config;
+  config.cellSize = 64;
+  config.verticalStep = 16;
+  const auto result = build(map, {}, config);
+  check(result.slopeImpacts > 0, "inclined contacts absent");
+  check(result.acceptedSlopeContacts > 0, "inclined contacts rejected");
+  check(!result.candidates.empty(), "no slope candidates");
+
+  for (const auto &candidate : result.candidates) {
+    check(candidate.floorNormal.z >= config.minimumUpNormal, "bad slope normal");
+    check(candidate.standingFree || candidate.crouchingFree, "blocked candidate admitted");
+  }
+}
+
 } // namespace
 
 int main() {
   testStacked();
+  testSlope();
 
   return 0;
 }

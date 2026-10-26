@@ -46,3 +46,12 @@ Coalesce contacts inside each XY cell when surface height difference is ≤1 Gol
 The old `hull` field is replaced with `hull_mask` and `position.z` now denotes the reconstructed physical floor, so clients must consume schema v0.2.0 explicitly.
 Diagnostic counters include raw accepted floor hits, thin interval hits, merged contacts, and rejections by geometry/coordinate quality reason.
 Candidates remain world-only, sampled at the centers of 128-unit XY cells and cannot be considered graph nodes without further reachability checks.
+
+## D208.3 — Slope and surface validation
+
+Heightfield diagnostic JSON v0.3.0 adds `surface_height_tolerance` (default 4 units), `slope_impacts`, `accepted_slope_contacts`, `corrected_point_contacts`, and separately classified point-hull and clearance rejections.
+A point-hull trace starts above the accepted clip contact and continues below the estimated point-contact surface; an allowable height discrepancy includes the hull's 16-unit XY half-extents projected onto the contact slope.
+The point-hull collision provides the final reported surface height and normal.
+Standing/crouching clearance uses the recovered plane orientation and each GoldSrc hull's projected support distance, with a positive lift to avoid boundary ambiguity.
+Candidates with neither available stance are rejected.
+The checks remain conservative static estimates, do not model dynamic brush entities and cannot prove reachability or exact engine collision.
