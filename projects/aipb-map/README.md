@@ -167,3 +167,10 @@ Run `aipb-map navigation-candidates --input ./results/de_dust2.aipbmap --output 
 D209 regenerates the current heightfield from the checksummed artifact, assigns stable one-based candidate IDs and records heightfield source indices, XY cells, normals, hull masks, standing/crouching clearance and slope counts.
 Spawn coverage uses horizontal proximity within 256 units and absolute floor-height difference within 96 units; it does **not** establish walkability or route connectivity.
 No NavModel nodes/edges, `.aipbmap` data, game runtime or neural behavior are modified.
+
+## Bulk navigation candidates (D209.1)
+
+Run `projects/aipb-map/tools/navigation_candidates_all_bsp.bat` after compiling `aipb-map.exe` and importing BSP maps.
+The script scans `build/debug/results/<map>/<map>.aipbmap`, saves `navigation-candidates.json` next to the other per-map reports, skips files that already exist and returns an error if any map fails.
+It does not require an existing `heightfield.json` because the D209 CLI regenerates heightfield candidates from the imported artifact.
+No import or previous processing stage is rerun.

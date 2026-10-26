@@ -2360,3 +2360,10 @@ Record occupied and multi-layer column counts, stance categories and sloped surf
 For each supported player-spawn entity measure the nearest horizontal candidate distance and height separation and separately mark a candidate inside a fixed 256-unit XY and 96-unit Z window.
 Report deterministic JSON with source and artifact hashes; the numbers are geometric proximity indicators, not physical reachability.
 Validate source map identity, candidate metadata and sampling budgets, and cover synthetic spawn height differences, deterministic JSON, report overwrite safeguards and CI.
+
+## D209.1 — Add independent Windows bulk navigation-candidates script
+
+Add `projects/aipb-map/tools/navigation_candidates_all_bsp.bat` matching the independent bulk-processing scripts' directory layout and error conventions.
+Scan saved `.aipbmap` artifacts and write sibling `navigation-candidates.json` reports through the existing `navigation-candidates` CLI command.
+Skip existing reports, reject missing executable/results or absence of artifacts and report individual failures using a nonzero script exit status.
+Do not change native C++ code, map artifacts or previous stage scripts; note that the automatic CMake/CTest workflow does not execute the Windows BAT file.
