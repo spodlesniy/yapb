@@ -151,3 +151,9 @@ The other scripts scan existing imported artifacts under `build/debug/results/<m
 Each script independently skips already-generated output, reports per-map failures and exits nonzero on error.
 Delete an individual report to regenerate only that stage; remove an artifact directory to re-import its BSP.
 The heightfield CLI currently has no `--log-file` parameter; its standalone script uses the JSON report and console status.
+
+## Heightfield candidate quality (D208.2)
+
+Re-run `heightfield_all_bsp.bat` after removing old `heightfield.json` reports; the source `.aipbmap` artifacts do not require re-import.
+Heightfield diagnostic schema v0.2.0 reports physical floor coordinates, merged standing/crouching `hull_mask`, point-hull support checks, thin-solid detections and rejection reasons.
+The generator does not create navigation nodes, does not model dynamic BSP submodels and has not been validated against engine traces.

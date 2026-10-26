@@ -24,19 +24,35 @@ MapModel fixture() {
   map.units = "goldsrc_units";
   map.partition = CollisionPartition {
     .planes = {
-      { { 0, 0, 1 }, 0, 2 },
+      { { 0, 0, 1 }, 64, 2 },
       { { 0, 0, 1 }, 48, 2 },
-      { { 0, 0, 1 }, 64, 2 }
+      { { 0, 0, 1 }, 0, 2 },
+      { { 0, 0, 1 }, 100, 2 },
+      { { 0, 0, 1 }, 84, 2 },
+      { { 0, 0, 1 }, 36, 2 },
+      { { 0, 0, 1 }, 82, 2 },
+      { { 0, 0, 1 }, 66, 2 },
+      { { 0, 0, 1 }, 18, 2 }
     },
-    .renderNodes = {},
-    .clipNodes = {
-      { 2, -1, 1 },
+    .renderNodes = {
+      { 0, -1, 1 },
       { 1, -2, 2 },
-      { 0, -1, -2 }
+      { 2, -1, -2 }
     },
-    .leaves = { { -1 } },
+    .clipNodes = {
+      { 3, -1, 1 },
+      { 4, -2, 2 },
+      { 5, -1, -2 },
+      { 6, -1, 4 },
+      { 7, -2, 5 },
+      { 8, -1, -2 }
+    },
+    .leaves = {
+      { -1 },
+      { -2 }
+    },
     .models = {
-      { 1, { 0, 0, -16 }, { 64, 64, 96 }, {}, { -1, 0, 0, 0 } }
+      { 1, { 0, 0, -16 }, { 64, 64, 160 }, {}, { 0, 0, 0, 3 } }
     }
   };
   validate(map);
@@ -52,17 +68,20 @@ void testStacked() {
   config.verticalStep = 16;
   const auto result = build(map, std::string(64, 'b'), config);
   check(map == snapshot, "heightfield modified map");
-  check(result.columns == 1 && result.rows == 1, "unexpected grid dimensions");
-  check(result.candidates.size() == 4 && result.maximumLayers == 2 &&
-        result.multiLayerColumns == 1, "two separated floors per hull not found");
-  check(result.columnsWithCandidates == 1 && result.floorHits == 4, "incorrect candidate counts");
+  check(result.columns == 1 && result.rows == 1, "incorrect grid");
+  check(result.candidates.size() == 2 && result.maximumLayers == 2 &&
+        result.multiLayerColumns == 1, "two merged floors not found");
+  check(result.floorHits == 4 && result.mergedContacts == 2, "contact merge counts");
   check(result.candidates[0].position.z == 64 && result.candidates[1].position.z == 0,
-        "floor order must be descending");
-  check(result.candidates[2].hull == 3 && result.candidates[3].hull == 3, "crouching layers missing");
+        "normalized floor heights");
+  check(result.candidates[0].hullMask == 10 && result.candidates[1].hullMask == 10,
+        "standing crouching mask");
+  check(result.rejectedOutsideWorld == 0 && result.rejectedUnverifiedPointHull == 0,
+        "unexpected rejection");
   const auto json = toJson(result);
   check(json == toJson(build(map, std::string(64, 'b'), config)), "non-deterministic output");
-  check(json.find("\"schema_version\":\"0.1.0\"") != std::string::npos, "incorrect JSON version");
-  check(json.find("\"multi_layer_columns\":1") != std::string::npos, "missing multi-layer statistic");
+  check(json.find("\"schema_version\":\"0.2.0\"") != std::string::npos, "incorrect JSON version");
+  check(json.find("\"merged_contacts\":2") != std::string::npos, "missing merged contacts");
   config.maximumColumns = 0;
 
   try {

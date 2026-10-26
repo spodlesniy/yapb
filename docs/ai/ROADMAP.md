@@ -63,6 +63,7 @@ D207.1.2 enables opt-in detailed collision-validation logs and integrates valida
 D207.2 adds reproducible short horizontal and vertical spawn-centered traces across hulls 0–3, annotated floor/ceiling hits and standing/crouching differences; GCC/Clang/MSVC CI passed and 25-map diagnostics produced no consistency violations.
 D208 introduces a bounded world-only multi-layer static heightfield candidate sampler using pre-expanded standing/crouching BSP hulls and a deterministic read-only diagnostic JSON output; real-map and engine validation remain pending.
 D208.1 splits the Windows bulk Map Tool workflow into independent import, inspect, collision-validation and heightfield scripts, allowing individual stages to resume without overwriting reports.
+D208.2 normalizes standing/crouching surface contacts into provisional world surface heights, independently checks point-hull support, merges close contacts and records explicit quality rejections and thin-solid detections; 25-map rerun and engine verification remain pending.
 This is instrumentation, not evidence that arbitrary maps have been measured or physically traversed; Windows x86/in-game acceptance is pending.
 Proposed progression: graph evaluation/generator; versioned map knowledge; bot profiles; match context and perception; independent policy; reproducible rewards/learning; opt-in inference and in-game comparisons.
 This parallel track does not change any existing Phase 7 exit criterion.

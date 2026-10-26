@@ -2327,3 +2327,12 @@ Introduce `inspect_all_bsp.bat`, `validate_collision_all_bsp.bat` and `heightfie
 Use the existing sibling report names and log files; the heightfield stage writes `heightfield.json` without inventing unsupported CLI logging options.
 Skip existing artifacts or reports instead of overwriting them; emit errors for missing prerequisites and preserve a nonzero exit status when individual operations fail.
 No changes to C++ collision algorithms, artifact formats or original YaPB runtime are required.
+
+## D208.2 — Validate and merge static heightfield contacts
+
+Normalize the vertical origin of GoldSrc standing and crouching clip-hull collision impacts by accounting for each hull's horizontal and vertical extent relative to its impact plane.
+Trace intervals from the air even when both endpoints are empty to detect thin internal solid bands, and record this discovery separately.
+Verify physical floor coordinates against BSP world hull 0 and render bounds, check a slightly lifted clip-hull sample against SOLID, and reject unsupported or out-of-range candidates rather than treating every hit as navigation-ready.
+Merge standing and crouching impacts in the same XY cell when the reconstructed surface heights differ by at most a documented tolerance, preserving both hull origin contributions as a mask.
+Provide reproducible reason-counted diagnostics in heightfield JSON v0.2.0 while keeping map artifacts v0.3.0 and NavModel unmodified.
+All criteria are conservative sampling heuristics, not a proof of GoldSrc physics equivalence or traversable navigation edges.

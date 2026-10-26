@@ -31,3 +31,18 @@ Run `aipb-map heightfield --input <map.aipbmap> --output <heightfield.json>` wit
 The independent JSON schema is `aipb-heightfield-candidates` v0.1.0 and includes source and artifact digests.
 Synthetic unit tests cover stacked floors, standing/crouching sampling, exact candidate ordering, deterministic JSON and invalid limits.
 The 25 real CS 1.6 maps and engine behavior remain separate acceptance gates.
+
+## D208.2 — Candidate-quality gates
+
+The standalone diagnostic JSON advances to schema v0.2.0; input `.aipbmap` files remain unchanged.
+GoldSrc hulls 1/3 sample expanded solid and report actor-origin contacts, not physical floor heights.
+For an upward-facing plane normal `n`, convert each contact to an estimated world floor height by subtracting `(16(|nx|+|ny|)+height*nz)/nz`, where height is 36 for standing and 18 for crouching.
+The offset corresponds to an axis-aligned ±16 XY GoldSrc player hull and ±height Z, and remains provisional for engine-specific contact tolerances.
+Reject nonfinite or out-of-world floor heights, contacts outside known world render Z extents, and contacts whose lifted origin remains in clip-hull SOLID.
+Perform an independent point-hull-0 short downward trace at the reconstructed surface and require a sufficiently upward-facing impact close to the expected floor height.
+The test is intentionally conservative: false negatives are possible for ramps, BSP boundaries and world geometry absent from render meshes.
+Trace all air-start vertical intervals, even where both endpoint contents are air, to expose thin solid spans that endpoint tests missed.
+Coalesce contacts inside each XY cell when surface height difference is ≤1 GoldSrc unit; each candidate has `hull_mask` bit 1 for hull 1 and bit 3 for hull 3 (combined mask 10).
+The old `hull` field is replaced with `hull_mask` and `position.z` now denotes the reconstructed physical floor, so clients must consume schema v0.2.0 explicitly.
+Diagnostic counters include raw accepted floor hits, thin interval hits, merged contacts, and rejections by geometry/coordinate quality reason.
+Candidates remain world-only, sampled at the centers of 128-unit XY cells and cannot be considered graph nodes without further reachability checks.
