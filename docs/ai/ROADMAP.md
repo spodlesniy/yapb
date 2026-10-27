@@ -317,3 +317,6 @@ Local C++17 GCC/Clang scheduling regressions passed; automatic CI and user-start
 
 D213 adds bounded per-movement GoldSrc trajectory evidence (input, engine-command msec, pre/post movement state and speed), a versioned CSV export and an opt-in in-game replay that validates the starting pose and compares each engine-observed step; the original AI path remains untouched outside probes.
 Replay does not teleport a bot or guarantee deterministic physics; differing starting world/entity state can cause rejection/divergence, and automatic CI plus user-started Windows x86 game acceptance remain pending.
+
+D213.1 adds durable named movement records, exact name-based save/list/load/replay commands, and a map-checked `init` that restores a saved GoldSrc starting position, velocity, view angles and crouch state through the engine's SetOrigin boundary; previous D213 CSV exports are not accepted as v2 named records.
+Replay remains a diagnostic comparison rather than guaranteed deterministic physics; direct in-game Windows x86 validation and automatic CI for D213.1 are pending.

@@ -28,8 +28,13 @@ if(BUILD_TESTING)
     target_link_libraries(aipb_explorer_goldsrc_tests PRIVATE aipb::explorer_goldsrc)
     add_test(NAME aipb_explorer_goldsrc_environment COMMAND aipb_explorer_goldsrc_tests)
 
+    add_executable(aipb_explorer_named_trace_io_tests tests/engine_bridge_trace_io_tests.cpp)
+    add_test(NAME aipb_explorer_named_trace_io COMMAND aipb_explorer_named_trace_io_tests)
+    target_compile_features(aipb_explorer_named_trace_io_tests PRIVATE cxx_std_17)
+    target_include_directories(aipb_explorer_named_trace_io_tests PRIVATE include)
+
     add_executable(aipb_explorer_bridge_trace_tests tests/engine_bridge_trace_tests.cpp)
-    add_test(NAME aipb_explorer_bridge_trace COMMAND aipb_explorer_bridge_trace_tests)
+    add_test(NAME aipb_explorer_bridge_trace COMMAND aipb_explorer_bridge_trace_tests aipb_explorer_named_trace_io_tests)
     target_compile_features(aipb_explorer_bridge_trace_tests PRIVATE cxx_std_17)
     target_include_directories(aipb_explorer_bridge_trace_tests PRIVATE include)
 
@@ -41,7 +46,7 @@ endif()
 
 set(aipb_explorer_targets aipb_explorer_core aipb_explorer_goldsrc)
 if(BUILD_TESTING)
-    list(APPEND aipb_explorer_targets aipb_explorer_contracts_tests aipb_explorer_environment_tests aipb_explorer_goldsrc_tests aipb_explorer_bridge_math_tests aipb_explorer_bridge_trace_tests)
+    list(APPEND aipb_explorer_targets aipb_explorer_contracts_tests aipb_explorer_environment_tests aipb_explorer_goldsrc_tests aipb_explorer_bridge_math_tests aipb_explorer_bridge_trace_tests aipb_explorer_named_trace_io_tests)
 endif()
 foreach(target IN LISTS aipb_explorer_targets)
     if(MSVC)

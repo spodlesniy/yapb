@@ -10,6 +10,8 @@ namespace ai::explore {
 bool begin(int botIndex, const AipbExplorerBridgeCommand &command, int limit, bool milliseconds = false);
 bool beginReplay(int botIndex);
 bool save(const char *filePath);
+bool load(const char *filePath);
+bool init(int botIndex);
 int recordedSteps();
 bool frame(Bot &bot);
 void reset();

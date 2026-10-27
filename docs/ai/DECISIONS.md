@@ -2678,3 +2678,16 @@ Replay exactly the stored inputs and `pfnRunPlayerMove` milliseconds, then compa
 Use 5 world units position, 30 world units/s velocity and 5 degrees orientation as initial diagnostic tolerances, and require matching grounded/crouch flags; tolerance does not establish equivalent physics or path connectivity.
 One in-memory episode and one replay are supported at a time; `yb explore stop`, bot disconnect, death and map shutdown interrupt a session, without changing other bots.
 Verification requires standalone C++17 trace contract tests plus the user's Windows x86 and in-game tests.
+
+## D213.1 — Named, persistent GoldSrc movement traces and explicit initialization
+
+Use admin-only `yb explore save <name>`, `yb explore list`, `yb explore init <name> <bot_index>` and `yb explore replay <name> <bot_index>`.
+Keep all names as 1–48 ASCII characters in `[A-Za-z0-9_-]`, stored exclusively below the YaPB data/explorer directory as `<name>.csv`.
+Never overwrite a named save; reject duplicate names and file errors rather than silently replacing files.
+Store an explicit version 2 metadata record as the first line with map name, starting position, velocity, view yaw/pitch, ground/duck flags and eye-height offset; retain a schema column header and one record per executed step after it.
+Parse all numeric fields and validate command ranges, step order and state continuity before promoting an imported trace to the active record.
+Fail closed for unsupported v1 traces, malformed/oversize files or mismatched maps.
+An explicit init command can move only a live, unfrozen YaPB bot, checking that the correct map is loaded and the destination's engine hull is not in solid before calling GoldSrc `pfnSetOrigin`; restore observed velocity, facing and crouch-related flags.
+Init deliberately changes player world state, unlike replay, and is restricted to admin-authenticated test commands.
+Replay always imports the named trace from disk, then verifies the selected bot is close to the recorded start; use init first when necessary.
+No physical reset can restore external entities, dynamic doors, opponents or GoldSrc's full hidden movement history; replay divergence remains normal under changed world state.

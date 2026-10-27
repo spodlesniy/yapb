@@ -9,6 +9,7 @@
 #include <ai/ai_navvis.h>
 #include <ai/ai_exploration_probe.h>
 #include <aipb/explorer/engine_bridge_math.h>
+#include <aipb/explorer/engine_bridge_trace_io.h>
 
 #include <ctime>
 #include <cmath>
@@ -1325,34 +1326,87 @@ int BotControl::menuNavVis (int item) {
 
 int BotControl::cmdExplore () {
    enum args { root = 0, name, botIndex, forward, strafe, jump, duck, yaw, frames, unit };
-   if (hasArg(botIndex) && arg <StringRef> (botIndex) == "replay" && hasArg(forward) && !hasArg(strafe)) {
-      double value {};
-      const auto str = arg <StringRef> (forward).chars();
-      char *end {};
-      value = std::strtod(str, &end);
-      if (end == str || *end != '\0' || !std::isfinite(value) || std::trunc(value) != value
-         || value < 0 || value >= kGameMaxPlayers) {
-         return BotCommandResult::BadFormat;
-      }
-      if (!ai::explore::beginReplay(static_cast<int>(value))) {
-         msg("AiPB explorer: replay rejected; restore the recorded bot to its initial state.");
-      }
-      return BotCommandResult::Handled;
-   }
-   if (hasArg(botIndex) && arg <StringRef> (botIndex) == "save" && !hasArg(forward)) {
-      const auto directory = buildTrainingDatasetDirectory();
-      if (directory.empty()) {
-         msg("AiPB explorer: cannot prepare dataset directory.");
+   // Named traces are sandboxed to the explorer directory under YaPB data.
+   const auto operation = arg <StringRef>(botIndex);
+   if (operation == "save" || operation == "replay" || operation == "init" || operation == "list") {
+      if (operation == "list") {
+         if (hasArg(forward)) {
+            return BotCommandResult::BadFormat;
+         }
+         const auto directory = strings.joinPath(bstor.getRunningPath(), folders.data, "explorer");
+         if (!plat.fileExists(directory.chars())) {
+            msg("AiPB explorer: no named recordings.");
+            return BotCommandResult::Handled;
+         }
+         FileEnumerator files { strings.joinPath(directory, "*.csv") };
+         int count {};
+         while (files) {
+            const auto filename = files.getMatch();
+            const auto slash = filename.findLastOf(kPathSeparator);
+            const auto basename = filename.substr(slash + 1);
+            if (basename.endsWith(".csv")) {
+               const auto name = basename.substr(0, basename.length() - 4);
+               if (aipb::explorer::bridge::safeName(name.chars())) {
+                  msg("AiPB explorer: %s", name);
+                  ++count;
+               }
+            }
+            files.next();
+         }
+         msg("AiPB explorer: %d recording(s).", count);
          return BotCommandResult::Handled;
       }
-      const auto name = strings.format("explore_%d_%d.csv", static_cast<int>(time(nullptr)),
-         ai::explore::recordedSteps());
-      const auto path = strings.joinPath(directory, name);
-      if (plat.fileExists(path.chars()) || !ai::explore::save(path.chars())) {
-         msg("AiPB explorer: cannot save trajectory (recording not complete or file exists).");
+      if (!hasArg(forward) || (operation == "save" && hasArg(strafe))
+         || (operation != "save" && (!hasArg(strafe) || hasArg(jump)))) {
+         return BotCommandResult::BadFormat;
       }
-      else {
-         msg("AiPB explorer: saved %d steps to %s.", ai::explore::recordedSteps(), path);
+      const auto name = arg <StringRef>(forward);
+      if (!aipb::explorer::bridge::safeName(name.chars())) {
+         msg("AiPB explorer: name must be 1..48 characters [A-Za-z0-9_-].");
+         return BotCommandResult::Handled;
+      }
+      const auto dataPath = strings.joinPath(bstor.getRunningPath(), folders.data);
+      auto directory = strings.joinPath(dataPath, "explorer");
+      if (operation == "save" && !plat.fileExists(dataPath.chars())
+         && !plat.createDirectory(dataPath.chars())) {
+         msg("AiPB explorer: cannot create data directory.");
+         return BotCommandResult::Handled;
+      }
+      if (operation == "save" && !plat.fileExists(directory.chars())
+         && !plat.createDirectory(directory.chars())) {
+         msg("AiPB explorer: cannot create recording directory.");
+         return BotCommandResult::Handled;
+      }
+      const auto path = strings.joinPath(directory, strings.format("%s.csv", name));
+      if (operation == "save") {
+         if (plat.fileExists(path.chars())) {
+            msg("AiPB explorer: recording '%s' already exists.", name);
+         }
+         else if (!ai::explore::save(path.chars())) {
+            msg("AiPB explorer: unable to save completed recording.");
+         }
+         else {
+            msg("AiPB explorer: saved '%s' (%d steps).", name, ai::explore::recordedSteps());
+         }
+         return BotCommandResult::Handled;
+      }
+      const auto indexStr = arg <StringRef>(strafe).chars();
+      char *end {};
+      const auto index = std::strtol(indexStr, &end, 10);
+      if (end == indexStr || *end != '\0' || index < 0 || index >= kGameMaxPlayers) {
+         return BotCommandResult::BadFormat;
+      }
+      if (!ai::explore::load(path.chars())) {
+         msg("AiPB explorer: cannot load '%s' (not found or invalid recording).", name);
+         return BotCommandResult::Handled;
+      }
+      if (operation == "init") {
+         if (!ai::explore::init(static_cast<int>(index))) {
+            msg("AiPB explorer: init rejected (busy, wrong map, unavailable bot, blocked position).");
+         }
+      }
+      else if (!ai::explore::beginReplay(static_cast<int>(index))) {
+         msg("AiPB explorer: replay rejected (start mismatch or unavailable bot); use init first.");
       }
       return BotCommandResult::Handled;
    }
@@ -2525,7 +2579,7 @@ BotControl::BotControl () {
       },
       {
          "explore",
-         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save | replay <bot> | stop",
+         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save <name> | list | init <name> <bot> | replay <name> <bot> | stop",
          "Runs an admin-only bounded GoldSrc movement probe.",
          &BotControl::cmdExplore
       },

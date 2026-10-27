@@ -2,9 +2,11 @@
 #include <ai/ai_exploration_probe.h>
 #include <aipb/explorer/engine_bridge_math.h>
 #include <aipb/explorer/engine_bridge_trace.h>
+#include <aipb/explorer/engine_bridge_trace_io.h>
 #include <crlib/files.h>
 
 #include <cstdio>
+#include <cstring>
 
 #include <cmath>
 #include <cstdint>
@@ -25,6 +27,7 @@ using aipb::explorer::bridge::TraceBuffer;
 using aipb::explorer::bridge::TraceSample;
 using aipb::explorer::bridge::compareStates;
 static TraceBuffer trace {};
+static aipb::explorer::bridge::TraceMetadata metadata {};
 
 Session session {};
 
@@ -79,17 +82,25 @@ bool begin(int botIndex, const AipbExplorerBridgeCommand &command, int limit, bo
    session.lastTime = game.time();
    trace.clear();
    trace.botIndex = botIndex;
+   metadata = {};
+   const auto map = game.getMapName();
+   std::snprintf(metadata.map, sizeof(metadata.map), "%s", map.chars());
+   metadata.initial = observe(*bot);
+   metadata.viewZ = bot->pev->view_ofs.z;
    game.print("AiPB explorer: started bot #%d for %d %s", botIndex, limit,
       milliseconds ? "simulated ms" : "frames");
    return true;
 }
 
 bool beginReplay(int botIndex) {
-   if (active() || !trace.completed || trace.count == 0 || botIndex != trace.botIndex) {
+   if (active() || !trace.completed || trace.count == 0) {
       return false;
    }
    auto *bot = bots.findBotByIndex(botIndex);
    if (!bot || !game.isAliveEntity(bot->ent()) || bot->pev->maxspeed < 10.0f) {
+      return false;
+   }
+   if (std::strcmp(metadata.map, game.getMapName().chars()) != 0) {
       return false;
    }
    const auto current = observe(*bot);
@@ -112,30 +123,117 @@ int recordedSteps() {
 }
 
 bool save(const char *filePath) {
-   if (active() || !trace.completed || trace.count == 0 || filePath == nullptr || !*filePath) {
+   if (active() || !trace.completed || trace.count == 0 || !filePath || !*filePath
+      || !aipb::explorer::bridge::validMetadata(metadata)) {
       return false;
    }
-   cr::File file { cr::StringRef(filePath), "wt" };
-   if (!file || !file.puts("version,bot,step,msec,forward,strafe,yaw_delta,jump,duck,max_speed,old_buttons,bx,by,bz,bvx,bvy,bvz,byaw,bground,bduck,ax,ay,az,avx,avy,avz,ayaw,aground,aduck\n")) {
+   // Use exclusive creation so an existing named trace can never be overwritten.
+   std::FILE *file = std::fopen(filePath, "wx");
+   if (!file) {
       return false;
    }
    char buffer[1024] {};
-   for (int i = 0; i < trace.count; ++i) {
-      const auto &t = trace.samples[i];
-      const int n = std::snprintf(buffer, sizeof(buffer),
-         "1,%d,%d,%u,%.9g,%.9g,%.9g,%u,%u,%.9g,%d,%.9g,%.9g,%.9g,%.9g,%.9g,%.9g,%.9g,%u,%u,%.9g,%.9g,%.9g,%.9g,%.9g,%.9g,%.9g,%u,%u\n",
-         trace.botIndex, i, static_cast<unsigned>(t.msec),
-         t.command.forward, t.command.strafe, t.command.yaw_delta,
-         static_cast<unsigned>(t.command.jump), static_cast<unsigned>(t.command.duck),
-         t.maxSpeed, t.oldButtons, t.before.x, t.before.y, t.before.z,
-         t.before.vx, t.before.vy, t.before.vz, t.before.yaw,
-         static_cast<unsigned>(t.before.on_ground), static_cast<unsigned>(t.before.crouching),
-         t.after.x, t.after.y, t.after.z, t.after.vx, t.after.vy, t.after.vz,
-         t.after.yaw, static_cast<unsigned>(t.after.on_ground), static_cast<unsigned>(t.after.crouching));
-      if (n < 0 || static_cast<size_t>(n) >= sizeof(buffer) || !file.puts(buffer)) {
-         return false;
+   bool ok = aipb::explorer::bridge::formatMetadata(buffer, sizeof(buffer), metadata)
+      && std::fputs(buffer, file) >= 0
+      && std::fputs(aipb::explorer::bridge::kTraceCsvColumns, file) >= 0;
+   for (int n = 0; ok && n < trace.count; ++n) {
+      ok = aipb::explorer::bridge::formatSample(buffer, sizeof(buffer), n, trace.samples[n])
+         && std::fputs(buffer, file) >= 0;
+   }
+   if (std::fclose(file) != 0) {
+      ok = false;
+   }
+   if (!ok) {
+      std::remove(filePath);
+   }
+   return ok;
+}
+
+bool load(const char *filePath) {
+   if (active() || !filePath || !*filePath) {
+      return false;
+   }
+   std::FILE *file = std::fopen(filePath, "rt");
+   if (!file) {
+      return false;
+   }
+   static TraceBuffer staged {};
+   staged.clear();
+   aipb::explorer::bridge::TraceMetadata loaded {};
+   char line[1024] {};
+   bool ok = std::fgets(line, sizeof(line), file)
+      && aipb::explorer::bridge::parseMetadata(line, loaded)
+      && std::fgets(line, sizeof(line), file)
+      && std::strcmp(line, aipb::explorer::bridge::kTraceCsvColumns) == 0;
+   if (ok) {
+      while (std::fgets(line, sizeof(line), file)) {
+         TraceSample sample {};
+         if (!aipb::explorer::bridge::parseSample(line, staged.count, sample)
+            || (staged.count == 0 && !aipb::explorer::bridge::compareStates(loaded.initial, sample.before).within(0.000001, 0.000001, 0.000001f))
+            || !staged.append(sample)) {
+            ok = false;
+            break;
+         }
+      }
+      if (std::ferror(file) || staged.count == 0) {
+         ok = false;
       }
    }
+   std::fclose(file);
+   if (!ok) {
+      return false;
+   }
+   staged.completed = true;
+   trace = staged;
+   metadata = loaded;
+   return true;
+}
+
+bool init(int botIndex) {
+   if (active() || !trace.completed || !trace.count || !aipb::explorer::bridge::validMetadata(metadata)
+      || std::strcmp(metadata.map, game.getMapName().chars()) != 0) {
+      return false;
+   }
+   auto *bot = bots.findBotByIndex(botIndex);
+   if (!bot || !game.isAliveEntity(bot->ent()) || bot->pev->maxspeed < 10.0f) {
+      return false;
+   }
+   const auto &s = metadata.initial;
+   const Vector target(static_cast<float>(s.x), static_cast<float>(s.y), static_cast<float>(s.z));
+   TraceResult hit {};
+   game.testHull(target, target, TraceIgnore::None, s.crouching ? head_hull : human_hull,
+      bot->ent(), &hit);
+   if (hit.fStartSolid || hit.fAllSolid) {
+      game.print("AiPB explorer: init destination obstructed.");
+      return false;
+   }
+   engfuncs.pfnSetOrigin(bot->ent(), target);
+   engfuncs.pfnSetSize(bot->ent(), s.crouching ? VEC_DUCK_HULL_MIN : VEC_HULL_MIN,
+      s.crouching ? VEC_DUCK_HULL_MAX : VEC_HULL_MAX);
+   bot->pev->velocity = Vector(static_cast<float>(s.vx), static_cast<float>(s.vy), static_cast<float>(s.vz));
+   bot->pev->basevelocity.clear();
+   bot->pev->v_angle = Vector(s.pitch, s.yaw, 0.0f);
+   bot->pev->angles = Vector(-s.pitch / 3.0f, s.yaw, 0.0f);
+   bot->pev->view_ofs.z = metadata.viewZ;
+   bot->pev->button = 0;
+   bot->pev->oldbuttons = 0;
+   bot->pev->impulse = 0;
+   bot->pev->bInDuck = 0;
+   bot->pev->flDuckTime = 0.0f;
+   if (s.crouching) {
+      bot->pev->flags |= FL_DUCKING;
+   }
+   else {
+      bot->pev->flags &= ~FL_DUCKING;
+   }
+   if (s.on_ground) {
+      bot->pev->flags |= FL_ONGROUND;
+   }
+   else {
+      bot->pev->flags &= ~FL_ONGROUND;
+   }
+   game.print("AiPB explorer: initialized bot #%d at (%.1f %.1f %.1f), yaw %.1f",
+      botIndex, s.x, s.y, s.z, s.yaw);
    return true;
 }
 

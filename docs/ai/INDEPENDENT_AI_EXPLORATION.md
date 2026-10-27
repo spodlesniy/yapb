@@ -129,3 +129,31 @@ yb explore stop
 Replay normally rejects the example unless the bot is first returned close to the recorded initial state; this is intentional, because D213 does not implement arbitrary physical resets.
 CSV includes a schema version, bot index, step index, frame duration, command axes/buttons, prior and resulting position, velocity, yaw and stance/ground flags.
 Unlike the C++20 fixed-step contract, this diagnostic engine trace stores actual variable GoldSrc command times and must not be misrepresented as fixed-step simulation.
+
+## D213.1 — Named recordings and explicit engine initialization
+
+`yb explore save <save_name>` exports the last completed bounded trace without replacing an existing file.
+`yb explore list` enumerates available recordings in YaPB data/explorer.
+`yb explore init <save_name> <bot_index>` loads the named trace from disk and, after verifying map and hull clearance, explicitly places the selected live bot at its saved initial position and restores velocity, yaw/pitch, view offset and crouch-related state.
+`yb explore replay <save_name> <bot_index>` loads the trace and replays it when the current bot state matches the saved start closely enough.
+The optional bot index is the zero-based YaPB player-slot index reported by `yb list`, not a sequence number among bots.
+
+Names are restricted to 1–48 ASCII letters, numbers, underscore or hyphen to prevent directory traversal.
+File format v2 begins with `aipb-explorer-v2,<map>,<x>,<y>,<z>,<vx>,<vy>,<vz>,<yaw>,<pitch>,<ground>,<duck>,<view_z>`, followed by a schema column line and the ordered movement samples.
+Old D213 CSV files are not silently migrated because they lack complete initialization metadata.
+
+Example:
+
+```text
+yb_freeze_bots 1
+yb explore 1 1 0 0 0 0 60
+yb explore save walk_test
+yb explore list
+yb explore init walk_test 1
+yb explore replay walk_test 1
+```
+
+A duplicate name is rejected without overwriting the file.
+Initiating from a different map, a dead bot or an obstructed destination is rejected.
+While init restores observable movement state, it does not restore the full GoldSrc environment, entities, doors, timers or hidden player-movement state; resulting replay differences must be reported rather than hidden.
+The test requires the user's Windows x86 build and in-game verification.
