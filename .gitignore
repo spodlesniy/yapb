@@ -18,7 +18,6 @@ build/
 **/CMakeFiles/
 **/CTestTestfile.cmake
 **/Makefile
-**/*.cbp
 **/CMakeScripts
 **/compile_commands.json
 
@@ -27,3 +26,5 @@ build/
 # Track standalone CMake presets despite the legacy global JSON ignore.
 !/projects/aipb-map/CMakePresets.json
 /projects/aipb-map/CMakeUserPresets.json
+!/projects/aipb-explorer/CMakePresets.json
+/projects/aipb-explorer/CMakeUserPresets.json

@@ -87,6 +87,7 @@ D210.7.1 corrects the boundary regression fixture to exercise non-thin exposed w
 D210.8 adds a bounded supported standing-hull runup probe, an optimistic acceleration-from-rest speed bound and per-jump approach rejection diagnostics, plus optional speed fields in backward-compatible .nviz edge records; engine timing and real-map acceptance remain pending.
 This is instrumentation, not evidence that arbitrary maps have been measured or physically traversed; Windows x86/in-game acceptance is pending.
 Proposed progression: graph evaluation/generator; versioned map knowledge; bot profiles; match context and perception; independent policy; reproducible rewards/learning; opt-in inference and in-game comparisons.
+D211 establishes the independent `projects/aipb-explorer/` C++20 contracts, bounded movement-transition episodes and standalone GCC/Clang/MSVC test workflow without physics, BSP integration, or YaPB behavior changes; local GCC/Clang CTest passed, while published CI and engine validation remain pending.
 This parallel track does not change any existing Phase 7 exit criterion.
 
 
@@ -298,3 +299,5 @@ D210.12.1 fixes the D210.12 Python fixture re-creation failure and temporarily s
 D210.13 adds read-only, de_dust2-scoped candidate-level connectivity diagnostics from existing JSON reports, locating unreachable, condition-dependent, isolated, and one-way sink components with XYZ coordinates and stable candidate IDs; game validation remains pending.
 
 D210.13.1 fixes the component-row regression assertion that matched duplicate numeric cells in Markdown; CI after publication remains the acceptance gate.
+
+D211 adds an independent exploration core with movement state/command/result validation, a fixed-tick execution abstraction and bounded in-memory transition recording; this foundation is not a functioning map explorer or physical movement validator.

@@ -1,0 +1,55 @@
+name: aipb-explorer
+
+on:
+  push:
+    branches:
+      - master
+      - dev
+      - 'ai/**'
+    paths:
+      - 'projects/aipb-explorer/**'
+      - '.github/workflows/aipb-explorer.yml'
+  pull_request:
+    paths:
+      - 'projects/aipb-explorer/**'
+      - '.github/workflows/aipb-explorer.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    name: Explorer Linux (${{ matrix.compiler }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [g++, clang++]
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: Configure
+        env:
+          CXX: ${{ matrix.compiler }}
+        run: cmake -S projects/aipb-explorer -B build/aipb-explorer -G Ninja -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON
+      - name: Build
+        run: cmake --build build/aipb-explorer --parallel
+      - name: Test
+        timeout-minutes: 10
+        run: ctest --test-dir build/aipb-explorer --output-on-failure --interactive-debug-mode 0 --timeout 60
+  windows:
+    name: Explorer Windows (MSVC x64)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: TheMrMilchmann/setup-msvc-dev@v4.1.0
+        with:
+          arch: amd64
+      - name: Install Ninja
+        run: python -m pip install --upgrade ninja
+      - name: Configure
+        run: cmake -S projects/aipb-explorer -B build/aipb-explorer -G Ninja -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON
+      - name: Build
+        run: cmake --build build/aipb-explorer --parallel
+      - name: Test
+        timeout-minutes: 10
+        run: ctest --test-dir build/aipb-explorer --output-on-failure --interactive-debug-mode 0 --timeout 60
