@@ -2733,3 +2733,13 @@ Before capturing the probe's initial observation and resetting its trace, align 
 The command's per-frame yaw delta remains relative to that initial orientation, and no other AI movement or bot spawn logic changes.
 Fix the diagnostic `flDuckTime` integer formatting from floating-point `%f` to `%d`, preventing varargs mismatch and an invalid printed eye height.
 Keep the v2 CSV schema unchanged and use C++17 bridge-math regressions to cover yaw initialization, wrapping and nonzero yaw deltas.
+
+## D214 — Explicit append of bounded GoldSrc exploration episodes
+
+Use the opt-in `yb explore append <bot_index> <forward> <strafe> <jump> <duck> <yaw_delta> <frames|duration_ms ms>` syntax while retaining ordinary `yb explore <bot_index> ...` as a fresh recording.
+Allow appending only when the existing in-memory trace is completed, the same bot index and map are in use, the 4096-frame capacity has room, and the live state matches the last recorded engine frame.
+A state match requires at most 0.01 GoldSrc units of positional or yaw/pitch difference, 0.1 units/s velocity difference, and exactly matching grounded and crouched flags; unrecorded movement is not silently synthesized.
+Reject append before modifying the session or recorded trace if validation fails; retain the existing completed recording for save/replay.
+For a successful append, keep the original start metadata, advance the trace tick continuously and record new commands with actual GoldSrc `pfnRunPlayerMove` durations.
+Keep the CSV v2 schema, saved named-trace behavior, `init`, `replay`, `clear`, and the original 4096-frame maximum unchanged.
+The protocol does not represent idle wall-clock intervals between commands; a subsequent engine-state mismatch is a safe rejection, not an invitation to teleport.

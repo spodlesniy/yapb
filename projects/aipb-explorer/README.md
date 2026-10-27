@@ -50,3 +50,9 @@ Clear is refused while an experiment or replay is active.
 `TraceBuffer` owns a lazily allocated fixed-capacity array of up to 4096 steps rather than embedding it in the DLL's static data.
 Its memory is released on `clear()` and ownership is moved after a successful named-trace load.
 The C++17 bridge trace tests exercise descriptor size, allocation, ownership transfer, release and full-capacity bounds; CSV files and engine commands are unchanged.
+
+## D214 — Continuous manual trace append
+
+`yb explore append <bot_index> ...` extends a completed trace only when the selected bot's live endpoint matches the saved endpoint; fresh `yb explore <bot_index> ...` still replaces the trace.
+The 4096-step bounded C++17 trace contract checks full position, velocity, orientation, ground and crouch continuity; a rejected append preserves existing data.
+Named CSV v2 save, init and replay continue to operate on the resulting combined trace.

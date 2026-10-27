@@ -86,6 +86,46 @@ static int runTests() {
   full.clear();
   require(!full.samples && full.count == 0);
 
+  // A completed trace can be extended only from the exact observed endpoint.
+  TraceBuffer joined {};
+  joined.botIndex = 1;
+  TraceSample first {};
+  first.command.forward = 1.0f;
+  first.maxSpeed = 250.0f;
+  first.msec = 2;
+  first.before = before;
+  first.after = before;
+  first.after.tick = 1;
+  first.after.x = 4.0;
+  require(joined.append(first));
+  joined.completed = true;
+  require(canAppendTrace(joined, 1, first.after));
+  require(!canAppendTrace(joined, 2, first.after));
+  auto changed = first.after;
+  changed.x += 1.0;
+  require(!canAppendTrace(joined, 1, changed));
+  changed = first.after;
+  changed.vy += 2.0;
+  require(!canAppendTrace(joined, 1, changed));
+  changed = first.after;
+  changed.crouching = 1;
+  require(!canAppendTrace(joined, 1, changed));
+  changed = first.after;
+  changed.yaw = -90.0f;
+  require(!canAppendTrace(joined, 1, changed));
+  joined.completed = false;
+  TraceSample second = first;
+  second.before = first.after;
+  second.after = second.before;
+  second.after.tick = 2;
+  second.after.x += 3.0;
+  require(joined.append(second));
+  require(joined.count == 2 && joined.samples[1].before.tick == 1);
+  joined.completed = true;
+  require(canAppendTrace(joined, 1, second.after));
+  joined.clear();
+  require(!canAppendTrace(joined, 1, second.after));
+
   const ReplayDifference same = compareStates(before, before);
   require(same.within(0.01, 0.01, 0.01f));
   AipbExplorerBridgeState rotated = before;

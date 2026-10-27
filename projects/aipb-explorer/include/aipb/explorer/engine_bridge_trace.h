@@ -27,6 +27,22 @@ inline bool validState(const AipbExplorerBridgeState &s) {
     && s.on_ground <= 1 && s.crouching <= 1;
 }
 
+// Accept consecutive steps only when GoldSrc states are physically continuous.
+inline bool continuousTraceState(const AipbExplorerBridgeState &previous,
+  const AipbExplorerBridgeState &current) {
+  return validState(previous) && validState(current) && current.tick == previous.tick
+    && std::abs(current.x - previous.x) <= 0.01
+    && std::abs(current.y - previous.y) <= 0.01
+    && std::abs(current.z - previous.z) <= 0.01
+    && std::abs(current.vx - previous.vx) <= 0.1
+    && std::abs(current.vy - previous.vy) <= 0.1
+    && std::abs(current.vz - previous.vz) <= 0.1
+    && std::abs(yaw(current.yaw, -previous.yaw)) <= 0.01f
+    && std::abs(current.pitch - previous.pitch) <= 0.01f
+    && current.on_ground == previous.on_ground
+    && current.crouching == previous.crouching;
+}
+
 // Keep only the trace descriptor static; allocate samples on first append.
 struct TraceBuffer {
   std::unique_ptr<TraceSample[]> samples {};
@@ -46,10 +62,7 @@ struct TraceBuffer {
       || sample.msec == 0 || !std::isfinite(sample.maxSpeed) || sample.maxSpeed < 0.0f
       || !validState(sample.before) || !validState(sample.after)
       || sample.after.tick != sample.before.tick + 1
-      || (count != 0 && (sample.before.tick != samples[count - 1].after.tick
-        || sample.before.x != samples[count - 1].after.x
-        || sample.before.y != samples[count - 1].after.y
-        || sample.before.z != samples[count - 1].after.z))) {
+      || (count != 0 && !continuousTraceState(samples[count - 1].after, sample.before))) {
       return false;
     }
     if (!samples) {
@@ -63,6 +76,18 @@ struct TraceBuffer {
     return true;
   }
 };
+
+// Append requires one previously completed episode, the same bot, and no
+// unrecorded movement since the previous engine frame.
+inline bool canAppendTrace(const TraceBuffer &trace, int botIndex,
+  AipbExplorerBridgeState current) {
+  if (!trace.completed || !trace.samples || trace.count == 0
+    || trace.count >= ProbeBudget::kMaxSafetyFrames || trace.botIndex != botIndex) {
+    return false;
+  }
+  current.tick = static_cast<uint64_t>(trace.count);
+  return continuousTraceState(trace.samples[trace.count - 1].after, current);
+}
 
 struct ReplayDifference {
   double position {};

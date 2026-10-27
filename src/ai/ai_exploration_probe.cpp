@@ -43,7 +43,7 @@ AipbExplorerBridgeState observe(const Bot &bot) {
    state.vz = v.velocity.z;
    state.yaw = aipb::explorer::bridge::yaw(v.v_angle.y, 0.0f);
    state.pitch = v.v_angle.x;
-   state.tick = static_cast <uint64_t> (session.replay ? session.replayIndex : session.budget.executed);
+   state.tick = static_cast <uint64_t> (session.replay ? session.replayIndex : trace.count);
    state.on_ground = (v.flags & FL_ONGROUND) ? 1 : 0;
    state.crouching = (v.flags & FL_DUCKING) ? 1 : 0;
    return state;
@@ -64,7 +64,7 @@ bool active() {
    return session.botIndex >= 0;
 }
 
-bool begin(int botIndex, const AipbExplorerBridgeCommand &command, int limit, bool milliseconds) {
+bool begin(int botIndex, const AipbExplorerBridgeCommand &command, int limit, bool milliseconds, bool append) {
    const aipb::explorer::bridge::ProbeBudget budget { limit, milliseconds };
    if (active() || botIndex < 0 || !aipb::explorer::bridge::valid(command) || !budget.valid()) {
       return false;
@@ -76,28 +76,41 @@ bool begin(int botIndex, const AipbExplorerBridgeCommand &command, int limit, bo
       return false;
    }
 
-   // A new bot may have a spawn body yaw that differs from its view yaw.
-   const float previousViewYaw = bot->pev->v_angle.y;
-   const float bodyYaw = bot->pev->angles.y;
-   const float startYaw = aipb::explorer::bridge::initialViewYaw(bodyYaw, previousViewYaw);
-   bot->pev->v_angle.y = startYaw;
-   bot->pev->angles.y = startYaw;
-   game.print("AiPB explorer: start yaw sync, body=%.1f, view=%.1f, selected=%.1f",
-      bodyYaw, previousViewYaw, startYaw);
+   if (append) {
+      auto current = observe(*bot);
+      if (!aipb::explorer::bridge::canAppendTrace(trace, botIndex, current)
+         || std::strcmp(metadata.map, game.getMapName()) != 0) {
+         game.print("AiPB explorer: append rejected; bot or endpoint state differs, or trace is full.");
+         return false;
+      }
+   }
+   else {
+      // Preserve the visible body yaw before capturing the start of a new trace.
+      const float previousViewYaw = bot->pev->v_angle.y;
+      const float bodyYaw = bot->pev->angles.y;
+      const float startYaw = aipb::explorer::bridge::initialViewYaw(bodyYaw, previousViewYaw);
+      bot->pev->v_angle.y = startYaw;
+      bot->pev->angles.y = startYaw;
+      game.print("AiPB explorer: start yaw sync, body=%.1f, view=%.1f, selected=%.1f",
+         bodyYaw, previousViewYaw, startYaw);
+      trace.clear();
+      trace.botIndex = botIndex;
+      metadata = {};
+      const auto map = game.getMapName();
+      std::snprintf(metadata.map, sizeof(metadata.map), "%s", map);
+      metadata.initial = observe(*bot);
+      metadata.viewZ = bot->pev->view_ofs.z;
+   }
 
    session = {};
    session.botIndex = botIndex;
    session.command = command;
    session.budget = budget;
    session.lastTime = game.time();
-   trace.clear();
-   trace.botIndex = botIndex;
-   metadata = {};
-   const auto map = game.getMapName();
-   std::snprintf(metadata.map, sizeof(metadata.map), "%s", map);
-   metadata.initial = observe(*bot);
-   metadata.viewZ = bot->pev->view_ofs.z;
-   game.print("AiPB explorer: started bot #%d for %d %s", botIndex, limit,
+   if (append) {
+      trace.completed = false;
+   }
+   game.print("AiPB explorer: %s bot #%d for %d %s", append ? "appending" : "started", botIndex, limit,
       milliseconds ? "simulated ms" : "frames");
    return true;
 }
@@ -329,7 +342,10 @@ bool frame(Bot &bot) {
    else {
       session.budget.consume(msec);
    }
-   const auto after = observe(bot);
+   auto after = observe(bot);
+   if (!replaying) {
+      after.tick = before.tick + 1;
+   }
    if (replaying) {
       const auto delta = compareStates(recorded->after, after);
       if (!delta.within(5.0, 30.0, 5.0f)) {

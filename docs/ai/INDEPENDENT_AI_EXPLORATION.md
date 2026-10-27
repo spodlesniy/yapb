@@ -193,3 +193,25 @@ At the start of a manual probe, the bot's preexisting visible body yaw becomes t
 The console reports the original body yaw, old view yaw and selected starting yaw; a zero yaw delta should preserve the visible facing even for a newly spawned bot.
 A nonzero yaw delta continues to rotate relative to the chosen starting direction each engine frame.
 The `duck_time` diagnostic is now printed as an integer so its subsequent `view_z` output is not corrupted by a mismatched format specifier.
+
+## D214 — Combining multiple manual commands into one trace
+
+The default `yb explore <bot_index> ...` still replaces the current in-memory episode.
+For a continuation, use `yb explore append <bot_index> <forward> <strafe> <jump> <duck> <yaw_delta> <frames|duration_ms ms>` after a completed recording.
+Append is accepted only for the same bot on the same map, with room under 4096 frames and matching position, velocity, yaw/pitch, grounded and crouched state since the last recorded frame.
+Rejected appends do not modify the previous completed trace.
+All appended steps share the original initial metadata and continuous step numbering, so the resulting named save remains CSV v2 compatible with `init` and `replay`.
+
+Example (use on a stationary safe area and issue commands without unrecorded movement):
+
+```text
+yb_freeze_bots 1
+yb explore clear
+yb explore 1 1 0 0 0 0 40
+yb explore append 1 0 1 0 0 0 40
+yb explore save combined_move
+yb explore init combined_move 1
+yb explore replay combined_move 1
+```
+
+If the engine changes a bot's state between commands, append rejects the discontinuity instead of joining unrelated physics states.

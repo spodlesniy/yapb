@@ -337,3 +337,7 @@ The 4096-step limit, CSV v2 format and command behavior remain unchanged; local 
 D213.6 synchronizes an Explorer probe's initial view yaw to the bot's visible body yaw before recording the first pre-step observation, so freshly spawned bots do not snap to a stale view orientation on their first movement command.
 Initial body/view yaw are logged at probe start; the diagnostic duck timer now uses the integer formatting expected by the GoldSrc field, avoiding corrupted subsequent `view_z` output.
 C++17 bridge tests cover first-use yaw preservation, wraparound and explicit turn deltas; Windows x86 gameplay acceptance remains pending.
+
+D214 introduces explicit `yb explore append <bot> <forward> <strafe> <jump> <duck> <yaw_delta> <frames|duration_ms ms>` to extend a completed in-memory GoldSrc trace without changing default `yb explore` replacement semantics.
+Appending requires the same bot, map and a continuous engine state (position, velocity, yaw/pitch, ground and crouch), rejects a full trace, and preserves the original CSV v2 metadata and total 4096-frame cap.
+Independent trace-contract tests cover permitted/rejected append cases; automatic CI and manually run Windows x86 game acceptance remain required.

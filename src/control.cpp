@@ -1427,8 +1427,11 @@ int BotControl::cmdExplore () {
       msg("AiPB explorer: stopped.");
       return BotCommandResult::Handled;
    }
-   const bool milliseconds = hasArg(unit) && arg <StringRef> (unit) == "ms";
-   if (!hasArg(frames) || (hasArg(unit) && !milliseconds) || hasArg(unit + 1)) {
+   const bool appending = operation == "append";
+   const int shift = appending ? 1 : 0;
+   const int lastArg = unit + shift;
+   const bool milliseconds = hasArg(lastArg) && arg <StringRef> (lastArg) == "ms";
+   if (!hasArg(frames + shift) || (hasArg(lastArg) && !milliseconds) || hasArg(lastArg + 1)) {
       return BotCommandResult::BadFormat;
    }
    auto parse = [this] (int index, double &output) -> bool {
@@ -1439,7 +1442,7 @@ int BotControl::cmdExplore () {
    };
    double values[7] {};
    for (int i = 0; i < 7; ++i) {
-      if (!parse(botIndex + i, values[i])) {
+      if (!parse(botIndex + shift + i, values[i])) {
          return BotCommandResult::BadFormat;
       }
    }
@@ -1459,7 +1462,7 @@ int BotControl::cmdExplore () {
    if (!aipb::explorer::bridge::valid(command)) {
       return BotCommandResult::BadFormat;
    }
-   if (!ai::explore::begin(static_cast <int> (values[0]), command, static_cast <int> (values[6]), milliseconds)) {
+   if (!ai::explore::begin(static_cast <int> (values[0]), command, static_cast <int> (values[6]), milliseconds, appending)) {
       msg("AiPB explorer: cannot start (busy, invalid, dead, or frozen bot).");
    }
    return BotCommandResult::Handled;
@@ -2591,7 +2594,7 @@ BotControl::BotControl () {
       },
       {
          "explore",
-         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save <name> | list | init <name> <bot> | replay <name> <bot> | clear | stop",
+         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save <name> | list | init <name> <bot> | replay <name> <bot> | append <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | clear | stop",
          "Runs an admin-only bounded GoldSrc movement probe.",
          &BotControl::cmdExplore
       },
