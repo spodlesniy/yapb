@@ -11,6 +11,16 @@
 
 namespace aipb::explorer::bridge {
 
+// Use exclusive creation on all targets without MSVC's insecure CRT warning.
+inline std::FILE *openTraceFile(const char *path, const char *mode) {
+#if defined(_MSC_VER)
+  std::FILE *file {};
+  return ::fopen_s(&file, path, mode) == 0 ? file : nullptr;
+#else
+  return std::fopen(path, mode);
+#endif
+}
+
 // V2 traces are map-bound. The first CSV record is the engine-observed start.
 struct TraceMetadata {
   char map[64] {};

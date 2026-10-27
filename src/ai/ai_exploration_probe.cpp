@@ -84,7 +84,7 @@ bool begin(int botIndex, const AipbExplorerBridgeCommand &command, int limit, bo
    trace.botIndex = botIndex;
    metadata = {};
    const auto map = game.getMapName();
-   std::snprintf(metadata.map, sizeof(metadata.map), "%s", map.chars());
+   std::snprintf(metadata.map, sizeof(metadata.map), "%s", map);
    metadata.initial = observe(*bot);
    metadata.viewZ = bot->pev->view_ofs.z;
    game.print("AiPB explorer: started bot #%d for %d %s", botIndex, limit,
@@ -100,7 +100,7 @@ bool beginReplay(int botIndex) {
    if (!bot || !game.isAliveEntity(bot->ent()) || bot->pev->maxspeed < 10.0f) {
       return false;
    }
-   if (std::strcmp(metadata.map, game.getMapName().chars()) != 0) {
+   if (std::strcmp(metadata.map, game.getMapName()) != 0) {
       return false;
    }
    const auto current = observe(*bot);
@@ -138,7 +138,7 @@ bool save(const char *filePath) {
       return false;
    }
    // Use exclusive creation so an existing named trace can never be overwritten.
-   std::FILE *file = std::fopen(filePath, "wx");
+   std::FILE *file = aipb::explorer::bridge::openTraceFile(filePath, "wx");
    if (!file) {
       return false;
    }
@@ -163,7 +163,7 @@ bool load(const char *filePath) {
    if (active() || !filePath || !*filePath) {
       return false;
    }
-   std::FILE *file = std::fopen(filePath, "rt");
+   std::FILE *file = aipb::explorer::bridge::openTraceFile(filePath, "rt");
    if (!file) {
       return false;
    }
@@ -201,7 +201,7 @@ bool load(const char *filePath) {
 
 bool init(int botIndex) {
    if (active() || !trace.completed || !trace.count || !aipb::explorer::bridge::validMetadata(metadata)
-      || std::strcmp(metadata.map, game.getMapName().chars()) != 0) {
+      || std::strcmp(metadata.map, game.getMapName()) != 0) {
       return false;
    }
    auto *bot = bots.findBotByIndex(botIndex);
@@ -229,7 +229,7 @@ bool init(int botIndex) {
    bot->pev->oldbuttons = 0;
    bot->pev->impulse = 0;
    bot->pev->bInDuck = 0;
-   bot->pev->flDuckTime = 0.0f;
+   bot->pev->flDuckTime = 0;
    if (s.crouching) {
       bot->pev->flags |= FL_DUCKING;
    }

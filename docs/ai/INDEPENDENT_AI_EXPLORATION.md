@@ -166,3 +166,10 @@ The next `yb explore <bot> ...` starts a new in-memory trace and replaces the pr
 `yb explore clear` removes only that in-memory trace and associated map/initial-state metadata, leaving named recordings under YaPB data/explorer untouched.
 An active recording or replay rejects `clear`; issue `yb explore stop` first to terminate an experiment before clearing.
 After clearing, `save` cannot succeed until another experiment completes, but `init <name> <bot>` and `replay <name> <bot>` can load a saved trace from disk as before.
+
+## D213.4 — Windows x86 integration fixes
+
+The YaPB game API returns the current map name as `const char *`, so named-trace code passes it directly to the C runtime rather than calling `.chars()`.
+For MSVC compatibility trace file creation and loading use `fopen_s`; other compilers use standard `fopen`, with exclusive `wx` file creation preserved.
+`flDuckTime` initialization uses the engine field's integer type.
+A standalone trace-file test checks new-file creation, duplicate refusal and subsequent reading; the user's Windows x86 build remains the validation gate for the game DLL.

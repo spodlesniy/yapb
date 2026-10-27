@@ -14,6 +14,21 @@ static void require(bool ok) {
 }
 
 static int runTests() {
+  // Verify exclusive creation and ordinary reading on each CRT.
+  const char *path = "aipb_explorer_named_trace_io_test.tmp";
+  std::remove(path);
+  std::FILE *written = openTraceFile(path, "wx");
+  require(written != nullptr);
+  require(std::fputs("recorded", written) >= 0);
+  require(std::fclose(written) == 0);
+  require(openTraceFile(path, "wx") == nullptr);
+  std::FILE *read = openTraceFile(path, "rt");
+  require(read != nullptr);
+  char first[16] {};
+  require(std::fgets(first, sizeof(first), read) != nullptr);
+  require(std::strcmp(first, "recorded") == 0);
+  require(std::fclose(read) == 0);
+  require(std::remove(path) == 0);
   require(safeName("jump_B_01"));
   require(safeName("test-2"));
   require(!safeName("../escape"));

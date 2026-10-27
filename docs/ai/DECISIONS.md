@@ -2706,3 +2706,10 @@ Add `yb explore clear` to discard the active in-memory trace and its map/start-s
 Reject clear while recording or replay is active so neither a frame callback nor a replay reads an invalidated trace; use `yb explore stop` before clear when necessary.
 After clear, saving without a new completed recording fails, while loading a named trace with `init` or `replay` remains available.
 Do not silently enable multi-command accumulation: sequential commands are separate episodes under the current D213 schema, and concatenating them requires explicit handling of intervening engine time and continuity.
+
+## D213.4 — Repair Windows x86 named-trace integration build
+
+The user's Windows x86 compile failed in `src/ai/ai_exploration_probe.cpp`: `Game::getMapName()` returns `const char *` rather than a string with `.chars()`, `fopen` triggers MSVC C4996 under `/WX`, and assigning `0.0f` to the integer `flDuckTime` triggers C4244.
+Pass map names directly to `snprintf` and `strcmp`; use `fopen_s` under MSVC and `fopen` elsewhere through one small C++17 trace-I/O helper, keeping exclusive `wx` creation and `rt` loading semantics.
+Assign integer zero to the crouch timer and test that exclusive file creation refuses duplicates while ordinary reading succeeds.
+Retain all D213.3 buffering semantics and avoid rewriting published commits; Windows x86 acceptance requires the user's manual build.

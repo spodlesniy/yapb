@@ -326,3 +326,6 @@ D213.2 replaces an MSVC-deprecated `strcpy` in the standalone named-trace regres
 D213.3 adds the explicit `yb explore clear` command to discard only the current in-memory trajectory and its metadata, rejecting clear while a probe or replay is running.
 Saving remains non-destructive, named CSV files are unchanged, and starting a new experiment still replaces the previous in-memory recording; accumulation across separate commands is not part of D213.3.
 The standalone trace lifecycle regression has been extended; automatic CI and target Windows x86 game acceptance remain pending.
+
+D213.4 corrects the user-reported Windows x86 DLL build failure in the D213.1 runtime integration: `getMapName()` is a C string, MSVC rejects deprecated `fopen`, and `flDuckTime` is integer-valued.
+A CRT-specific file-open helper preserves exclusive named-save creation, with a standalone file-create/read regression; target Windows x86 verification remains user-controlled and pending.
