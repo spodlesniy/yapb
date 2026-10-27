@@ -34,6 +34,41 @@ static int runTests() {
   command.jump = 0;
   command.yaw_delta = 200;
   require(!valid(command));
+
+  ProbeBudget frames { 30, false };
+  require(frames.valid());
+  for (int n = 0; n < 30; ++n) {
+    require(!frames.complete());
+    frames.consume(2);
+  }
+  require(frames.complete() && frames.executed == 30 && frames.simulatedMs == 60);
+  frames.consume(2);
+  require(frames.executed == 30);
+
+  ProbeBudget timed { 1000, true };
+  require(timed.valid());
+  for (int n = 0; n < 499; ++n) {
+    timed.consume(2);
+  }
+  require(!timed.complete());
+  timed.consume(2);
+  require(timed.complete() && timed.executed == 500 && timed.simulatedMs == 1000);
+  timed.consume(2);
+  require(timed.executed == 500);
+
+  ProbeBudget irregular { 400, true };
+  irregular.consume(255);
+  irregular.consume(150);
+  require(irregular.complete() && irregular.simulatedMs == 405 && irregular.executed == 2);
+  ProbeBudget invalidFrames { 129, false };
+  ProbeBudget invalidMs { 2001, true };
+  ProbeBudget zero { 0, true };
+  ProbeBudget maxMs { 2000, true };
+  require(!invalidFrames.valid() && !invalidMs.valid() && !zero.valid() && maxMs.valid());
+  maxMs.consume(0);
+  maxMs.consume(256);
+  require(maxMs.executed == 0 && maxMs.simulatedMs == 0);
+
   return 0;
 }
 

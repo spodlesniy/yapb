@@ -6,8 +6,8 @@ class Bot;
 
 namespace ai::explore {
 
-// Only one explicitly selected bot can be controlled, for at most 128 engine frames.
-bool begin(int botIndex, const AipbExplorerBridgeCommand &command, int frameCount);
+// Only one explicitly selected bot can be controlled, for a bounded number of frames or milliseconds.
+bool begin(int botIndex, const AipbExplorerBridgeCommand &command, int limit, bool milliseconds = false);
 bool frame(Bot &bot);
 void reset();
 void cancelBot(int botIndex);

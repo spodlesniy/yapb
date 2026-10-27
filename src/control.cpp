@@ -1324,13 +1324,14 @@ int BotControl::menuNavVis (int item) {
 }
 
 int BotControl::cmdExplore () {
-   enum args { root = 0, name, botIndex, forward, strafe, jump, duck, yaw, frames };
+   enum args { root = 0, name, botIndex, forward, strafe, jump, duck, yaw, frames, unit };
    if (hasArg(botIndex) && arg <StringRef> (botIndex) == "stop" && !hasArg(forward)) {
       ai::explore::reset();
       msg("AiPB explorer: stopped.");
       return BotCommandResult::Handled;
    }
-   if (!hasArg(frames) || hasArg(frames + 1)) {
+   const bool milliseconds = hasArg(unit) && arg <StringRef> (unit) == "ms";
+   if (!hasArg(frames) || (hasArg(unit) && !milliseconds) || hasArg(unit + 1)) {
       return BotCommandResult::BadFormat;
    }
    auto parse = [this] (int index, double &output) -> bool {
@@ -1349,7 +1350,8 @@ int BotControl::cmdExplore () {
    if (!whole(values[0]) || values[0] < 0 || values[0] >= kGameMaxPlayers
       || !whole(values[3]) || (values[3] != 0 && values[3] != 1)
       || !whole(values[4]) || (values[4] != 0 && values[4] != 1)
-      || !whole(values[6]) || values[6] < 1 || values[6] > 128) {
+      || !whole(values[6]) || values[6] < 1
+      || values[6] > (milliseconds ? 2000 : 128)) {
       return BotCommandResult::BadFormat;
    }
    const AipbExplorerBridgeCommand command {
@@ -1360,7 +1362,7 @@ int BotControl::cmdExplore () {
    if (!aipb::explorer::bridge::valid(command)) {
       return BotCommandResult::BadFormat;
    }
-   if (!ai::explore::begin(static_cast <int> (values[0]), command, static_cast <int> (values[6]))) {
+   if (!ai::explore::begin(static_cast <int> (values[0]), command, static_cast <int> (values[6]), milliseconds)) {
       msg("AiPB explorer: cannot start (busy, invalid, dead, or frozen bot).");
    }
    return BotCommandResult::Handled;
@@ -2492,7 +2494,7 @@ BotControl::BotControl () {
       },
       {
          "explore",
-         "explore <bot_index> <forward> <strafe> <jump> <duck> <yaw_delta> <frames> | stop",
+         "explore <bot_index> <forward> <strafe> <jump> <duck> <yaw_delta> <frames|duration_ms ms> | stop",
          "Runs an admin-only bounded GoldSrc movement probe.",
          &BotControl::cmdExplore
       },

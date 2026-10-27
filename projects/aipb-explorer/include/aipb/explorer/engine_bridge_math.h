@@ -4,7 +4,7 @@
 
 #include <aipb/explorer/engine_bridge.h>
 
-// C++17-compatible input translation shared with the in-game movement probe.
+// C++17-compatible control conversion and bounded GoldSrc probe scheduling.
 namespace aipb::explorer::bridge {
 
 inline bool valid(const AipbExplorerBridgeCommand &command) {
@@ -30,5 +30,35 @@ inline void translateAxes(
   forwardSpeed = command.forward * factor * maxSpeed;
   strafeSpeed = command.strafe * factor * maxSpeed;
 }
+
+struct ProbeBudget {
+  static constexpr int kMaxFrames = 128;
+  static constexpr int kMaxDurationMs = 2000;
+  static constexpr int kMaxSafetyFrames = 4096;
+
+  int requested {};
+  bool milliseconds {};
+  int executed {};
+  int simulatedMs {};
+
+  [[nodiscard]] bool valid() const {
+    return requested >= 1 && requested <= (milliseconds ? kMaxDurationMs : kMaxFrames);
+  }
+
+  [[nodiscard]] bool safetyLimit() const {
+    return executed >= kMaxSafetyFrames;
+  }
+
+  [[nodiscard]] bool complete() const {
+    return safetyLimit() || (milliseconds ? simulatedMs >= requested : executed >= requested);
+  }
+
+  void consume(int frameMs) {
+    if (!complete() && frameMs >= 1 && frameMs <= 255) {
+      ++executed;
+      simulatedMs += frameMs;
+    }
+  }
+};
 
 }

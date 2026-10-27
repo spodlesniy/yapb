@@ -82,3 +82,27 @@ Stop is also triggered by map shutdown, completion or selected-bot disconnection
 Output per engine frame includes msec, XYZ origin, velocity, yaw, ground and crouch flags.
 No persistent replay, determinism guarantee, physical reset or autonomous path exploration is implemented.
 Target-platform Windows x86 build and in-game movement acceptance require user execution.
+
+## D212.1 — Timing and orientation correction
+
+The original D212 128-frame Duck session accumulated only approximately 250 milliseconds, leaving the engine's crouch transition unfinished, while view yaw changed without synchronizing the rendered body angle.
+The probe now updates both `pev->v_angle` and `pev->angles` using YaPB's body-angle convention, then submits movement angles to GoldSrc.
+The default final numeric argument still denotes 1–128 game frames.
+An optional final `ms` token changes it to **1–2000 milliseconds of accumulated `pfnRunPlayerMove` command time**; all probes stop at 4096 frames even if the requested duration is not reached.
+This is a simulation-command-time budget, not a real-time sleep or a promise of a fixed server FPS.
+Diagnostics now report the submitted buttons, old button flags, crouch transition flag, crouch timer, body yaw, view yaw and view offset Z approximately every 50 simulated milliseconds, plus the initial/final state.
+The actual crouch state remains `FL_DUCKING`; visual animation alone is insufficient proof.
+
+Examples (replace bot index 1 using `yb list`):
+
+```text
+yb_freeze_bots 1
+yb explore 1 0 0 0 0 3 30
+yb explore 1 0 0 0 1 0 1000 ms
+yb explore 1 1 0 0 1 0 1000 ms
+yb explore 1 1 0 1 0 0 500 ms
+yb explore stop
+```
+
+The previous 1–128-frame syntax continues to work.
+The GoldSrc engine's precise Duck and animation behavior, bot orientation persistence across tests and Windows x86 correctness must be checked in-game.

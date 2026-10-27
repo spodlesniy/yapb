@@ -2658,3 +2658,12 @@ Cancel experiments on stop, disconnect, map unload, death, invalid inputs and bu
 Keep the C++17 game DLL disconnected from the C++20 `aipb-explorer` library.
 Expose the same POD command/state bridge and unit-test a C++20 callback-based `GoldSrcEnvironment`; callback service wiring and arbitrary player-state reset are not implemented in the DLL in D212.
 Deferred work includes durable episode capture/replay, frame-timing parity, collision truth, and autonomous exploration.
+
+## D212.1 — Synchronize movement probe orientation and bound tests by simulated time
+
+D212 gameplay evidence shows per-frame viewing yaw advances correctly but the model remains visually stationary because its body yaw was not synchronized; use YaPB's view-to-body angle mapping in the dedicated probe path without invoking tactical aiming.
+D212's 128-frame Duck test supplied only about 250 milliseconds of GoldSrc movement, shorter than the typical crouch transition; expose an explicit bounded simulated-time mode while preserving the original frame-count command.
+Use `yb explore <bot> <forward> <strafe> <jump> <duck> <yaw_delta> <duration_ms> ms` for 1–2000 milliseconds, with 4096 executed frames as an unconditional safety limit; the default last argument remains 1–128 frames.
+Accumulate actual `pfnRunPlayerMove` command milliseconds, not host wall-clock elapsed time, to control the experiment.
+Report transition-related engine fields, old/current buttons, body/view yaw and view height without asserting a crouch state until `FL_DUCKING` is observed.
+Keep C++17 runtime/standalone boundaries and legacy AI behavior intact; do not claim engine parity or successful gameplay until the user tests a Windows x86 build.

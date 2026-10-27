@@ -311,3 +311,6 @@ D211.2 adds explicit `return 0;` to both test helpers, preserving all other prod
 D212 introduces a bounded opt-in GoldSrc movement probe for a single YaPB bot, direct engine movement controls with per-frame observations, and an independent C++20 callback adapter over a C++17 POD boundary.
 The runtime probe uses measured variable engine-frame duration; actual C++20-to-game callback wiring, deterministic fixed-tick replay, collision classification and in-game acceptance remain pending.
 The manual Windows x86 build and game test are user-controlled only.
+
+D212.1 corrects runtime probe body/view yaw synchronization, adds bounded simulated-millisecond command budgets with a 4096-frame safety cutoff while retaining frame-count syntax, and logs crouch transition internals; the user's D212 Windows x86 build passed but gameplay tests exposed yaw visibility and insufficient 128-frame Duck duration at ~2 ms/frame.
+Local C++17 GCC/Clang scheduling regressions passed; automatic CI and user-started Windows x86 in-game verification of D212.1 remain pending.
