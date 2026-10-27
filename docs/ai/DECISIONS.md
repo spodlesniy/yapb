@@ -2743,3 +2743,14 @@ Reject append before modifying the session or recorded trace if validation fails
 For a successful append, keep the original start metadata, advance the trace tick continuously and record new commands with actual GoldSrc `pfnRunPlayerMove` durations.
 Keep the CSV v2 schema, saved named-trace behavior, `init`, `replay`, `clear`, and the original 4096-frame maximum unchanged.
 The protocol does not represent idle wall-clock intervals between commands; a subsequent engine-state mismatch is a safe rejection, not an invitation to teleport.
+
+## D215 — Queue manual GoldSrc movement commands without CFG wait
+
+Use explicit opt-in `yb explore queue <bot_index> <forward> <strafe> <jump> <duck> <yaw_delta> <frames|duration_ms ms>` to enqueue a bounded maximum of 32 commands for a single bot.
+`yb explore run <save_name>` starts the engine-managed queue and commits a named CSV v2 only after all commands complete; an existing save name is rejected before execution.
+`yb explore queueclear` empties pending commands while idle; `yb explore stop` cancels an active queue, leaves no successful named recording and retains only diagnostic partial state, which cannot be saved as completed.
+Each queued segment uses the existing bounded `ProbeBudget`, GoldSrc `pfnRunPlayerMove` and normal observed trace; the next segment begins in the next engine frame with no injected pause and no ordinary bot AI frame between segments.
+Limit total recorded frames to 4096, keep lazy heap allocation, CSV v2 start metadata and step ordering unchanged.
+All commands remain confined to the chosen bot and fail closed if the bot becomes unavailable; no unrelated YaPB bots are modified.
+Save failure is reported and the completed in-memory trace remains available for diagnosis and manual retry.
+The queue control contract is tested standalone in C++17; user-started Windows x86 game verification remains essential.

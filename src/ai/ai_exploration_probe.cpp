@@ -1,6 +1,7 @@
 #include <yapb.h>
 #include <ai/ai_exploration_probe.h>
 #include <aipb/explorer/engine_bridge_math.h>
+#include <aipb/explorer/engine_bridge_queue.h>
 #include <aipb/explorer/engine_bridge_trace.h>
 #include <aipb/explorer/engine_bridge_trace_io.h>
 #include <crlib/files.h>
@@ -28,6 +29,8 @@ using aipb::explorer::bridge::TraceBuffer;
 using aipb::explorer::bridge::TraceSample;
 using aipb::explorer::bridge::compareStates;
 static TraceBuffer trace {};
+static aipb::explorer::bridge::ProbeQueue queue {};
+static char queueSavePath[512] {};
 static aipb::explorer::bridge::TraceMetadata metadata {};
 
 Session session {};
@@ -56,6 +59,10 @@ void stop(const char *reason) {
    }
    session = {};
    session.botIndex = -1;
+   if (queue.running) {
+      queue.running = false;
+      queueSavePath[0] = '\0';
+   }
 }
 
 } // namespace
@@ -66,7 +73,7 @@ bool active() {
 
 bool begin(int botIndex, const AipbExplorerBridgeCommand &command, int limit, bool milliseconds, bool append) {
    const aipb::explorer::bridge::ProbeBudget budget { limit, milliseconds };
-   if (active() || botIndex < 0 || !aipb::explorer::bridge::valid(command) || !budget.valid()) {
+   if (active() || (queue.running && queueSavePath[0] != '\0') || botIndex < 0 || !aipb::explorer::bridge::valid(command) || !budget.valid()) {
       return false;
    }
    auto *bot = bots.findBotByIndex(botIndex);
@@ -112,6 +119,38 @@ bool begin(int botIndex, const AipbExplorerBridgeCommand &command, int limit, bo
    }
    game.print("AiPB explorer: %s bot #%d for %d %s", append ? "appending" : "started", botIndex, limit,
       milliseconds ? "simulated ms" : "frames");
+   return true;
+}
+
+bool enqueue(int botIndex, const AipbExplorerBridgeCommand &command, int limit, bool milliseconds) {
+   return !active() && queue.enqueue(botIndex, command, limit, milliseconds);
+}
+
+bool clearQueue() {
+   if (active() || queue.running) {
+      return false;
+   }
+   queue.clear();
+   return true;
+}
+
+int queuedCommands() {
+   return queue.count;
+}
+
+bool runQueue(const char *savePath) {
+   if (active() || !queue.start() || !savePath || !*savePath
+      || std::strlen(savePath) >= sizeof(queueSavePath)) {
+      queue.running = false;
+      return false;
+   }
+   auto *first = queue.current();
+   if (!first || !begin(queue.botIndex, first->command, first->budget.requested,
+      first->budget.milliseconds, false)) {
+      queue.running = false;
+      return false;
+   }
+   std::snprintf(queueSavePath, sizeof(queueSavePath), "%s", savePath);
    return true;
 }
 
@@ -382,10 +421,35 @@ bool frame(Bot &bot) {
       stop("nonfinite engine observation");
    }
    else if (session.budget.complete()) {
-      trace.completed = true;
-      stop(session.budget.safetyLimit() ? "safety frame limit" : "completed");
-      game.print("AiPB explorer: recorded %d steps; use yb explore save or yb explore replay %d",
-         trace.count, trace.botIndex);
+      if (queue.running && queue.current() && queue.advance()) {
+         const auto *next = queue.current();
+         session.command = next->command;
+         session.budget = next->budget;
+         session.lastTime = game.time();
+         game.print("AiPB explorer: queue segment %d/%d, total recorded %d frames",
+            queue.next + 1, queue.count, trace.count);
+      }
+      else {
+         trace.completed = true;
+         const bool queued = queue.running;
+         char completedPath[sizeof(queueSavePath)] {};
+         if (queued) {
+            std::snprintf(completedPath, sizeof(completedPath), "%s", queueSavePath);
+         }
+         stop(session.budget.safetyLimit() ? "safety frame limit" : "completed");
+         if (queued) {
+            queue.clear();
+            if (save(completedPath)) {
+               game.print("AiPB explorer: queue saved %d frames to %s", trace.count, completedPath);
+            }
+            else {
+               game.print("AiPB explorer: queue completed but save failed; trace retained.");
+            }
+         }
+         else {
+            game.print("AiPB explorer: recorded %d steps", trace.count);
+         }
+      }
    }
    return true;
 }

@@ -33,8 +33,13 @@ if(BUILD_TESTING)
     target_compile_features(aipb_explorer_named_trace_io_tests PRIVATE cxx_std_17)
     target_include_directories(aipb_explorer_named_trace_io_tests PRIVATE include)
 
+    add_executable(aipb_explorer_queue_tests tests/engine_bridge_queue_tests.cpp)
+    add_test(NAME aipb_explorer_queue COMMAND aipb_explorer_queue_tests)
+    target_compile_features(aipb_explorer_queue_tests PRIVATE cxx_std_17)
+    target_include_directories(aipb_explorer_queue_tests PRIVATE include)
+
     add_executable(aipb_explorer_bridge_trace_tests tests/engine_bridge_trace_tests.cpp)
-    add_test(NAME aipb_explorer_bridge_trace COMMAND aipb_explorer_bridge_trace_tests aipb_explorer_named_trace_io_tests)
+    add_test(NAME aipb_explorer_bridge_trace COMMAND aipb_explorer_bridge_trace_tests aipb_explorer_named_trace_io_tests aipb_explorer_queue_tests)
     target_compile_features(aipb_explorer_bridge_trace_tests PRIVATE cxx_std_17)
     target_include_directories(aipb_explorer_bridge_trace_tests PRIVATE include)
 

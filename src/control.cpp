@@ -1328,6 +1328,42 @@ int BotControl::cmdExplore () {
    enum args { root = 0, name, botIndex, forward, strafe, jump, duck, yaw, frames, unit };
    // Named traces are sandboxed to the explorer directory under YaPB data.
    const auto operation = arg <StringRef>(botIndex);
+   if (operation == "queueclear") {
+      if (hasArg(forward)) {
+         return BotCommandResult::BadFormat;
+      }
+      msg(ai::explore::clearQueue() ? "AiPB explorer: queue cleared." : "AiPB explorer: queue is busy.");
+      return BotCommandResult::Handled;
+   }
+   if (operation == "run") {
+      if (!hasArg(forward) || hasArg(strafe)) {
+         return BotCommandResult::BadFormat;
+      }
+      const auto recording = arg <StringRef>(forward);
+      if (!aipb::explorer::bridge::safeName(recording.chars())) {
+         msg("AiPB explorer: invalid queue recording name.");
+         return BotCommandResult::Handled;
+      }
+      const auto dataPath = strings.joinPath(bstor.getRunningPath(), folders.data);
+      const auto directory = strings.joinPath(dataPath, "explorer");
+      if ((!plat.fileExists(dataPath.chars()) && !plat.createDirectory(dataPath.chars()))
+         || (!plat.fileExists(directory.chars()) && !plat.createDirectory(directory.chars()))) {
+         msg("AiPB explorer: cannot prepare recording directory.");
+         return BotCommandResult::Handled;
+      }
+      const auto path = strings.joinPath(directory, strings.format("%s.csv", recording));
+      if (plat.fileExists(path.chars())) {
+         msg("AiPB explorer: recording '%s' already exists.", recording);
+      }
+      else if (!ai::explore::runQueue(path.chars())) {
+         msg("AiPB explorer: cannot run queue (empty, busy, or invalid bot).");
+      }
+      else {
+         msg("AiPB explorer: queue started (%d commands); auto-save as '%s'.",
+            ai::explore::queuedCommands(), recording);
+      }
+      return BotCommandResult::Handled;
+   }
    if (operation == "clear") {
       if (hasArg(forward)) {
          return BotCommandResult::BadFormat;
@@ -1428,7 +1464,8 @@ int BotControl::cmdExplore () {
       return BotCommandResult::Handled;
    }
    const bool appending = operation == "append";
-   const int shift = appending ? 1 : 0;
+   const bool enqueuing = operation == "queue";
+   const int shift = (appending || enqueuing) ? 1 : 0;
    const int lastArg = unit + shift;
    const bool milliseconds = hasArg(lastArg) && arg <StringRef> (lastArg) == "ms";
    if (!hasArg(frames + shift) || (hasArg(lastArg) && !milliseconds) || hasArg(lastArg + 1)) {
@@ -1462,7 +1499,16 @@ int BotControl::cmdExplore () {
    if (!aipb::explorer::bridge::valid(command)) {
       return BotCommandResult::BadFormat;
    }
-   if (!ai::explore::begin(static_cast <int> (values[0]), command, static_cast <int> (values[6]), milliseconds, appending)) {
+   if (enqueuing) {
+      if (!ai::explore::enqueue(static_cast<int>(values[0]), command,
+         static_cast<int>(values[6]), milliseconds)) {
+         msg("AiPB explorer: queue rejected (busy, mixed bots, invalid, or full).");
+      }
+      else {
+         msg("AiPB explorer: queued command #%d.", ai::explore::queuedCommands());
+      }
+   }
+   else if (!ai::explore::begin(static_cast <int> (values[0]), command, static_cast <int> (values[6]), milliseconds, appending)) {
       msg("AiPB explorer: cannot start (busy, invalid, dead, or frozen bot).");
    }
    return BotCommandResult::Handled;
@@ -2594,7 +2640,7 @@ BotControl::BotControl () {
       },
       {
          "explore",
-         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save <name> | list | init <name> <bot> | replay <name> <bot> | append <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | clear | stop",
+         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save <name> | list | init <name> <bot> | replay <name> <bot> | append <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | queue <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | run <save_name> | queueclear | clear | stop",
          "Runs an admin-only bounded GoldSrc movement probe.",
          &BotControl::cmdExplore
       },

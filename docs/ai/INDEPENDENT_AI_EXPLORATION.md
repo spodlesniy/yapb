@@ -215,3 +215,26 @@ yb explore replay combined_move 1
 ```
 
 If the engine changes a bot's state between commands, append rejects the discontinuity instead of joining unrelated physics states.
+
+## D215 — Sequential command queue and CFG execution
+
+Prepare the queue with up to 32 commands for one bot using `yb explore queue <bot_index> <forward> <strafe> <jump> <duck> <yaw_delta> <frames|duration_ms ms>`.
+The `yb explore run <save_name>` command begins the sequence and automatically saves a CSV v2 recording after its last engine frame.
+No `wait` console aliases are required; the server executes the commands one after another, with no inserted idle physics frame or ordinary bot-AI turn.
+`yb explore queueclear` discards the pending queue while idle and `yb explore stop` cancels a running queue without marking an incomplete trace as a successful recording.
+The named save must not already exist, and the completed recording can later be used with `yb explore init <save_name> <bot_index>` and `yb explore replay <save_name> <bot_index>`.
+
+Example for one bot at slot 1:
+
+```text
+yb_freeze_bots 1
+yb explore queueclear
+yb explore clear
+yb explore queue 1 1 0 0 0 0 60
+yb explore queue 1 0 1 0 0 0 40
+yb explore queue 1 0 0 0 0 3 30
+yb explore run queue_test_01
+```
+
+Run `init` and `replay` from a separate CFG after the server prints the successful auto-save message.
+The original `yb explore` and `yb explore append` syntax is unchanged.

@@ -56,3 +56,9 @@ The C++17 bridge trace tests exercise descriptor size, allocation, ownership tra
 `yb explore append <bot_index> ...` extends a completed trace only when the selected bot's live endpoint matches the saved endpoint; fresh `yb explore <bot_index> ...` still replaces the trace.
 The 4096-step bounded C++17 trace contract checks full position, velocity, orientation, ground and crouch continuity; a rejected append preserves existing data.
 Named CSV v2 save, init and replay continue to operate on the resulting combined trace.
+
+## D215 — Bounded movement queue
+
+A C++17-compatible fixed 32-command `ProbeQueue` schedules one bot's sequential GoldSrc movement segments.
+A single `yb explore run <save_name>` dispatches all pending commands and automatically writes the completed CSV v2; `queueclear` abandons pending commands while idle.
+This is an engine-side scheduler, not a GoldSrc console `wait` loop; queue regression tests run in the Explorer CTest matrix.

@@ -341,3 +341,7 @@ C++17 bridge tests cover first-use yaw preservation, wraparound and explicit tur
 D214 introduces explicit `yb explore append <bot> <forward> <strafe> <jump> <duck> <yaw_delta> <frames|duration_ms ms>` to extend a completed in-memory GoldSrc trace without changing default `yb explore` replacement semantics.
 Appending requires the same bot, map and a continuous engine state (position, velocity, yaw/pitch, ground and crouch), rejects a full trace, and preserves the original CSV v2 metadata and total 4096-frame cap.
 Independent trace-contract tests cover permitted/rejected append cases; automatic CI and manually run Windows x86 game acceptance remain required.
+
+D215 adds an opt-in bounded single-bot movement command queue (32 commands), engine-frame transition without console `wait`, and automatic named CSV v2 export after successful execution.
+Command format is `yb explore queue <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|duration_ms ms>`, followed by `yb explore run <save_name>`; `queueclear` discards pending commands when idle.
+Queued executions preserve a single continuous GoldSrc trace, obey its existing 4096-frame hard cap, and fail closed on an unavailable bot, movement mismatch, or save failure; user-started Windows x86 gameplay verification is pending.
