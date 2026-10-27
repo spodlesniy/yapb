@@ -47,6 +47,7 @@ struct ProvisionalEdge {
   collision::PlayerStance stance { collision::PlayerStance::Standing };
   TraversalKind traversal { TraversalKind::Walk };
   bool conditionalSupport {};
+  ObjectId conditionalDoorEntityId {};
   double estimatedFlightSeconds {};
   double estimatedHorizontalSpeed {};
   double availableApproachDistance {};
@@ -88,6 +89,7 @@ struct ConnectivityReport {
   std::size_t rejectedJumpApproach {};
   std::size_t crouchedLandings {};
   std::size_t crouchedLandingsWithoutStanding {};
+  std::size_t conditionalDoorEdges {};
   std::size_t conditionalEdges {};
   std::size_t conditionalIslands {};
   std::size_t weakComponents {};

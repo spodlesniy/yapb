@@ -163,3 +163,12 @@ The positive synthetic brush-approach fixture no longer places a spawn beside th
 The existing spawn-on-brush fixture still checks spawn coverage and static brush provenance.
 Test failures return a nonzero code without an interactive exception dialog.
 No generator or artifact schema change is required.
+
+## D210.10 — Closed-door conditional walk links
+
+The Map Tool traces closed-pose func_door and func_door_rotating geometry independently from world and static brush collision.
+Only existing ground-supported walk candidates crossing a door receive conditional_door_entity_id and conditional_support=true.
+Doors are not static ground support; fixed walls continue to block walking.
+Connectivity JSON uses schema 0.8.0 with a conditional_door_edges count.
+The existing viewer can show a provisional walk link, but does not yet display its door ID or dynamically monitor its state.
+

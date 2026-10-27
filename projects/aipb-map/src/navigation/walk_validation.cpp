@@ -66,6 +66,41 @@ bool clear(
   return true;
 }
 
+ObjectId firstClosedDoor(
+  const collision::CollisionQueries &queries,
+  const std::vector<Brush> &doors,
+  std::size_t hull,
+  Vec3 from,
+  Vec3 to
+) {
+  const double halfHeight = hull == 1 ? 36.0 : 18.0;
+
+  for (const auto &door : doors) {
+    const auto &origin = door.entity->origin;
+    const auto &model = *door.model;
+    const double minX = model.mins.x + origin.x - 16.0;
+    const double maxX = model.maxs.x + origin.x + 16.0;
+    const double minY = model.mins.y + origin.y - 16.0;
+    const double maxY = model.maxs.y + origin.y + 16.0;
+    const double minZ = model.mins.z + origin.z - halfHeight;
+    const double maxZ = model.maxs.z + origin.z + halfHeight;
+
+    if (std::max(from.x, to.x) < minX || std::min(from.x, to.x) > maxX ||
+        std::max(from.y, to.y) < minY || std::min(from.y, to.y) > maxY ||
+        std::max(from.z, to.z) < minZ || std::min(from.z, to.z) > maxZ) {
+      continue;
+    }
+    const auto hit = queries.traceSegment(model.id, hull,
+      localPoint(from, origin), localPoint(to, origin));
+
+    if (hit.startSolid || hit.impactPlane) {
+      return door.entity->id;
+    }
+  }
+
+  return 0;
+}
+
 struct Surface {
   double originZ {};
   double normalZ {};
@@ -164,6 +199,7 @@ WalkResult validateWalk(
   const collision::CollisionQueries &queries,
   ObjectId world,
   const std::vector<Brush> &brushes,
+  const std::vector<Brush> &doors,
   const Candidate &from,
   const Candidate &to,
   std::size_t hull,
@@ -179,6 +215,7 @@ WalkResult validateWalk(
     return { .failure = WalkFailure::Support };
   }
   Vec3 previous = start;
+  ObjectId conditionalDoorEntityId = 0;
 
   for (std::size_t i = 1; i <= steps; ++i) {
     const double t = static_cast<double>(i) / static_cast<double>(steps);
@@ -205,6 +242,9 @@ WalkResult validateWalk(
         !stepClear(queries, world, brushes, hull, previous, next, config)) {
       return { .failure = WalkFailure::Collision, .samples = i };
     }
+    if (conditionalDoorEntityId == 0) {
+      conditionalDoorEntityId = firstClosedDoor(queries, doors, hull, previous, next);
+    }
     previous = next;
   }
 
@@ -212,7 +252,7 @@ WalkResult validateWalk(
     return { .failure = WalkFailure::Endpoint, .samples = steps };
   }
 
-  return { .samples = steps };
+  return { .samples = steps, .conditionalDoorEntityId = conditionalDoorEntityId };
 }
 
 double measureApproachDistance(

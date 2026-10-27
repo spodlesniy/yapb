@@ -21,6 +21,7 @@ enum class WalkFailure {
 struct WalkResult {
   WalkFailure failure { WalkFailure::None };
   std::size_t samples {};
+  ObjectId conditionalDoorEntityId {};
   bool passed() const {
     return failure == WalkFailure::None;
   }
@@ -31,6 +32,7 @@ WalkResult validateWalk(
   const collision::CollisionQueries &queries,
   ObjectId world,
   const std::vector<Brush> &brushes,
+  const std::vector<Brush> &doors,
   const Candidate &from,
   const Candidate &to,
   std::size_t hull,

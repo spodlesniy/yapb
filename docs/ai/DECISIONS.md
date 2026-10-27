@@ -2592,3 +2592,13 @@ Remove only the spawn from the isolated positive approach fixture; keep the exis
 Do not weaken production deduplication or make duplicate candidates artificially valid.
 Catch test exceptions in main and report them to CTest with a nonzero exit code to prevent interactive Windows CRT dialogs.
 Map Tool CI and game-level verification remain pending.
+
+## D210.10 — Conditional dynamic-door walk passages
+
+Recognize func_door and func_door_rotating brush models separately from fixed support and mutable breakable brushes.
+Do not consider doors as ground support and do not add their closed geometry to fixed-world walk collision rejection.
+For otherwise validated ground-supported walking paths, trace the closed-pose door player hull along each segment and retain the first intersecting door entity ID as a conditional dependency.
+Mark that walk edge conditional and report its door ID; preserve fixed-wall collision rejection and the earlier jump/drop behavior.
+Advance preliminary connectivity schema to 0.8.0 and add conditional_door_edges statistics.
+This is a provisional open-door hypothesis, not a claim that the door opens or can be activated by the bot; no runtime door-state sensing or door interaction is introduced.
+

@@ -31,6 +31,37 @@ inline bool suppliesSupport(BrushRole role) {
   return role != BrushRole::MutableObstacle;
 }
 
+// Closed-pose dynamic doors are potential barriers, never ground support.
+inline std::vector<Brush> collectDoors(const MapModel &map) {
+  std::vector<Brush> result;
+
+  if (!map.partition || map.partition->models.empty()) {
+    return result;
+  }
+  const auto &models = map.partition->models;
+  const auto worldId = models.front().id;
+
+  for (const auto &entity : map.entities) {
+    if (!entity.partitionModelId ||
+        (entity.type != "func_door" && entity.type != "func_door_rotating")) {
+      continue;
+    }
+    const auto it = std::find_if(models.begin(), models.end(), [&](const CollisionPartitionModel &model) {
+      return model.id == *entity.partitionModelId;
+    });
+
+    if (it != models.end() && it->id != worldId) {
+      result.push_back({
+        .entity = &entity,
+        .model = &*it,
+        .role = BrushRole::MutableObstacle
+      });
+    }
+  }
+
+  return result;
+}
+
 inline BrushRole classifyBreakable(const MapEntity &entity) {
   const auto it = entity.properties.find("spawnflags");
   std::uint32_t flags = 0;

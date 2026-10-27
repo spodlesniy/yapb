@@ -102,7 +102,7 @@ void testConnectivity() {
           "candidate input modified");
   const auto json = connectivityJson(result);
   require(json == connectivityJson(buildConnectivity(map, candidates, config)), "non-deterministic connectivity JSON");
-  require(json.find("\"schema_version\":\"0.7.0\"") != std::string::npos, "wrong schema");
+  require(json.find("\"schema_version\":\"0.8.0\"") != std::string::npos, "wrong schema");
 
   candidates.candidates[1].standingFree = false;
   candidates.candidates[1].crouchingFree = false;
@@ -269,10 +269,75 @@ void testContinuousWalkRejectsNarrowGap() {
   require(result.walkSamples >= 9, "walk must inspect interior floor samples");
 }
 
+void testConditionalDoorPassage() {
+  auto map = fixture();
+  auto &partition = *map.partition;
+  const auto innerPlane = static_cast<std::uint32_t>(partition.planes.size());
+  partition.planes.push_back({
+    .normal = { 1, 0, 0 },
+    .distance = 72,
+    .type = 0
+  });
+  const auto outerPlane = static_cast<std::uint32_t>(partition.planes.size());
+  partition.planes.push_back({
+    .normal = { 1, 0, 0 },
+    .distance = 88,
+    .type = 0
+  });
+  const auto innerNode = static_cast<std::int32_t>(partition.clipNodes.size());
+  partition.clipNodes.push_back({
+    .planeIndex = innerPlane,
+    .front = -2,
+    .back = -1
+  });
+  const auto outerNode = static_cast<std::int32_t>(partition.clipNodes.size());
+  partition.clipNodes.push_back({
+    .planeIndex = outerPlane,
+    .front = -1,
+    .back = innerNode
+  });
+  partition.models.push_back({
+    .id = 2,
+    .mins = { 72, 0, -32 },
+    .maxs = { 88, 128, 96 },
+    .origin = {},
+    .headNodes = { -1, outerNode, outerNode, outerNode }
+  });
+  MapEntity door;
+  door.id = 9;
+  door.type = "func_door";
+  door.partitionModelId = 2;
+  map.entities.push_back(door);
+  validate(map);
+
+  CandidateReport candidates;
+  candidates.mapName = map.name;
+  candidates.sourceSha256 = map.sourceSha256;
+  candidates.artifactSha256 = std::string(64, 'b');
+  candidates.candidates = {
+    makeCandidate(1, { 32, 32, 0 }),
+    makeCandidate(2, { 128, 32, 0 })
+  };
+  const auto report = buildConnectivity(map, candidates);
+  require(report.conditionalDoorEdges == 2, "closed door must flag both directed walk links");
+  require(report.edges.size() == 2, "door should not create extra links");
+
+  for (const auto &edge : report.edges) {
+    require(edge.traversal == TraversalKind::Walk && edge.conditionalSupport &&
+            edge.conditionalDoorEntityId == 9, "door crossing not conditional");
+  }
+  require(connectivityJson(report).find(R"("conditional_door_entity_id":"9")") != std::string::npos,
+          "door identity missing in report");
+  map.entities[0].type = "func_wall";
+  const auto fixed = buildConnectivity(map, candidates);
+  require(fixed.edges.empty(), "fixed wall unexpectedly traversable");
+}
+
 } // namespace
 
 int runTests() {
   testConnectivity();
+  testConditionalDoorPassage();
   testContinuousWalkRejectsNarrowGap();
   testContinuousWalkClimbsGradualSlope();
   testJumpTransitions(32.0, TraversalKind::Jump);

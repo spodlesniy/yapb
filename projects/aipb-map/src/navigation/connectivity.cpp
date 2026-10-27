@@ -95,6 +95,7 @@ ConnectivityReport buildConnectivity(
   collision::CollisionQueries queries(map);
   const auto world = map.partition->models.front().id;
   const auto brushes = detail::collectBrushes(map);
+  const auto doors = detail::collectDoors(map);
   const auto side = config.maximumPlanarDistance;
   using Cell = std::pair<std::int64_t, std::int64_t>;
   std::map<Cell, std::vector<std::size_t>> cells;
@@ -195,7 +196,7 @@ ConnectivityReport buildConnectivity(
         if ((hull == 1 && !standing) || (hull == 3 && !crouching)) {
           continue;
         }
-        const auto walk = detail::validateWalk(queries, world, brushes, from, to, hull, config);
+        const auto walk = detail::validateWalk(queries, world, brushes, doors, from, to, hull, config);
         report.walkSamples += walk.samples;
 
         if (!walk.passed()) {
@@ -233,12 +234,14 @@ ConnectivityReport buildConnectivity(
           .heightChange = rise,
           .stance = stance,
           .traversal = TraversalKind::Walk,
-          .conditionalSupport = from.conditionalSupport || to.conditionalSupport,
+          .conditionalSupport = from.conditionalSupport || to.conditionalSupport || walk.conditionalDoorEntityId != 0,
+          .conditionalDoorEntityId = walk.conditionalDoorEntityId,
           .estimatedFlightSeconds = 0.0,
           .estimatedHorizontalSpeed = 0.0,
           .canStandAfterLanding = to.standingFree
         });
-        report.conditionalEdges += from.conditionalSupport || to.conditionalSupport;
+        report.conditionalEdges += from.conditionalSupport || to.conditionalSupport || walk.conditionalDoorEntityId != 0;
+        report.conditionalDoorEdges += walk.conditionalDoorEntityId != 0;
         report.standingEdges += hull == 1;
         report.crouchingEdges += hull == 3;
         ++accepted;
@@ -288,6 +291,7 @@ std::string connectivityJson(const ConnectivityReport &report) {
                        e.traversal == TraversalKind::Jump ? "jump" :
                        e.traversal == TraversalKind::CrouchJump ? "crouch_jump" : "drop" },
       { "conditional_support", e.conditionalSupport },
+      { "conditional_door_entity_id", e.conditionalDoorEntityId ? Json(std::to_string(e.conditionalDoorEntityId)) : Json {} },
       { "estimated_flight_seconds", e.estimatedFlightSeconds },
       { "estimated_horizontal_speed", e.estimatedHorizontalSpeed },
       { "available_approach_distance", e.availableApproachDistance },
@@ -298,7 +302,7 @@ std::string connectivityJson(const ConnectivityReport &report) {
 
   return io::writeJson(Json::Object {
     { "format", "aipb-preliminary-connectivity" },
-    { "schema_version", "0.7.0" },
+    { "schema_version", "0.8.0" },
     { "source_candidates_schema", "0.3.3" },
     { "candidates_sha256", report.candidatesSha256 },
     { "map_name", report.mapName },
@@ -371,6 +375,7 @@ std::string connectivityJson(const ConnectivityReport &report) {
     { "rejected_jump_approach", number(report.rejectedJumpApproach) },
     { "crouched_landings", number(report.crouchedLandings) },
     { "crouched_landings_without_standing", number(report.crouchedLandingsWithoutStanding) },
+    { "conditional_door_edges", number(report.conditionalDoorEdges) },
     { "conditional_edges", number(report.conditionalEdges) },
     { "conditional_islands", number(report.conditionalIslands) },
     { "weak_components", number(report.weakComponents) },

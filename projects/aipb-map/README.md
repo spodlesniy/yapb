@@ -278,3 +278,11 @@ The Map Tool can produce additional world-ground nodes next to static brush obst
 These candidates require verified BSP hull clearance, are deduplicated, and are subject to bounded search budgets.
 Candidates JSON v0.3.3 includes the source obstacle entity and approach counters; connectivity and .nviz formats are unchanged.
 After updating the Map Tool binary, remove old .nviz snapshots, run export_navvis_all_bsp.bat, copy new snapshots to the game data/navvis folder, and reload the map.
+
+## D210.10 — Conditional door passages
+
+Preliminary connectivity now identifies walk edges crossing closed func_door and func_door_rotating brushes as conditional passages.
+Each such JSON edge includes conditional_door_entity_id, and the report counts conditional_door_edges (schema 0.8.0).
+No automatic door opening or runtime monitoring is implemented; .nviz v1 and the legacy waypoint graph are unchanged.
+Re-export .nviz after rebuilding the Map Tool when the D210 series is ready for in-game verification.
+
