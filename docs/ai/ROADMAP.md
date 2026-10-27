@@ -322,3 +322,7 @@ D213.1 adds durable named movement records, exact name-based save/list/load/repl
 Replay remains a diagnostic comparison rather than guaranteed deterministic physics; direct in-game Windows x86 validation and automatic CI for D213.1 are pending.
 
 D213.2 replaces an MSVC-deprecated `strcpy` in the standalone named-trace regression fixture with bounds-aware `snprintf`; the D213.1 GCC/Clang and AI unit CI passed but Explorer MSVC /W4 /WX compilation failed on C4996 before CTest; follow-up CI is pending.
+
+D213.3 adds the explicit `yb explore clear` command to discard only the current in-memory trajectory and its metadata, rejecting clear while a probe or replay is running.
+Saving remains non-destructive, named CSV files are unchanged, and starting a new experiment still replaces the previous in-memory recording; accumulation across separate commands is not part of D213.3.
+The standalone trace lifecycle regression has been extended; automatic CI and target Windows x86 game acceptance remain pending.

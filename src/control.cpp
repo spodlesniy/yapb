@@ -1328,6 +1328,18 @@ int BotControl::cmdExplore () {
    enum args { root = 0, name, botIndex, forward, strafe, jump, duck, yaw, frames, unit };
    // Named traces are sandboxed to the explorer directory under YaPB data.
    const auto operation = arg <StringRef>(botIndex);
+   if (operation == "clear") {
+      if (hasArg(forward)) {
+         return BotCommandResult::BadFormat;
+      }
+      if (!ai::explore::clear()) {
+         msg("AiPB explorer: cannot clear while recording or replay is active; use stop first.");
+      }
+      else {
+         msg("AiPB explorer: in-memory trajectory cleared; named recordings unchanged.");
+      }
+      return BotCommandResult::Handled;
+   }
    if (operation == "save" || operation == "replay" || operation == "init" || operation == "list") {
       if (operation == "list") {
          if (hasArg(forward)) {
@@ -2579,7 +2591,7 @@ BotControl::BotControl () {
       },
       {
          "explore",
-         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save <name> | list | init <name> <bot> | replay <name> <bot> | stop",
+         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save <name> | list | init <name> <bot> | replay <name> <bot> | clear | stop",
          "Runs an admin-only bounded GoldSrc movement probe.",
          &BotControl::cmdExplore
       },

@@ -2697,3 +2697,12 @@ No physical reset can restore external entities, dynamic doors, opponents or Gol
 The D213.1 GCC and Clang Explorer CI and common AI unit tests passed.
 Its MSVC Explorer build failed due to C4996 in the new test, where `strcpy` was rejected under `/W4 /WX`.
 Replace that test-only copy with bounded `snprintf`; do not alter production trace parsing or game runtime behavior.
+
+## D213.3 — Explicitly clear only the in-memory exploration trace
+
+Keep the existing D213 recording boundary: one completed `yb explore` experiment creates the active in-memory trajectory, potentially containing thousands of engine-frame steps, and starting a new experiment replaces the previous one.
+`yb explore save <name>` serializes that trace without clearing it; repeated saves under different available names remain possible.
+Add `yb explore clear` to discard the active in-memory trace and its map/start-state metadata, without deleting or modifying any named CSV on disk.
+Reject clear while recording or replay is active so neither a frame callback nor a replay reads an invalidated trace; use `yb explore stop` before clear when necessary.
+After clear, saving without a new completed recording fails, while loading a named trace with `init` or `replay` remains available.
+Do not silently enable multi-command accumulation: sequential commands are separate episodes under the current D213 schema, and concatenating them requires explicit handling of intervening engine time and continuity.

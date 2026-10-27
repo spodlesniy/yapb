@@ -157,3 +157,12 @@ A duplicate name is rejected without overwriting the file.
 Initiating from a different map, a dead bot or an obstructed destination is rejected.
 While init restores observable movement state, it does not restore the full GoldSrc environment, entities, doors, timers or hidden player-movement state; resulting replay differences must be reported rather than hidden.
 The test requires the user's Windows x86 build and in-game verification.
+
+## D213.3 — In-memory trace clearing
+
+Each completed `yb explore <bot> ...` command records the actual engine frames executed during that single experiment.
+The next `yb explore <bot> ...` starts a new in-memory trace and replaces the previous one; different console commands are not automatically concatenated.
+`yb explore save <name>` persists a copy of the current completed trace and does **not** clear it, so the same trace can be saved again with a different unused name.
+`yb explore clear` removes only that in-memory trace and associated map/initial-state metadata, leaving named recordings under YaPB data/explorer untouched.
+An active recording or replay rejects `clear`; issue `yb explore stop` first to terminate an experiment before clearing.
+After clearing, `save` cannot succeed until another experiment completes, but `init <name> <bot>` and `replay <name> <bot>` can load a saved trace from disk as before.

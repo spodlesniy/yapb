@@ -122,6 +122,16 @@ int recordedSteps() {
    return trace.count;
 }
 
+bool clear() {
+   // Preserve the active recording or replay until it finishes or is stopped.
+   if (active()) {
+      return false;
+   }
+   trace.clear();
+   metadata = {};
+   return true;
+}
+
 bool save(const char *filePath) {
    if (active() || !trace.completed || trace.count == 0 || !filePath || !*filePath
       || !aipb::explorer::bridge::validMetadata(metadata)) {

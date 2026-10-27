@@ -38,6 +38,7 @@ static int runTests() {
   require(trace.append(sample));
   trace.completed = true;
   require(!trace.append(sample));
+  // An explicit clear invalidates the completed in-memory recording.
   trace.clear();
   require(trace.count == 0 && !trace.completed && trace.botIndex == -1);
   sample.command.jump = 2;
@@ -45,6 +46,11 @@ static int runTests() {
   sample.command.jump = 0;
   sample.msec = 0;
   require(!trace.append(sample));
+  // Once cleared, a fresh recording is accepted without old steps.
+  sample.msec = 2;
+  require(trace.append(sample) && trace.count == 1 && !trace.completed);
+  trace.clear();
+  require(trace.count == 0 && trace.botIndex == -1 && !trace.completed);
 
   const ReplayDifference same = compareStates(before, before);
   require(same.within(0.01, 0.01, 0.01f));

@@ -37,3 +37,10 @@ Replay is diagnostic and fails on position/velocity/angle/grounded/duck divergen
 Trace I/O contracts and CSV v2 parsing are in the C++17-compatible `engine_bridge_trace_io.h` with standalone regression tests.
 Use `yb explore save <name>`, `yb explore list`, `yb explore init <name> <bot_index>` and `yb explore replay <name> <bot_index>` to work with named movement traces under YaPB data/explorer.
 Init explicitly moves the bot, while replay rejects incompatible start states and reports divergence; the full game world is not reset.
+
+## D213.3 — Clearing the current trace
+
+`yb explore clear` discards the current in-memory recording only; named `.csv` files are not deleted.
+`yb explore save <name>` never clears the buffer.
+Each separate movement command still starts a fresh trace, not an appended multi-command recording.
+Clear is refused while an experiment or replay is active.
