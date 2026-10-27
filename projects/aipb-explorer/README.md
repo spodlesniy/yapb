@@ -68,3 +68,10 @@ This is an engine-side scheduler, not a GoldSrc console `wait` loop; queue regre
 `engine_bridge_trace_report.h` derives path length, endpoint displacement, elapsed command milliseconds, mean path speed, peak observed velocity and state/command frame counts from validated recorded steps.
 The in-game `yb explore report` prints the summary without modifying a named or in-memory trace.
 Explorer CTest now runs the queue test independently, with strict-warning flags, and adds a report regression fixture.
+
+## D217 — Weapon movement-cap requirements for replay
+
+Trace replay preflight derives the maximum horizontal command input request from normalized forward/strafe axes and each recorded GoldSrc `max_speed`.
+Peak observed horizontal velocity is reported separately and may exceed a weapon speed cap due to momentum.
+The runtime uses the selected bot's live `pev->maxspeed` and requests the knife if needed, waiting for a confirmed sufficient limit before beginning replay.
+The C++17 bridge-trace regression tests cover movement normalization, step maxima and malformed evidence; CSV v2 remains unchanged.

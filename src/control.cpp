@@ -1463,7 +1463,7 @@ int BotControl::cmdExplore () {
          }
       }
       else if (!ai::explore::beginReplay(static_cast<int>(index))) {
-         msg("AiPB explorer: replay rejected (start mismatch or unavailable bot); use init first.");
+         msg("AiPB explorer: replay rejected (start mismatch, speed requirement, unavailable bot, or knife fallback).");
       }
       return BotCommandResult::Handled;
    }

@@ -24,6 +24,8 @@ struct Session {
    float lastTime {};
    bool replay {};
    int replayIndex {};
+   bool waitingForKnife {};
+   float knifeDeadline {};
 };
 
 using aipb::explorer::bridge::TraceBuffer;
@@ -160,7 +162,8 @@ bool beginReplay(int botIndex) {
       return false;
    }
    auto *bot = bots.findBotByIndex(botIndex);
-   if (!bot || !game.isAliveEntity(bot->ent()) || bot->pev->maxspeed < 10.0f) {
+   if (!bot || !game.isAliveEntity(bot->ent()) || !std::isfinite(bot->pev->maxspeed)
+      || bot->pev->maxspeed < 10.0f) {
       return false;
    }
    if (std::strcmp(metadata.map, game.getMapName()) != 0) {
@@ -173,11 +176,34 @@ bool beginReplay(int botIndex) {
          difference.position, difference.velocity, difference.yawDegrees);
       return false;
    }
+   aipb::explorer::bridge::ReplaySpeedRequirement requirement {};
+   if (!aipb::explorer::bridge::replaySpeedRequirement(trace, requirement)) {
+      game.print("AiPB explorer: replay rejected: invalid speed evidence.");
+      return false;
+   }
+   game.print("AiPB explorer: replay speed preflight: required=%.1f, current_limit=%.1f, peak_observed_horizontal=%.1f, limiting_step=%d",
+      requirement.maximumRequested, bot->pev->maxspeed,
+      requirement.peakObservedHorizontal, requirement.requestedStep);
+   const bool insufficient = bot->pev->maxspeed + 0.01f < requirement.maximumRequested;
+   if (insufficient && !(bot->pev->weapons & cr::bit(Weapon::Knife))) {
+      game.print("AiPB explorer: replay rejected: current weapon is too slow and knife is unavailable.");
+      return false;
+   }
+
    session = {};
    session.botIndex = botIndex;
-   session.replay = true;
    session.lastTime = game.time();
-   game.print("AiPB explorer: replay started, %d steps", trace.count);
+   if (insufficient) {
+      session.waitingForKnife = true;
+      session.knifeDeadline = game.time() + 1.0f;
+      bot->issueCommand("weapon_knife");
+      game.print("AiPB explorer: requested knife; waiting for speed limit >= %.1f before replay.",
+         requirement.maximumRequested);
+   }
+   else {
+      session.replay = true;
+      game.print("AiPB explorer: replay started, %d steps", trace.count);
+   }
    return true;
 }
 
@@ -345,6 +371,33 @@ bool frame(Bot &bot) {
    if (session.botIndex != bot.index()) {
       return false;
    }
+   if (session.waitingForKnife) {
+      if (!game.isAliveEntity(bot.ent()) || !std::isfinite(bot.pev->maxspeed)
+         || game.time() >= session.knifeDeadline) {
+         stop("knife fallback unavailable or timed out");
+         return true;
+      }
+      aipb::explorer::bridge::ReplaySpeedRequirement requirement {};
+      if (!aipb::explorer::bridge::replaySpeedRequirement(trace, requirement)) {
+         stop("invalid replay speed evidence");
+         return true;
+      }
+      if (bot.pev->maxspeed + 0.01f < requirement.maximumRequested) {
+         return true;
+      }
+      const auto difference = compareStates(trace.samples[0].before, observe(bot));
+      if (!difference.within(5.0, 30.0, 5.0f)) {
+         stop("replay start changed during knife selection; use init and replay again");
+         return true;
+      }
+      session.waitingForKnife = false;
+      session.replay = true;
+      session.replayIndex = 0;
+      session.lastTime = game.time();
+      game.print("AiPB explorer: knife fallback ready, limit=%.1f; replay started.",
+         bot.pev->maxspeed);
+      return true;
+   }
    if (!game.isAliveEntity(bot.ent()) || !std::isfinite(bot.pev->maxspeed)
       || bot.pev->maxspeed < 10.0f || (session.replay ? session.replayIndex >= trace.count : session.budget.complete())) {
       stop("bot unavailable");
@@ -359,6 +412,14 @@ bool frame(Bot &bot) {
       ? cr::clamp(static_cast <int> (elapsed * 1000.0f + 0.5f), 1, 255) : 1;
    const bool replaying = session.replay;
    const TraceSample *recorded = replaying ? &trace.samples[session.replayIndex] : nullptr;
+   if (replaying && bot.pev->maxspeed + 0.01f
+      < aipb::explorer::bridge::requestedHorizontalSpeed(*recorded)) {
+      game.print("AiPB explorer: replay speed limit dropped at step %d: required=%.1f, current=%.1f",
+         session.replayIndex, aipb::explorer::bridge::requestedHorizontalSpeed(*recorded),
+         bot.pev->maxspeed);
+      stop("replay speed limit insufficient");
+      return true;
+   }
    const uint8_t msec = replaying ? recorded->msec : static_cast<uint8_t>(milliseconds);
    const auto before = observe(bot);
    if (replaying) {

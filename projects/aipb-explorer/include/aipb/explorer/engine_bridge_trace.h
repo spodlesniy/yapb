@@ -77,6 +77,60 @@ struct TraceBuffer {
   }
 };
 
+// Weapon-dependent replay preflight: input demand is not the same as momentum.
+struct ReplaySpeedRequirement {
+  float maximumRequested {};
+  int requestedStep { -1 };
+  double peakObservedHorizontal {};
+};
+
+inline float requestedHorizontalSpeed(const TraceSample &sample) {
+  const float magnitude = std::hypot(sample.command.forward, sample.command.strafe);
+  return sample.maxSpeed * (magnitude > 1.0f ? 1.0f : magnitude);
+}
+
+inline bool replaySpeedRequirement(
+  const TraceBuffer &trace,
+  ReplaySpeedRequirement &result
+) {
+  if (!trace.completed || !trace.samples || trace.count <= 0
+    || trace.count > ProbeBudget::kMaxSafetyFrames) {
+    return false;
+  }
+
+  ReplaySpeedRequirement candidate {};
+
+  for (int i = 0; i < trace.count; ++i) {
+    const TraceSample &step = trace.samples[i];
+
+    if (!valid(step.command) || step.msec == 0 || !std::isfinite(step.maxSpeed)
+      || step.maxSpeed < 0.0f || !validState(step.before) || !validState(step.after)
+      || step.after.tick != step.before.tick + 1
+      || (i != 0 && !continuousTraceState(trace.samples[i - 1].after, step.before))) {
+      return false;
+    }
+
+    const float requested = requestedHorizontalSpeed(step);
+    const double observed = std::hypot(step.after.vx, step.after.vy);
+
+    if (!std::isfinite(requested) || !std::isfinite(observed)) {
+      return false;
+    }
+
+    if (requested > candidate.maximumRequested) {
+      candidate.maximumRequested = requested;
+      candidate.requestedStep = i;
+    }
+
+    if (observed > candidate.peakObservedHorizontal) {
+      candidate.peakObservedHorizontal = observed;
+    }
+  }
+
+  result = candidate;
+  return true;
+}
+
 // Append requires one previously completed episode, the same bot, and no
 // unrecorded movement since the previous engine frame.
 inline bool canAppendTrace(const TraceBuffer &trace, int botIndex,

@@ -126,6 +126,48 @@ static int runTests() {
   joined.clear();
   require(!canAppendTrace(joined, 1, second.after));
 
+  // Replay input demand is capped at the recorded movement scale, not peak momentum.
+  TraceBuffer speedTrace {};
+  TraceSample move {};
+  move.maxSpeed = 240.0f;
+  move.msec = 2;
+  move.command.forward = 1.0f;
+  move.before = before;
+  move.after = move.before;
+  move.after.tick = 1;
+  move.after.vx = 270.0;
+  require(speedTrace.append(move));
+  TraceSample diagonal = move;
+  diagonal.before = move.after;
+  diagonal.after = diagonal.before;
+  diagonal.after.tick = 2;
+  diagonal.command.strafe = 1.0f;
+  diagonal.maxSpeed = 250.0f;
+  diagonal.after.vx = 310.0;
+  require(speedTrace.append(diagonal));
+  TraceSample partial = diagonal;
+  partial.before = diagonal.after;
+  partial.after = partial.before;
+  partial.after.tick = 3;
+  partial.command.forward = 0.5f;
+  partial.command.strafe = 0.0f;
+  partial.maxSpeed = 300.0f;
+  partial.after.vx = 280.0;
+  require(speedTrace.append(partial));
+  ReplaySpeedRequirement req {};
+  require(!replaySpeedRequirement(speedTrace, req));
+  speedTrace.completed = true;
+  require(replaySpeedRequirement(speedTrace, req));
+  require(req.maximumRequested == 250.0f && req.requestedStep == 1);
+  require(req.peakObservedHorizontal == 310.0);
+  require(requestedHorizontalSpeed(partial) == 150.0f);
+  require(!(req.maximumRequested <= 230.0f));
+  require(req.maximumRequested <= 250.0f);
+  speedTrace.samples[1].after.vx = std::numeric_limits<double>::quiet_NaN();
+  req.requestedStep = 999;
+  require(!replaySpeedRequirement(speedTrace, req) && req.requestedStep == 999);
+  speedTrace.clear();
+
   const ReplayDifference same = compareStates(before, before);
   require(same.within(0.01, 0.01, 0.01f));
   AipbExplorerBridgeState rotated = before;

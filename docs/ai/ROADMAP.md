@@ -349,3 +349,8 @@ Queued executions preserve a single continuous GoldSrc trace, obey its existing 
 D216 adds a read-only in-game `yb explore report` summary over the current completed trace, including simulated duration, measured displacement and traveled distance, average/peak velocity, airborne/crouched frames and held jump/neutral frames.
 The summary uses engine-observed before/after states, validates trace continuity and keeps CSV v2 unchanged; an earlier D215 CMake registration mistake that passed unrelated executable names to the bridge-trace test and omitted the queue test target from strict-warning checks is corrected.
 Standalone C++17 report tests cover values, rejection of incomplete/corrupted traces and unchanged output on failure; automatic CI and user-started Windows x86 verification remain pending.
+
+D217 makes named-trajectory replay weapon-speed-aware: validate the maximum horizontal input requested by all recorded GoldSrc frames against the live bot's `pev->maxspeed` before replay, with a guarded knife request when the current weapon is too slow.
+Replay waits briefly for the live movement cap to update and rejects unavailable/insufficient knife, timeout, changed start pose or any subsequent speed-cap drop instead of silently replaying with an impossible weapon constraint.
+The recorded horizontal velocity peak is reported separately as observed momentum, not treated as a weapon-speed requirement; CSV v2 and the 4096-frame bound are unchanged.
+Automatic CI and manual Windows x86 replay checks with slow weapons and knife fallback remain pending.

@@ -2764,3 +2764,19 @@ Compute 3D traveled distance as the sum of observed frame-to-frame displacements
 Report the number of post-frame airborne/crouched states and the number of frames with jump or fully neutral commands; frame counts are not equivalent to jump transitions or complete periods of being airborne.
 Use bounded C++17-compatible engine-independent report logic with strict GCC/Clang/MSVC regressions.
 Fix the D215 Explorer CMake configuration so each test command runs only its own executable and queue/report tests receive strict warning flags.
+
+## D217 — Weapon-speed-aware replay preflight and knife fallback
+
+Recorded v2 trace steps already contain the command axes and the GoldSrc `max_speed` value used to translate those axes into `pfnRunPlayerMove` input.
+A weapon may reduce `pev->maxspeed` at replay time; sending recorded input without checking this cap can silently produce different acceleration, jump distance and reachability.
+For each step, compute the requested horizontal input speed as `min(1, hypot(forward, strafe)) * recorded max_speed`, then take the maximum over the completed, continuous recording.
+This requested command speed is distinct from the observed `hypot(vx, vy)` peak: momentum, falling or impulses can yield observed horizontal velocity above the weapon's current movement cap.
+Reject corrupted trace evidence before any replay or weapon change.
+If the current live `pev->maxspeed` meets the requirement (0.01 tolerance), replay proceeds unchanged.
+Otherwise, only when the selected bot owns a knife, request it through the existing bot command interface and hold that bot out of ordinary AI control while awaiting a verified live speed-cap update.
+Bound the wait to one second; reject if knife selection fails, the resulting cap stays inadequate or the recorded starting pose changes, without producing unrecorded movement steps.
+On successful verification, replay starts at step zero in the following engine frame.
+During replay, verify the current speed cap before every recorded step and stop if it drops below that step's requested speed; never force `pev->maxspeed` or teleport to compensate.
+This is a necessary command-speed compatibility check, not a guarantee of identical physics: crouch state, ground friction, slope, water, dynamic collisions and hidden engine state still affect movement and jump outcomes.
+Keep CSV v2 identical, reject absent knife explicitly and maintain all manual queue, clear, init and replay behavior outside the added preflight.
+Regression tests cover normalized diagonal input, partial input, observed momentum beyond nominal speed, corrupt traces and cap comparisons.

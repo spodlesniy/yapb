@@ -260,3 +260,17 @@ yb explore run report_demo_01
 ```
 
 After the completion and successful save message, run `yb explore report`.
+
+## D217 — Replay speed compatibility with current weapon
+
+Weapon-dependent GoldSrc `pev->maxspeed` can make a previously recorded trajectory impossible to reproduce with a different equipped weapon.
+On `yb explore replay <name> <bot>`, Explorer reports the peak requested horizontal command speed, the current weapon-dependent movement cap, the peak observed horizontal velocity and the command step requiring the highest cap.
+The requested command cap is computed from the stored command axes and stored per-frame `max_speed`; the observed horizontal velocity is informative momentum and is not used as the weapon restriction.
+If the live speed cap is sufficient, replay begins as before.
+If insufficient and a knife is available, the bot receives a `weapon_knife` selection request and replay waits up to one second for the game engine to report an adequate live speed limit.
+On success, replay begins without recording extra movement frames.
+If a knife cannot be selected, the speed cap remains insufficient, the bot becomes unavailable or the start pose changes, replay aborts with a diagnostic.
+The command also checks the current cap before each replay frame in case the weapon limit changes mid-episode.
+No attempt is made to force the saved `max_speed` onto the player or pretend a recorded peak horizontal velocity is attainable as an ordinary run-speed limit.
+A knife cannot eliminate non-weapon movement caps or ensure matching jumps under different physical conditions.
+The existing `yb explore init <name> <bot>` can be repeated before another replay attempt.
