@@ -102,7 +102,7 @@ void testConnectivity() {
           "candidate input modified");
   const auto json = connectivityJson(result);
   require(json == connectivityJson(buildConnectivity(map, candidates, config)), "non-deterministic connectivity JSON");
-  require(json.find("\"schema_version\":\"0.8.0\"") != std::string::npos, "wrong schema");
+  require(json.find("\"schema_version\":\"0.9.0\"") != std::string::npos, "wrong schema");
 
   candidates.candidates[1].standingFree = false;
   candidates.candidates[1].crouchingFree = false;
@@ -333,10 +333,63 @@ void testConditionalDoorPassage() {
   require(fixed.edges.empty(), "fixed wall unexpectedly traversable");
 }
 
+void testDirectedGraphDiagnostics() {
+  CandidateReport candidates;
+  candidates.candidates = {
+    makeCandidate(10, { 0, 0, 0 }),
+    makeCandidate(20, { 64, 0, 0 }),
+    makeCandidate(30, { 128, 0, 0 }),
+    makeCandidate(40, { 192, 0, 0 }),
+    makeCandidate(50, { 256, 0, 0 })
+  };
+  SpawnCoverage spawn;
+  spawn.coveredCandidateId = 10;
+  candidates.spawns.push_back(spawn);
+  ConnectivityReport report;
+  const auto edge = [](std::size_t from, std::size_t to, bool conditional) {
+    ProvisionalEdge result;
+    result.from = from;
+    result.to = to;
+    result.conditionalSupport = conditional;
+
+    return result;
+  };
+  report.edges = {
+    edge(10, 20, false),
+    edge(20, 10, false),
+    edge(20, 30, true),
+    edge(30, 40, false),
+    edge(40, 30, false)
+  };
+  analyzeDirectedConnectivity(candidates, report);
+  require(report.strongComponents == 3 && report.largestStrongComponent == 2,
+          "incorrect directed component counts");
+  require(report.unconditionalStrongComponents == 3, "incorrect unconditional components");
+  require(report.oneWaySinkComponents == 1 && report.oneWaySinkCandidates == 2,
+          "incoming one-way sink not detected");
+  require(report.spawnAnchors == 1 && report.candidatesReachableFromSpawns == 4 &&
+          report.candidatesReachableUnconditionally == 2 &&
+          report.candidatesUnreachableFromSpawns == 1, "incorrect spawn reachability");
+  analyzeDirectedConnectivity(candidates, report);
+  require(report.oneWaySinkComponents == 1, "graph diagnostics must be idempotent");
+  report.edges.push_back(edge(40, 20, false));
+  analyzeDirectedConnectivity(candidates, report);
+  require(report.strongComponents == 2 && report.oneWaySinkComponents == 0,
+          "reverse connection should merge strong components");
+  report.edges.push_back(edge(40, 999, false));
+
+  try {
+    analyzeDirectedConnectivity(candidates, report);
+    throw std::runtime_error("unknown graph endpoint accepted");
+  } catch (const std::invalid_argument &) {
+  }
+}
+
 } // namespace
 
 int runTests() {
   testConnectivity();
+  testDirectedGraphDiagnostics();
   testConditionalDoorPassage();
   testContinuousWalkRejectsNarrowGap();
   testContinuousWalkClimbsGradualSlope();

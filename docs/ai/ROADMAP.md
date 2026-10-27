@@ -288,3 +288,5 @@ D210.9 adds bounded, collision-validated world-floor approach candidates around 
 D210.9.1 isolates the fixed-brush approach regression fixture from spawn refinement (which already populated matching launch nodes), and catches test failures to prevent interactive Windows CRT dialogs; automatic CI remains the acceptance gate.
 
 D210.10 adds closed-pose func_door and func_door_rotating detection for provisional walk links; crossings are recorded as conditionally traversable with the blocking door entity ID, without treating doors as ground support or static walls; engine-state and in-game verification remain pending.
+
+D210.11 adds directed graph quality diagnostics (strong components, one-way sinks and spawn-anchor reachability with/without conditional links) for offline acceptance before a consolidated in-game D210 validation; no provisional edge-generation behavior changes and CI remains pending.

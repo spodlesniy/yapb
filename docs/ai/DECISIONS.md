@@ -2602,3 +2602,12 @@ Mark that walk edge conditional and report its door ID; preserve fixed-wall coll
 Advance preliminary connectivity schema to 0.8.0 and add conditional_door_edges statistics.
 This is a provisional open-door hypothesis, not a claim that the door opens or can be activated by the bot; no runtime door-state sensing or door interaction is introduced.
 
+## D210.11 — Directed graph completeness diagnostics
+
+Analyze candidate IDs and accepted directed edges after jump/drop construction with bounded iterative Kosaraju traversal.
+Report strong components and their largest member count, strong components excluding conditional links, and one-way sink components with incoming but no outgoing inter-component edges.
+Use unique covered spawn candidate IDs as anchor nodes; count reachable candidates with all edges, unconditionally reachable candidates and unreachable candidates.
+Do not treat isolated components without incoming paths as one-way sinks, and do not interpret weak component counts as directed navigability.
+Preserve edge generation, candidate order, weak connectivity metrics and viewer binary format.
+Advance preliminary connectivity JSON to 0.9.0 with the new summary fields.
+The data supports later offline acceptance and game inspection; it does not establish physical GoldSrc reachability.

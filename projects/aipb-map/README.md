@@ -286,3 +286,9 @@ Each such JSON edge includes conditional_door_entity_id, and the report counts c
 No automatic door opening or runtime monitoring is implemented; .nviz v1 and the legacy waypoint graph are unchanged.
 Re-export .nviz after rebuilding the Map Tool when the D210 series is ready for in-game verification.
 
+## D210.11 — Graph completeness diagnostics
+
+The preliminary-connectivity report now includes directed strongly connected components, one-way dead ends and reachability from covered player spawns, both including and excluding conditional edges.
+Connectivity JSON advances to v0.9.0.
+No changes to Map Tool generated edges, .nviz exports or the game DLL are needed for this diagnostic step.
+Rebuild the Map Tool and regenerate preliminary-connectivity JSON to inspect the counts before the final D210 map review.

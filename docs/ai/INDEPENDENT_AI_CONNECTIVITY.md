@@ -172,3 +172,10 @@ Doors are not static ground support; fixed walls continue to block walking.
 Connectivity JSON uses schema 0.8.0 with a conditional_door_edges count.
 The existing viewer can show a provisional walk link, but does not yet display its door ID or dynamically monitor its state.
 
+## D210.11 — Directed graph diagnostics
+
+Following provisional walk/jump/crouch-jump/drop construction, the Map Tool computes strongly connected components and one-way sinks using iterative graph traversal.
+Reachability starts at deduplicated spawn anchors with valid covered candidate IDs and is calculated twice: using every edge and excluding all conditionally supported edges, including doors.
+The report exposes strong_components, largest_strong_component, unconditional_strong_components, one_way_sink_components, one_way_sink_candidates, spawn_anchors, candidates_reachable_from_spawns, candidates_reachable_unconditionally and candidates_unreachable_from_spawns.
+JSON schema advances to 0.9.0; the edge list and .nviz v1 format are unchanged.
+These counts help prioritize disconnected locations during consolidated D210 in-game review but do not validate game-physics reachability.

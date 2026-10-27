@@ -477,6 +477,7 @@ void appendJumpTransitions(
   appendDropTransitions(map, candidates, report);
   report.isolatedCandidates = 0;
   recount(candidates, report);
+  analyzeDirectedConnectivity(candidates, report);
 }
 
 } // namespace aipb::map::navigation

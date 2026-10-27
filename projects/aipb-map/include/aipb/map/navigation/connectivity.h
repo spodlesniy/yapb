@@ -95,6 +95,15 @@ struct ConnectivityReport {
   std::size_t weakComponents {};
   std::size_t largestComponent {};
   std::size_t isolatedCandidates {};
+  std::size_t strongComponents {};
+  std::size_t largestStrongComponent {};
+  std::size_t unconditionalStrongComponents {};
+  std::size_t oneWaySinkComponents {};
+  std::size_t oneWaySinkCandidates {};
+  std::size_t spawnAnchors {};
+  std::size_t candidatesReachableFromSpawns {};
+  std::size_t candidatesReachableUnconditionally {};
+  std::size_t candidatesUnreachableFromSpawns {};
   std::vector<ProvisionalEdge> edges;
 };
 
@@ -103,6 +112,12 @@ ConnectivityReport buildConnectivity(
   const MapModel &map,
   const CandidateReport &candidates,
   ConnectivityConfig config = {}
+);
+
+// Recompute directed graph diagnostics without altering candidate edges.
+void analyzeDirectedConnectivity(
+  const CandidateReport &candidates,
+  ConnectivityReport &report
 );
 
 // Adds bounded candidate-to-candidate jump hypotheses and recomputes component diagnostics.
