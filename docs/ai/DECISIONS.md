@@ -2621,3 +2621,12 @@ Generate a stable Markdown table ordered by fraction unreachable from covered sp
 Distinguish missing or malformed artifacts as audit errors from poor graph quality, which is diagnostic only and should not fail the command.
 Include an executable Windows wrapper for the default build/debug/results layout, a Python standard-library regression test and a CTest target.
 Do not invent readiness pass thresholds or mark D210 complete without user-led in-game acceptance.
+
+## D210.12.1 — Narrow map-processing scope
+
+The D210.12 CI regression was an idempotency error in the Python test helper, which attempted to create the same temporary artifact directory twice.
+Use exist_ok=True for repeat fixture writes, preserving schema and identity assertions.
+Limit the default Windows import, inspection, collision validation, heightfield, candidate, connectivity, export and audit batch scripts to de_dust2 while the user completes D210 on that map.
+Allow a different map name as the optional first BAT argument.
+Add a --map filter to the readiness audit, so missing unrelated reports do not cause false failures during single-map evaluation.
+Do not delete historical artifacts or modify the collision and connectivity algorithms.

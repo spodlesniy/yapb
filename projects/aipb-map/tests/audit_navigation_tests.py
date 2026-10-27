@@ -51,7 +51,7 @@ class AuditTests(unittest.TestCase):
     def put(self, name, data=None, report=True):
         directory = self.root / name
         artifact = directory / (name + ".aipbmap")
-        artifact.mkdir(parents=True)
+        artifact.mkdir(parents=True, exist_ok=True)
         (artifact / "manifest.json").write_text("{}", encoding="utf-8")
 
         if report:
@@ -94,6 +94,22 @@ class AuditTests(unittest.TestCase):
         self.put("de_wrong", wrong)
         with self.assertRaisesRegex(ValueError, "different map"):
             MODULE.parse_report(self.root / "de_wrong" / "preliminary-connectivity.json", "de_wrong")
+
+    def test_single_map_filter(self):
+        self.put("de_dust2", sample("de_dust2"))
+        self.put("cs_other", report=False)
+        reports, errors = MODULE.inspect_results(self.root, "de_dust2")
+        self.assertEqual(errors, [])
+        self.assertEqual([item.name for item in reports], ["de_dust2"])
+        self.assertEqual(MODULE.main(["--results", str(self.root), "--map", "de_dust2"]), 0)
+        reports, errors = MODULE.inspect_results(self.root, "cs_other")
+        self.assertEqual(reports, [])
+        self.assertEqual(errors, ["cs_other: missing preliminary-connectivity.json"])
+        reports, errors = MODULE.inspect_results(self.root, "de_absent")
+        self.assertEqual(reports, [])
+        self.assertEqual(errors, ["No imported map artifact found: de_absent"])
+        with self.assertRaisesRegex(ValueError, "invalid map name"):
+            MODULE.inspect_results(self.root, "../de_dust2")
 
     def test_empty_directory(self):
         reports, errors = MODULE.inspect_results(self.root)

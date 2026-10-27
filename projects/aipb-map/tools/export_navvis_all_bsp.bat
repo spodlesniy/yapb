@@ -5,6 +5,8 @@ set "ROOT=%~dp0..\build\debug"
 set "CLI=%ROOT%\aipb-map.exe"
 set "RESULTS=%ROOT%\results"
 set "found=0"
+set "TARGET=%~1"
+if "%TARGET%"=="" set "TARGET=de_dust2"
 
 if not exist "%CLI%" (
     echo [ERROR] Missing Map Tool: %CLI%
@@ -16,7 +18,7 @@ if not exist "%RESULTS%\" (
 )
 
 for /d %%D in ("%RESULTS%\*") do (
-    if exist "%%~fD\%%~nxD.aipbmap\manifest.json" (
+    if /i "%%~nxD"=="%TARGET%" if exist "%%~fD\%%~nxD.aipbmap\manifest.json" (
         set "found=1"
         if exist "%%~fD\%%~nxD.nviz" (
             echo [SKIP] %%~nxD

@@ -7,6 +7,8 @@ set "MAPS=%ROOT%\maps"
 set "RESULTS=%ROOT%\results"
 set "failed=0"
 set "found=0"
+set "TARGET=%~1"
+if "%TARGET%"=="" set "TARGET=de_dust2"
 
 if not exist "%CLI%" (
     echo [ERROR] aipb-map.exe not found: %CLI%
@@ -23,6 +25,7 @@ if not exist "%RESULTS%\" (
 )
 
 for /r "%MAPS%" %%F in (*.bsp) do (
+  if /i "%%~nF"=="%TARGET%" (
     set "found=1"
     echo.
     echo ===== %%~nxF =====
@@ -50,6 +53,7 @@ for /r "%MAPS%" %%F in (*.bsp) do (
             )
         )
     )
+  )
 )
 
 if "%found%"=="0" (

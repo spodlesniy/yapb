@@ -305,3 +305,11 @@ From Windows, `projects\aipb-map\tools\audit_navigation_all_bsp.bat` writes the 
 The report sorts maps by directed unreachable fraction and lists condition-dependent reachability, one-way sinks and isolated candidates.
 Incomplete or inconsistent 0.9.0 reports cause a nonzero exit code, but graph quality alone does not imply failure.
 No BSP reimport, runtime DLL change or .nviz change is necessary for this analysis.
+
+## D210.12.1 — Single-map fast iteration
+
+By default, the Map Tool Windows BAT helpers now process only de_dust2, including import, inspect, collision validation, heightfield, navigation candidates, preliminary connectivity, .nviz export, and readiness audit.
+To select another map explicitly, supply its map name as the first argument.
+Examples: `preliminary_connectivity_all_bsp.bat de_dust2` and `audit_navigation_all_bsp.bat de_dust2`.
+The Python audit also accepts `--map de_dust2`, allowing previous reports for other maps to remain in the results tree.
+No existing per-map artifacts are removed or overwritten.

@@ -6,6 +6,8 @@ set "CLI=%ROOT%\aipb-map.exe"
 set "RESULTS=%ROOT%\results"
 set "failed=0"
 set "found=0"
+set "TARGET=%~1"
+if "%TARGET%"=="" set "TARGET=de_dust2"
 
 if not exist "%CLI%" (
     echo [ERROR] aipb-map.exe not found: %CLI%
@@ -17,7 +19,7 @@ if not exist "%RESULTS%\" (
 )
 
 for /d %%D in ("%RESULTS%\*") do (
-    if exist "%%~fD\%%~nxD.aipbmap\manifest.json" (
+    if /i "%%~nxD"=="%TARGET%" if exist "%%~fD\%%~nxD.aipbmap\manifest.json" (
         set "found=1"
         echo.
         echo ===== %%~nxD =====

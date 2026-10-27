@@ -187,3 +187,10 @@ The audit validates schema 0.9.0 and graph counter consistency and ranks maps by
 Missing or malformed reports return a nonzero exit status; coverage weaknesses remain advisory rather than hard acceptance gates.
 On Windows use `projects\aipb-map\tools\audit_navigation_all_bsp.bat` to save `navigation-readiness.md` alongside the per-map folders.
 This audit does not change navigation links, .nviz outputs, or actual GoldSrc movement validation.
+
+## D210.12.1 — de_dust2-only development loop
+
+Until D210 in-game acceptance, the Windows BAT helpers default to de_dust2 and avoid expensive batch regeneration of unrelated maps.
+For another map, pass its name as the first argument, e.g. preliminary_connectivity_all_bsp.bat cs_office.
+The readiness audit supports --map de_dust2 and ignores other imported folders when scoped.
+The previously failing Python regression fixture now permits overwriting its own temporary test manifest.

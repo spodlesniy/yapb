@@ -292,3 +292,5 @@ D210.10 adds closed-pose func_door and func_door_rotating detection for provisio
 D210.11 adds directed graph quality diagnostics (strong components, one-way sinks and spawn-anchor reachability with/without conditional links) for offline acceptance before a consolidated in-game D210 validation; no provisional edge-generation behavior changes and CI remains pending.
 
 D210.12 adds a read-only per-map readiness audit for preliminary-connectivity JSON 0.9.0, with deterministic prioritization of inaccessible candidates, condition-dependent reachability and missing/invalid artifacts; graph generation and in-game parity remain unchanged and final D210 acceptance is still pending.
+
+D210.12.1 fixes the D210.12 Python fixture re-creation failure and temporarily scopes Windows batch processing and the readiness audit to de_dust2 by default; other maps can be selected explicitly, and wider-map acceptance remains pending.

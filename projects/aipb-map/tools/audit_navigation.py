@@ -149,7 +149,10 @@ def parse_report(path: Path, expected_name: str) -> MapMetrics:
     )
 
 
-def inspect_results(root: Path) -> tuple[list[MapMetrics], list[str]]:
+def inspect_results(root: Path, map_name: str | None = None) -> tuple[list[MapMetrics], list[str]]:
+    if map_name is not None and not MAP_NAME.fullmatch(map_name):
+        raise ValueError("invalid map name")
+
     if not root.is_dir():
         return [], [f"Results directory does not exist: {root}"]
 
@@ -157,7 +160,9 @@ def inspect_results(root: Path) -> tuple[list[MapMetrics], list[str]]:
     errors: list[str] = []
     imported = 0
 
-    for directory in sorted(root.iterdir()):
+    directories = [root / map_name] if map_name is not None else sorted(root.iterdir())
+
+    for directory in directories:
         if not directory.is_dir() or not MAP_NAME.fullmatch(directory.name):
             continue
 
@@ -179,7 +184,8 @@ def inspect_results(root: Path) -> tuple[list[MapMetrics], list[str]]:
             errors.append(f"{directory.name}: {error}")
 
     if imported == 0:
-        errors.append("No imported map artifacts found")
+        errors.append(f"No imported map artifact found: {map_name}" if map_name else
+                      "No imported map artifacts found")
 
     return sorted(reports, key=lambda item: item.priority), errors
 
@@ -257,8 +263,13 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Audit preliminary connectivity for imported maps")
     parser.add_argument("--results", type=Path, required=True, help="Directory containing per-map results")
     parser.add_argument("--output", type=Path, help="Markdown report path (stdout when omitted)")
+    parser.add_argument("--map", help="Audit only one named map, e.g. de_dust2")
     arguments = parser.parse_args(argv)
-    reports, errors = inspect_results(arguments.results)
+
+    if arguments.map is not None and not MAP_NAME.fullmatch(arguments.map):
+        parser.error("--map must be a simple map name")
+
+    reports, errors = inspect_results(arguments.results, arguments.map)
     text = render_audit(reports, errors)
 
     if arguments.output:
