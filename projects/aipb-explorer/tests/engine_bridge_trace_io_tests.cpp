@@ -23,7 +23,7 @@ static int runTests() {
   require(!safeName("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"));
   char b[1024] {};
   TraceMetadata metadata {};
-  std::strcpy(metadata.map, "de_dust2");
+  std::snprintf(metadata.map, sizeof(metadata.map), "%s", "de_dust2");
   metadata.initial.x = 12.5;
   metadata.initial.y = -2.75;
   metadata.initial.z = -92.0;

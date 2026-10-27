@@ -2691,3 +2691,9 @@ An explicit init command can move only a live, unfrozen YaPB bot, checking that 
 Init deliberately changes player world state, unlike replay, and is restricted to admin-authenticated test commands.
 Replay always imports the named trace from disk, then verifies the selected bot is close to the recorded start; use init first when necessary.
 No physical reset can restore external entities, dynamic doors, opponents or GoldSrc's full hidden movement history; replay divergence remains normal under changed world state.
+
+## D213.2 — Fix MSVC named-trace test deprecation warning
+
+The D213.1 GCC and Clang Explorer CI and common AI unit tests passed.
+Its MSVC Explorer build failed due to C4996 in the new test, where `strcpy` was rejected under `/W4 /WX`.
+Replace that test-only copy with bounded `snprintf`; do not alter production trace parsing or game runtime behavior.

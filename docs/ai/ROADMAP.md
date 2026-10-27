@@ -320,3 +320,5 @@ Replay does not teleport a bot or guarantee deterministic physics; differing sta
 
 D213.1 adds durable named movement records, exact name-based save/list/load/replay commands, and a map-checked `init` that restores a saved GoldSrc starting position, velocity, view angles and crouch state through the engine's SetOrigin boundary; previous D213 CSV exports are not accepted as v2 named records.
 Replay remains a diagnostic comparison rather than guaranteed deterministic physics; direct in-game Windows x86 validation and automatic CI for D213.1 are pending.
+
+D213.2 replaces an MSVC-deprecated `strcpy` in the standalone named-trace regression fixture with bounds-aware `snprintf`; the D213.1 GCC/Clang and AI unit CI passed but Explorer MSVC /W4 /WX compilation failed on C4996 before CTest; follow-up CI is pending.
