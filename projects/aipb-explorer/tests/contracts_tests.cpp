@@ -1,4 +1,5 @@
 #include <cmath>
+#include <cstdio>
 #include <cstdint>
 #include <limits>
 #include <stdexcept>
@@ -15,7 +16,7 @@ static void require(bool value) {
   }
 }
 
-int main() {
+int runTests() {
   MovementState state {};
   require(isValid(state));
   state.position.x = std::numeric_limits<double>::quiet_NaN();
@@ -74,4 +75,13 @@ int main() {
   result.state.tick = 0;
   result.status = StepStatus::Applied;
   require(!isValid(state, result));
+}
+
+int main() {
+  try {
+    return runTests();
+  } catch (const std::exception &error) {
+    std::fprintf(stderr, "aipb_explorer_contracts: %s\n", error.what());
+    return 1;
+  }
 }

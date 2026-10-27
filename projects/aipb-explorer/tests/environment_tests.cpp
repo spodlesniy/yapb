@@ -1,3 +1,4 @@
+#include <cstdio>
 #include <cstdint>
 #include <limits>
 #include <stdexcept>
@@ -50,12 +51,12 @@ private:
   bool terminal_ {};
 };
 
-int main() {
+int runTests() {
   MockEnvironment mock;
   IExplorationEnvironment &environment = mock;
   require(environment.tickSeconds() == 0.01);
   const MovementState initial = environment.reset(MovementState {});
-  ExplorationEpisode episode(initial, 4);
+  ExplorationEpisode episode(initial, 5);
   require(episode.transitions().empty());
   const MovementCommand forward { .forward = 1 };
   const auto first = environment.step(forward);
@@ -67,13 +68,25 @@ int main() {
   require(rejected.status == StepStatus::Invalid);
   require(episode.append(invalid, rejected));
   require(episode.currentState().tick == 1);
-  require(!episode.append(forward, rejected));
+  // A valid command can also be rejected by the environment without consuming a tick.
+  const MovementResult denied {
+    .state = episode.currentState(),
+    .status = StepStatus::Invalid
+  };
+  require(episode.append(forward, denied));
+  require(episode.currentState().tick == 1);
+  const MovementResult malformed {
+    .state = episode.currentState(),
+    .status = StepStatus::Applied
+  };
+  require(!episode.append(forward, malformed));
+  require(episode.transitions().size() == 3);
   const auto second = environment.step(forward);
   require(episode.append(forward, second));
   const auto blocked = environment.step(forward);
   require(blocked.status == StepStatus::Blocked);
   require(episode.append(forward, blocked));
-  require(episode.transitions().size() == 4);
+  require(episode.transitions().size() == 5);
   require(!episode.append(forward, environment.step(forward)));
   const MovementState reset = environment.reset(initial);
   ExplorationEpisode terminal(reset);
@@ -89,4 +102,13 @@ int main() {
     thrown = true;
   }
   require(thrown);
+}
+
+int main() {
+  try {
+    return runTests();
+  } catch (const std::exception &error) {
+    std::fprintf(stderr, "aipb_explorer_environment: %s\n", error.what());
+    return 1;
+  }
 }

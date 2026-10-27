@@ -87,7 +87,8 @@ D210.7.1 corrects the boundary regression fixture to exercise non-thin exposed w
 D210.8 adds a bounded supported standing-hull runup probe, an optimistic acceleration-from-rest speed bound and per-jump approach rejection diagnostics, plus optional speed fields in backward-compatible .nviz edge records; engine timing and real-map acceptance remain pending.
 This is instrumentation, not evidence that arbitrary maps have been measured or physically traversed; Windows x86/in-game acceptance is pending.
 Proposed progression: graph evaluation/generator; versioned map knowledge; bot profiles; match context and perception; independent policy; reproducible rewards/learning; opt-in inference and in-game comparisons.
-D211 establishes the independent `projects/aipb-explorer/` C++20 contracts, bounded movement-transition episodes and standalone GCC/Clang/MSVC test workflow without physics, BSP integration, or YaPB behavior changes; local GCC/Clang CTest passed, while published CI and engine validation remain pending.
+D211 establishes the independent `projects/aipb-explorer/` C++20 contracts, bounded movement-transition episodes and standalone GCC/Clang/MSVC test workflow without physics, BSP integration, or YaPB behavior changes; its initial published CI exposed an invalid environment-test assertion.
+D211.1 corrects the rejected-valid-command test contract and makes test failures noninteractive on MSVC; local GCC/Clang CTest passed, while published CI verification remains pending.
 This parallel track does not change any existing Phase 7 exit criterion.
 
 
@@ -301,3 +302,5 @@ D210.13 adds read-only, de_dust2-scoped candidate-level connectivity diagnostics
 D210.13.1 fixes the component-row regression assertion that matched duplicate numeric cells in Markdown; CI after publication remains the acceptance gate.
 
 D211 adds an independent exploration core with movement state/command/result validation, a fixed-tick execution abstraction and bounded in-memory transition recording; this foundation is not a functioning map explorer or physical movement validator.
+
+D211.1 fixes the D211 mock-environment regression assertion and catches exceptions at both test-program boundaries to avoid MSVC modal hangs without changing explorer production behavior; automatic GCC/Clang/MSVC CI acceptance remains pending.

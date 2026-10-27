@@ -35,3 +35,11 @@ Two CTest targets test state/command/result validation and mock environment/epis
 Independent automatic CI targets Linux GCC/Clang and Windows MSVC x64 with strict warnings.
 The mock performs artificial one-dimensional movement, not GoldSrc physics.
 D212 can add a controlled engine adapter without changing the engine-neutral core.
+
+## D211.1 — Regression correction and noninteractive test failures
+
+The initial D211 environment test incorrectly assumed that a well-formed command cannot receive `StepStatus::Invalid`.
+An environment may reject a valid command without changing its state, for example when execution is disallowed.
+The episode recorder must retain that result while rejecting state/tick-inconsistent transitions.
+Both native test executables now catch exceptions and report a nonzero exit code instead of raising an interactive MSVC terminate dialog.
+Production contracts, library implementation, build settings and data formats remain unchanged.
