@@ -2639,3 +2639,11 @@ Produce deterministic Markdown diagnostics grouped by strongly connected compone
 Write an optional CSV with all node IDs, XYZ coordinates, support provenance, in/out degree and problem flags to support focused in-game inspection.
 Do not change provisional navigation edges, runtime viewer protocol, or any acceptance criteria until manual game validation.
 Run the focused Python regressions in Map Tool CTest and offer a BAT wrapper defaulting to de_dust2.
+
+## D210.13.1 — Match diagnostic table rows by component identifier
+
+The D210.13 Map Tool CI reported 19/20 passing tests on GCC, Clang and MSVC.
+The sole failure was a test counting the token `| 5 |` anywhere in Markdown, including a different column, instead of identifying a component row by its first column.
+Match the component ID at the start of the Markdown table row and assert that the truncated table excludes the next component.
+Capture expected stderr from the negative missing-input test and explicitly validate the error message, rather than emitting distracting expected trace diagnostics in CI.
+Do not modify the diagnostic implementation, generated navigation artifacts or graph connectivity.

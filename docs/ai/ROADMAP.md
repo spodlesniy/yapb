@@ -296,3 +296,5 @@ D210.12 adds a read-only per-map readiness audit for preliminary-connectivity JS
 D210.12.1 fixes the D210.12 Python fixture re-creation failure and temporarily scopes Windows batch processing and the readiness audit to de_dust2 by default; other maps can be selected explicitly, and wider-map acceptance remains pending.
 
 D210.13 adds read-only, de_dust2-scoped candidate-level connectivity diagnostics from existing JSON reports, locating unreachable, condition-dependent, isolated, and one-way sink components with XYZ coordinates and stable candidate IDs; game validation remains pending.
+
+D210.13.1 fixes the component-row regression assertion that matched duplicate numeric cells in Markdown; CI after publication remains the acceptance gate.

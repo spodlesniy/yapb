@@ -1,6 +1,8 @@
 """D210.13 location-aware connectivity issue regression fixtures."""
 
+import contextlib
 import importlib.util
+import io
 import json
 import sys
 import tempfile
@@ -114,7 +116,11 @@ class DiagnoseTests(unittest.TestCase):
         self.assertEqual(result["issues"][0]["reverse_exits"], 0)
         self.assertEqual(result["nodes"][4]["status"], "unreachable+isolated")
         self.assertEqual(result["nodes"][2]["status"], "conditional_only+one_way_sink")
-        self.assertEqual(MODULE.render_markdown(result, 1).count("| 5 |"), 1)
+        # Count component rows by their first column, not by arbitrary cell text.
+        markdown = MODULE.render_markdown(result, 1)
+        component_rows = [line for line in markdown.splitlines() if line.startswith("| 5 | ")]
+        self.assertEqual(len(component_rows), 1)
+        self.assertNotIn("| 3 | 2 |", markdown)
         self.assertIn("id,x,y,z,status,component", MODULE.render_csv(result))
         self.assertEqual(MODULE.render_csv(result), MODULE.render_csv(self.diagnose()))
 
@@ -164,7 +170,12 @@ class DiagnoseTests(unittest.TestCase):
             self.diagnose()
 
     def test_missing_report_fails_without_creating_artifacts(self):
-        self.assertEqual(MODULE.main(["--results", str(self.root)]), 1)
+        errors = io.StringIO()
+
+        with contextlib.redirect_stderr(errors):
+            self.assertEqual(MODULE.main(["--results", str(self.root)]), 1)
+
+        self.assertIn("preliminary-connectivity.json", errors.getvalue())
         self.assertFalse((self.folder / "navigation-candidates.json").exists())
 
 

@@ -201,3 +201,9 @@ Run `projects\aipb-map\tools\diagnose_navigation.bat` after generating fresh nav
 The script reads the existing reports and produces `navigation-issues.md` with priority problem components and `navigation-issues.csv` with the candidate ID, XYZ location, source kind, in/out degree and reachability flags for every candidate.
 The findings distinguish unreachable candidates, nodes depending on conditional edges, completely isolated candidates and incoming one-way sink components.
 This diagnostic is read-only against navigation inputs and does not perform BSP generation, geometry tests or game movement.
+
+## D210.13.1 — Diagnostic regression correction
+
+The detailed navigation issue unit test now matches a component row by its first table column, not by counting the same numeral across unrelated Markdown cells.
+The intentional missing-input error test captures and checks stderr.
+Production diagnostics, CSV output and navigation connectivity are unchanged.
