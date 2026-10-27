@@ -80,7 +80,7 @@ void testStacked() {
         "unexpected rejection");
   const auto json = toJson(result);
   check(json == toJson(build(map, std::string(64, 'b'), config)), "non-deterministic output");
-  check(json.find("\"schema_version\":\"0.3.0\"") != std::string::npos, "incorrect JSON version");
+  check(json.find("\"schema_version\":\"0.3.1\"") != std::string::npos, "incorrect JSON version");
   check(json.find("\"merged_contacts\":2") != std::string::npos, "missing merged contacts");
   check(result.candidates[0].standingFree || result.candidates[0].crouchingFree, "no clearance");
   config.maximumColumns = 0;
@@ -121,11 +121,58 @@ void testSlope() {
   }
 }
 
+void testAdaptiveThinSurface() {
+  auto map = fixture();
+  auto &p = *map.partition;
+  // Clip and render support occupy a narrow x-strip missed by the 128-unit grid center.
+  p.planes = {
+    { { 1, 0, 0 }, 48, 0 },
+    { { 1, 0, 0 }, 16, 0 },
+    { { 0, 0, 1 }, 0, 2 },
+    { { 0, 0, 1 }, 36, 2 },
+    { { 0, 0, 1 }, 18, 2 }
+  };
+  p.renderNodes = {
+    { 0, -1, 1 },
+    { 1, 2, -1 },
+    { 2, -1, -2 }
+  };
+  p.clipNodes = {
+    { 0, -1, 1 },
+    { 1, 2, -1 },
+    { 3, -1, -2 },
+    { 0, -1, 4 },
+    { 1, 5, -1 },
+    { 4, -1, -2 }
+  };
+  p.models[0].headNodes = { 0, 0, 0, 3 };
+  p.models[0].mins = { 0, 0, -16 };
+  p.models[0].maxs = { 128, 128, 128 };
+  map.meshes = {
+    {
+      .id = 1,
+      .vertices = { { 16, 16, 0 }, { 48, 16, 0 }, { 16, 112, 0 } },
+      .triangles = { { 0, 1, 2 } }
+    }
+  };
+  validate(map);
+  Config config;
+  config.cellSize = 128;
+  config.verticalStep = 16;
+  const auto result = build(map, {}, config);
+  check(result.adaptiveThinTriangles == 1, "thin world triangle not detected");
+  check(result.adaptiveLocations > 0, "no thin surface probes");
+  check(result.adaptiveCandidates > 0, "thin ledge was missed by adaptive sampling");
+  check(result.candidates.size() == result.adaptiveCandidates, "coarse grid unexpectedly hit narrow ledge");
+  check(result.candidates[0].position.x < 48, "adaptive sample left thin region");
+}
+
 } // namespace
 
 int main() {
   testStacked();
   testSlope();
+  testAdaptiveThinSurface();
 
   return 0;
 }

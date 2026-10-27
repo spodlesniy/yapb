@@ -113,3 +113,11 @@ The jump fixture now counts actual airborne edges, allowing an independent downh
 The test executable returns a nonzero error code and prints exception messages rather than invoking an interactive MSVC terminate dialog.
 The Map Tool workflows invoke CTest with non-interactive debug mode and bounded test/step timeouts.
 No change to connectivity JSON v0.5.0 or the runtime .nviz v1 format.
+
+## D210.6 — Narrow-world-surface refinement
+
+Coarse 128-unit XY sampling is supplemented by bounded deterministic render-triangle probes only for relatively thin upward-facing world surfaces.
+Candidate acceptance still uses the ordinary BSP collision hull and clearance validation, not visual geometry alone.
+The adaptive scan reserves a bounded amount of the heightfield scan budget and deduplicates close points.
+Heightfield JSON v0.3.1 reports triangle/probe/retained counts; Navigation Candidates retain schema v0.3.2 and identify heightfield source v0.3.1.
+BSP imports are unchanged; regenerate heightfield, navigation-candidates, preliminary-connectivity and .nviz reports when comparing results.

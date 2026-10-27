@@ -6,6 +6,9 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdint>
+#include <map>
+#include <vector>
 #include <limits>
 #include <stdexcept>
 #include <utility>
@@ -216,6 +219,153 @@ void scanColumn(
 
 } // namespace
 
+// Supplement the coarse grid only at narrow render surfaces; collision is still authoritative.
+void sampleThinWorldSurfaces(
+  const MapModel &map,
+  const ScanContext &context,
+  Result &result
+) {
+  const auto &config = context.config;
+  const auto &world = context.world;
+  const auto verticalIntervals = count(context.top - context.bottom, config.verticalStep);
+
+  if (verticalIntervals > config.maximumSamples / 2 ||
+      result.scannedIntervals >= config.maximumSamples) {
+    return;
+  }
+  const auto budget = std::min(config.maximumAdaptiveLocations,
+    (config.maximumSamples - result.scannedIntervals) / (verticalIntervals * 2));
+
+  if (budget == 0) {
+    return;
+  }
+  using Cell = std::pair<std::size_t, std::size_t>;
+  std::map<Cell, std::vector<Vec3>> covered;
+  const auto cellOf = [&](Vec3 v) -> Cell {
+    return {
+      static_cast<std::size_t>(std::floor((v.x - world.mins.x) / config.adaptiveMinimumSpacing)),
+      static_cast<std::size_t>(std::floor((v.y - world.mins.y) / config.adaptiveMinimumSpacing))
+    };
+  };
+  const auto record = [&](Vec3 point) {
+    covered[cellOf(point)].push_back(point);
+  };
+  const auto isCovered = [&](Vec3 point) {
+    const auto cell = cellOf(point);
+
+    for (std::size_t dx = 0; dx < 3; ++dx) {
+      for (std::size_t dy = 0; dy < 3; ++dy) {
+        if ((dx == 0 && cell.first == 0) || (dy == 0 && cell.second == 0)) {
+          continue;
+        }
+        const Cell neighbor {
+          cell.first + dx - 1,
+          cell.second + dy - 1
+        };
+        const auto it = covered.find(neighbor);
+
+        if (it == covered.end()) {
+          continue;
+        }
+        for (const auto &existing : it->second) {
+          if (std::hypot(existing.x - point.x, existing.y - point.y) < config.adaptiveMinimumSpacing &&
+              std::abs(existing.z - point.z) <= config.surfaceHeightTolerance * 2) {
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
+  };
+
+  for (const auto &candidate : result.candidates) {
+    record(candidate.position);
+  }
+
+  for (const auto &mesh : map.meshes) {
+    if (mesh.id != world.id) {
+      continue;
+    }
+    for (const auto &triangle : mesh.triangles) {
+      const auto a = mesh.vertices[triangle.a];
+      const auto b = mesh.vertices[triangle.b];
+      const auto c = mesh.vertices[triangle.c];
+      const Vec3 ab { b.x - a.x, b.y - a.y, b.z - a.z };
+      const Vec3 ac { c.x - a.x, c.y - a.y, c.z - a.z };
+      const Vec3 cross {
+        ab.y * ac.z - ab.z * ac.y,
+        ab.z * ac.x - ab.x * ac.z,
+        ab.x * ac.y - ab.y * ac.x
+      };
+      const double planarAreaTwice = std::abs(cross.z);
+      const double crossLength = std::hypot(std::hypot(cross.x, cross.y), cross.z);
+
+      if (crossLength <= 0 || std::abs(cross.z) / crossLength < config.minimumUpNormal) {
+        continue;
+      }
+      const Vec3 vertices[] { a, b, c };
+      std::size_t longest = 0;
+      double longestLength = 0;
+
+      for (std::size_t i = 0; i < 3; ++i) {
+        const auto &p = vertices[i];
+        const auto &q = vertices[(i + 1) % 3];
+        const double length = std::hypot(q.x - p.x, q.y - p.y);
+
+        if (length > longestLength) {
+          longest = i;
+          longestLength = length;
+        }
+      }
+
+      if (longestLength == 0 || planarAreaTwice / longestLength > config.adaptiveThinSurfaceWidth) {
+        continue;
+      }
+      ++result.adaptiveThinTriangles;
+      const auto &p = vertices[longest];
+      const auto &q = vertices[(longest + 1) % 3];
+      const auto &inset = vertices[(longest + 2) % 3];
+      const auto segments = std::min<std::size_t>(16,
+        std::max<std::size_t>(1, static_cast<std::size_t>(std::ceil(longestLength / config.adaptiveSampleSpacing))));
+
+      for (std::size_t i = 0; i < segments && result.adaptiveLocations < budget; ++i) {
+        const double t = (static_cast<double>(i) + 0.5) / static_cast<double>(segments);
+        const Vec3 point {
+          (p.x * (1 - t) + q.x * t) * 0.75 + inset.x * 0.25,
+          (p.y * (1 - t) + q.y * t) * 0.75 + inset.y * 0.25,
+          (p.z * (1 - t) + q.z * t) * 0.75 + inset.z * 0.25
+        };
+
+        if (!finite(point) || point.x < world.mins.x || point.x >= world.maxs.x ||
+            point.y < world.mins.y || point.y >= world.maxs.y || isCovered(point)) {
+          continue;
+        }
+        const auto column = std::min(result.columns - 1,
+          static_cast<std::size_t>(std::floor((point.x - world.mins.x) / config.cellSize)));
+        const auto row = std::min(result.rows - 1,
+          static_cast<std::size_t>(std::floor((point.y - world.mins.y) / config.cellSize)));
+        Result sampled;
+        ++result.adaptiveLocations;
+        scanColumn(context, sampled, point.x, point.y, column, row);
+
+        for (const auto &candidate : sampled.candidates) {
+          if (isCovered(candidate.position)) {
+            continue;
+          }
+          record(candidate.position);
+          result.candidates.push_back(candidate);
+          ++result.adaptiveCandidates;
+        }
+      }
+
+      if (result.adaptiveLocations >= budget) {
+        return;
+      }
+    }
+  }
+}
+
 Result build(
   const MapModel &map,
   std::string artifactSha256,
@@ -227,6 +377,10 @@ Result build(
       !std::isfinite(config.mergeHeightTolerance) || config.mergeHeightTolerance < 0 ||
       !std::isfinite(config.clearanceLift) || config.clearanceLift <= 0 ||
       !std::isfinite(config.surfaceHeightTolerance) || config.surfaceHeightTolerance < 0 ||
+      !std::isfinite(config.adaptiveThinSurfaceWidth) || config.adaptiveThinSurfaceWidth <= 0 ||
+      !std::isfinite(config.adaptiveSampleSpacing) || config.adaptiveSampleSpacing <= 0 ||
+      !std::isfinite(config.adaptiveMinimumSpacing) || config.adaptiveMinimumSpacing <= 0 ||
+      config.maximumAdaptiveLocations == 0 ||
       config.maximumColumns == 0 || config.maximumVerticalSteps == 0 || config.maximumSamples == 0) {
     throw std::invalid_argument("invalid heightfield configuration");
   }
@@ -320,6 +474,8 @@ Result build(
     }
   }
 
+  sampleThinWorldSurfaces(map, context, result);
+
   return result;
 }
 
@@ -401,7 +557,7 @@ std::string toJson(const Result &result) {
 
   return io::writeJson(Json::Object {
     { "format", "aipb-heightfield-candidates" },
-    { "schema_version", "0.3.0" },
+    { "schema_version", "0.3.1" },
     { "map_name", result.mapName },
     { "source_sha256", result.sourceSha256 },
     { "artifact_sha256", result.artifactSha256 },
@@ -412,6 +568,10 @@ std::string toJson(const Result &result) {
         { "merge_height_tolerance", result.config.mergeHeightTolerance },
         { "clearance_lift", result.config.clearanceLift },
         { "surface_height_tolerance", result.config.surfaceHeightTolerance },
+        { "adaptive_thin_surface_width", result.config.adaptiveThinSurfaceWidth },
+        { "adaptive_sample_spacing", result.config.adaptiveSampleSpacing },
+        { "adaptive_minimum_spacing", result.config.adaptiveMinimumSpacing },
+        { "maximum_adaptive_locations", number(result.config.maximumAdaptiveLocations) },
         { "maximum_columns", number(result.config.maximumColumns) },
         { "maximum_vertical_steps", number(result.config.maximumVerticalSteps) },
         { "maximum_samples", number(result.config.maximumSamples) }
@@ -439,6 +599,9 @@ std::string toJson(const Result &result) {
     { "columns_with_candidates", number(result.columnsWithCandidates) },
     { "multi_layer_columns", number(result.multiLayerColumns) },
     { "maximum_layers", number(result.maximumLayers) },
+    { "adaptive_thin_triangles", number(result.adaptiveThinTriangles) },
+    { "adaptive_locations", number(result.adaptiveLocations) },
+    { "adaptive_candidates", number(result.adaptiveCandidates) },
     { "candidates", std::move(candidates) }
   }) + "\n";
 }

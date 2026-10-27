@@ -16,6 +16,10 @@ struct Config {
   double mergeHeightTolerance { 1.0 };
   double clearanceLift { 0.5 };
   double surfaceHeightTolerance { 4.0 };
+  double adaptiveThinSurfaceWidth { 64.0 };
+  double adaptiveSampleSpacing { 64.0 };
+  double adaptiveMinimumSpacing { 32.0 };
+  std::size_t maximumAdaptiveLocations { 1024 };
   std::size_t maximumColumns { 16384 };
   std::size_t maximumVerticalSteps { 512 };
   std::size_t maximumSamples { 4000000 };
@@ -59,6 +63,9 @@ struct Result {
   std::size_t columnsWithCandidates {};
   std::size_t multiLayerColumns {};
   std::size_t maximumLayers {};
+  std::size_t adaptiveThinTriangles {};
+  std::size_t adaptiveLocations {};
+  std::size_t adaptiveCandidates {};
   std::vector<Candidate> candidates;
 };
 

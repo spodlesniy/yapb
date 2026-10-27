@@ -247,3 +247,11 @@ Walk connections now use bounded short hull steps and intermediate surface suppo
 Connectivity reports use schema v0.5.0 and include walk rejection diagnostics; remove prior `preliminary-connectivity.json` files before regeneration.
 For game visualization, remove stale `*.nviz` snapshots and run `export_navvis_all_bsp.bat` again, then copy the regenerated files to `cstrike/addons/yapb/data/navvis/` and reload the map.
 Existing imports and Navigation Candidates artifacts need no re-import or regeneration.
+
+## Thin world-ledge candidates (D210.6)
+
+The 128-unit heightfield grid is retained, with bounded extra probes on narrow upward-facing world render triangles.
+Samples are always revalidated against the BSP player hull and point hull and must satisfy existing stance clearance constraints.
+Heightfield diagnostics advance to v0.3.1 with adaptive triangle, probe, and accepted candidate counts, while Navigation Candidates retain v0.3.2 and .nviz remains v1.
+To compare in-game results, delete old .nviz exports and regenerate via `export_navvis_all_bsp.bat`, then copy the new exports into the game and reload the map.
+Reimporting BSP files is unnecessary.

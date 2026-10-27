@@ -2529,3 +2529,12 @@ Only count airborne edges when asserting jump cardinality and inspect the matchi
 Catch exceptions in the connectivity test entry point and return failure with a stderr diagnostic instead of invoking interactive MSVC termination.
 Run Map Tool CI tests with CTest non-interactive debug mode, 60-second per-test timeouts, and a ten-minute test-step limit to prevent unattended Windows GUI dialogs from blocking workflow completion.
 Do not change production connectivity behavior or artifact schemas.
+
+## D210.6 — Budgeted narrow world-surface sampling
+
+Retain the existing 128-unit coarse world heightfield grid and add a second bounded scan only over upward-facing world render triangles whose planar altitude is at most 64 units.
+Probe deterministic positions inset from the longest triangle edge, at most sixteen samples per triangle and up to 1024 accepted probe locations per map, additionally bounded by the global heightfield scan budget.
+Deduplicate candidate positions against the coarse and already refined output using a 32-unit planar radius at similar surface heights.
+Validate each proposed location through the existing world BSP player hull, point hull, slope and stance clearance checks instead of trusting render mesh geometry.
+Report adaptive triangle/probe/candidate diagnostics in heightfield JSON v0.3.1 and bind the Navigation Candidates report to that source schema without modifying its v0.3.2 format or the runtime .nviz v1 reader.
+The strategy primarily addresses narrow world ledges missed by cell centers; door dynamics and directed takeoff positions are later steps.
