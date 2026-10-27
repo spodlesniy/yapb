@@ -333,3 +333,7 @@ A CRT-specific file-open helper preserves exclusive named-save creation, with a 
 D213.5 removes two 4096-sample arrays from the game's static storage by making the trace sample array heap-backed and allocated on first append.
 The trace descriptor remains small, explicit clear releases the allocation, and named-trace load transfers its validated buffer without an additional 4096-record copy.
 The 4096-step limit, CSV v2 format and command behavior remain unchanged; local GCC/Clang C++17 tests and a synthetic binary-section size comparison passed, while automatic CI and user-started Windows x86 DLL-size verification remain pending.
+
+D213.6 synchronizes an Explorer probe's initial view yaw to the bot's visible body yaw before recording the first pre-step observation, so freshly spawned bots do not snap to a stale view orientation on their first movement command.
+Initial body/view yaw are logged at probe start; the diagnostic duck timer now uses the integer formatting expected by the GoldSrc field, avoiding corrupted subsequent `view_z` output.
+C++17 bridge tests cover first-use yaw preservation, wraparound and explicit turn deltas; Windows x86 gameplay acceptance remains pending.

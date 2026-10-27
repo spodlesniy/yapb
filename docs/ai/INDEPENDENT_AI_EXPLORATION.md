@@ -186,3 +186,10 @@ Failed loads leave any prior completed recording unchanged.
 No CSV version, GoldSrc movement behavior, player state or comparison tolerance is changed in D213.5.
 Memory allocation failures cause the recording to fail instead of silently exceeding capacity.
 The target Windows x86 DLL size still needs measurement in the user's build.
+
+## D213.6 — First-command orientation and duck-time diagnostics
+
+At the start of a manual probe, the bot's preexisting visible body yaw becomes the initial Explorer view yaw before the first sample is recorded.
+The console reports the original body yaw, old view yaw and selected starting yaw; a zero yaw delta should preserve the visible facing even for a newly spawned bot.
+A nonzero yaw delta continues to rotate relative to the chosen starting direction each engine frame.
+The `duck_time` diagnostic is now printed as an integer so its subsequent `view_z` output is not corrupted by a mismatched format specifier.

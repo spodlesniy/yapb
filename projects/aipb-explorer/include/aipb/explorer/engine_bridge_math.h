@@ -19,6 +19,11 @@ inline float yaw(float current, float delta) {
   return wrapped < 0.0f ? wrapped + 180.0f : wrapped - 180.0f;
 }
 
+// Resolve an exploration command relative to the bot's visible facing.
+inline float initialViewYaw(float bodyYaw, float viewYaw) {
+  return std::isfinite(bodyYaw) ? yaw(bodyYaw, 0.0f) : yaw(viewYaw, 0.0f);
+}
+
 inline void translateAxes(
   const AipbExplorerBridgeCommand &command,
   float maxSpeed,

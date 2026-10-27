@@ -2725,3 +2725,11 @@ When loading a named recording, transfer ownership of the validated temporary al
 Preserve all CSV v2 bytes, file operations, admin commands, replay comparisons and safety limits.
 Run a C++17 test proving a small `TraceBuffer` descriptor, lazy allocation, ownership transfer, clear-and-release behavior and rejection beyond 4096 frames.
 Record a synthetic executable's section-size comparison as evidence, but require a user-built Windows x86 DLL before claiming the actual PE file-size reduction.
+
+## D213.6 — Initialize probe yaw from visible body facing
+
+Freshly spawned bots can present different GoldSrc body and view yaw values; directly forcing `pev->angles.y = pev->v_angle.y` in the first probe frame produces an unintended initial rotation even with zero requested yaw delta.
+Before capturing the probe's initial observation and resetting its trace, align the view yaw to the existing body yaw, preserving the actual visible facing, and print both pre-alignment yaw values.
+The command's per-frame yaw delta remains relative to that initial orientation, and no other AI movement or bot spawn logic changes.
+Fix the diagnostic `flDuckTime` integer formatting from floating-point `%f` to `%d`, preventing varargs mismatch and an invalid printed eye height.
+Keep the v2 CSV schema unchanged and use C++17 bridge-math regressions to cover yaw initialization, wrapping and nonzero yaw deltas.

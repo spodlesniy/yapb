@@ -26,6 +26,12 @@ static int runTests() {
   require(yaw(170, 30) == -160);
   require(yaw(-170, -30) == 160);
   require(yaw(179, 1) == -180);
+  require(initialViewYaw(-90.0f, 0.0f) == -90.0f);
+  require(initialViewYaw(90.0f, -45.0f) == 90.0f);
+  require(yaw(initialViewYaw(-90.0f, 0.0f), 0.0f) == -90.0f);
+  require(yaw(initialViewYaw(-90.0f, 0.0f), 3.0f) == -87.0f);
+  require(initialViewYaw(270.0f, 0.0f) == -90.0f);
+  require(initialViewYaw(std::numeric_limits<float>::quiet_NaN(), 15.0f) == 15.0f);
   command.forward = std::numeric_limits<float>::infinity();
   require(!valid(command));
   command.forward = 0;

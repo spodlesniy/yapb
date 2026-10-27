@@ -76,6 +76,15 @@ bool begin(int botIndex, const AipbExplorerBridgeCommand &command, int limit, bo
       return false;
    }
 
+   // A new bot may have a spawn body yaw that differs from its view yaw.
+   const float previousViewYaw = bot->pev->v_angle.y;
+   const float bodyYaw = bot->pev->angles.y;
+   const float startYaw = aipb::explorer::bridge::initialViewYaw(bodyYaw, previousViewYaw);
+   bot->pev->v_angle.y = startYaw;
+   bot->pev->angles.y = startYaw;
+   game.print("AiPB explorer: start yaw sync, body=%.1f, view=%.1f, selected=%.1f",
+      bodyYaw, previousViewYaw, startYaw);
+
    session = {};
    session.botIndex = botIndex;
    session.command = command;
@@ -343,7 +352,7 @@ bool frame(Bot &bot) {
    }
    if (session.budget.executed == 1 || session.budget.simulatedMs / 50 !=
       (session.budget.simulatedMs - milliseconds) / 50 || session.budget.complete()) {
-      game.print("AiPB explorer: frame=%d, total_ms=%d, msec=%u, pos=(%.1f %.1f %.1f), vel=(%.1f %.1f %.1f), view_yaw=%.1f, body_yaw=%.1f, buttons=%u, oldbuttons=%d, ground=%u, duck=%u, duck_transition=%d, duck_time=%.0f, view_z=%.1f",
+      game.print("AiPB explorer: frame=%d, total_ms=%d, msec=%u, pos=(%.1f %.1f %.1f), vel=(%.1f %.1f %.1f), view_yaw=%.1f, body_yaw=%.1f, buttons=%u, oldbuttons=%d, ground=%u, duck=%u, duck_transition=%d, duck_time=%d, view_z=%.1f",
          session.budget.executed, session.budget.simulatedMs, static_cast <unsigned> (msec),
          after.x, after.y, after.z, after.vx, after.vy, after.vz, after.yaw,
          bot.pev->angles.y, static_cast <unsigned> (buttons), bot.pev->oldbuttons,
