@@ -194,3 +194,10 @@ Until D210 in-game acceptance, the Windows BAT helpers default to de_dust2 and a
 For another map, pass its name as the first argument, e.g. preliminary_connectivity_all_bsp.bat cs_office.
 The readiness audit supports --map de_dust2 and ignores other imported folders when scoped.
 The previously failing Python regression fixture now permits overwriting its own temporary test manifest.
+
+## D210.13 — Detailed de_dust2 connectivity issues
+
+Run `projects\aipb-map\tools\diagnose_navigation.bat` after generating fresh navigation-candidates.json and preliminary-connectivity.json for de_dust2.
+The script reads the existing reports and produces `navigation-issues.md` with priority problem components and `navigation-issues.csv` with the candidate ID, XYZ location, source kind, in/out degree and reachability flags for every candidate.
+The findings distinguish unreachable candidates, nodes depending on conditional edges, completely isolated candidates and incoming one-way sink components.
+This diagnostic is read-only against navigation inputs and does not perform BSP generation, geometry tests or game movement.

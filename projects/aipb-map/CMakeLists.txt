@@ -88,6 +88,9 @@ if(BUILD_TESTING)
     add_test(NAME aipb_map_navigation_readiness_audit
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/audit_navigation_tests.py
     )
+    add_test(NAME aipb_map_navigation_issue_diagnostics
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/diagnose_navigation_tests.py
+    )
     add_executable(aipb_map_tests tests/version_tests.cpp)
     target_link_libraries(aipb_map_tests PRIVATE aipb::map_core)
     add_executable(aipb_map_model_tests tests/model_tests.cpp)

@@ -294,3 +294,5 @@ D210.11 adds directed graph quality diagnostics (strong components, one-way sink
 D210.12 adds a read-only per-map readiness audit for preliminary-connectivity JSON 0.9.0, with deterministic prioritization of inaccessible candidates, condition-dependent reachability and missing/invalid artifacts; graph generation and in-game parity remain unchanged and final D210 acceptance is still pending.
 
 D210.12.1 fixes the D210.12 Python fixture re-creation failure and temporarily scopes Windows batch processing and the readiness audit to de_dust2 by default; other maps can be selected explicitly, and wider-map acceptance remains pending.
+
+D210.13 adds read-only, de_dust2-scoped candidate-level connectivity diagnostics from existing JSON reports, locating unreachable, condition-dependent, isolated, and one-way sink components with XYZ coordinates and stable candidate IDs; game validation remains pending.

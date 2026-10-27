@@ -313,3 +313,11 @@ To select another map explicitly, supply its map name as the first argument.
 Examples: `preliminary_connectivity_all_bsp.bat de_dust2` and `audit_navigation_all_bsp.bat de_dust2`.
 The Python audit also accepts `--map de_dust2`, allowing previous reports for other maps to remain in the results tree.
 No existing per-map artifacts are removed or overwritten.
+
+## D210.13 — Pinpoint problem candidates without regeneration
+
+Use `projects\aipb-map\tools\diagnose_navigation.bat` to inspect the existing de_dust2 navigation-candidates.json and preliminary-connectivity.json.
+The command writes `navigation-issues.md` and `navigation-issues.csv` under the per-map results folder, with component centers and exact candidate IDs/coordinates.
+An alternate map can be selected using the first BAT argument.
+Both input reports must match the current 0.3.3/0.9.0 schema and map identity.
+No Map Tool BSP re-import, new navvis generation or game DLL update is needed.

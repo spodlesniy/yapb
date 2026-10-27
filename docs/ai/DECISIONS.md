@@ -2630,3 +2630,12 @@ Limit the default Windows import, inspection, collision validation, heightfield,
 Allow a different map name as the optional first BAT argument.
 Add a --map filter to the readiness audit, so missing unrelated reports do not cause false failures during single-map evaluation.
 Do not delete historical artifacts or modify the collision and connectivity algorithms.
+
+## D210.13 — Candidate-level diagnostics for de_dust2
+
+Read the existing preliminary-connectivity JSON 0.9.0 and navigation-candidates JSON 0.3.3 rather than regenerating collision or navigation artifacts.
+Verify both reports belong to the same map and source artifact, resolve directed edge endpoints and covered spawn anchors, and independently recompute reachability and strongly connected components.
+Produce deterministic Markdown diagnostics grouped by strongly connected component with candidate IDs, centroid, reachability deficits, conditional-only reachability and one-way sinks.
+Write an optional CSV with all node IDs, XYZ coordinates, support provenance, in/out degree and problem flags to support focused in-game inspection.
+Do not change provisional navigation edges, runtime viewer protocol, or any acceptance criteria until manual game validation.
+Run the focused Python regressions in Map Tool CTest and offer a BAT wrapper defaulting to de_dust2.
