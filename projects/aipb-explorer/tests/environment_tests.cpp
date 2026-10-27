@@ -102,6 +102,7 @@ int runTests() {
     thrown = true;
   }
   require(thrown);
+  return 0;
 }
 
 int main() {

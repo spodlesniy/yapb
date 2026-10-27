@@ -43,3 +43,10 @@ An environment may reject a valid command without changing its state, for exampl
 The episode recorder must retain that result while rejecting state/tick-inconsistent transitions.
 Both native test executables now catch exceptions and report a nonzero exit code instead of raising an interactive MSVC terminate dialog.
 Production contracts, library implementation, build settings and data formats remain unchanged.
+
+## D211.2 — Restore explicit successful test return
+
+D211.1 published test executables with `int runTests()` functions that had no return statement.
+Strict GCC, Clang and MSVC builds rejected both test targets before reaching CTest.
+Explicitly return zero after successful assertions in both helpers; the exception-catching `main()` functions continue returning nonzero on failure.
+No production behavior, exploration contract or build configuration changes.

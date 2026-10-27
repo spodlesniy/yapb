@@ -75,6 +75,7 @@ int runTests() {
   result.state.tick = 0;
   result.status = StepStatus::Applied;
   require(!isValid(state, result));
+  return 0;
 }
 
 int main() {

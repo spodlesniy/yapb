@@ -88,7 +88,8 @@ D210.8 adds a bounded supported standing-hull runup probe, an optimistic acceler
 This is instrumentation, not evidence that arbitrary maps have been measured or physically traversed; Windows x86/in-game acceptance is pending.
 Proposed progression: graph evaluation/generator; versioned map knowledge; bot profiles; match context and perception; independent policy; reproducible rewards/learning; opt-in inference and in-game comparisons.
 D211 establishes the independent `projects/aipb-explorer/` C++20 contracts, bounded movement-transition episodes and standalone GCC/Clang/MSVC test workflow without physics, BSP integration, or YaPB behavior changes; its initial published CI exposed an invalid environment-test assertion.
-D211.1 corrects the rejected-valid-command test contract and makes test failures noninteractive on MSVC; local GCC/Clang CTest passed, while published CI verification remains pending.
+D211.1 corrects the rejected-valid-command test contract and makes test failures noninteractive on MSVC, but published GCC/Clang/MSVC CI failed at compilation because both new `int runTests()` helpers omitted a success return.
+D211.2 adds explicit success returns to both test helpers without production changes; local GCC/Clang Debug and GCC Release compilation plus CTest passed, with published CI acceptance pending.
 This parallel track does not change any existing Phase 7 exit criterion.
 
 
@@ -303,4 +304,6 @@ D210.13.1 fixes the component-row regression assertion that matched duplicate nu
 
 D211 adds an independent exploration core with movement state/command/result validation, a fixed-tick execution abstraction and bounded in-memory transition recording; this foundation is not a functioning map explorer or physical movement validator.
 
-D211.1 fixes the D211 mock-environment regression assertion and catches exceptions at both test-program boundaries to avoid MSVC modal hangs without changing explorer production behavior; automatic GCC/Clang/MSVC CI acceptance remains pending.
+D211.1 fixes the D211 mock-environment regression assertion and catches exceptions at both test-program boundaries to avoid MSVC modal hangs without changing explorer production behavior; its first published GCC/Clang/MSVC CI failed to compile both test executables due to missing success returns.
+
+D211.2 adds explicit `return 0;` to both test helpers, preserving all other production and test semantics; local GCC/Clang Debug and GCC Release strict-warning builds and CTest passed, while automatic published CI verification remains pending.
