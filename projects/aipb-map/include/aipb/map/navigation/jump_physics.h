@@ -8,6 +8,7 @@ struct JumpPhysics {
   double gravity { 800.0 };
   double jumpApex { 45.0 };
   double maximumHorizontalSpeed { 250.0 };
+  double groundAcceleration { 10.0 };
   double standingHalfHeight { 36.0 };
   double crouchingHalfHeight { 18.0 };
   double airborneDuckDelay { 0.04 };
@@ -43,6 +44,13 @@ std::optional<JumpLandingPlan> planJumpLanding(
   double floorRise,
   double planarDistance,
   bool crouched
+);
+
+// Optimistic upper bound from rest over a supported straight approach.
+// Ignores ground friction, input frame quantization and prior momentum.
+double takeoffSpeedUpperBound(
+  const JumpPhysics &physics,
+  double approachDistance
 );
 
 // Vertical movement relative to the standing jump origin at elapsed time.

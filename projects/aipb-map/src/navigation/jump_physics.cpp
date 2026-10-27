@@ -11,6 +11,7 @@ void requirePhysics(const JumpPhysics &physics) {
   if (!std::isfinite(physics.gravity) || physics.gravity <= 0 ||
       !std::isfinite(physics.jumpApex) || physics.jumpApex <= 0 ||
       !std::isfinite(physics.maximumHorizontalSpeed) || physics.maximumHorizontalSpeed <= 0 ||
+      !std::isfinite(physics.groundAcceleration) || physics.groundAcceleration <= 0 ||
       !std::isfinite(physics.standingHalfHeight) || physics.standingHalfHeight <= 0 ||
       !std::isfinite(physics.crouchingHalfHeight) || physics.crouchingHalfHeight <= 0 ||
       physics.crouchingHalfHeight >= physics.standingHalfHeight ||
@@ -94,6 +95,21 @@ std::optional<JumpLandingPlan> planJumpLanding(
     .requiredHorizontalSpeed = speed,
     .targetOriginRise = originRise
   };
+}
+
+double takeoffSpeedUpperBound(
+  const JumpPhysics &physics,
+  double approachDistance
+) {
+  requirePhysics(physics);
+
+  if (!std::isfinite(approachDistance) || approachDistance < 0) {
+    throw std::invalid_argument("invalid jump approach distance");
+  }
+  const double acceleration = physics.groundAcceleration * physics.maximumHorizontalSpeed;
+
+  return std::min(physics.maximumHorizontalSpeed,
+    std::sqrt(2.0 * acceleration * approachDistance));
 }
 
 double jumpDisplacement(

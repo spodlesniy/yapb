@@ -1,6 +1,7 @@
 #include <aipb/map/navigation/connectivity.h>
 
 #include "brush_policy.h"
+#include "walk_validation.h"
 
 #include <algorithm>
 #include <cmath>
@@ -403,9 +404,20 @@ void appendJumpTransitions(
         ++report.rejectedJumpPhysics;
         continue;
       }
-      const bool ordinaryPass = ordinaryPlan &&
+      const double approach = detail::measureApproachDistance(
+        queries, world, brushes, from,
+        to.position.x - from.position.x, to.position.y - from.position.y, config);
+      const double reachable = takeoffSpeedUpperBound(physics, approach);
+      const bool ordinaryReachable = ordinaryPlan && ordinaryPlan->requiredHorizontalSpeed <= reachable;
+      const bool crouchReachable = crouchPlan && crouchPlan->requiredHorizontalSpeed <= reachable;
+
+      if (!ordinaryReachable && !crouchReachable) {
+        ++report.rejectedJumpApproach;
+        continue;
+      }
+      const bool ordinaryPass = ordinaryReachable &&
         flight(queries, world, brushes, start, target, false, ordinaryPlan->flightSeconds, physics);
-      const bool crouchPass = !ordinaryPass && crouchPlan &&
+      const bool crouchPass = !ordinaryPass && crouchReachable &&
         flight(queries, world, brushes, start, target, true, crouchPlan->flightSeconds, physics);
 
       if (!ordinaryPass && !crouchPass) {
@@ -450,6 +462,8 @@ void appendJumpTransitions(
         .conditionalSupport = conditional,
         .estimatedFlightSeconds = ordinaryPass ? ordinaryPlan->flightSeconds : crouchPlan->flightSeconds,
         .estimatedHorizontalSpeed = ordinaryPass ? ordinaryPlan->requiredHorizontalSpeed : crouchPlan->requiredHorizontalSpeed,
+        .availableApproachDistance = approach,
+        .reachableTakeoffSpeed = reachable,
         .canStandAfterLanding = to.standingFree
       });
       report.jumpEdges += ordinaryPass;

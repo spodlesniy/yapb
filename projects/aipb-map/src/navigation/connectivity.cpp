@@ -71,6 +71,7 @@ ConnectivityReport buildConnectivity(
       !finite(config.maximumDropDistance) || config.maximumDropDistance <= config.minimumPlanarDistance ||
       config.maximumDropNeighborTrials == 0 || config.maximumDropEdgesPerCandidate == 0 ||
       config.maximumDropChecks == 0 ||
+      !finite(config.maximumApproachDistance) || config.maximumApproachDistance <= 0 ||
       !finite(config.maximumJumpDistance) || config.maximumJumpDistance <= config.minimumPlanarDistance ||
       !finite(config.maximumJumpRise) || config.maximumJumpRise <= config.maximumStepUp ||
       !finite(config.maximumCrouchJumpRise) || config.maximumCrouchJumpRise <= config.maximumJumpRise ||
@@ -289,13 +290,15 @@ std::string connectivityJson(const ConnectivityReport &report) {
       { "conditional_support", e.conditionalSupport },
       { "estimated_flight_seconds", e.estimatedFlightSeconds },
       { "estimated_horizontal_speed", e.estimatedHorizontalSpeed },
+      { "available_approach_distance", e.availableApproachDistance },
+      { "reachable_takeoff_speed", e.reachableTakeoffSpeed },
       { "can_stand_after_landing", e.canStandAfterLanding }
     });
   }
 
   return io::writeJson(Json::Object {
     { "format", "aipb-preliminary-connectivity" },
-    { "schema_version", "0.6.0" },
+    { "schema_version", "0.7.0" },
     { "source_candidates_schema", "0.3.2" },
     { "candidates_sha256", report.candidatesSha256 },
     { "map_name", report.mapName },
@@ -315,12 +318,14 @@ std::string connectivityJson(const ConnectivityReport &report) {
       { "maximum_directed_checks", number(report.config.maximumDirectedChecks) },
       { "maximum_edges", number(report.config.maximumEdges) },
       { "maximum_jump_distance", report.config.maximumJumpDistance },
+      { "maximum_approach_distance", report.config.maximumApproachDistance },
       { "maximum_jump_rise", report.config.maximumJumpRise },
       { "maximum_crouch_jump_rise", report.config.maximumCrouchJumpRise },
       { "jump_physics", Json::Object {
         { "gravity", report.config.jumpPhysics.gravity },
         { "jump_apex", report.config.jumpPhysics.jumpApex },
         { "maximum_horizontal_speed", report.config.jumpPhysics.maximumHorizontalSpeed },
+        { "ground_acceleration", report.config.jumpPhysics.groundAcceleration },
         { "standing_half_height", report.config.jumpPhysics.standingHalfHeight },
         { "crouching_half_height", report.config.jumpPhysics.crouchingHalfHeight },
         { "airborne_duck_delay", report.config.jumpPhysics.airborneDuckDelay },
@@ -363,6 +368,7 @@ std::string connectivityJson(const ConnectivityReport &report) {
     { "rejected_jump_collision", number(report.rejectedJumpCollision) },
     { "rejected_jump_landing", number(report.rejectedJumpLanding) },
     { "rejected_jump_physics", number(report.rejectedJumpPhysics) },
+    { "rejected_jump_approach", number(report.rejectedJumpApproach) },
     { "crouched_landings", number(report.crouchedLandings) },
     { "crouched_landings_without_standing", number(report.crouchedLandingsWithoutStanding) },
     { "conditional_edges", number(report.conditionalEdges) },

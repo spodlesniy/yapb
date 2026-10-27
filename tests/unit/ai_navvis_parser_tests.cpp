@@ -41,7 +41,7 @@ bool accepted(const std::string &contents, ai::navvis::Data &output) {
 
 AI_TEST(testNavvisParserAcceptsSortedAndVerifiedData) {
    ai::navvis::Data data;
-   const auto input = fixture("V 2 10.5 -3 45.25 2 1 1 0\nV 1 0 0 0 0 1 0 0\n", "E 2 1 1\n");
+   const auto input = fixture("V 2 10.5 -3 45.25 2 1 1 0\nV 1 0 0 0 0 1 0 0\n", "E 2 1 1 195 220\n");
    ai::test::expect(accepted(input, data), "valid snapshot accepted");
    ai::test::expect(data.map == "test_map" && data.sha256 == kDigest, "map and fingerprint retained");
    ai::test::expect(data.points.size() == 2 && data.points[0].id == 1 && data.points[1].id == 2,
@@ -52,21 +52,21 @@ AI_TEST(testNavvisParserAcceptsSortedAndVerifiedData) {
 
 AI_TEST(testNavvisParserRejectsMalformedSnapshotsWithoutMutation) {
    const auto vertices = std::string("V 1 0 0 0 0 1 0 0\nV 2 1 2 3 1 0 1 0\n");
-   const auto edge = std::string("E 1 2 0\n");
+   const auto edge = std::string("E 1 2 0 0 0\n");
    ai::navvis::Data unchanged;
    unchanged.map = "sentinel";
    auto reject = [&](const std::string &contents, const char *message) {
       ai::test::expect(!accepted(contents, unchanged), message);
       ai::test::expect(unchanged.map == "sentinel", "invalid snapshot leaves output untouched");
    };
-   reject(fixture(vertices, "E 1 3 0\n"), "dangling endpoint rejected");
-   reject(fixture(vertices, "E 1 2 4\n"), "unknown traversal rejected");
+   reject(fixture(vertices, "E 1 3 0 0 0\n"), "dangling endpoint rejected");
+   reject(fixture(vertices, "E 1 2 4 0 0\n"), "unknown traversal rejected");
    ai::navvis::Data drop;
-   ai::test::expect(accepted(fixture(vertices, "E 1 2 3\n"), drop), "directed drop edge accepted");
+   ai::test::expect(accepted(fixture(vertices, "E 1 2 3 0 0\n"), drop), "directed drop edge accepted");
    ai::test::expect(drop.edges.size() == 1 && drop.edges[0].type == 3, "drop type retained");
    reject(fixture("V 1 0 0 0 0 1 0 0\nV 1 1 2 3 0 1 0 0\n", edge), "duplicate ID rejected");
    reject(fixture("V 1 nan 0 0 0 1 0 0\nV 2 0 0 0 0 1 0 0\n", edge), "non-finite coordinate rejected");
-   reject(fixture(vertices, "E 1 2 0 extra\n"), "extra token rejected");
+   reject(fixture(vertices, "E 1 2 0 0 0 extra\n"), "extra token rejected");
    reject(fixture(vertices, edge) + "garbage", "trailing data rejected");
    reject(fixture(vertices, edge).substr(0, 30), "truncation rejected");
    reject(fixture(vertices, edge, 100001, 1), "oversized candidate count rejected");

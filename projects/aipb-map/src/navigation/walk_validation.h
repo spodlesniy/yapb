@@ -37,4 +37,15 @@ WalkResult validateWalk(
   const ConnectivityConfig &config
 );
 
+// Maximum verified ground-supported runup directly behind a jump source.
+double measureApproachDistance(
+  const collision::CollisionQueries &queries,
+  ObjectId world,
+  const std::vector<Brush> &brushes,
+  const Candidate &source,
+  double directionX,
+  double directionY,
+  const ConnectivityConfig &config
+);
+
 } // namespace aipb::map::navigation::detail

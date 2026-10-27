@@ -27,6 +27,7 @@ struct ConnectivityConfig {
   double maximumJumpRise { 44.0 };
   double maximumCrouchJumpRise { 62.0 };
   JumpPhysics jumpPhysics {};
+  double maximumApproachDistance { 128.0 };
   double maximumDropHeight { 192.0 };
   double maximumDropDistance { 160.0 };
   std::size_t maximumDropNeighborTrials { 16 };
@@ -48,6 +49,8 @@ struct ProvisionalEdge {
   bool conditionalSupport {};
   double estimatedFlightSeconds {};
   double estimatedHorizontalSpeed {};
+  double availableApproachDistance {};
+  double reachableTakeoffSpeed {};
   bool canStandAfterLanding { true };
 };
 
@@ -82,6 +85,7 @@ struct ConnectivityReport {
   std::size_t rejectedJumpCollision {};
   std::size_t rejectedJumpLanding {};
   std::size_t rejectedJumpPhysics {};
+  std::size_t rejectedJumpApproach {};
   std::size_t crouchedLandings {};
   std::size_t crouchedLandingsWithoutStanding {};
   std::size_t conditionalEdges {};

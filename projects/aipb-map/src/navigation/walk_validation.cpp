@@ -215,4 +215,58 @@ WalkResult validateWalk(
   return { .samples = steps };
 }
 
+double measureApproachDistance(
+  const collision::CollisionQueries &queries,
+  ObjectId world,
+  const std::vector<Brush> &brushes,
+  const Candidate &source,
+  double directionX,
+  double directionY,
+  const ConnectivityConfig &config
+) {
+  constexpr double kProbeSpacing = 8.0;
+  constexpr std::size_t kMaximumProbes = 16;
+  const double planar = std::hypot(directionX, directionY);
+
+  if (!source.standingFree || planar <= 0 || !std::isfinite(planar)) {
+    return 0.0;
+  }
+  const double nx = directionX / planar;
+  const double ny = directionY / planar;
+  const Vec3 start = playerOrigin(source, 1, config.clearanceLift);
+  Vec3 previous = start;
+  double measured = 0.0;
+
+  for (std::size_t i = 1; i <= kMaximumProbes; ++i) {
+    const double distance = std::min(config.maximumApproachDistance, i * kProbeSpacing);
+
+    if (distance <= measured) {
+      break;
+    }
+    const double x = start.x - nx * distance;
+    const double y = start.y - ny * distance;
+    const auto floor = floorAt(queries, world, brushes, 1, previous, x, y, config);
+
+    if (!floor || floor->normalZ < kMinimumUpNormal) {
+      break;
+    }
+    const Vec3 next { x, y, floor->originZ + config.clearanceLift };
+    const double rise = next.z - previous.z;
+
+    if (rise > config.maximumStepUp + config.clearanceLift ||
+        rise < -config.maximumStepDown - config.groundTolerance ||
+        !clear(queries, world, brushes, 1, previous, next)) {
+      break;
+    }
+    measured = distance;
+    previous = next;
+
+    if (distance >= config.maximumApproachDistance) {
+      break;
+    }
+  }
+
+  return measured;
+}
+
 } // namespace aipb::map::navigation::detail

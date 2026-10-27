@@ -84,6 +84,7 @@ D210.5.1 fixes a CI jump-fixture regression from counting downhill walk and uphi
 D210.6 adds budgeted narrow-surface sampling from world render triangles, using the same collision acceptance as coarse heightfield candidates; real-map density, ledge recovery, CI and in-game acceptance remain pending.
 D210.7 adds budgeted exposed-edge probes and directed ballistic drop hypotheses with landing verification; early field tests found missing ledge points and drops above deep voids, while target CI and in-game validation remain pending.
 D210.7.1 corrects the boundary regression fixture to exercise non-thin exposed world edges, keeps legacy walk/component expectations independent of new drop links, and catches heightfield test exceptions to avoid Windows GUI hangs; automatic CI and in-game acceptance remain pending.
+D210.8 adds a bounded supported standing-hull runup probe, an optimistic acceleration-from-rest speed bound and per-jump approach rejection diagnostics, plus optional speed fields in backward-compatible .nviz edge records; engine timing and real-map acceptance remain pending.
 This is instrumentation, not evidence that arbitrary maps have been measured or physically traversed; Windows x86/in-game acceptance is pending.
 Proposed progression: graph evaluation/generator; versioned map knowledge; bot profiles; match context and perception; independent policy; reproducible rewards/learning; opt-in inference and in-game comparisons.
 This parallel track does not change any existing Phase 7 exit criterion.

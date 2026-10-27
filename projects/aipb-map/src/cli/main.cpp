@@ -373,7 +373,8 @@ int exportNavvisCommand(
     const int kind = edge.traversal == aipb::map::navigation::TraversalKind::Walk ? 0 :
                      edge.traversal == aipb::map::navigation::TraversalKind::Jump ? 1 :
                      edge.traversal == aipb::map::navigation::TraversalKind::CrouchJump ? 2 : 3;
-    data << "E " << edge.from << ' ' << edge.to << ' ' << kind << '\n';
+    data << "E " << edge.from << ' ' << edge.to << ' ' << kind << ' '
+         << edge.estimatedHorizontalSpeed << ' ' << edge.reachableTakeoffSpeed << '\n';
   }
   data << "END\n";
   const auto outputText = data.str();

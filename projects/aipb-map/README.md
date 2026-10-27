@@ -263,3 +263,11 @@ Lower surfaces can be linked by a one-way provisional `drop` transition when the
 The viewer shows new drop arrows in cyan using its existing jump-edge visibility switch.
 Regenerate stale .nviz exports from existing .aipbmap imports, replace the files in `cstrike/addons/yapb/data/navvis/`, and reload the game map.
 A new game DLL is necessary to read .nviz edges of type 3.
+
+## D210.8 — Speed-gated jump candidates
+
+Candidate-to-candidate jumps are now conditioned on an estimate of available standing-hull runup in the jump direction, in addition to free-flight collision and landing support checks.
+The Map Tool computes a friction-free upper bound for horizontal takeoff speed from rest over verified runway and logs per-link required and reachable speeds in preliminary connectivity JSON v0.7.0.
+The diagnostic .nviz v1 exporter includes optional speed fields on edges, while game loaders retain support for older exports.
+The game HUD shows the required and estimated reachable speed for the first outgoing jump from the nearest candidate.
+After updating the Map Tool and game DLL, regenerate .nviz exports and reload the game map to view the new speed data.

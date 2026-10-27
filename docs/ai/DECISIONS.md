@@ -2560,3 +2560,16 @@ The baseline directed-walk fixture includes a synthetic high candidate with no a
 Limit that fixture's maximum drop height below the synthetic 100-unit separation to retain its original walk/component contract, without disabling drop detection in production.
 Catch heightfield test exceptions at main and return a nonzero exit code with stderr diagnostics instead of allowing the MSVC terminate dialog to block CI until timeout.
 No production map algorithms, artifacts or runtime formats change in this correction.
+
+## D210.8 — Preliminary runup-constrained jumps
+
+The earlier jump validator accepted all collision-safe jumps requiring no more than 250 units/s, without validating whether that speed could be acquired from rest near the source point.
+Probe up to 128 units directly behind the takeoff candidate, against world and static-brush standing hull collision and continuous support checks, in deterministic eight-unit increments.
+Estimate the upper bound on takeoff speed from rest as min(maximum speed, sqrt(2 * ground acceleration * maximum speed * measured runup distance)).
+Use ground acceleration 10 and max speed 250 by default; this is an optimistic upper bound that omits friction, frame timing, air acceleration, prior motion and turn constraints, and therefore is NOT a guarantee of actual game reachability.
+Reject jump/crouch-jump edges whose required horizontal velocity exceeds the sampled takeoff speed bound, recording separate approach diagnostics and the estimated runup/attainable speed on accepted links.
+Keep the existing drop classifier unchanged.
+Advance connectivity diagnostic schema to 0.7.0.
+Extend AIPBNAVVIS 1 E records with optional required/attainable speed tokens, while retaining acceptance of the original four-field edge representation.
+The viewer displays speed estimates for the first outgoing jump from the nearest candidate.
+The Map Tool must remain engine independent and subsequent in-game validation remains required.

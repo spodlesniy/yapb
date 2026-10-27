@@ -102,12 +102,16 @@ void frame(edict_t *editor) {
    const Point *nearest = nearby[0].point;
    int edgeCount = 0;
    unsigned outgoing = 0;
+   const Edge *firstJump = nullptr;
 
    for (const auto &edge : data.edges) {
       if (edge.from != nearest->id) {
          continue;
       }
       ++outgoing;
+      if (!firstJump && (edge.type == 1 || edge.type == 2)) {
+         firstJump = &edge;
+      }
 
       if (edgeCount >= kEdgesPerFrame || (setting.mask & (1u << (edge.type == 3 ? 5 : edge.type + 4))) == 0) {
          continue;
@@ -129,8 +133,15 @@ void frame(edict_t *editor) {
    if (setting.lastNearest != nearest->id || game.time() >= setting.nextHud) {
       const char *sources[] = { "world", "spawn", "brush", "conditional" };
       const char *stance = nearest->standing ? (nearest->crouching ? "stand/duck" : "stand") : "duck";
-      game.centerPrint(editor, strings.format("AiPB %u (%.0f %.0f %.0f) %s %s | out %u",
-         nearest->id, nearest->x, nearest->y, nearest->z, sources[nearest->source], stance, outgoing));
+      if (firstJump) {
+         game.centerPrint(editor, strings.format("AiPB %u %s %s | out %u | jump %u %.0f/%.0f u/s",
+            nearest->id, sources[nearest->source], stance, outgoing, firstJump->to,
+            firstJump->requiredSpeed, firstJump->reachableSpeed));
+      }
+      else {
+         game.centerPrint(editor, strings.format("AiPB %u (%.0f %.0f %.0f) %s %s | out %u",
+            nearest->id, nearest->x, nearest->y, nearest->z, sources[nearest->source], stance, outgoing));
+      }
       setting.lastNearest = nearest->id;
       setting.nextHud = game.time() + 1.0f;
    }

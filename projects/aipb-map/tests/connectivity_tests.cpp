@@ -102,7 +102,7 @@ void testConnectivity() {
           "candidate input modified");
   const auto json = connectivityJson(result);
   require(json == connectivityJson(buildConnectivity(map, candidates, config)), "non-deterministic connectivity JSON");
-  require(json.find("\"schema_version\":\"0.6.0\"") != std::string::npos, "wrong schema");
+  require(json.find("\"schema_version\":\"0.7.0\"") != std::string::npos, "wrong schema");
 
   candidates.candidates[1].standingFree = false;
   candidates.candidates[1].crouchingFree = false;
@@ -171,7 +171,7 @@ void testJumpTransitions(
     const bool forwardWalk = std::any_of(report.edges.begin(), report.edges.end(), [](const ProvisionalEdge &edge) {
       return edge.from == 11 && edge.to == 19 && edge.traversal == TraversalKind::Walk;
     });
-    require(forwardWalk || report.rejectedJumpCollision + report.rejectedJumpPhysics > 0,
+    require(forwardWalk || report.rejectedJumpCollision + report.rejectedJumpPhysics + report.rejectedJumpApproach > 0,
             "jump unexpectedly rejected without a diagnostic");
     return;
   }
@@ -291,6 +291,18 @@ int runTests() {
   }
   require(!planJumpLanding(profile, 64.0, 64.0, true), "over-height crouch jump accepted");
   require(!planJumpLanding(profile, 48.0, 500.0, true), "excessive horizontal speed accepted");
+  require(takeoffSpeedUpperBound(profile, 0.0) == 0.0, "zero runup speed");
+  require(takeoffSpeedUpperBound(profile, 5.0) < 160.0, "short approach speed");
+  require(takeoffSpeedUpperBound(profile, 100.0) == profile.maximumHorizontalSpeed, "full runup speed");
+  JumpPhysics lowAcceleration = profile;
+  lowAcceleration.groundAcceleration = 1.0;
+  require(takeoffSpeedUpperBound(lowAcceleration, 10.0) <
+          takeoffSpeedUpperBound(profile, 10.0), "ground acceleration ignored");
+  try {
+    (void)takeoffSpeedUpperBound(profile, -1.0);
+    throw std::runtime_error("negative approach accepted");
+  } catch (const std::invalid_argument &) {
+  }
 
   return 0;
 }

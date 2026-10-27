@@ -138,3 +138,13 @@ The exposed-boundary test now uses a broad surface whose individual triangles ar
 The original connectivity unit test bounds the drop height locally to retain its legacy walk-only component expectations; it does not change production defaults.
 The heightfield test executable handles exceptions and returns a nonzero code, avoiding interactive Windows failure dialogs.
 Map Tool CI remains the validation gate for the correction.
+
+## D210.8 — Jump speed and runup diagnostics
+
+A jump candidate retains the ballistic minimum horizontal speed required to reach its destination.
+Before accepting it, a separate standing-hull probe searches backward from its takeoff candidate along the opposite jump direction, up to 128 units, preserving floor support and collision clearance at each eight-unit step.
+A friction-free, acceleration-from-rest upper bound decides whether that runup could plausibly provide the required takeoff speed; rejected jumps increment rejected_jump_approach.
+Accepted edges record available_approach_distance, reachable_takeoff_speed and estimated_horizontal_speed in connectivity JSON 0.7.0.
+This is a conservative approximation of available runway but an optimistic acceleration model; it does not yet model actual input timing, previous velocity, direction changes, game-frame simulation or aerial steering.
+The .nviz v1 exporter may append required and reachable speeds to E lines; the game parser accepts both new six-token and legacy four-token edge records.
+The nearest-candidate HUD can show the first outgoing jump's estimated speed requirement and attainable bound.

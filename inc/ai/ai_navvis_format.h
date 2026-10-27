@@ -15,6 +15,7 @@ struct Point {
 struct Edge {
    unsigned from {}, to {};
    int type {};
+   float requiredSpeed {}, reachableSpeed {};
 };
 
 struct Data {

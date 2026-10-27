@@ -161,15 +161,33 @@ bool loadRecords (std::FILE *file, const char *expectedMap, Data &result) {
    };
 
    for (unsigned i = 0; i < edges; ++i) {
-      char *tokens[4] {};
+      char *tokens[6] {};
       unsigned from = 0, to = 0, type = 0;
 
-      if (!readTokens(file, line, tokens, 4) || std::strcmp(tokens[0], "E") != 0 ||
+      if (!std::fgets(line, static_cast<int>(sizeof(line)), file) ||
+          (!std::strchr(line, '\n') && !std::feof(file))) {
+         return false;
+      }
+      char *cursor = line;
+      std::size_t tokenCount = 0;
+
+      while (tokenCount < 6 && (tokens[tokenCount] = nextToken(cursor)) != nullptr) {
+         ++tokenCount;
+      }
+      if ((tokenCount != 4 && tokenCount != 6) || nextToken(cursor) != nullptr ||
+          std::strcmp(tokens[0], "E") != 0 ||
           !readUnsigned(tokens[1], from) || !readUnsigned(tokens[2], to) ||
           !readUnsigned(tokens[3], type) || type > 3 || from == to || !exists(from) || !exists(to)) {
          return false;
       }
-      result.edges.push_back({ from, to, static_cast<int>(type) });
+      float needed = 0.0f, reachable = 0.0f;
+
+      if (tokenCount == 6 &&
+          (!readFloat(tokens[4], needed) || !readFloat(tokens[5], reachable) ||
+           needed < 0 || reachable < 0 || needed > 2500 || reachable > 2500)) {
+         return false;
+      }
+      result.edges.push_back({ from, to, static_cast<int>(type), needed, reachable });
    }
    char *end[1] {};
 
