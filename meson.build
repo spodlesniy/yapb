@@ -296,6 +296,7 @@ sources = files(
    'src/ai/ai_action_runtime.cpp',
    'src/ai/ai_bot_runtime.cpp',
    'src/ai/ai_navvis.cpp',
+   'src/ai/ai_exploration_probe.cpp',
    'src/ai/ai_navvis_format.cpp',
    'src/ai/ai_training_collector.cpp',
    'src/ai/ai_goal_navigation_policy.cpp',
@@ -333,7 +334,7 @@ sources = files(
 
 # add the include directories
 includes = include_directories([
-   '.', 'inc', 'ext', 'ext/crlib', 'ext/linkage'
+   '.', 'inc', 'ext', 'ext/crlib', 'ext/linkage', 'projects/aipb-explorer/include'
 ], is_system: true)
 
 # if have git and on windows add windows-specific version info

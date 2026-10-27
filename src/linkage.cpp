@@ -7,6 +7,7 @@
 
 #include <yapb.h>
 #include <ai/ai_navvis.h>
+#include <ai/ai_exploration_probe.h>
 
 ConVar cv_version ("version", product.version.chars (), Var::ReadOnly);
 
@@ -359,6 +360,8 @@ CR_EXPORT int GetEntityAPI (gamefuncs_t *table, int interfaceVersion) {
       // space we m'allocated for our BSP data, since a new map means new BSP data to interpret. In
       // any case, when the new map will be booting, ServerActivate() will be called, so we'll do
       // the loading of new bots and the new BSP data parsing there.
+
+      ai::explore::reset();
 
       // notify level shutdown
       game.levelShutdown ();

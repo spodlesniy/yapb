@@ -50,3 +50,35 @@ D211.1 published test executables with `int runTests()` functions that had no re
 Strict GCC, Clang and MSVC builds rejected both test targets before reaching CTest.
 Explicitly return zero after successful assertions in both helpers; the exception-catching `main()` functions continue returning nonzero on failure.
 No production behavior, exploration contract or build configuration changes.
+
+## D212 — GoldSrc engine-authoritative movement probe
+
+The standalone C++20 `aipb::explorer_goldsrc` target implements `IExplorationEnvironment` through the POD `AipbExplorerBridgeApi` callbacks in `engine_bridge.h`.
+`reset()` requires an explicitly supplied reset callback; it never attempts unauthorized player teleportation.
+It checks callback status and the D211 movement-tick contract.
+The C++17-compatible `engine_bridge_math.h` provides input bounds, yaw wrapping, and diagonal-speed normalization for both the standalone adapter and game controller.
+
+The game-side `ai::explore` controller in the YaPB DLL is an independent on-server movement probe, not yet a callable implementation of `AipbExplorerBridgeApi`.
+It uses the original `pfnRunPlayerMove` engine function for one selected live bot.
+The selected bot's usual AI logic is bypassed for the 1–128 requested engine frames and restored afterwards.
+The DLL is still C++17 and does not link to the C++20 project.
+No geometric or engine collision flag is asserted in this version; observations are for diagnostic comparison.
+Frame `msec` is derived from actual game time rather than a claimed fixed-step scheduler.
+
+Authorized client or listen-server commands:
+
+```text
+yb list
+yb explore 0 1 0 0 0 0 20
+yb explore 0 1 0 1 0 0 3
+yb explore stop
+```
+
+Syntax: `yb explore <bot_index> <forward> <strafe> <jump 0|1> <duck 0|1> <yaw_delta> <frames 1..128>` and `yb explore stop`.
+The bot index is the zero-based index shown by YaPB.
+Movement axes are normalized to [-1,1] and yaw delta to [-180,180] degrees per engine frame.
+One experiment runs at a time; a dead, disconnected, frozen or unavailable bot cannot be selected.
+Stop is also triggered by map shutdown, completion or selected-bot disconnection.
+Output per engine frame includes msec, XYZ origin, velocity, yaw, ground and crouch flags.
+No persistent replay, determinism guarantee, physical reset or autonomous path exploration is implemented.
+Target-platform Windows x86 build and in-game movement acceptance require user execution.

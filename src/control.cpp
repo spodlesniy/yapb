@@ -7,8 +7,12 @@
 
 #include <yapb.h>
 #include <ai/ai_navvis.h>
+#include <ai/ai_exploration_probe.h>
+#include <aipb/explorer/engine_bridge_math.h>
 
 #include <ctime>
+#include <cmath>
+#include <cstdlib>
 
 namespace {
 
@@ -1319,6 +1323,49 @@ int BotControl::menuNavVis (int item) {
    return BotCommandResult::Handled;
 }
 
+int BotControl::cmdExplore () {
+   enum args { root = 0, name, botIndex, forward, strafe, jump, duck, yaw, frames };
+   if (hasArg(botIndex) && arg <StringRef> (botIndex) == "stop" && !hasArg(forward)) {
+      ai::explore::reset();
+      msg("AiPB explorer: stopped.");
+      return BotCommandResult::Handled;
+   }
+   if (!hasArg(frames) || hasArg(frames + 1)) {
+      return BotCommandResult::BadFormat;
+   }
+   auto parse = [this] (int index, double &output) -> bool {
+      const auto str = arg <StringRef> (index).chars();
+      char *end {};
+      output = std::strtod(str, &end);
+      return end != str && *end == '\0' && std::isfinite(output);
+   };
+   double values[7] {};
+   for (int i = 0; i < 7; ++i) {
+      if (!parse(botIndex + i, values[i])) {
+         return BotCommandResult::BadFormat;
+      }
+   }
+   const auto whole = [] (double value) -> bool { return std::trunc(value) == value; };
+   if (!whole(values[0]) || values[0] < 0 || values[0] >= kGameMaxPlayers
+      || !whole(values[3]) || (values[3] != 0 && values[3] != 1)
+      || !whole(values[4]) || (values[4] != 0 && values[4] != 1)
+      || !whole(values[6]) || values[6] < 1 || values[6] > 128) {
+      return BotCommandResult::BadFormat;
+   }
+   const AipbExplorerBridgeCommand command {
+      static_cast <float> (values[1]), static_cast <float> (values[2]),
+      static_cast <float> (values[5]),
+      static_cast <uint8_t> (values[3]), static_cast <uint8_t> (values[4])
+   };
+   if (!aipb::explorer::bridge::valid(command)) {
+      return BotCommandResult::BadFormat;
+   }
+   if (!ai::explore::begin(static_cast <int> (values[0]), command, static_cast <int> (values[6]))) {
+      msg("AiPB explorer: cannot start (busy, invalid, dead, or frozen bot).");
+   }
+   return BotCommandResult::Handled;
+}
+
 int BotControl::cmdNavVis () {
    enum args { root = 0, name, option, value };
 
@@ -2442,6 +2489,12 @@ BotControl::BotControl () {
          "navvis [menu|radius <64..2048>]",
          "Controls AiPB navigation viewer; radius is console-only.",
          &BotControl::cmdNavVis
+      },
+      {
+         "explore",
+         "explore <bot_index> <forward> <strafe> <jump> <duck> <yaw_delta> <frames> | stop",
+         "Runs an admin-only bounded GoldSrc movement probe.",
+         &BotControl::cmdExplore
       },
       {
          "graph/g/w/wp/wpt/waypoint",

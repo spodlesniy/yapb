@@ -6,6 +6,7 @@
 //
 
 #include <yapb.h>
+#include <ai/ai_exploration_probe.h>
 
 #include <ai/ai_bomb_defense_guard.h>
 #include <ai/ai_bomb_search_guard.h>
@@ -3526,6 +3527,13 @@ void Bot::checkParachute () {
 }
 
 void Bot::frame () {
+   if (ai::explore::frame(*this)) {
+      m_previousThinkTime = game.time();
+      m_oldButtons = pev->button;
+      m_thinkTimer.time = game.time();
+      return;
+   }
+
    if (m_thinkTimer.time < game.time ()) {
       m_thinkTimer.time = game.time () + m_thinkTimer.interval;
 

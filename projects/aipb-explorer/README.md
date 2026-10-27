@@ -18,3 +18,10 @@ ctest --preset debug
 
 Use `release` instead of `debug` for the optimized build.
 See [Exploration specification](../../docs/ai/INDEPENDENT_AI_EXPLORATION.md).
+
+## D212 — Engine movement experiments
+
+`aipb::explorer_goldsrc` provides a standalone callback adapter tested without the game engine.
+The YaPB DLL provides a separate admin-only `yb explore` command for bounded authoritative GoldSrc movement tests.
+It does not yet wire the C++20 callbacks into the game or support persistent replays.
+See [D212 movement harness](../../docs/ai/INDEPENDENT_AI_EXPLORATION.md).

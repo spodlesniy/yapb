@@ -2647,3 +2647,14 @@ The sole failure was a test counting the token `| 5 |` anywhere in Markdown, inc
 Match the component ID at the start of the Markdown table row and assert that the truncated table excludes the next component.
 Capture expected stderr from the negative missing-input test and explicitly validate the error message, rather than emitting distracting expected trace diagnostics in CI.
 Do not modify the diagnostic implementation, generated navigation artifacts or graph connectivity.
+
+## D212 — Bounded GoldSrc movement experiment harness
+
+Use the existing admin-only `yb` command dispatcher to select one live bot for up to 128 movement frames.
+Do not alter Legacy, Neural or Training behavior unless that specific bot is currently under explicit experiment control.
+Execute normalized movement controls with `pfnRunPlayerMove` and observe actual origin, velocity, ground state, crouch state, yaw and elapsed engine-movement milliseconds.
+Do not infer physics, collisions or exact fixed-step simulation from geometric approximations.
+Cancel experiments on stop, disconnect, map unload, death, invalid inputs and budget exhaustion.
+Keep the C++17 game DLL disconnected from the C++20 `aipb-explorer` library.
+Expose the same POD command/state bridge and unit-test a C++20 callback-based `GoldSrcEnvironment`; callback service wiring and arbitrary player-state reset are not implemented in the DLL in D212.
+Deferred work includes durable episode capture/replay, frame-timing parity, collision truth, and autonomous exploration.

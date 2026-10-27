@@ -307,3 +307,7 @@ D211 adds an independent exploration core with movement state/command/result val
 D211.1 fixes the D211 mock-environment regression assertion and catches exceptions at both test-program boundaries to avoid MSVC modal hangs without changing explorer production behavior; its first published GCC/Clang/MSVC CI failed to compile both test executables due to missing success returns.
 
 D211.2 adds explicit `return 0;` to both test helpers, preserving all other production and test semantics; local GCC/Clang Debug and GCC Release strict-warning builds and CTest passed, while automatic published CI verification remains pending.
+
+D212 introduces a bounded opt-in GoldSrc movement probe for a single YaPB bot, direct engine movement controls with per-frame observations, and an independent C++20 callback adapter over a C++17 POD boundary.
+The runtime probe uses measured variable engine-frame duration; actual C++20-to-game callback wiring, deterministic fixed-tick replay, collision classification and in-game acceptance remain pending.
+The manual Windows x86 build and game test are user-controlled only.

@@ -6,6 +6,7 @@
 //
 
 #include <yapb.h>
+#include <ai/ai_exploration_probe.h>
 
 ConVar cv_autovacate ("autovacate", "1", "Kicks bots to automatically make room for human players.");
 ConVar cv_autovacate_keep_slots ("autovacate_keep_slots", "1", "How many slots the autovacate feature should keep for human players.", true, 1.0f, 8.0f);
@@ -1395,6 +1396,8 @@ bool BotManager::isTeamStacked (int team) {
 }
 
 void BotManager::disconnectBot (Bot *bot) {
+   ai::explore::cancelBot(bot->index());
+
    for (auto &e : m_bots) {
       if (e.get () != bot) {
          continue;

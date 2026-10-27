@@ -107,6 +107,7 @@ private:
    int cmdTrainingStatus ();
    int cmdClearTraining ();
    int cmdNavVis ();
+   int cmdExplore ();
    int cmdNode ();
    int cmdNodeOn ();
    int cmdNodeOff ();
