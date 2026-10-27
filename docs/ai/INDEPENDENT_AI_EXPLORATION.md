@@ -238,3 +238,25 @@ yb explore run queue_test_01
 
 Run `init` and `replay` from a separate CFG after the server prints the successful auto-save message.
 The original `yb explore` and `yb explore append` syntax is unchanged.
+
+## D216 — Inspect completed movement traces
+
+Run `yb explore report` after a manual probe or queued recording completes.
+Alternatively use `yb explore init <name> <bot>` to load a previously saved recording, then run `yb explore report`.
+The command prints frames, cumulative simulated milliseconds, measured 3D path length, direct endpoint displacement, average path speed in GoldSrc units per second, peak post-frame velocity magnitude, and counts of airborne, crouched, jump-held and neutral-command frames.
+Neutral means that forward, strafe, yaw delta, jump and duck are all zero; it does not guarantee zero physical velocity.
+Airborne and crouched counts refer to the engine's observed post-frame state, not a verified count of distinct jumps.
+A running or incomplete recording is not reportable; no CSV schema changes are made.
+
+Example:
+```text
+yb_freeze_bots 1
+yb explore queueclear
+yb explore clear
+yb explore queue 1 1 0 0 0 0 40
+yb explore queue 1 0 0 0 0 0 30
+yb explore queue 1 0 1 0 0 0 40
+yb explore run report_demo_01
+```
+
+After the completion and successful save message, run `yb explore report`.

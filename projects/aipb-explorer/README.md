@@ -62,3 +62,9 @@ Named CSV v2 save, init and replay continue to operate on the resulting combined
 A C++17-compatible fixed 32-command `ProbeQueue` schedules one bot's sequential GoldSrc movement segments.
 A single `yb explore run <save_name>` dispatches all pending commands and automatically writes the completed CSV v2; `queueclear` abandons pending commands while idle.
 This is an engine-side scheduler, not a GoldSrc console `wait` loop; queue regression tests run in the Explorer CTest matrix.
+
+## D216 — Completed trace diagnostics
+
+`engine_bridge_trace_report.h` derives path length, endpoint displacement, elapsed command milliseconds, mean path speed, peak observed velocity and state/command frame counts from validated recorded steps.
+The in-game `yb explore report` prints the summary without modifying a named or in-memory trace.
+Explorer CTest now runs the queue test independently, with strict-warning flags, and adds a report regression fixture.

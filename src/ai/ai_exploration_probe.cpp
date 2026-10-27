@@ -4,6 +4,7 @@
 #include <aipb/explorer/engine_bridge_queue.h>
 #include <aipb/explorer/engine_bridge_trace.h>
 #include <aipb/explorer/engine_bridge_trace_io.h>
+#include <aipb/explorer/engine_bridge_trace_report.h>
 #include <crlib/files.h>
 
 #include <cstdio>
@@ -182,6 +183,23 @@ bool beginReplay(int botIndex) {
 
 int recordedSteps() {
    return trace.count;
+}
+
+bool report() {
+   if (active()) {
+      return false;
+   }
+   aipb::explorer::bridge::TraceReport summary {};
+   if (!aipb::explorer::bridge::summarizeTrace(trace, summary)) {
+      return false;
+   }
+   game.print("AiPB explorer report: frames=%d, duration_ms=%d, path=%.2f, displacement=%.2f, avg_speed=%.2f, peak_velocity=%.2f",
+      summary.frames, summary.simulatedMs, summary.traveledUnits, summary.displacementUnits,
+      summary.averageSpeed, summary.peakVelocity);
+   game.print("AiPB explorer report: airborne=%d, crouched=%d, jump_held=%d, neutral=%d",
+      summary.airborneFrames, summary.crouchedFrames, summary.jumpHeldFrames,
+      summary.neutralInputFrames);
+   return true;
 }
 
 bool clear() {

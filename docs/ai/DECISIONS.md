@@ -2754,3 +2754,13 @@ Limit total recorded frames to 4096, keep lazy heap allocation, CSV v2 start met
 All commands remain confined to the chosen bot and fail closed if the bot becomes unavailable; no unrelated YaPB bots are modified.
 Save failure is reported and the completed in-memory trace remains available for diagnosis and manual retry.
 The queue control contract is tested standalone in C++17; user-started Windows x86 game verification remains essential.
+
+## D216 — Report observed movement evidence for completed traces
+
+Expose `yb explore report` as a read-only diagnostic on the currently completed in-memory trace, including one loaded from a named CSV via `init` or `replay`.
+Do not change the v2 CSV representation or store redundant derived values.
+Require a complete, valid and continuous trace; reject partial/empty or corrupted recordings and leave report results unchanged on validation failure.
+Compute 3D traveled distance as the sum of observed frame-to-frame displacements, endpoint displacement independently, mean path speed from the sum of recorded GoldSrc command milliseconds, and peak observed post-frame velocity magnitude.
+Report the number of post-frame airborne/crouched states and the number of frames with jump or fully neutral commands; frame counts are not equivalent to jump transitions or complete periods of being airborne.
+Use bounded C++17-compatible engine-independent report logic with strict GCC/Clang/MSVC regressions.
+Fix the D215 Explorer CMake configuration so each test command runs only its own executable and queue/report tests receive strict warning flags.

@@ -345,3 +345,7 @@ Independent trace-contract tests cover permitted/rejected append cases; automati
 D215 adds an opt-in bounded single-bot movement command queue (32 commands), engine-frame transition without console `wait`, and automatic named CSV v2 export after successful execution.
 Command format is `yb explore queue <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|duration_ms ms>`, followed by `yb explore run <save_name>`; `queueclear` discards pending commands when idle.
 Queued executions preserve a single continuous GoldSrc trace, obey its existing 4096-frame hard cap, and fail closed on an unavailable bot, movement mismatch, or save failure; user-started Windows x86 gameplay verification is pending.
+
+D216 adds a read-only in-game `yb explore report` summary over the current completed trace, including simulated duration, measured displacement and traveled distance, average/peak velocity, airborne/crouched frames and held jump/neutral frames.
+The summary uses engine-observed before/after states, validates trace continuity and keeps CSV v2 unchanged; an earlier D215 CMake registration mistake that passed unrelated executable names to the bridge-trace test and omitted the queue test target from strict-warning checks is corrected.
+Standalone C++17 report tests cover values, rejection of incomplete/corrupted traces and unchanged output on failure; automatic CI and user-started Windows x86 verification remain pending.

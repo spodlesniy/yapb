@@ -1328,6 +1328,15 @@ int BotControl::cmdExplore () {
    enum args { root = 0, name, botIndex, forward, strafe, jump, duck, yaw, frames, unit };
    // Named traces are sandboxed to the explorer directory under YaPB data.
    const auto operation = arg <StringRef>(botIndex);
+   if (operation == "report") {
+      if (hasArg(forward)) {
+         return BotCommandResult::BadFormat;
+      }
+      if (!ai::explore::report()) {
+         msg("AiPB explorer: report requires a completed, valid trace; use replay or init to load a named recording.");
+      }
+      return BotCommandResult::Handled;
+   }
    if (operation == "queueclear") {
       if (hasArg(forward)) {
          return BotCommandResult::BadFormat;
@@ -2640,7 +2649,7 @@ BotControl::BotControl () {
       },
       {
          "explore",
-         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save <name> | list | init <name> <bot> | replay <name> <bot> | append <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | queue <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | run <save_name> | queueclear | clear | stop",
+         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save <name> | list | init <name> <bot> | replay <name> <bot> | append <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | queue <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | run <save_name> | queueclear | report | clear | stop",
          "Runs an admin-only bounded GoldSrc movement probe.",
          &BotControl::cmdExplore
       },
