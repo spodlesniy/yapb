@@ -329,3 +329,7 @@ The standalone trace lifecycle regression has been extended; automatic CI and ta
 
 D213.4 corrects the user-reported Windows x86 DLL build failure in the D213.1 runtime integration: `getMapName()` is a C string, MSVC rejects deprecated `fopen`, and `flDuckTime` is integer-valued.
 A CRT-specific file-open helper preserves exclusive named-save creation, with a standalone file-create/read regression; target Windows x86 verification remains user-controlled and pending.
+
+D213.5 removes two 4096-sample arrays from the game's static storage by making the trace sample array heap-backed and allocated on first append.
+The trace descriptor remains small, explicit clear releases the allocation, and named-trace load transfers its validated buffer without an additional 4096-record copy.
+The 4096-step limit, CSV v2 format and command behavior remain unchanged; local GCC/Clang C++17 tests and a synthetic binary-section size comparison passed, while automatic CI and user-started Windows x86 DLL-size verification remain pending.

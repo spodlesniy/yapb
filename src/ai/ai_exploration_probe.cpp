@@ -10,6 +10,7 @@
 
 #include <cmath>
 #include <cstdint>
+#include <utility>
 
 namespace ai::explore {
 namespace {
@@ -191,10 +192,14 @@ bool load(const char *filePath) {
    }
    std::fclose(file);
    if (!ok) {
+      // Do not retain a partial allocation after a failed import.
+      staged.clear();
       return false;
    }
    staged.completed = true;
-   trace = staged;
+   // Transfer ownership of the validated trace without copying its samples.
+   trace = std::move(staged);
+   staged.clear();
    metadata = loaded;
    return true;
 }

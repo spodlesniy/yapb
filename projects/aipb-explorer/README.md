@@ -44,3 +44,9 @@ Init explicitly moves the bot, while replay rejects incompatible start states an
 `yb explore save <name>` never clears the buffer.
 Each separate movement command still starts a fresh trace, not an appended multi-command recording.
 Clear is refused while an experiment or replay is active.
+
+## D213.5 — Heap-backed bounded trace storage
+
+`TraceBuffer` owns a lazily allocated fixed-capacity array of up to 4096 steps rather than embedding it in the DLL's static data.
+Its memory is released on `clear()` and ownership is moved after a successful named-trace load.
+The C++17 bridge trace tests exercise descriptor size, allocation, ownership transfer, release and full-capacity bounds; CSV files and engine commands are unchanged.

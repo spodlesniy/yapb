@@ -173,3 +173,16 @@ The YaPB game API returns the current map name as `const char *`, so named-trace
 For MSVC compatibility trace file creation and loading use `fopen_s`; other compilers use standard `fopen`, with exclusive `wx` file creation preserved.
 `flDuckTime` initialization uses the engine field's integer type.
 A standalone trace-file test checks new-file creation, duplicate refusal and subsequent reading; the user's Windows x86 build remains the validation gate for the game DLL.
+
+## D213.5 — Lazy memory for movement traces
+
+The D213 trace descriptor no longer embeds a 4096-element array in global initialized data.
+Trace samples are allocated in the heap when the first engine frame is recorded or the first imported CSV sample is parsed.
+Each allocation retains a hard capacity of 4096 steps; it does not grow as more samples arrive.
+`yb explore clear` releases the sample allocation and map metadata while leaving saved CSV files unchanged.
+Starting a new experiment also clears and releases the previous trace.
+`yb explore save <name>` remains nondestructive and `yb explore init <name> <bot>` and `yb explore replay <name> <bot>` load a temporary validated recording and transfer its allocation into the active trace.
+Failed loads leave any prior completed recording unchanged.
+No CSV version, GoldSrc movement behavior, player state or comparison tolerance is changed in D213.5.
+Memory allocation failures cause the recording to fail instead of silently exceeding capacity.
+The target Windows x86 DLL size still needs measurement in the user's build.

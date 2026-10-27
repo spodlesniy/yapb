@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <limits>
+#include <utility>
 #include <stdexcept>
 
 #include <aipb/explorer/engine_bridge_trace.h>
@@ -14,6 +15,9 @@ static void require(bool ok) {
 
 static int runTests() {
   static TraceBuffer trace {};
+  // An empty global trace must not reserve a 4096-step array in the DLL.
+  static_assert(sizeof(TraceBuffer) < 128, "TraceBuffer descriptor must remain small");
+  require(!trace.samples && trace.count == 0);
   trace.botIndex = 1;
   AipbExplorerBridgeState before {};
   before.yaw = -179.0f;
@@ -29,7 +33,7 @@ static int runTests() {
   sample.maxSpeed = 250.0f;
   sample.msec = 2;
   require(trace.append(sample));
-  require(trace.count == 1);
+  require(trace.count == 1 && trace.samples != nullptr);
   require(!trace.append(sample));
   sample.before = after;
   sample.after = after;
@@ -40,7 +44,7 @@ static int runTests() {
   require(!trace.append(sample));
   // An explicit clear invalidates the completed in-memory recording.
   trace.clear();
-  require(trace.count == 0 && !trace.completed && trace.botIndex == -1);
+  require(trace.count == 0 && !trace.completed && trace.botIndex == -1 && !trace.samples);
   sample.command.jump = 2;
   require(!trace.append(sample));
   sample.command.jump = 0;
@@ -50,7 +54,37 @@ static int runTests() {
   sample.msec = 2;
   require(trace.append(sample) && trace.count == 1 && !trace.completed);
   trace.clear();
-  require(trace.count == 0 && trace.botIndex == -1 && !trace.completed);
+  require(trace.count == 0 && trace.botIndex == -1 && !trace.completed && !trace.samples);
+
+  // Move a completed trace as load() does: the sample allocation is transferred.
+  TraceBuffer staged {};
+  staged.botIndex = 2;
+  sample.before = before;
+  sample.after = after;
+  sample.after.tick = before.tick + 1;
+  require(staged.append(sample));
+  staged.completed = true;
+  TraceSample *const allocation = staged.samples.get();
+  trace = std::move(staged);
+  staged.clear();
+  require(trace.completed && trace.count == 1 && trace.botIndex == 2);
+  require(trace.samples.get() == allocation && !staged.samples && staged.count == 0);
+  trace.clear();
+  require(!trace.samples && trace.count == 0);
+
+  // A heap-backed recording still enforces the exact 4096-step hard limit.
+  TraceBuffer full {};
+  TraceSample step {};
+  step.msec = 2;
+  step.maxSpeed = 250.0f;
+  for (int i = 0; i < ProbeBudget::kMaxSafetyFrames; ++i) {
+    step.before.tick = static_cast<uint64_t>(i);
+    step.after.tick = static_cast<uint64_t>(i + 1);
+    require(full.append(step));
+  }
+  require(full.count == ProbeBudget::kMaxSafetyFrames && !full.append(step));
+  full.clear();
+  require(!full.samples && full.count == 0);
 
   const ReplayDifference same = compareStates(before, before);
   require(same.within(0.01, 0.01, 0.01f));

@@ -2,6 +2,8 @@
 
 #include <cmath>
 #include <cstdint>
+#include <memory>
+#include <new>
 
 #include <aipb/explorer/engine_bridge_math.h>
 
@@ -25,14 +27,15 @@ inline bool validState(const AipbExplorerBridgeState &s) {
     && s.on_ground <= 1 && s.crouching <= 1;
 }
 
-// A fixed-capacity snapshot belongs in static storage, not a game frame stack.
+// Keep only the trace descriptor static; allocate samples on first append.
 struct TraceBuffer {
-  TraceSample samples[ProbeBudget::kMaxSafetyFrames] {};
+  std::unique_ptr<TraceSample[]> samples {};
   int count {};
   int botIndex { -1 };
   bool completed {};
 
   void clear() {
+    samples.reset();
     count = 0;
     botIndex = -1;
     completed = false;
@@ -49,6 +52,13 @@ struct TraceBuffer {
         || sample.before.z != samples[count - 1].after.z))) {
       return false;
     }
+    if (!samples) {
+      samples.reset(new (std::nothrow) TraceSample[ProbeBudget::kMaxSafetyFrames] {});
+      if (!samples) {
+        return false;
+      }
+    }
+
     samples[count++] = sample;
     return true;
   }

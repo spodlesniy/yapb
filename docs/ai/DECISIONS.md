@@ -2713,3 +2713,15 @@ The user's Windows x86 compile failed in `src/ai/ai_exploration_probe.cpp`: `Gam
 Pass map names directly to `snprintf` and `strcmp`; use `fopen_s` under MSVC and `fopen` elsewhere through one small C++17 trace-I/O helper, keeping exclusive `wx` creation and `rt` loading semantics.
 Assign integer zero to the crouch timer and test that exclusive file creation refuses duplicates while ordinary reading succeeds.
 Retain all D213.3 buffering semantics and avoid rewriting published commits; Windows x86 acceptance requires the user's manual build.
+
+## D213.5 — Move bounded GoldSrc trace samples out of initialized DLL storage
+
+The D213 named-trace implementation held two static `TraceBuffer` objects: the current trace and a temporary load buffer, each reserving 4096 full `TraceSample` instances.
+Because of nonzero default metadata initialization, this can contribute roughly 1.4 MB of initialized `.data` to the linked game DLL even with no active probe.
+Retain the `TraceBuffer` metadata and 4096-step cap but replace its inline sample array with a lazily allocated `std::unique_ptr<TraceSample[]>` using nonthrowing allocation.
+Validation must precede allocation and an allocation failure must fail the append without writing to invalid storage.
+The existing `clear()` must free sample memory as well as resetting metadata; starting a new recording continues to discard the previous in-memory trace.
+When loading a named recording, transfer ownership of the validated temporary allocation into the live trace using move assignment, then reset the moved-from staging metadata.
+Preserve all CSV v2 bytes, file operations, admin commands, replay comparisons and safety limits.
+Run a C++17 test proving a small `TraceBuffer` descriptor, lazy allocation, ownership transfer, clear-and-release behavior and rejection beyond 4096 frames.
+Record a synthetic executable's section-size comparison as evidence, but require a user-built Windows x86 DLL before claiming the actual PE file-size reduction.
