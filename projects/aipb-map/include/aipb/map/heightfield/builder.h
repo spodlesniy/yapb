@@ -20,6 +20,8 @@ struct Config {
   double adaptiveSampleSpacing { 64.0 };
   double adaptiveMinimumSpacing { 32.0 };
   std::size_t maximumAdaptiveLocations { 1024 };
+  double ledgeInset { 24.0 };
+  std::size_t maximumLedgeLocations { 512 };
   std::size_t maximumColumns { 16384 };
   std::size_t maximumVerticalSteps { 512 };
   std::size_t maximumSamples { 4000000 };
@@ -66,6 +68,9 @@ struct Result {
   std::size_t adaptiveThinTriangles {};
   std::size_t adaptiveLocations {};
   std::size_t adaptiveCandidates {};
+  std::size_t ledgeEdges {};
+  std::size_t ledgeLocations {};
+  std::size_t ledgeCandidates {};
   std::vector<Candidate> candidates;
 };
 

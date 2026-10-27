@@ -10,7 +10,7 @@
 
 namespace aipb::map::navigation {
 
-enum class TraversalKind { Walk, Jump, CrouchJump };
+enum class TraversalKind { Walk, Jump, CrouchJump, Drop };
 
 struct ConnectivityConfig {
   double maximumPlanarDistance { 192.0 };
@@ -27,6 +27,11 @@ struct ConnectivityConfig {
   double maximumJumpRise { 44.0 };
   double maximumCrouchJumpRise { 62.0 };
   JumpPhysics jumpPhysics {};
+  double maximumDropHeight { 192.0 };
+  double maximumDropDistance { 160.0 };
+  std::size_t maximumDropNeighborTrials { 16 };
+  std::size_t maximumDropEdgesPerCandidate { 2 };
+  std::size_t maximumDropChecks { 50000 };
   std::size_t maximumJumpNeighborTrials { 24 };
   std::size_t maximumJumpEdgesPerCandidate { 4 };
   std::size_t maximumJumpChecks { 150000 };
@@ -69,6 +74,11 @@ struct ConnectivityReport {
   std::size_t jumpEdges {};
   std::size_t crouchJumpEdges {};
   std::size_t jumpTrials {};
+  std::size_t dropTrials {};
+  std::size_t dropEdges {};
+  std::size_t rejectedDropPhysics {};
+  std::size_t rejectedDropCollision {};
+  std::size_t rejectedDropLanding {};
   std::size_t rejectedJumpCollision {};
   std::size_t rejectedJumpLanding {};
   std::size_t rejectedJumpPhysics {};

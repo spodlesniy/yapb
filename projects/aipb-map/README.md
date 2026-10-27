@@ -255,3 +255,11 @@ Samples are always revalidated against the BSP player hull and point hull and mu
 Heightfield diagnostics advance to v0.3.1 with adaptive triangle, probe, and accepted candidate counts, while Navigation Candidates retain v0.3.2 and .nviz remains v1.
 To compare in-game results, delete old .nviz exports and regenerate via `export_navvis_all_bsp.bat`, then copy the new exports into the game and reload the map.
 Reimporting BSP files is unnecessary.
+
+## D210.7 — Upper ledge points and directed drops
+
+Exposed upward-facing world surface boundaries receive additional collision-validated position probes, helping when the other side has a deep floor or empty space.
+Lower surfaces can be linked by a one-way provisional `drop` transition when the falling path and destination support pass offline checks.
+The viewer shows new drop arrows in cyan using its existing jump-edge visibility switch.
+Regenerate stale .nviz exports from existing .aipbmap imports, replace the files in `cstrike/addons/yapb/data/navvis/`, and reload the game map.
+A new game DLL is necessary to read .nviz edges of type 3.

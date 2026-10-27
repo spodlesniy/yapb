@@ -82,6 +82,7 @@ D210.4.2 replaces the viewer's iostream-based loader after an MSVC x86 C4530/C22
 D210.5 replaces endpoint-only step classification and three ground probes with bounded 4-unit walk hull sampling, short local step clearance, floor/grade checks and separate walk rejection diagnostics; engine movement parity and 25-map comparison remain pending.
 D210.5.1 fixes a CI jump-fixture regression from counting downhill walk and uphill jump together, and makes CTest non-interactive with per-test and workflow timeouts; target CI and real-map validation remain pending.
 D210.6 adds budgeted narrow-surface sampling from world render triangles, using the same collision acceptance as coarse heightfield candidates; real-map density, ledge recovery, CI and in-game acceptance remain pending.
+D210.7 adds budgeted exposed-edge probes and directed ballistic drop hypotheses with landing verification; early field tests found missing ledge points and drops above deep voids, while target CI and in-game validation remain pending.
 This is instrumentation, not evidence that arbitrary maps have been measured or physically traversed; Windows x86/in-game acceptance is pending.
 Proposed progression: graph evaluation/generator; versioned map knowledge; bot profiles; match context and perception; independent policy; reproducible rewards/learning; opt-in inference and in-game comparisons.
 This parallel track does not change any existing Phase 7 exit criterion.

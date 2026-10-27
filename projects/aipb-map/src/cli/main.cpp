@@ -371,7 +371,8 @@ int exportNavvisCommand(
 
   for (const auto &edge : connectivity.edges) {
     const int kind = edge.traversal == aipb::map::navigation::TraversalKind::Walk ? 0 :
-                     edge.traversal == aipb::map::navigation::TraversalKind::Jump ? 1 : 2;
+                     edge.traversal == aipb::map::navigation::TraversalKind::Jump ? 1 :
+                     edge.traversal == aipb::map::navigation::TraversalKind::CrouchJump ? 2 : 3;
     data << "E " << edge.from << ' ' << edge.to << ' ' << kind << '\n';
   }
   data << "END\n";

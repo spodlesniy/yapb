@@ -453,7 +453,7 @@ std::string candidatesJson(const CandidateReport &report) {
   return io::writeJson(Json::Object {
     { "format", "aipb-navigation-candidates" },
     { "schema_version", "0.3.2" },
-    { "source_heightfield_schema", "0.3.1" },
+    { "source_heightfield_schema", "0.3.2" },
     { "map_name", report.mapName },
     { "source_sha256", report.sourceSha256 },
     { "artifact_sha256", report.artifactSha256 },

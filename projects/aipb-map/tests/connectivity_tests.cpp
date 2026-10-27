@@ -99,7 +99,7 @@ void testConnectivity() {
           "candidate input modified");
   const auto json = connectivityJson(result);
   require(json == connectivityJson(buildConnectivity(map, candidates)), "non-deterministic connectivity JSON");
-  require(json.find("\"schema_version\":\"0.5.0\"") != std::string::npos, "wrong schema");
+  require(json.find("\"schema_version\":\"0.6.0\"") != std::string::npos, "wrong schema");
 
   candidates.candidates[1].standingFree = false;
   candidates.candidates[1].crouchingFree = false;
@@ -158,7 +158,7 @@ void testJumpTransitions(
   const auto report = buildConnectivity(map, candidates);
   // Downhill walk can coexist with the uphill jump; count airborne edges only.
   const auto isJump = [](const ProvisionalEdge &edge) {
-    return edge.traversal != TraversalKind::Walk;
+    return edge.traversal == TraversalKind::Jump || edge.traversal == TraversalKind::CrouchJump;
   };
   const auto jumpCount = std::count_if(report.edges.begin(), report.edges.end(), isJump);
   const auto jump = std::find_if(report.edges.begin(), report.edges.end(), isJump);
@@ -262,6 +262,7 @@ void testContinuousWalkRejectsNarrowGap() {
   const auto result = buildConnectivity(map, candidates);
   require(result.edges.empty(), "walk may not bridge a floor gap");
   require(result.rejectedWalkSupport > 0, "floor gap must report missing support");
+  require(result.dropEdges == 0, "same-height gap must not become a drop");
   require(result.walkSamples >= 9, "walk must inspect interior floor samples");
 }
 

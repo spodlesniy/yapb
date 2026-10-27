@@ -8,6 +8,8 @@
 #include <cmath>
 #include <cstdint>
 #include <map>
+#include <cstdint>
+#include <utility>
 #include <vector>
 #include <limits>
 #include <stdexcept>
@@ -348,6 +350,7 @@ void sampleThinWorldSurfaces(
         Result sampled;
         ++result.adaptiveLocations;
         scanColumn(context, sampled, point.x, point.y, column, row);
+        result.scannedIntervals += sampled.scannedIntervals;
 
         for (const auto &candidate : sampled.candidates) {
           if (isCovered(candidate.position)) {
@@ -361,6 +364,161 @@ void sampleThinWorldSurfaces(
 
       if (result.adaptiveLocations >= budget) {
         return;
+      }
+    }
+  }
+}
+
+// Probe inside exposed walkable world boundaries, including platforms over deep gaps.
+// A mesh edge is exposed if only one upward-facing triangle uses it.
+void sampleLedgeWorldSurfaces(
+  const MapModel &map,
+  const ScanContext &context,
+  Result &result
+) {
+  using EdgeKey = std::pair<std::uint32_t, std::uint32_t>;
+  struct Edge {
+    std::size_t count {};
+    Vec3 opposite {};
+  };
+  const auto &config = context.config;
+  const auto &world = context.world;
+  const auto intervals = count(context.top - context.bottom, config.verticalStep);
+
+  if (intervals > config.maximumSamples / 2 || result.scannedIntervals >= config.maximumSamples) {
+    return;
+  }
+  const auto budget = std::min(config.maximumLedgeLocations,
+    (config.maximumSamples - result.scannedIntervals) / (intervals * 2));
+
+  if (budget == 0) {
+    return;
+  }
+  const double spacing = config.adaptiveMinimumSpacing;
+  using Cell = std::pair<std::int64_t, std::int64_t>;
+  std::map<Cell, std::vector<Vec3>> coverage;
+  const auto cellOf = [spacing](Vec3 pos) {
+    return Cell {
+      static_cast<std::int64_t>(std::floor(pos.x / spacing)),
+      static_cast<std::int64_t>(std::floor(pos.y / spacing))
+    };
+  };
+  const auto record = [&](Vec3 pos) {
+    coverage[cellOf(pos)].push_back(pos);
+  };
+  const auto covered = [&](Vec3 pos) {
+    const auto cell = cellOf(pos);
+
+    for (std::int64_t dy = -1; dy <= 1; ++dy) {
+      for (std::int64_t dx = -1; dx <= 1; ++dx) {
+        const auto it = coverage.find({ cell.first + dx, cell.second + dy });
+
+        if (it == coverage.end()) {
+          continue;
+        }
+        for (const auto &other : it->second) {
+          if (std::hypot(pos.x - other.x, pos.y - other.y) < spacing &&
+              std::abs(pos.z - other.z) <= config.surfaceHeightTolerance * 2) {
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
+  };
+  for (const auto &candidate : result.candidates) {
+    record(candidate.position);
+  }
+  for (const auto &mesh : map.meshes) {
+    if (mesh.id != world.id) {
+      continue;
+    }
+    std::map<EdgeKey, Edge> edges;
+
+    for (const auto &triangle : mesh.triangles) {
+      const auto a = mesh.vertices[triangle.a];
+      const auto b = mesh.vertices[triangle.b];
+      const auto c = mesh.vertices[triangle.c];
+      const Vec3 ab { b.x - a.x, b.y - a.y, b.z - a.z };
+      const Vec3 ac { c.x - a.x, c.y - a.y, c.z - a.z };
+      const Vec3 normal {
+        ab.y * ac.z - ab.z * ac.y,
+        ab.z * ac.x - ab.x * ac.z,
+        ab.x * ac.y - ab.y * ac.x
+      };
+      const double length = std::hypot(std::hypot(normal.x, normal.y), normal.z);
+
+      if (length <= 0 || std::abs(normal.z) / length < config.minimumUpNormal) {
+        continue;
+      }
+      const std::uint32_t ids[] { triangle.a, triangle.b, triangle.c };
+
+      for (std::size_t i = 0; i < 3; ++i) {
+        const EdgeKey key = std::minmax(ids[i], ids[(i + 1) % 3]);
+        auto &edge = edges[key];
+        ++edge.count;
+        edge.opposite = mesh.vertices[ids[(i + 2) % 3]];
+      }
+    }
+
+    for (const auto &[key, edge] : edges) {
+      if (result.ledgeLocations >= budget) {
+        return;
+      }
+
+      if (edge.count != 1) {
+        continue;
+      }
+      const auto a = mesh.vertices[key.first];
+      const auto b = mesh.vertices[key.second];
+      const auto p = edge.opposite;
+      const double length = std::hypot(b.x - a.x, b.y - a.y);
+      const double height = length > 0 ?
+        std::abs((b.x - a.x) * (p.y - a.y) - (b.y - a.y) * (p.x - a.x)) / length : 0;
+
+      if (height <= 0) {
+        continue;
+      }
+      ++result.ledgeEdges;
+      const auto segments = std::min<std::size_t>(16, std::max<std::size_t>(1,
+        static_cast<std::size_t>(std::ceil(length / config.adaptiveSampleSpacing))));
+      const double inset = std::min(0.5, config.ledgeInset / height);
+
+      for (std::size_t i = 0; i < segments && result.ledgeLocations < budget; ++i) {
+        const double t = (static_cast<double>(i) + 0.5) / static_cast<double>(segments);
+        const Vec3 midpoint {
+          a.x + (b.x - a.x) * t,
+          a.y + (b.y - a.y) * t,
+          a.z + (b.z - a.z) * t
+        };
+        const Vec3 pos {
+          midpoint.x + (p.x - midpoint.x) * inset,
+          midpoint.y + (p.y - midpoint.y) * inset,
+          midpoint.z + (p.z - midpoint.z) * inset
+        };
+
+        if (!finite(pos) || pos.x < world.mins.x || pos.x >= world.maxs.x ||
+            pos.y < world.mins.y || pos.y >= world.maxs.y || covered(pos)) {
+          continue;
+        }
+        const auto col = std::min(result.columns - 1,
+          static_cast<std::size_t>(std::floor((pos.x - world.mins.x) / config.cellSize)));
+        const auto row = std::min(result.rows - 1,
+          static_cast<std::size_t>(std::floor((pos.y - world.mins.y) / config.cellSize)));
+        Result sampled;
+        scanColumn(context, sampled, pos.x, pos.y, col, row);
+        ++result.ledgeLocations;
+        result.scannedIntervals += sampled.scannedIntervals;
+
+        for (const auto &candidate : sampled.candidates) {
+          if (covered(candidate.position)) {
+            continue;
+          }
+          record(candidate.position);
+          result.candidates.push_back(candidate);
+          ++result.ledgeCandidates;
+        }
       }
     }
   }
@@ -380,6 +538,8 @@ Result build(
       !std::isfinite(config.adaptiveThinSurfaceWidth) || config.adaptiveThinSurfaceWidth <= 0 ||
       !std::isfinite(config.adaptiveSampleSpacing) || config.adaptiveSampleSpacing <= 0 ||
       !std::isfinite(config.adaptiveMinimumSpacing) || config.adaptiveMinimumSpacing <= 0 ||
+      !std::isfinite(config.ledgeInset) || config.ledgeInset <= 0 ||
+      config.maximumLedgeLocations == 0 ||
       config.maximumAdaptiveLocations == 0 ||
       config.maximumColumns == 0 || config.maximumVerticalSteps == 0 || config.maximumSamples == 0) {
     throw std::invalid_argument("invalid heightfield configuration");
@@ -475,6 +635,7 @@ Result build(
   }
 
   sampleThinWorldSurfaces(map, context, result);
+  sampleLedgeWorldSurfaces(map, context, result);
 
   return result;
 }
@@ -557,7 +718,7 @@ std::string toJson(const Result &result) {
 
   return io::writeJson(Json::Object {
     { "format", "aipb-heightfield-candidates" },
-    { "schema_version", "0.3.1" },
+    { "schema_version", "0.3.2" },
     { "map_name", result.mapName },
     { "source_sha256", result.sourceSha256 },
     { "artifact_sha256", result.artifactSha256 },
@@ -572,6 +733,8 @@ std::string toJson(const Result &result) {
         { "adaptive_sample_spacing", result.config.adaptiveSampleSpacing },
         { "adaptive_minimum_spacing", result.config.adaptiveMinimumSpacing },
         { "maximum_adaptive_locations", number(result.config.maximumAdaptiveLocations) },
+        { "ledge_inset", result.config.ledgeInset },
+        { "maximum_ledge_locations", number(result.config.maximumLedgeLocations) },
         { "maximum_columns", number(result.config.maximumColumns) },
         { "maximum_vertical_steps", number(result.config.maximumVerticalSteps) },
         { "maximum_samples", number(result.config.maximumSamples) }
@@ -602,6 +765,9 @@ std::string toJson(const Result &result) {
     { "adaptive_thin_triangles", number(result.adaptiveThinTriangles) },
     { "adaptive_locations", number(result.adaptiveLocations) },
     { "adaptive_candidates", number(result.adaptiveCandidates) },
+    { "ledge_edges", number(result.ledgeEdges) },
+    { "ledge_locations", number(result.ledgeLocations) },
+    { "ledge_candidates", number(result.ledgeCandidates) },
     { "candidates", std::move(candidates) }
   }) + "\n";
 }

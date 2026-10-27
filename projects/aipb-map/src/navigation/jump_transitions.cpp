@@ -154,6 +154,164 @@ void recount(
 
 } // namespace
 
+void appendDropTransitions(
+  const MapModel &map,
+  const CandidateReport &candidates,
+  ConnectivityReport &report
+) {
+  const auto &config = report.config;
+  const auto brushes = detail::collectBrushes(map);
+  const auto world = map.partition->models.front().id;
+  collision::CollisionQueries queries(map);
+  const auto &physics = config.jumpPhysics;
+  std::set<std::pair<std::size_t, std::size_t>> existing;
+  using Cell = std::pair<std::int64_t, std::int64_t>;
+  std::map<Cell, std::vector<std::size_t>> cells;
+  const double width = config.maximumDropDistance;
+
+  for (std::size_t i = 0; i < candidates.candidates.size(); ++i) {
+    const auto &position = candidates.candidates[i].position;
+    cells[{ static_cast<std::int64_t>(std::floor(position.x / width)),
+            static_cast<std::int64_t>(std::floor(position.y / width)) }].push_back(i);
+  }
+
+  for (const auto &edge : report.edges) {
+    existing.emplace(edge.from, edge.to);
+  }
+
+  for (const auto &from : candidates.candidates) {
+    if (!from.standingFree || report.dropTrials >= config.maximumDropChecks ||
+        report.edges.size() >= config.maximumEdges) {
+      break;
+    }
+    std::vector<std::pair<double, std::size_t>> targets;
+
+    const auto cx = static_cast<std::int64_t>(std::floor(from.position.x / width));
+    const auto cy = static_cast<std::int64_t>(std::floor(from.position.y / width));
+
+    for (std::int64_t dx = -1; dx <= 1; ++dx) {
+      for (std::int64_t dy = -1; dy <= 1; ++dy) {
+        const auto it = cells.find({ cx + dx, cy + dy });
+
+        if (it == cells.end()) {
+          continue;
+        }
+        for (const auto j : it->second) {
+          const auto &to = candidates.candidates[j];
+          const double delta = from.position.z - to.position.z;
+          const double xy = std::hypot(to.position.x - from.position.x, to.position.y - from.position.y);
+
+          if (to.id == from.id || !to.standingFree || existing.contains({ from.id, to.id }) ||
+              delta <= config.maximumStepDown || delta > config.maximumDropHeight ||
+              xy < config.minimumPlanarDistance || xy > config.maximumDropDistance) {
+            continue;
+          }
+          targets.emplace_back(xy, j);
+        }
+      }
+    }
+    std::sort(targets.begin(), targets.end(), [&](const auto &a, const auto &b) {
+      return a.first == b.first ? candidates.candidates[a.second].id <
+        candidates.candidates[b.second].id : a.first < b.first;
+    });
+    std::size_t inspected = 0;
+    std::size_t accepted = 0;
+
+    for (const auto &[xy, index] : targets) {
+      if (inspected >= config.maximumDropNeighborTrials ||
+          accepted >= config.maximumDropEdgesPerCandidate ||
+          report.dropTrials >= config.maximumDropChecks ||
+          report.edges.size() >= config.maximumEdges) {
+        break;
+      }
+      ++inspected;
+      ++report.dropTrials;
+      const auto &to = candidates.candidates[index];
+      const auto start = playerOrigin(from, physics.standingHalfHeight, config.clearanceLift);
+      const auto target = playerOrigin(to, physics.standingHalfHeight, config.clearanceLift);
+      const double originFall = start.z - target.z;
+
+      if (originFall <= config.maximumStepDown || originFall > config.maximumDropHeight ||
+          physics.gravity <= 0) {
+        continue;
+      }
+      const double flightTime = std::sqrt(2.0 * originFall / physics.gravity);
+      const double horizontalSpeed = xy / flightTime;
+
+      if (!std::isfinite(horizontalSpeed) || horizontalSpeed > physics.maximumHorizontalSpeed) {
+        ++report.rejectedDropPhysics;
+        continue;
+      }
+      // Stepping off: no upward impulse, only gravity after leaving the ledge.
+      constexpr std::size_t segments = 24;
+      Vec3 previous = start;
+      bool clearPath = true;
+
+      for (std::size_t i = 1; i <= segments; ++i) {
+        const double fraction = static_cast<double>(i) / segments;
+        const double time = flightTime * fraction;
+        const Vec3 current {
+          start.x + (target.x - start.x) * fraction,
+          start.y + (target.y - start.y) * fraction,
+          start.z - physics.gravity * time * time * 0.5 + (i == segments ? config.clearanceLift : 0.0)
+        };
+
+        if (!clear(queries, world, brushes, 1, previous, current)) {
+          clearPath = false;
+          break;
+        }
+        previous = current;
+      }
+
+      if (!clearPath) {
+        ++report.rejectedDropCollision;
+        continue;
+      }
+      // Landing support: do not accept merely passing over a lower candidate.
+      const Vec3 bottom {
+        target.x,
+        target.y,
+        target.z - physics.standingHalfHeight - config.groundTolerance - 1.0
+      };
+      const auto supported = [&](ObjectId model, Vec3 offset) {
+        const Vec3 a { target.x - offset.x, target.y - offset.y, target.z - offset.z };
+        const Vec3 b { bottom.x - offset.x, bottom.y - offset.y, bottom.z - offset.z };
+        const auto hit = queries.traceSegment(model, 1, a, b);
+        return !hit.startSolid && hit.impactPlane && hit.impactPlane->normal.z >= 0.7;
+      };
+      bool landed = supported(world, {});
+
+      for (const auto &brush : brushes) {
+        if (!landed && detail::suppliesSupport(brush.role)) {
+          landed = supported(brush.model->id, brush.entity->origin);
+        }
+      }
+
+      if (!landed) {
+        ++report.rejectedDropLanding;
+        continue;
+      }
+      report.edges.push_back({
+        .id = report.edges.size() + 1,
+        .from = from.id,
+        .to = to.id,
+        .planarDistance = xy,
+        .heightChange = to.position.z - from.position.z,
+        .stance = collision::PlayerStance::Standing,
+        .traversal = TraversalKind::Drop,
+        .conditionalSupport = from.conditionalSupport || to.conditionalSupport,
+        .estimatedFlightSeconds = flightTime,
+        .estimatedHorizontalSpeed = horizontalSpeed,
+        .canStandAfterLanding = to.standingFree
+      });
+      ++report.dropEdges;
+      report.conditionalEdges += from.conditionalSupport || to.conditionalSupport;
+      existing.emplace(from.id, to.id);
+      ++accepted;
+    }
+  }
+}
+
 void appendJumpTransitions(
   const MapModel &map,
   const CandidateReport &candidates,
@@ -302,6 +460,7 @@ void appendJumpTransitions(
       ++accepted;
     }
   }
+  appendDropTransitions(map, candidates, report);
   report.isolatedCandidates = 0;
   recount(candidates, report);
 }

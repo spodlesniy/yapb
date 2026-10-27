@@ -166,7 +166,7 @@ bool loadRecords (std::FILE *file, const char *expectedMap, Data &result) {
 
       if (!readTokens(file, line, tokens, 4) || std::strcmp(tokens[0], "E") != 0 ||
           !readUnsigned(tokens[1], from) || !readUnsigned(tokens[2], to) ||
-          !readUnsigned(tokens[3], type) || type > 2 || from == to || !exists(from) || !exists(to)) {
+          !readUnsigned(tokens[3], type) || type > 3 || from == to || !exists(from) || !exists(to)) {
          return false;
       }
       result.edges.push_back({ from, to, static_cast<int>(type) });

@@ -80,7 +80,7 @@ void testStacked() {
         "unexpected rejection");
   const auto json = toJson(result);
   check(json == toJson(build(map, std::string(64, 'b'), config)), "non-deterministic output");
-  check(json.find("\"schema_version\":\"0.3.1\"") != std::string::npos, "incorrect JSON version");
+  check(json.find("\"schema_version\":\"0.3.2\"") != std::string::npos, "incorrect JSON version");
   check(json.find("\"merged_contacts\":2") != std::string::npos, "missing merged contacts");
   check(result.candidates[0].standingFree || result.candidates[0].crouchingFree, "no clearance");
   config.maximumColumns = 0;
@@ -162,9 +162,34 @@ void testAdaptiveThinSurface() {
   const auto result = build(map, {}, config);
   check(result.adaptiveThinTriangles == 1, "thin world triangle not detected");
   check(result.adaptiveLocations > 0, "no thin surface probes");
-  check(result.adaptiveCandidates > 0, "thin ledge was missed by adaptive sampling");
+  check(result.adaptiveCandidates + result.ledgeCandidates > 0, "thin ledge was missed by adaptive sampling");
   check(result.candidates.size() == result.adaptiveCandidates, "coarse grid unexpectedly hit narrow ledge");
   check(result.candidates[0].position.x < 48, "adaptive sample left thin region");
+}
+
+
+void testLedgeBoundarySampling() {
+  auto map = fixture();
+  Config config;
+  config.cellSize = 128.0;
+  config.verticalStep = 16.0;
+  auto &model = map.partition->models[0];
+  model.mins = { 0, 0, -16 };
+  model.maxs = { 128, 128, 160 };
+  // A broad upper surface missed by the 128-unit center grid.
+  map.meshes = {
+    {
+      .id = 1,
+      .vertices = { { 8, 8, 64 }, { 56, 8, 64 }, { 56, 120, 64 }, { 8, 120, 64 } },
+      .triangles = { { 0, 1, 2 }, { 0, 2, 3 } }
+    }
+  };
+  validate(map);
+  const auto result = build(map, {}, config);
+  check(result.ledgeEdges == 4, "boundary edges must be detected");
+  check(result.ledgeLocations > 0, "boundary must receive deterministic probes");
+  check(result.ledgeCandidates <= result.ledgeLocations * 4, "unbounded ledge candidates");
+  check(toJson(result) == toJson(build(map, {}, config)), "ledge sampling must be deterministic");
 }
 
 } // namespace
@@ -173,6 +198,7 @@ int main() {
   testStacked();
   testSlope();
   testAdaptiveThinSurface();
+  testLedgeBoundarySampling();
 
   return 0;
 }

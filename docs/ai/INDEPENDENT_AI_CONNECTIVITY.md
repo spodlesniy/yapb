@@ -121,3 +121,13 @@ Candidate acceptance still uses the ordinary BSP collision hull and clearance va
 The adaptive scan reserves a bounded amount of the heightfield scan budget and deduplicates close points.
 Heightfield JSON v0.3.1 reports triangle/probe/retained counts; Navigation Candidates retain schema v0.3.2 and identify heightfield source v0.3.1.
 BSP imports are unchanged; regenerate heightfield, navigation-candidates, preliminary-connectivity and .nviz reports when comparing results.
+
+## D210.7 — Ledge candidates and drop hypotheses
+
+Probe exposed boundaries of upward-facing world mesh triangles with 24-unit interior offsets, independently of the narrow-triangle sampler.
+Only BSP-validated candidates are retained and all probes are bounded to the remaining scan budget.
+Directed Drop connections are proposed from a higher standing candidate to a lower standing candidate with a vertical difference above 36 and at most 192 units.
+A zero-jump-impulse gravity path must have feasible horizontal speed, clear collision hull segments and a supported standing landing.
+Heightfield report advances to 0.3.2 and preliminary connectivity report to 0.6.0.
+The .nviz format accepts edge code 3 for drops; these render cyan and share the existing jump-edge visibility toggle, while YaPB waypoints remain unchanged.
+Re-export .nviz files and reload the map to evaluate deep ledges and drops.

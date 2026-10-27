@@ -2538,3 +2538,15 @@ Deduplicate candidate positions against the coarse and already refined output us
 Validate each proposed location through the existing world BSP player hull, point hull, slope and stance clearance checks instead of trusting render mesh geometry.
 Report adaptive triangle/probe/candidate diagnostics in heightfield JSON v0.3.1 and bind the Navigation Candidates report to that source schema without modifying its v0.3.2 format or the runtime .nviz v1 reader.
 The strategy primarily addresses narrow world ledges missed by cell centers; door dynamics and directed takeoff positions are later steps.
+
+## D210.7 — Exposed ledges and directed drop links
+
+Build a deterministic set of exposed edges belonging to exactly one upward-facing render triangle within the world mesh, then probe bounded positions inset onto the same surface.
+Every additional ledge candidate must still pass the existing BSP hull and stance clearance checks; never treat render geometry alone as support.
+Cap ledge probes separately at 512 locations and within the remaining heightfield scan budget, deduplicating nearby candidates at comparable elevations.
+For two existing candidates separated by a drop greater than a walk step but within 192 units, test bounded directed stepping-off ballistic trajectories using the standing hull, horizontal-speed budget, static collision checks and explicit landing support verification.
+Do not interpret drops as reverse walks or jumps; emit a separate Drop traversal and diagnostic counters.
+Keep drop targets spatially indexed with bounded neighbor trial/edge budgets to prevent quadratic candidate scans.
+Advance heightfield report version to 0.3.2 and connectivity report to 0.6.0, retaining the Navigation Candidates report 0.3.2 and adding the new source heightfield reference.
+Extend .nviz v1 to accept directed edge type 3 without changing its framing; the viewer renders it cyan using the existing jump-edge visibility toggle rather than adding a ninth menu switch.
+Provisional drop trajectories are not a GoldSrc movement guarantee; game-side falling acceptance remains pending.

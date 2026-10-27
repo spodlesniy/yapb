@@ -109,7 +109,7 @@ void frame(edict_t *editor) {
       }
       ++outgoing;
 
-      if (edgeCount >= kEdgesPerFrame || (setting.mask & (1u << (edge.type + 4))) == 0) {
+      if (edgeCount >= kEdgesPerFrame || (setting.mask & (1u << (edge.type == 3 ? 5 : edge.type + 4))) == 0) {
          continue;
       }
       const auto *target = findPoint(edge.to);
@@ -118,7 +118,8 @@ void frame(edict_t *editor) {
          continue;
       }
       const Color color = edge.type == 0 ? Color { 80, 230, 110 } :
-                          edge.type == 1 ? Color { 245, 225, 60 } : Color { 240, 65, 205 };
+                          edge.type == 1 ? Color { 245, 225, 60 } :
+                          edge.type == 2 ? Color { 240, 65, 205 } : Color { 50, 205, 235 };
       game.drawLine(editor, coords(*nearest) + Vector(0, 0, 12),
          coords(*target) + Vector(0, 0, 12), 4, 0, color, 220, 0, 3,
          DrawLine::Arrow);

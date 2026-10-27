@@ -67,6 +67,10 @@ ConnectivityReport buildConnectivity(
       !finite(config.clearanceLift) || config.clearanceLift <= 0 ||
       config.maximumNeighborTrials == 0 || config.maximumOutgoingEdges == 0 ||
       config.maximumDirectedChecks == 0 || config.maximumEdges == 0 ||
+      !finite(config.maximumDropHeight) || config.maximumDropHeight <= config.maximumStepDown ||
+      !finite(config.maximumDropDistance) || config.maximumDropDistance <= config.minimumPlanarDistance ||
+      config.maximumDropNeighborTrials == 0 || config.maximumDropEdgesPerCandidate == 0 ||
+      config.maximumDropChecks == 0 ||
       !finite(config.maximumJumpDistance) || config.maximumJumpDistance <= config.minimumPlanarDistance ||
       !finite(config.maximumJumpRise) || config.maximumJumpRise <= config.maximumStepUp ||
       !finite(config.maximumCrouchJumpRise) || config.maximumCrouchJumpRise <= config.maximumJumpRise ||
@@ -280,7 +284,8 @@ std::string connectivityJson(const ConnectivityReport &report) {
       { "height_change", e.heightChange },
       { "stance", e.stance == collision::PlayerStance::Standing ? "standing" : "crouching" },
       { "traversal", e.traversal == TraversalKind::Walk ? "walk" :
-                       e.traversal == TraversalKind::Jump ? "jump" : "crouch_jump" },
+                       e.traversal == TraversalKind::Jump ? "jump" :
+                       e.traversal == TraversalKind::CrouchJump ? "crouch_jump" : "drop" },
       { "conditional_support", e.conditionalSupport },
       { "estimated_flight_seconds", e.estimatedFlightSeconds },
       { "estimated_horizontal_speed", e.estimatedHorizontalSpeed },
@@ -290,7 +295,7 @@ std::string connectivityJson(const ConnectivityReport &report) {
 
   return io::writeJson(Json::Object {
     { "format", "aipb-preliminary-connectivity" },
-    { "schema_version", "0.5.0" },
+    { "schema_version", "0.6.0" },
     { "source_candidates_schema", "0.3.2" },
     { "candidates_sha256", report.candidatesSha256 },
     { "map_name", report.mapName },
@@ -325,7 +330,12 @@ std::string connectivityJson(const ConnectivityReport &report) {
       } },
       { "maximum_jump_neighbor_trials", number(report.config.maximumJumpNeighborTrials) },
       { "maximum_jump_edges_per_candidate", number(report.config.maximumJumpEdgesPerCandidate) },
-      { "maximum_jump_checks", number(report.config.maximumJumpChecks) }
+      { "maximum_jump_checks", number(report.config.maximumJumpChecks) },
+      { "maximum_drop_height", report.config.maximumDropHeight },
+      { "maximum_drop_distance", report.config.maximumDropDistance },
+      { "maximum_drop_neighbor_trials", number(report.config.maximumDropNeighborTrials) },
+      { "maximum_drop_edges_per_candidate", number(report.config.maximumDropEdgesPerCandidate) },
+      { "maximum_drop_checks", number(report.config.maximumDropChecks) }
     } },
     { "candidate_count", number(report.candidateCount) },
     { "edge_count", number(report.edges.size()) },
@@ -345,6 +355,11 @@ std::string connectivityJson(const ConnectivityReport &report) {
     { "jump_edges", number(report.jumpEdges) },
     { "crouch_jump_edges", number(report.crouchJumpEdges) },
     { "jump_trials", number(report.jumpTrials) },
+    { "drop_trials", number(report.dropTrials) },
+    { "drop_edges", number(report.dropEdges) },
+    { "rejected_drop_physics", number(report.rejectedDropPhysics) },
+    { "rejected_drop_collision", number(report.rejectedDropCollision) },
+    { "rejected_drop_landing", number(report.rejectedDropLanding) },
     { "rejected_jump_collision", number(report.rejectedJumpCollision) },
     { "rejected_jump_landing", number(report.rejectedJumpLanding) },
     { "rejected_jump_physics", number(report.rejectedJumpPhysics) },

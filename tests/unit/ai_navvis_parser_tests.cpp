@@ -60,7 +60,10 @@ AI_TEST(testNavvisParserRejectsMalformedSnapshotsWithoutMutation) {
       ai::test::expect(unchanged.map == "sentinel", "invalid snapshot leaves output untouched");
    };
    reject(fixture(vertices, "E 1 3 0\n"), "dangling endpoint rejected");
-   reject(fixture(vertices, "E 1 2 3\n"), "unknown traversal rejected");
+   reject(fixture(vertices, "E 1 2 4\n"), "unknown traversal rejected");
+   ai::navvis::Data drop;
+   ai::test::expect(accepted(fixture(vertices, "E 1 2 3\n"), drop), "directed drop edge accepted");
+   ai::test::expect(drop.edges.size() == 1 && drop.edges[0].type == 3, "drop type retained");
    reject(fixture("V 1 0 0 0 0 1 0 0\nV 1 1 2 3 0 1 0 0\n", edge), "duplicate ID rejected");
    reject(fixture("V 1 nan 0 0 0 1 0 0\nV 2 0 0 0 0 1 0 0\n", edge), "non-finite coordinate rejected");
    reject(fixture(vertices, "E 1 2 0 extra\n"), "extra token rejected");
