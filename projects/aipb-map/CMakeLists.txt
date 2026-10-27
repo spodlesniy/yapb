@@ -84,6 +84,10 @@ target_link_libraries(aipb-map PRIVATE aipb::map_bsp aipb::map_io aipb::map_repo
 
 include(CTest)
 if(BUILD_TESTING)
+    find_package(Python3 COMPONENTS Interpreter REQUIRED)
+    add_test(NAME aipb_map_navigation_readiness_audit
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/audit_navigation_tests.py
+    )
     add_executable(aipb_map_tests tests/version_tests.cpp)
     target_link_libraries(aipb_map_tests PRIVATE aipb::map_core)
     add_executable(aipb_map_model_tests tests/model_tests.cpp)

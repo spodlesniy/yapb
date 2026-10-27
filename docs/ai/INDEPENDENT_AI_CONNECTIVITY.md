@@ -179,3 +179,11 @@ Reachability starts at deduplicated spawn anchors with valid covered candidate I
 The report exposes strong_components, largest_strong_component, unconditional_strong_components, one_way_sink_components, one_way_sink_candidates, spawn_anchors, candidates_reachable_from_spawns, candidates_reachable_unconditionally and candidates_unreachable_from_spawns.
 JSON schema advances to 0.9.0; the edge list and .nviz v1 format are unchanged.
 These counts help prioritize disconnected locations during consolidated D210 in-game review but do not validate game-physics reachability.
+
+## D210.12 — Multi-map offline readiness audit
+
+Run `python projects/aipb-map/tools/audit_navigation.py --results projects/aipb-map/build/debug/results --output navigation-readiness.md` after producing preliminary-connectivity.json for each imported map.
+The audit validates schema 0.9.0 and graph counter consistency and ranks maps by unreachable fraction, conditional-only reachability, one-way sinks and isolated nodes.
+Missing or malformed reports return a nonzero exit status; coverage weaknesses remain advisory rather than hard acceptance gates.
+On Windows use `projects\aipb-map\tools\audit_navigation_all_bsp.bat` to save `navigation-readiness.md` alongside the per-map folders.
+This audit does not change navigation links, .nviz outputs, or actual GoldSrc movement validation.

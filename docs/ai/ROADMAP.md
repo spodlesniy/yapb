@@ -290,3 +290,5 @@ D210.9.1 isolates the fixed-brush approach regression fixture from spawn refinem
 D210.10 adds closed-pose func_door and func_door_rotating detection for provisional walk links; crossings are recorded as conditionally traversable with the blocking door entity ID, without treating doors as ground support or static walls; engine-state and in-game verification remain pending.
 
 D210.11 adds directed graph quality diagnostics (strong components, one-way sinks and spawn-anchor reachability with/without conditional links) for offline acceptance before a consolidated in-game D210 validation; no provisional edge-generation behavior changes and CI remains pending.
+
+D210.12 adds a read-only per-map readiness audit for preliminary-connectivity JSON 0.9.0, with deterministic prioritization of inaccessible candidates, condition-dependent reachability and missing/invalid artifacts; graph generation and in-game parity remain unchanged and final D210 acceptance is still pending.

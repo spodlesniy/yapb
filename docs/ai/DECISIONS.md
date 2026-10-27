@@ -2611,3 +2611,13 @@ Do not treat isolated components without incoming paths as one-way sinks, and do
 Preserve edge generation, candidate order, weak connectivity metrics and viewer binary format.
 Advance preliminary connectivity JSON to 0.9.0 with the new summary fields.
 The data supports later offline acceptance and game inspection; it does not establish physical GoldSrc reachability.
+
+## D210.12 — Offline readiness audit across imported maps
+
+Provide a standalone Python 3 command that reads preliminary-connectivity reports from each imported .aipbmap results folder, without modifying the imported map, graph or JSON input.
+Validate format and schema 0.9.0, map identity and consistency of graph diagnostic counters.
+The Map Tool serializes numeric counters as JSON numbers, so accept integral-valued floating point numbers while rejecting fractional or negative counters.
+Generate a stable Markdown table ordered by fraction unreachable from covered spawns, then fraction relying on conditional edges, followed by one-way sinks and isolated nodes.
+Distinguish missing or malformed artifacts as audit errors from poor graph quality, which is diagnostic only and should not fail the command.
+Include an executable Windows wrapper for the default build/debug/results layout, a Python standard-library regression test and a CTest target.
+Do not invent readiness pass thresholds or mark D210 complete without user-led in-game acceptance.

@@ -292,3 +292,16 @@ The preliminary-connectivity report now includes directed strongly connected com
 Connectivity JSON advances to v0.9.0.
 No changes to Map Tool generated edges, .nviz exports or the game DLL are needed for this diagnostic step.
 Rebuild the Map Tool and regenerate preliminary-connectivity JSON to inspect the counts before the final D210 map review.
+
+## D210.12 — Offline graph-readiness review
+
+After generating fresh preliminary-connectivity.json for each imported map, run:
+
+```shell
+python projects/aipb-map/tools/audit_navigation.py --results projects/aipb-map/build/debug/results --output navigation-readiness.md
+```
+
+From Windows, `projects\aipb-map\tools\audit_navigation_all_bsp.bat` writes the report inside the results folder.
+The report sorts maps by directed unreachable fraction and lists condition-dependent reachability, one-way sinks and isolated candidates.
+Incomplete or inconsistent 0.9.0 reports cause a nonzero exit code, but graph quality alone does not imply failure.
+No BSP reimport, runtime DLL change or .nviz change is necessary for this analysis.
