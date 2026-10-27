@@ -271,3 +271,10 @@ The Map Tool computes a friction-free upper bound for horizontal takeoff speed f
 The diagnostic .nviz v1 exporter includes optional speed fields on edges, while game loaders retain support for older exports.
 The game HUD shows the required and estimated reachable speed for the first outgoing jump from the nearest candidate.
 After updating the Map Tool and game DLL, regenerate .nviz exports and reload the game map to view the new speed data.
+
+## D210.9 — Jump approach points beside static obstacles
+
+The Map Tool can produce additional world-ground nodes next to static brush obstacle faces when the obstacle is within provisional jump/crouch-jump height limits.
+These candidates require verified BSP hull clearance, are deduplicated, and are subject to bounded search budgets.
+Candidates JSON v0.3.3 includes the source obstacle entity and approach counters; connectivity and .nviz formats are unchanged.
+After updating the Map Tool binary, remove old .nviz snapshots, run export_navvis_all_bsp.bat, copy new snapshots to the game data/navvis folder, and reload the map.

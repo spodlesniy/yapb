@@ -2573,3 +2573,13 @@ Advance connectivity diagnostic schema to 0.7.0.
 Extend AIPBNAVVIS 1 E records with optional required/attainable speed tokens, while retaining acceptance of the original four-field edge representation.
 The viewer displays speed estimates for the first outgoing jump from the nearest candidate.
 The Map Tool must remain engine independent and subsequent in-game validation remains required.
+
+## D210.9 — Fixed brush approach points
+
+Sample bounded perimeter positions 24 units beyond the faces of supporting fixed or conditional brush models, with deterministic spacing capped at 64 units and 512 probes per map.
+Retain only world-floor samples with verified standing hull clearance against all collected brush colliders and obstacle top rise between 18 and 62 units.
+Deduplicate accepted candidates at a 12-unit horizontal radius and comparable floor height; preserve source brush entity ID as distinct candidate provenance.
+Exclude points outside the world model bounds and retain all existing standing/crouching collision checks.
+The new candidates are inputs to the existing directed walk, jump and runup validators and do not independently guarantee the obstacle is climbable.
+Navigation Candidates JSON advances to 0.3.3 while connectivity continues at 0.7.0 and the .nviz v1 record layout is unchanged.
+In-game acceptance, more accurate player-hull-to-obstacle approach distances, moving doors and full engine-physics parity remain pending.

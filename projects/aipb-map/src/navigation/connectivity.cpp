@@ -299,7 +299,7 @@ std::string connectivityJson(const ConnectivityReport &report) {
   return io::writeJson(Json::Object {
     { "format", "aipb-preliminary-connectivity" },
     { "schema_version", "0.7.0" },
-    { "source_candidates_schema", "0.3.2" },
+    { "source_candidates_schema", "0.3.3" },
     { "candidates_sha256", report.candidatesSha256 },
     { "map_name", report.mapName },
     { "source_sha256", report.sourceSha256 },

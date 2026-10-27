@@ -44,10 +44,20 @@ Json optionalId(const std::optional<std::size_t> &value) {
 enum class SourceKind {
   WorldHeightfield,
   SpawnRefinement,
-  StaticBrush
+  StaticBrush,
+  BrushApproach
 };
 
 SourceKind sourceKind(const Candidate &candidate) {
+  if (candidate.approachBrushEntityId != 0) {
+    if (candidate.supportEntityId != 0 || candidate.refined || candidate.sourceSpawnId != 0 ||
+        candidate.sampleIndex == 0 || candidate.supportModelId == 0 || candidate.heightfieldIndex != 0) {
+      throw std::invalid_argument("invalid brush approach candidate provenance");
+    }
+
+    return SourceKind::BrushApproach;
+  }
+
   if (candidate.supportEntityId != 0) {
     if (candidate.refined || candidate.supportModelId == 0 ||
         candidate.sourceSpawnId != 0 || candidate.sampleIndex == 0) {
@@ -78,7 +88,9 @@ Json candidateJson(const Candidate &candidate) {
   const bool sampled = kind != SourceKind::WorldHeightfield;
   const bool spawn = kind == SourceKind::SpawnRefinement;
   const bool brush = kind == SourceKind::StaticBrush;
-  const char *label = world ? "world" : (spawn ? "spawn_refinement" : "static_brush");
+  const bool approach = kind == SourceKind::BrushApproach;
+  const char *label = world ? "world" : spawn ? "spawn_refinement" :
+                      brush ? "static_brush" : "brush_approach";
 
   return Json::Object {
     { "id", count(candidate.id) },
@@ -88,6 +100,7 @@ Json candidateJson(const Candidate &candidate) {
     { "sample_index", sampled ? count(candidate.sampleIndex) : Json {} },
     { "support_model_id", candidate.supportModelId ? Json(std::to_string(candidate.supportModelId)) : Json {} },
     { "support_entity_id", brush ? Json(std::to_string(candidate.supportEntityId)) : Json {} },
+    { "approach_brush_entity_id", approach ? Json(std::to_string(candidate.approachBrushEntityId)) : Json {} },
     { "support_kind", label },
     { "support_condition", candidate.conditionalSupport ? "until_trigger" : "fixed" },
     { "source_column", world ? count(candidate.column) : Json {} },
@@ -127,7 +140,10 @@ CandidateReport generateCandidates(
       config.maximumCandidates == 0 || !std::isfinite(config.refinementStep) ||
       config.refinementStep <= 0 || config.maximumRefinementLocations == 0 ||
       !std::isfinite(config.staticBrushStep) || config.staticBrushStep <= 0 ||
-      config.maximumStaticBrushSamples == 0) {
+      config.maximumStaticBrushSamples == 0 ||
+      !std::isfinite(config.brushApproachOffset) || config.brushApproachOffset <= 16.0 ||
+      !std::isfinite(config.brushApproachSpacing) || config.brushApproachSpacing <= 0 ||
+      config.maximumBrushApproachLocations == 0) {
     throw std::invalid_argument("invalid navigation candidate configuration");
   }
 
@@ -166,6 +182,8 @@ CandidateReport generateCandidates(
     .staticBrushModels = 0,
     .staticBrushSamples = 0,
     .staticBrushCandidates = 0,
+    .brushApproachLocations = 0,
+    .brushApproachCandidates = 0,
     .candidates = {},
     .spawns = {}
   };
@@ -452,7 +470,7 @@ std::string candidatesJson(const CandidateReport &report) {
 
   return io::writeJson(Json::Object {
     { "format", "aipb-navigation-candidates" },
-    { "schema_version", "0.3.2" },
+    { "schema_version", "0.3.3" },
     { "source_heightfield_schema", "0.3.2" },
     { "map_name", report.mapName },
     { "source_sha256", report.sourceSha256 },
@@ -464,7 +482,10 @@ std::string candidatesJson(const CandidateReport &report) {
         { "refinement_step", report.config.refinementStep },
         { "maximum_refinement_locations", count(report.config.maximumRefinementLocations) },
         { "static_brush_step", report.config.staticBrushStep },
-        { "maximum_static_brush_samples", count(report.config.maximumStaticBrushSamples) }
+        { "maximum_static_brush_samples", count(report.config.maximumStaticBrushSamples) },
+        { "brush_approach_offset", report.config.brushApproachOffset },
+        { "brush_approach_spacing", report.config.brushApproachSpacing },
+        { "maximum_brush_approach_locations", count(report.config.maximumBrushApproachLocations) }
       } },
     { "grid_columns", count(report.gridColumns) },
     { "grid_rows", count(report.gridRows) },
@@ -487,6 +508,8 @@ std::string candidatesJson(const CandidateReport &report) {
     { "static_brush_models", count(report.staticBrushModels) },
     { "static_brush_samples", count(report.staticBrushSamples) },
     { "static_brush_candidates", count(report.staticBrushCandidates) },
+    { "brush_approach_locations", count(report.brushApproachLocations) },
+    { "brush_approach_candidates", count(report.brushApproachCandidates) },
     { "candidates", std::move(candidates) },
     { "spawns", std::move(spawns) }
   }) + "\n";

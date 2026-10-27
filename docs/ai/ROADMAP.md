@@ -282,3 +282,5 @@ Research options are not guaranteed feature commitments.
 - Keep the [development workflow](DEVELOPMENT.md) and [agent instructions](../../AGENTS.md) in sync with these rules.
 
 - D192.17 closes the independent post-buy knife-switch path for Training CTs approaching planted C4 while enemies are alive; the existing jump-navigation firearm guard remains. This is a narrow combat-safety correction, not proof that every observed knife switch has this origin. CI and Windows x86 gameplay validation pending.
+
+D210.9 adds bounded, collision-validated world-floor approach candidates around static brush obstacle faces for short-range jumps, with distinct candidate provenance and sampling counters; in-game parity and map-scale evaluation remain pending.

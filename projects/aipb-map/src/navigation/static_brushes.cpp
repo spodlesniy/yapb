@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <cstdint>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -85,6 +86,7 @@ void updateCoverage(CandidateReport &report) {
   report.sloped = 0;
   report.refinementCandidates = 0;
   report.staticBrushCandidates = 0;
+  report.brushApproachCandidates = 0;
 
   for (auto &candidate : report.candidates) {
     report.standingOnly += candidate.standingFree && !candidate.crouchingFree;
@@ -93,6 +95,7 @@ void updateCoverage(CandidateReport &report) {
     report.sloped += candidate.floorNormal.z < 0.9999;
     report.refinementCandidates += candidate.refined && !candidate.supportEntityId;
     report.staticBrushCandidates += candidate.supportEntityId != 0;
+    report.brushApproachCandidates += candidate.approachBrushEntityId != 0;
   }
   report.coveredSpawns = 0;
   report.covered64 = 0;
@@ -173,7 +176,11 @@ CandidateReport generateStaticBrushCandidates(
   });
   const double lift = heightfield.config.clearanceLift;
 
-  std::size_t nextCandidateId = report.candidates.size() + 1;
+  std::size_t nextCandidateId = 1;
+
+  for (const auto &candidate : report.candidates) {
+    nextCandidateId = std::max(nextCandidateId, candidate.id + 1);
+  }
 
   // Revalidate existing world support with all enabled static brush colliders.
   for (auto &candidate : report.candidates) {
@@ -330,6 +337,125 @@ CandidateReport generateStaticBrushCandidates(
                          brush.entity->origin.x;
         attempt(brush, x, y);
       }
+    }
+  }
+
+  // Add grounded launch positions beside reachable fixed-brush tops.
+  // Samples remain on world support; they are not fabricated brush-top nodes.
+  const auto &worldModel = map.partition->models.front();
+  struct ApproachProbe {
+    Vec3 location {};
+    ObjectId brushEntityId {};
+    double brushTop {};
+  };
+  std::vector<ApproachProbe> approach;
+
+  const auto queue = [&](const Brush &brush, double x, double y, double top) {
+    if (approach.size() >= config.maximumBrushApproachLocations ||
+        x < worldModel.mins.x || x > worldModel.maxs.x ||
+        y < worldModel.mins.y || y > worldModel.maxs.y) {
+      return;
+    }
+    const auto existing = std::find_if(approach.begin(), approach.end(), [&](const ApproachProbe &probe) {
+      return probe.brushEntityId == brush.entity->id &&
+             std::hypot(probe.location.x - x, probe.location.y - y) < 1.0;
+    });
+
+    if (existing == approach.end()) {
+      approach.push_back({
+        .location = { x, y, top },
+        .brushEntityId = brush.entity->id,
+        .brushTop = top
+      });
+    }
+  };
+
+  for (const auto &brush : brushes) {
+    if (!detail::suppliesSupport(brush.role) ||
+        approach.size() >= config.maximumBrushApproachLocations) {
+      continue;
+    }
+    const auto origin = brush.entity->origin;
+    const double x0 = brush.model->mins.x + origin.x;
+    const double x1 = brush.model->maxs.x + origin.x;
+    const double y0 = brush.model->mins.y + origin.y;
+    const double y1 = brush.model->maxs.y + origin.y;
+    const double top = brush.model->maxs.z + origin.z;
+    const double dx = x1 - x0;
+    const double dy = y1 - y0;
+
+    if (!std::isfinite(top) || !std::isfinite(dx) || !std::isfinite(dy) || dx <= 0 || dy <= 0) {
+      continue;
+    }
+    const auto nx = std::min<std::size_t>(8, std::max<std::size_t>(1,
+      static_cast<std::size_t>(std::ceil(dx / config.brushApproachSpacing))));
+    const auto ny = std::min<std::size_t>(8, std::max<std::size_t>(1,
+      static_cast<std::size_t>(std::ceil(dy / config.brushApproachSpacing))));
+
+    for (std::size_t i = 0; i < nx; ++i) {
+      const double x = x0 + (i + 0.5) * dx / nx;
+      queue(brush, x, y0 - config.brushApproachOffset, top);
+      queue(brush, x, y1 + config.brushApproachOffset, top);
+    }
+
+    for (std::size_t i = 0; i < ny; ++i) {
+      const double y = y0 + (i + 0.5) * dy / ny;
+      queue(brush, x0 - config.brushApproachOffset, y, top);
+      queue(brush, x1 + config.brushApproachOffset, y, top);
+    }
+  }
+
+  // The world-only sampler uses the same slope/clip-hull checks as the base grid.
+  if (!approach.empty()) {
+    std::vector<Vec3> positions;
+    positions.reserve(approach.size());
+
+    for (const auto &probe : approach) {
+      positions.push_back(probe.location);
+    }
+    const auto sampled = heightfield::sampleLocations(map, positions, heightfield.config);
+    report.brushApproachLocations = approach.size();
+
+    for (const auto &floor : sampled) {
+      if (report.candidates.size() >= config.maximumCandidates) {
+        break;
+      }
+      const auto &probe = approach[floor.column];
+      const double rise = probe.brushTop - floor.position.z;
+
+      if (rise <= 18.0 || rise > 62.0 || !floor.standingFree ||
+          !stanceClear(queries, worldId, brushes, floor.position, floor.floorNormal, 1, lift)) {
+        continue;
+      }
+      const bool crouching = floor.crouchingFree &&
+        stanceClear(queries, worldId, brushes, floor.position, floor.floorNormal, 3, lift);
+      const auto duplicate = std::find_if(report.candidates.begin(), report.candidates.end(),
+        [&](const Candidate &candidate) {
+          return std::hypot(candidate.position.x - floor.position.x, candidate.position.y - floor.position.y) < 12.0 &&
+                 std::abs(candidate.position.z - floor.position.z) <= heightfield.config.mergeHeightTolerance;
+        });
+
+      if (duplicate != report.candidates.end()) {
+        continue;
+      }
+      report.candidates.push_back({
+        .id = nextCandidateId++,
+        .heightfieldIndex = 0,
+        .refined = false,
+        .sourceSpawnId = 0,
+        .sampleIndex = floor.column + 1,
+        .supportModelId = worldId,
+        .supportEntityId = 0,
+        .approachBrushEntityId = probe.brushEntityId,
+        .conditionalSupport = false,
+        .column = 0,
+        .row = 0,
+        .position = floor.position,
+        .floorNormal = floor.floorNormal,
+        .hullMask = floor.hullMask,
+        .standingFree = true,
+        .crouchingFree = crouching
+      });
     }
   }
 

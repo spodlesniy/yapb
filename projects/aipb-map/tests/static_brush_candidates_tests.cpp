@@ -90,6 +90,7 @@ void testStaticBrush() {
   const auto result = generateStaticBrushCandidates(map, heightfield);
   check(map == snapshot, "brush sampling modified source map");
   check(result.staticBrushModels == 1 && result.staticBrushCandidates > 0, "missing static brush surface");
+  check(result.brushApproachCandidates == 0, "out-of-bounds approach candidates admitted");
   check(result.coveredSpawns == 1, "spawn on brush remains uncovered");
   check(!result.spawns.empty() && result.spawns[0].coveredCandidateId.has_value(), "missing brush coverage");
 
@@ -108,6 +109,27 @@ void testStaticBrush() {
   check(json.find("\"sample_index\":1") != std::string::npos, "brush sample index missing");
   check(json == candidatesJson(generateStaticBrushCandidates(map, heightfield)),
         "non-deterministic brush report");
+
+  check(json.find("\"brush_approach_candidates\":0") != std::string::npos,
+        "approach statistics missing");
+
+  // Move the same fixture brush into the world; its top is 44 units above the floor.
+  auto nearby = map;
+  nearby.entities[1].origin = { 0, 0, -292 };
+  nearby.entities[2].origin = { 0, 0, -256 };
+  const auto approach = generateStaticBrushCandidates(nearby, heightfield);
+  check(approach.brushApproachLocations > 0, "brush face probes missing");
+  check(approach.brushApproachCandidates > 0, "world-floor brush approach candidate missing");
+  const auto firstApproach = std::find_if(approach.candidates.begin(), approach.candidates.end(),
+    [](const Candidate &node) {
+      return node.approachBrushEntityId == ObjectId { 2 };
+    });
+  check(firstApproach != approach.candidates.end() &&
+        firstApproach->supportEntityId == 0 &&
+        firstApproach->standingFree &&
+        firstApproach->position.z == -336, "brush approach candidate has wrong support");
+  check(candidatesJson(approach).find(R"("support_kind":"brush_approach")") != std::string::npos,
+        "brush approach provenance missing");
 
   // Only Trigger supplies conditional support, while mutable breakables do not.
   map.entities[1].type = "func_breakable";

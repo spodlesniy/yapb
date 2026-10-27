@@ -148,3 +148,11 @@ Accepted edges record available_approach_distance, reachable_takeoff_speed and e
 This is a conservative approximation of available runway but an optimistic acceleration model; it does not yet model actual input timing, previous velocity, direction changes, game-frame simulation or aerial steering.
 The .nviz v1 exporter may append required and reachable speeds to E lines; the game parser accepts both new six-token and legacy four-token edge records.
 The nearest-candidate HUD can show the first outgoing jump's estimated speed requirement and attainable bound.
+
+## D210.9 — Brush approach candidates
+
+The static brush pass now samples world-ground candidate points just outside the XY perimeter of supportive static brush collision models.
+A bounded perimeter search uses 24-unit offsets and a maximum of 512 probes, accepting only collision-cleared standing positions when the obstacle top is between 18 and 62 units above the floor.
+The candidate report records approach_brush_entity_id and separate brush_approach_locations and brush_approach_candidates diagnostics (schema 0.3.3).
+These nodes feed the existing directed jump and acceleration checks; no new traversal class or .nviz layout is introduced.
+Game-level jump-to-box testing remains necessary.

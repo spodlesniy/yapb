@@ -18,6 +18,9 @@ struct CandidateConfig {
   std::size_t maximumRefinementLocations { 256 };
   double staticBrushStep { 64.0 };
   std::size_t maximumStaticBrushSamples { 4096 };
+  double brushApproachOffset { 24.0 };
+  double brushApproachSpacing { 64.0 };
+  std::size_t maximumBrushApproachLocations { 512 };
 };
 
 struct Candidate {
@@ -28,6 +31,7 @@ struct Candidate {
   std::size_t sampleIndex {};
   ObjectId supportModelId {};
   ObjectId supportEntityId {};
+  ObjectId approachBrushEntityId {};
   bool conditionalSupport {};
   std::size_t column {};
   std::size_t row {};
@@ -76,6 +80,8 @@ struct CandidateReport {
   std::size_t staticBrushModels {};
   std::size_t staticBrushSamples {};
   std::size_t staticBrushCandidates {};
+  std::size_t brushApproachLocations {};
+  std::size_t brushApproachCandidates {};
   std::vector<Candidate> candidates;
   std::vector<SpawnCoverage> spawns;
 };
