@@ -156,3 +156,10 @@ A bounded perimeter search uses 24-unit offsets and a maximum of 512 probes, acc
 The candidate report records approach_brush_entity_id and separate brush_approach_locations and brush_approach_candidates diagnostics (schema 0.3.3).
 These nodes feed the existing directed jump and acceleration checks; no new traversal class or .nviz layout is introduced.
 Game-level jump-to-box testing remains necessary.
+
+## D210.9.1 — Brush approach test correction
+
+The positive synthetic brush-approach fixture no longer places a spawn beside the brush, avoiding prior coverage from spawn refinement.
+The existing spawn-on-brush fixture still checks spawn coverage and static brush provenance.
+Test failures return a nonzero code without an interactive exception dialog.
+No generator or artifact schema change is required.

@@ -1,6 +1,8 @@
 #include <aipb/map/navigation/candidates.h>
 
 #include <algorithm>
+#include <cstdio>
+#include <exception>
 #include <stdexcept>
 #include <string>
 
@@ -113,10 +115,11 @@ void testStaticBrush() {
   check(json.find("\"brush_approach_candidates\":0") != std::string::npos,
         "approach statistics missing");
 
-  // Move the same fixture brush into the world; its top is 44 units above the floor.
+  // Isolate brush approach sampling from spawn refinement around the same floor.
+  // The nearby spawn in D210.9 already covered these positions before the new pass.
   auto nearby = map;
   nearby.entities[1].origin = { 0, 0, -292 };
-  nearby.entities[2].origin = { 0, 0, -256 };
+  nearby.entities.pop_back();
   const auto approach = generateStaticBrushCandidates(nearby, heightfield);
   check(approach.brushApproachLocations > 0, "brush face probes missing");
   check(approach.brushApproachCandidates > 0, "world-floor brush approach candidate missing");
@@ -158,8 +161,21 @@ void testStaticBrush() {
 
 } // namespace
 
-int main() {
+int runTests() {
   testStaticBrush();
 
   return 0;
+}
+
+// Report failed fixtures as a process exit code without an interactive MSVC dialog.
+int main() {
+  try {
+    return runTests();
+  } catch (const std::exception &error) {
+    std::fprintf(stderr, "aipb_map_static_brush_candidates: %s\n", error.what());
+  } catch (...) {
+    std::fputs("aipb_map_static_brush_candidates: unknown exception\n", stderr);
+  }
+
+  return 1;
 }

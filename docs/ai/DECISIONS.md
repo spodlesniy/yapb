@@ -2583,3 +2583,12 @@ Exclude points outside the world model bounds and retain all existing standing/c
 The new candidates are inputs to the existing directed walk, jump and runup validators and do not independently guarantee the obstacle is climbable.
 Navigation Candidates JSON advances to 0.3.3 while connectivity continues at 0.7.0 and the .nviz v1 record layout is unchanged.
 In-game acceptance, more accurate player-hull-to-obstacle approach distances, moving doors and full engine-physics parity remain pending.
+
+## D210.9.1 — Isolate brush-approach regression from spawn candidates
+
+The D210.9 Map Tool CI failed only aipb_map_static_brush_candidates on Linux and Windows: the expected brush_approach candidate was deduplicated.
+The test moved the fixture spawn adjacent to the same brush, allowing the existing spawn-refinement pass to cover the intended floor locations first.
+Remove only the spawn from the isolated positive approach fixture; keep the existing spawn-on-brush coverage test intact.
+Do not weaken production deduplication or make duplicate candidates artificially valid.
+Catch test exceptions in main and report them to CTest with a nonzero exit code to prevent interactive Windows CRT dialogs.
+Map Tool CI and game-level verification remain pending.
