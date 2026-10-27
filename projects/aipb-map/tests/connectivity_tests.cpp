@@ -86,7 +86,10 @@ void testConnectivity() {
     makeCandidate(9, { 160, 32, 100 })
   };
   const auto snapshot = candidates;
-  const auto result = buildConnectivity(map, candidates);
+  ConnectivityConfig config;
+  // Keep this baseline walk/component fixture independent of the D210.7 drop classifier.
+  config.maximumDropHeight = 80.0;
+  const auto result = buildConnectivity(map, candidates, config);
   require(result.candidateCount == 3 && result.testedDirections > 0, "no candidate neighbor checks");
   require(result.edges.size() == 2, "expected directed horizontal connections");
   require(result.edges[0].from == 1 && result.edges[0].to == 4, "first directed link incorrect");
@@ -98,14 +101,14 @@ void testConnectivity() {
           candidates.candidates[1].id == snapshot.candidates[1].id,
           "candidate input modified");
   const auto json = connectivityJson(result);
-  require(json == connectivityJson(buildConnectivity(map, candidates)), "non-deterministic connectivity JSON");
+  require(json == connectivityJson(buildConnectivity(map, candidates, config)), "non-deterministic connectivity JSON");
   require(json.find("\"schema_version\":\"0.6.0\"") != std::string::npos, "wrong schema");
 
   candidates.candidates[1].standingFree = false;
   candidates.candidates[1].crouchingFree = false;
 
   try {
-    (void)buildConnectivity(map, candidates);
+    (void)buildConnectivity(map, candidates, config);
     throw std::runtime_error("invalid candidate accepted");
   } catch (const std::invalid_argument &) {
   }

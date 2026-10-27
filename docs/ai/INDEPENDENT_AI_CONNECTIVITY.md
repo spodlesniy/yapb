@@ -131,3 +131,10 @@ A zero-jump-impulse gravity path must have feasible horizontal speed, clear coll
 Heightfield report advances to 0.3.2 and preliminary connectivity report to 0.6.0.
 The .nviz format accepts edge code 3 for drops; these render cyan and share the existing jump-edge visibility toggle, while YaPB waypoints remain unchanged.
 Re-export .nviz files and reload the map to evaluate deep ledges and drops.
+
+## D210.7.1 — Regression fixture isolation
+
+The exposed-boundary test now uses a broad surface whose individual triangles are too wide for D210.6 thin-surface probes, ensuring that the D210.7 boundary sampler is actually exercised.
+The original connectivity unit test bounds the drop height locally to retain its legacy walk-only component expectations; it does not change production defaults.
+The heightfield test executable handles exceptions and returns a nonzero code, avoiding interactive Windows failure dialogs.
+Map Tool CI remains the validation gate for the correction.

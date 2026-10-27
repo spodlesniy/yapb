@@ -2550,3 +2550,13 @@ Keep drop targets spatially indexed with bounded neighbor trial/edge budgets to 
 Advance heightfield report version to 0.3.2 and connectivity report to 0.6.0, retaining the Navigation Candidates report 0.3.2 and adding the new source heightfield reference.
 Extend .nviz v1 to accept directed edge type 3 without changing its framing; the viewer renders it cyan using the existing jump-edge visibility toggle rather than adding a ninth menu switch.
 Provisional drop trajectories are not a GoldSrc movement guarantee; game-side falling acceptance remains pending.
+
+## D210.7.1 — Repair ledge and connectivity regressions
+
+The D210.7 Map Tool CI compiled successfully on GCC, Clang and MSVC but failed two tests.
+The exposed-ledges fixture used a narrow rectangle that the preceding adaptive thin-surface sampler already covered; its 32-unit deduplication correctly prevented further ledge probes.
+Use a sufficiently wide rectangle to exercise the exposed-edge sampler independently and assert that it does not qualify as a thin triangle.
+The baseline directed-walk fixture includes a synthetic high candidate with no actual support, which became eligible for the separate D210.7 drop classifier and invalidated an old exact-edge-count assertion.
+Limit that fixture's maximum drop height below the synthetic 100-unit separation to retain its original walk/component contract, without disabling drop detection in production.
+Catch heightfield test exceptions at main and return a nonzero exit code with stderr diagnostics instead of allowing the MSVC terminate dialog to block CI until timeout.
+No production map algorithms, artifacts or runtime formats change in this correction.

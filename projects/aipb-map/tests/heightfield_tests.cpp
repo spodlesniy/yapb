@@ -1,5 +1,7 @@
 #include <aipb/map/heightfield/builder.h>
 
+#include <cstdio>
+#include <exception>
 #include <stdexcept>
 #include <string>
 
@@ -176,17 +178,18 @@ void testLedgeBoundarySampling() {
   auto &model = map.partition->models[0];
   model.mins = { 0, 0, -16 };
   model.maxs = { 128, 128, 160 };
-  // A broad upper surface missed by the 128-unit center grid.
+  // This wide rectangle is not eligible for the thin-triangle sampler. Its boundary must be probed separately.
   map.meshes = {
     {
       .id = 1,
-      .vertices = { { 8, 8, 64 }, { 56, 8, 64 }, { 56, 120, 64 }, { 8, 120, 64 } },
+      .vertices = { { 8, 8, 64 }, { 104, 8, 64 }, { 104, 120, 64 }, { 8, 120, 64 } },
       .triangles = { { 0, 1, 2 }, { 0, 2, 3 } }
     }
   };
   validate(map);
   const auto result = build(map, {}, config);
   check(result.ledgeEdges == 4, "boundary edges must be detected");
+  check(result.adaptiveThinTriangles == 0, "wide surface must not be treated as a thin triangle");
   check(result.ledgeLocations > 0, "boundary must receive deterministic probes");
   check(result.ledgeCandidates <= result.ledgeLocations * 4, "unbounded ledge candidates");
   check(toJson(result) == toJson(build(map, {}, config)), "ledge sampling must be deterministic");
@@ -194,11 +197,24 @@ void testLedgeBoundarySampling() {
 
 } // namespace
 
-int main() {
+int runTests() {
   testStacked();
   testSlope();
   testAdaptiveThinSurface();
   testLedgeBoundarySampling();
 
   return 0;
+}
+
+// Report failures to CTest without triggering the interactive MSVC terminate dialog.
+int main() {
+  try {
+    return runTests();
+  } catch (const std::exception &error) {
+    std::fprintf(stderr, "aipb_map_heightfield: %s\\n", error.what());
+  } catch (...) {
+    std::fputs("aipb_map_heightfield: unknown exception\\n", stderr);
+  }
+
+  return 1;
 }
