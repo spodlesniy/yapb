@@ -2667,3 +2667,14 @@ Use `yb explore <bot> <forward> <strafe> <jump> <duck> <yaw_delta> <duration_ms>
 Accumulate actual `pfnRunPlayerMove` command milliseconds, not host wall-clock elapsed time, to control the experiment.
 Report transition-related engine fields, old/current buttons, body/view yaw and view height without asserting a crouch state until `FL_DUCKING` is observed.
 Keep C++17 runtime/standalone boundaries and legacy AI behavior intact; do not claim engine parity or successful gameplay until the user tests a Windows x86 build.
+
+## D213 — Record and replay engine-observed movement episodes
+
+Record each executed GoldSrc probe step in one bounded fixed-capacity 4096-entry POD trace: movement command, input duration in milliseconds, maximum speed, buttons and actual pre/post position, velocity, yaw, pitch, grounded/duck flags and step index.
+Reject invalid or discontinuous records; retain the last complete session in memory independently of an active probe, and discard it on a new recording.
+Add an opt-in `yb explore save` exporting a versioned numeric CSV to YaPB's existing data/training directory, without reusing the neural training dataset format.
+Allow `yb explore replay <bot_index>` only for the original bot index, when a completed trace exists and the current initial state is within a bounded tolerance; do not teleport or automatically reset physical game state.
+Replay exactly the stored inputs and `pfnRunPlayerMove` milliseconds, then compare engine-observed trajectory to the recorded state after each step and halt at the first divergence.
+Use 5 world units position, 30 world units/s velocity and 5 degrees orientation as initial diagnostic tolerances, and require matching grounded/crouch flags; tolerance does not establish equivalent physics or path connectivity.
+One in-memory episode and one replay are supported at a time; `yb explore stop`, bot disconnect, death and map shutdown interrupt a session, without changing other bots.
+Verification requires standalone C++17 trace contract tests plus the user's Windows x86 and in-game tests.

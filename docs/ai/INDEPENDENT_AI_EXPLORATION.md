@@ -106,3 +106,26 @@ yb explore stop
 
 The previous 1–128-frame syntax continues to work.
 The GoldSrc engine's precise Duck and animation behavior, bot orientation persistence across tests and Windows x86 correctness must be checked in-game.
+
+## D213 — GoldSrc trajectory recording and diagnostic replay
+
+A D213 probe records up to 4096 actual engine movement steps in a bounded in-memory `TraceBuffer`, retaining each submitted normalized command, GoldSrc command duration (`msec`), maximum speed and observed pre/post state.
+Only a normally completed experiment can be saved or replayed; interrupted traces are not treated as verified evidence.
+`yb explore save` exports a versioned CSV to the existing YaPB data/training directory; the file is read-only evidence and replay currently uses the latest in-memory episode rather than importing CSV.
+`yb explore replay <bot_index>` requires the same bot index and a sufficiently close starting state, then sends the recorded controls to the real engine again and prints the first per-step divergence (position, velocity, yaw, stance or grounded status).
+It never teleports players, suppresses physics differences, or promises deterministic results when world entities, timings or player collision states differ.
+Replay comparison tolerances are 5 world units for position, 30 units/s for velocity, 5 degrees for yaw and pitch, and exact grounded/duck flags.
+
+Example:
+
+```text
+yb_freeze_bots 1
+yb explore 1 1 0 0 0 0 60
+yb explore save
+yb explore replay 1
+yb explore stop
+```
+
+Replay normally rejects the example unless the bot is first returned close to the recorded initial state; this is intentional, because D213 does not implement arbitrary physical resets.
+CSV includes a schema version, bot index, step index, frame duration, command axes/buttons, prior and resulting position, velocity, yaw and stance/ground flags.
+Unlike the C++20 fixed-step contract, this diagnostic engine trace stores actual variable GoldSrc command times and must not be misrepresented as fixed-step simulation.

@@ -8,6 +8,9 @@ namespace ai::explore {
 
 // Only one explicitly selected bot can be controlled, for a bounded number of frames or milliseconds.
 bool begin(int botIndex, const AipbExplorerBridgeCommand &command, int limit, bool milliseconds = false);
+bool beginReplay(int botIndex);
+bool save(const char *filePath);
+int recordedSteps();
 bool frame(Bot &bot);
 void reset();
 void cancelBot(int botIndex);

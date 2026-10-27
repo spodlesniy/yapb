@@ -314,3 +314,6 @@ The manual Windows x86 build and game test are user-controlled only.
 
 D212.1 corrects runtime probe body/view yaw synchronization, adds bounded simulated-millisecond command budgets with a 4096-frame safety cutoff while retaining frame-count syntax, and logs crouch transition internals; the user's D212 Windows x86 build passed but gameplay tests exposed yaw visibility and insufficient 128-frame Duck duration at ~2 ms/frame.
 Local C++17 GCC/Clang scheduling regressions passed; automatic CI and user-started Windows x86 in-game verification of D212.1 remain pending.
+
+D213 adds bounded per-movement GoldSrc trajectory evidence (input, engine-command msec, pre/post movement state and speed), a versioned CSV export and an opt-in in-game replay that validates the starting pose and compares each engine-observed step; the original AI path remains untouched outside probes.
+Replay does not teleport a bot or guarantee deterministic physics; differing starting world/entity state can cause rejection/divergence, and automatic CI plus user-started Windows x86 game acceptance remain pending.

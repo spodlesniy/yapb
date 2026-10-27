@@ -1,6 +1,10 @@
 #include <yapb.h>
 #include <ai/ai_exploration_probe.h>
 #include <aipb/explorer/engine_bridge_math.h>
+#include <aipb/explorer/engine_bridge_trace.h>
+#include <crlib/files.h>
+
+#include <cstdio>
 
 #include <cmath>
 #include <cstdint>
@@ -13,7 +17,14 @@ struct Session {
    int botIndex { -1 };
    aipb::explorer::bridge::ProbeBudget budget {};
    float lastTime {};
+   bool replay {};
+   int replayIndex {};
 };
+
+using aipb::explorer::bridge::TraceBuffer;
+using aipb::explorer::bridge::TraceSample;
+using aipb::explorer::bridge::compareStates;
+static TraceBuffer trace {};
 
 Session session {};
 
@@ -28,7 +39,7 @@ AipbExplorerBridgeState observe(const Bot &bot) {
    state.vz = v.velocity.z;
    state.yaw = aipb::explorer::bridge::yaw(v.v_angle.y, 0.0f);
    state.pitch = v.v_angle.x;
-   state.tick = static_cast <uint64_t> (session.budget.executed);
+   state.tick = static_cast <uint64_t> (session.replay ? session.replayIndex : session.budget.executed);
    state.on_ground = (v.flags & FL_ONGROUND) ? 1 : 0;
    state.crouching = (v.flags & FL_DUCKING) ? 1 : 0;
    return state;
@@ -66,8 +77,65 @@ bool begin(int botIndex, const AipbExplorerBridgeCommand &command, int limit, bo
    session.command = command;
    session.budget = budget;
    session.lastTime = game.time();
+   trace.clear();
+   trace.botIndex = botIndex;
    game.print("AiPB explorer: started bot #%d for %d %s", botIndex, limit,
       milliseconds ? "simulated ms" : "frames");
+   return true;
+}
+
+bool beginReplay(int botIndex) {
+   if (active() || !trace.completed || trace.count == 0 || botIndex != trace.botIndex) {
+      return false;
+   }
+   auto *bot = bots.findBotByIndex(botIndex);
+   if (!bot || !game.isAliveEntity(bot->ent()) || bot->pev->maxspeed < 10.0f) {
+      return false;
+   }
+   const auto current = observe(*bot);
+   const auto difference = compareStates(trace.samples[0].before, current);
+   if (!difference.within(5.0, 30.0, 5.0f)) {
+      game.print("AiPB explorer: replay start mismatch (position=%.2f, velocity=%.2f, yaw=%.2f)",
+         difference.position, difference.velocity, difference.yawDegrees);
+      return false;
+   }
+   session = {};
+   session.botIndex = botIndex;
+   session.replay = true;
+   session.lastTime = game.time();
+   game.print("AiPB explorer: replay started, %d steps", trace.count);
+   return true;
+}
+
+int recordedSteps() {
+   return trace.count;
+}
+
+bool save(const char *filePath) {
+   if (active() || !trace.completed || trace.count == 0 || filePath == nullptr || !*filePath) {
+      return false;
+   }
+   cr::File file { cr::StringRef(filePath), "wt" };
+   if (!file || !file.puts("version,bot,step,msec,forward,strafe,yaw_delta,jump,duck,max_speed,old_buttons,bx,by,bz,bvx,bvy,bvz,byaw,bground,bduck,ax,ay,az,avx,avy,avz,ayaw,aground,aduck\n")) {
+      return false;
+   }
+   char buffer[1024] {};
+   for (int i = 0; i < trace.count; ++i) {
+      const auto &t = trace.samples[i];
+      const int n = std::snprintf(buffer, sizeof(buffer),
+         "1,%d,%d,%u,%.9g,%.9g,%.9g,%u,%u,%.9g,%d,%.9g,%.9g,%.9g,%.9g,%.9g,%.9g,%.9g,%u,%u,%.9g,%.9g,%.9g,%.9g,%.9g,%.9g,%.9g,%u,%u\n",
+         trace.botIndex, i, static_cast<unsigned>(t.msec),
+         t.command.forward, t.command.strafe, t.command.yaw_delta,
+         static_cast<unsigned>(t.command.jump), static_cast<unsigned>(t.command.duck),
+         t.maxSpeed, t.oldButtons, t.before.x, t.before.y, t.before.z,
+         t.before.vx, t.before.vy, t.before.vz, t.before.yaw,
+         static_cast<unsigned>(t.before.on_ground), static_cast<unsigned>(t.before.crouching),
+         t.after.x, t.after.y, t.after.z, t.after.vx, t.after.vy, t.after.vz,
+         t.after.yaw, static_cast<unsigned>(t.after.on_ground), static_cast<unsigned>(t.after.crouching));
+      if (n < 0 || static_cast<size_t>(n) >= sizeof(buffer) || !file.puts(buffer)) {
+         return false;
+      }
+   }
    return true;
 }
 
@@ -86,7 +154,7 @@ bool frame(Bot &bot) {
       return false;
    }
    if (!game.isAliveEntity(bot.ent()) || !std::isfinite(bot.pev->maxspeed)
-      || bot.pev->maxspeed < 10.0f || session.budget.complete()) {
+      || bot.pev->maxspeed < 10.0f || (session.replay ? session.replayIndex >= trace.count : session.budget.complete())) {
       stop("bot unavailable");
       return false;
    }
@@ -97,29 +165,69 @@ bool frame(Bot &bot) {
    // Use real engine frame duration rather than inventing fixed GoldSrc physics parity.
    const int milliseconds = std::isfinite(elapsed) && elapsed > 0.0f
       ? cr::clamp(static_cast <int> (elapsed * 1000.0f + 0.5f), 1, 255) : 1;
-   const uint8_t msec = static_cast <uint8_t> (milliseconds);
+   const bool replaying = session.replay;
+   const TraceSample *recorded = replaying ? &trace.samples[session.replayIndex] : nullptr;
+   const uint8_t msec = replaying ? recorded->msec : static_cast<uint8_t>(milliseconds);
+   const auto before = observe(bot);
+   if (replaying) {
+      const auto diff = compareStates(recorded->before, before);
+      if (!diff.within(5.0, 30.0, 5.0f)) {
+         game.print("AiPB explorer: replay diverged before step %d, pos=%.2f vel=%.2f yaw=%.2f",
+            session.replayIndex, diff.position, diff.velocity, diff.yawDegrees);
+         stop("replay divergence");
+         return true;
+      }
+   }
+   const auto command = replaying ? recorded->command : session.command;
 
    float forwardSpeed {};
    float strafeSpeed {};
-   aipb::explorer::bridge::translateAxes(session.command, bot.pev->maxspeed,
+   aipb::explorer::bridge::translateAxes(command, replaying ? recorded->maxSpeed : bot.pev->maxspeed,
       forwardSpeed, strafeSpeed);
 
    auto angles = bot.pev->v_angle;
-   angles.y = aipb::explorer::bridge::yaw(angles.y, session.command.yaw_delta);
+   angles.y = aipb::explorer::bridge::yaw(angles.y, command.yaw_delta);
    bot.pev->v_angle = angles;
    // Preserve YaPB's view-to-body angle convention when overriding AI movement.
    bot.pev->angles.x = -angles.x / 3.0f;
    bot.pev->angles.y = angles.y;
    bot.pev->angles.z = 0.0f;
    const uint16_t buttons = static_cast <uint16_t> (
-      (session.command.jump ? IN_JUMP : 0) | (session.command.duck ? IN_DUCK : 0));
+      (command.jump ? IN_JUMP : 0) | (command.duck ? IN_DUCK : 0));
    bot.pev->button = buttons;
    bot.pev->impulse = 0;
 
+   const int oldButtons = bot.pev->oldbuttons;
+   const float commandedMaxSpeed = replaying ? recorded->maxSpeed : bot.pev->maxspeed;
    engfuncs.pfnRunPlayerMove(bot.ent(), angles, forwardSpeed, strafeSpeed, 0.0f, buttons, 0, msec);
 
-   session.budget.consume(milliseconds);
+   if (replaying) {
+      ++session.replayIndex;
+   }
+   else {
+      session.budget.consume(msec);
+   }
    const auto after = observe(bot);
+   if (replaying) {
+      const auto delta = compareStates(recorded->after, after);
+      if (!delta.within(5.0, 30.0, 5.0f)) {
+         game.print("AiPB explorer: replay diverged at step %d, pos=%.2f vel=%.2f yaw=%.2f stance=%d ground=%d",
+            session.replayIndex, delta.position, delta.velocity, delta.yawDegrees,
+            static_cast<int>(delta.stanceMismatch), static_cast<int>(delta.groundMismatch));
+         stop("replay divergence");
+         return true;
+      }
+      if (session.replayIndex == trace.count) {
+         stop("replay matched");
+      }
+      return true;
+   }
+   const TraceSample sample { command, before, after, commandedMaxSpeed, msec, oldButtons };
+   if (!trace.append(sample)) {
+      stop("trace capacity or validation failure");
+      trace.clear();
+      return true;
+   }
    if (session.budget.executed == 1 || session.budget.simulatedMs / 50 !=
       (session.budget.simulatedMs - milliseconds) / 50 || session.budget.complete()) {
       game.print("AiPB explorer: frame=%d, total_ms=%d, msec=%u, pos=(%.1f %.1f %.1f), vel=(%.1f %.1f %.1f), view_yaw=%.1f, body_yaw=%.1f, buttons=%u, oldbuttons=%d, ground=%u, duck=%u, duck_transition=%d, duck_time=%.0f, view_z=%.1f",
@@ -136,7 +244,10 @@ bool frame(Bot &bot) {
       stop("nonfinite engine observation");
    }
    else if (session.budget.complete()) {
+      trace.completed = true;
       stop(session.budget.safetyLimit() ? "safety frame limit" : "completed");
+      game.print("AiPB explorer: recorded %d steps; use yb explore save or yb explore replay %d",
+         trace.count, trace.botIndex);
    }
    return true;
 }

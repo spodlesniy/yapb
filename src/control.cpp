@@ -1325,6 +1325,37 @@ int BotControl::menuNavVis (int item) {
 
 int BotControl::cmdExplore () {
    enum args { root = 0, name, botIndex, forward, strafe, jump, duck, yaw, frames, unit };
+   if (hasArg(botIndex) && arg <StringRef> (botIndex) == "replay" && hasArg(forward) && !hasArg(strafe)) {
+      double value {};
+      const auto str = arg <StringRef> (forward).chars();
+      char *end {};
+      value = std::strtod(str, &end);
+      if (end == str || *end != '\0' || !std::isfinite(value) || std::trunc(value) != value
+         || value < 0 || value >= kGameMaxPlayers) {
+         return BotCommandResult::BadFormat;
+      }
+      if (!ai::explore::beginReplay(static_cast<int>(value))) {
+         msg("AiPB explorer: replay rejected; restore the recorded bot to its initial state.");
+      }
+      return BotCommandResult::Handled;
+   }
+   if (hasArg(botIndex) && arg <StringRef> (botIndex) == "save" && !hasArg(forward)) {
+      const auto directory = buildTrainingDatasetDirectory();
+      if (directory.empty()) {
+         msg("AiPB explorer: cannot prepare dataset directory.");
+         return BotCommandResult::Handled;
+      }
+      const auto name = strings.format("explore_%d_%d.csv", static_cast<int>(time(nullptr)),
+         ai::explore::recordedSteps());
+      const auto path = strings.joinPath(directory, name);
+      if (plat.fileExists(path.chars()) || !ai::explore::save(path.chars())) {
+         msg("AiPB explorer: cannot save trajectory (recording not complete or file exists).");
+      }
+      else {
+         msg("AiPB explorer: saved %d steps to %s.", ai::explore::recordedSteps(), path);
+      }
+      return BotCommandResult::Handled;
+   }
    if (hasArg(botIndex) && arg <StringRef> (botIndex) == "stop" && !hasArg(forward)) {
       ai::explore::reset();
       msg("AiPB explorer: stopped.");
@@ -2494,7 +2525,7 @@ BotControl::BotControl () {
       },
       {
          "explore",
-         "explore <bot_index> <forward> <strafe> <jump> <duck> <yaw_delta> <frames|duration_ms ms> | stop",
+         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save | replay <bot> | stop",
          "Runs an admin-only bounded GoldSrc movement probe.",
          &BotControl::cmdExplore
       },
