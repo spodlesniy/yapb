@@ -2998,3 +2998,14 @@ Report distinct coarse cells occupied, member fine cells, fine bounds, window-ed
 Preserve original coarse-cell consensus separately and return zero members for Mixed or Unobserved seeds.
 A bounded edge is not necessarily a true region boundary outside the query window, and observed face adjacency does not establish collision-free traversal, connectivity or route permissions.
 Do not change original CSVs, bot movement, navigation, or prior commands.
+
+## D233 — Audit actual trajectory crossings at coarse-cell boundaries
+
+D232 can join homogeneous subcells across a coarse boundary even when two separate trajectories stop and begin on opposite sides of that boundary.
+Add read-only `yb explore crossings <trials> <x> <y> <z> <heading>`, preserving D232 region grouping without changing the grouping outcome.
+Enumerate six-connected member fine-cell faces that straddle 128-unit coarse-cell planes; distinguish adjacency faces without crossing evidence from faces crossed directly by recorded segments.
+A crossing requires segment endpoints strictly on opposite sides of a coarse boundary plane, with intersection strictly inside the shared 32-unit face; endpoint-only contact and face-edge/corner tangencies do not qualify.
+Only source records from the requested 45-degree heading sector vote, and each record is counted once for summary crossing windows; record crossing sources and faces with at least two distinct Progress sources.
+Classify BlockedCandidate and DeflectedCandidate crossings as restrictive candidate evidence, not successful traversal.
+Bound crossing detection to the D232 fixed 3x3x3 coarse-cell window and retain mixed/unobserved seed barriers and original immutable artifacts.
+Even multiple Progress sources do not prove GoldSrc hull clearance, successful transition, travel direction, or safe navigation.

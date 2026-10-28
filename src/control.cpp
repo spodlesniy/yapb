@@ -21,6 +21,7 @@
 #include <aipb/explorer/engine_bridge_spatial_localization.h>
 #include <aipb/explorer/engine_bridge_spatial_regions.h>
 #include <aipb/explorer/engine_bridge_cross_cell_regions.h>
+#include <aipb/explorer/engine_bridge_boundary_crossings.h>
 
 #include <ctime>
 #include <cmath>
@@ -1451,6 +1452,47 @@ int BotControl::cmdExplore () {
       }
       if (!ai::explore::classify()) {
          msg("AiPB explorer: classify requires a completed, valid trace; use init to load a recording.");
+      }
+      return BotCommandResult::Handled;
+   }
+   if (operation == "crossings") {
+      if (!hasArg(forward) || !hasArg(strafe) || !hasArg(jump)
+         || !hasArg(duck) || !hasArg(yaw) || hasArg(frames)) {
+         return BotCommandResult::BadFormat;
+      }
+      const auto name = arg <StringRef>(forward);
+      if (!aipb::explorer::bridge::safeName(name.chars())) {
+         return BotCommandResult::BadFormat;
+      }
+      const auto parse = [this](int position, double &value) {
+         const auto input = arg <StringRef>(position).chars();
+         char *end {};
+         value = std::strtod(input, &end);
+         return end != input && *end == '\0' && std::isfinite(value);
+      };
+      double x {}, y {}, z {}, heading {};
+      if (!parse(strafe, x) || !parse(jump, y) || !parse(duck, z) || !parse(yaw, heading)) {
+         return BotCommandResult::BadFormat;
+      }
+      const auto directory = strings.joinPath(bstor.getRunningPath(), folders.data, "explorer");
+      const auto path = strings.joinPath(directory, strings.format("%s.trials.csv", name));
+      aipb::explorer::bridge::EvidenceTrialSet trials {};
+      aipb::explorer::bridge::BoundaryCrossingAudit report {};
+      if (!aipb::explorer::bridge::readEvidenceTrialSet(path.chars(), game.getMapName(), trials)
+         || !aipb::explorer::bridge::auditCoarseBoundaryCrossings(trials, x, y, z, heading, report)) {
+         msg("AiPB explorer: cannot audit coarse boundary crossings.");
+      }
+      else {
+         msg("AiPB explorer: crossings '%s': coarse=(%d,%d,%d) bin=%d seed_kind=%s cells=%d coarse_cells=%d boundary_faces=%d supported_faces=%d unsupported_faces=%d confirmed_progress_faces=%d.",
+            name, report.span.seedCoarse.x, report.span.seedCoarse.y, report.span.seedCoarse.z,
+            report.span.headingBin, aipb::explorer::bridge::regionEvidenceName(report.span.seedKind),
+            report.span.memberCells, report.span.coarseCells, report.coarseBoundaryFaces,
+            report.facesWithAnyCrossing, report.unsupportedFaces,
+            report.facesWithMultipleProgressSources);
+         msg("AiPB explorer: crossings progress_faces=%d restriction_faces=%d progress_windows=%d restriction_windows=%d progress_sources=%d restriction_sources=%d.",
+            report.facesWithProgress, report.facesWithRestriction,
+            report.progressCrossingWindows, report.restrictionCrossingWindows,
+            report.progressCrossingSources, report.restrictionCrossingSources);
       }
       return BotCommandResult::Handled;
    }
@@ -3344,7 +3386,7 @@ BotControl::BotControl () {
       },
       {
          "explore",
-         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save <name> | list | init <name> <bot> | replay <name> <bot> | append <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | queue <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | run <save_name> | queueclear | report | progress | classify | observe <name> | merge <first> <second> <output> | index <source> <output> | near <index> <x> <y> <z> <radius> | areas <index> <output> | area <name> <x> <y> <z> | directions <index> <output> | direction <name> <x> <y> <z> <heading> | audit <index> <x> <y> <z> | assess <index> <x> <y> <z> <heading> | trials <first> <second> <output> | corroborate <trials> <x> <y> <z> <heading> | consensus <trials> <x> <y> <z> <heading> | localize <trials> <x> <y> <z> <heading> | region <trials> <x> <y> <z> <heading> | span <trials> <x> <y> <z> <heading> | clear | stop",
+         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save <name> | list | init <name> <bot> | replay <name> <bot> | append <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | queue <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | run <save_name> | queueclear | report | progress | classify | observe <name> | merge <first> <second> <output> | index <source> <output> | near <index> <x> <y> <z> <radius> | areas <index> <output> | area <name> <x> <y> <z> | directions <index> <output> | direction <name> <x> <y> <z> <heading> | audit <index> <x> <y> <z> | assess <index> <x> <y> <z> <heading> | trials <first> <second> <output> | corroborate <trials> <x> <y> <z> <heading> | consensus <trials> <x> <y> <z> <heading> | localize <trials> <x> <y> <z> <heading> | region <trials> <x> <y> <z> <heading> | span <trials> <x> <y> <z> <heading> | crossings <trials> <x> <y> <z> <heading> | clear | stop",
          "Runs an admin-only bounded GoldSrc movement probe.",
          &BotControl::cmdExplore
       },

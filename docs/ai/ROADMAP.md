@@ -447,3 +447,9 @@ D231 automatic build and Explorer CI passed at e3f9db17; user verified mixed, pr
 D232 introduces a read-only six-face evidence span across 128-unit coarse-cell boundaries, restricted to a fixed 3x3x3 coarse-cell query window (12x12x12 fine cells).
 Existing D229 source-quality rules remain unchanged; the search uses exact segment/fine-cell intersection, unique per-source window consolidation and explicit window-edge boundaries.
 This is diagnostic grouping only, without navigation, inferred safety or global map coverage; automatic CI and Windows x86 gameplay acceptance remain pending.
+
+D232 automatic build and Explorer CI passed at f4098ce5; live de_dust2 tests confirmed a three-cell, single-coarse-cell Progress-only region and zero membership for Mixed and Unobserved seeds.
+D233 adds a read-only strict coarse-boundary crossing audit for D232 spans, distinguishing face adjacency from observed trajectory segments whose endpoints lie strictly on opposite sides of the boundary plane.
+Report coarse boundary faces, directly crossed faces, per-source crossing windows, distinct crossing sources and faces observed by multiple progress sources.
+Tangent, endpoint-only, shared-edge and corner contacts do not count as direct crossings; this remains diagnostic evidence, not collision-checked passability.
+Automatic CI and Windows x86 gameplay acceptance remain pending.

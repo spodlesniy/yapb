@@ -76,7 +76,7 @@ inline bool spanInWindow(const SpatialCell &cell, const int *lower, const int *u
 // Cells join by six shared faces, never by approximate distance or diagonals.
 inline bool spanSourceEvidence(
   const EvidenceTrialSet &sources, double x, double y, double z, double heading,
-  CrossCellRegion &result
+  CrossCellRegion &result, std::set<SpatialCell> *regionMembers = nullptr
 ) {
   if (sources.trials.empty() || sources.trials.size() > kMaxTrialSources
     || !spatialCoordinate(x) || !spatialCoordinate(y) || !spatialCoordinate(z)
@@ -212,6 +212,10 @@ inline bool spanSourceEvidence(
 
   if (next.seedKind == RegionEvidenceKind::Unobserved
     || next.seedKind == RegionEvidenceKind::Mixed) {
+    if (regionMembers) {
+      regionMembers->clear();
+    }
+
     result = std::move(next);
     return true;
   }
@@ -318,6 +322,11 @@ inline bool spanSourceEvidence(
   }
 
   next.region.status = classifySourceConsensus(next.region);
+
+  if (regionMembers) {
+    *regionMembers = members;
+  }
+
   result = std::move(next);
   return true;
 }

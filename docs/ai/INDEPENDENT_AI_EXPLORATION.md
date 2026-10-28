@@ -444,3 +444,13 @@ Using the existing immutable trials snapshot on de_dust2, run:
 Compare the first result to `yb explore region d228_trials_02 460 2454 -92 0`; a span may extend across coarse-cell boundaries only where neighboring observed homogeneous fine cells exist.
 The wall Mixed seed and unobserved seed must have zero member cells.
 A span is a bounded diagnostic region, not collision authority or a path.
+
+## D233 — Cross-boundary evidence audit
+
+On de_dust2 use the existing snapshot:
+`yb explore crossings d228_trials_02 460 2454 -92 0`
+`yb explore crossings d228_trials_02 496 2464 -92 0`
+`yb explore crossings d228_trials_02 5000 5000 0 0`
+The known approach region remains in one coarse cell, so `boundary_faces=0` and `supported_faces=0`; Mixed and Unobserved seeds likewise have no grouped crossing faces.
+A separate source dataset containing genuine boundary-spanning observations is required to observe nonzero crossing counters.
+Strict plane crossing is distinct from mere occupancy of adjacent coarse cells, and no count authorizes navigation.
