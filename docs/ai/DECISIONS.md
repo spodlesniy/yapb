@@ -3066,3 +3066,14 @@ Require endpoints strictly on opposite sides of a fine plane and intersection st
 Key each face by lower fine cell and axis; classify every crossing record as Progress, BlockedCandidate or DeflectedCandidate and retain actual positive/negative axis sign and distinct trace-source provenance.
 Count records once in aggregate windows even when they cross multiple fine faces, distinguish internal and coarse-boundary faces, and sort by query distance while limiting console detail to 24 faces.
 This is geometric evidence only, with no inference of hull clearance, autonomous navigation, successful traversal, source independence or route permission; existing commands and CSV remain unchanged.
+
+## D239 — Source-quality consensus for signed fine-face crossings
+
+D238 reports strict 32-unit face crossings but does not classify independent source consensus for each signed face.
+Add read-only `yb explore fine-consensus <trials> <x> <y> <z> <heading>` over the same bounded D238 fine-face discovery and heading sector.
+For each physical fine face and actual axis direction, aggregate Progress and BlockedCandidate/DeflectedCandidate windows separately by source, then reuse D229 and D236 quality rules.
+One trace contributes at most one source vote per signed face, no matter how many recorded windows it contains.
+Distinct faces and opposite signs never share votes; mixed or opposing evidence remains Conflicted, one strong source remains Insufficient, and unobserved signs remain Unobserved.
+Keep D238's nearest-first ordering and at most 24 face details in the console, while the status summary includes every discovered face.
+Correct the D238 CMake registration so its test receives strict compiler-warning flags and the D237 test command gets no extra executable argument.
+The audit is not GoldSrc collision verification, movement permission or a path; CSV, earlier commands and bot behavior remain unchanged.

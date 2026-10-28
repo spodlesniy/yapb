@@ -497,3 +497,12 @@ On de_dust2 run:
 The known X=256 crossing should appear as a `coarse=1` fine face at `axis=0 lower=(7,78,-3)`, alongside any additional observed 32-unit interior-face crossings within the 3x3x3 coarse-cell query window.
 The face summary is complete, while per-face console details show at most the 24 nearest faces.
 Repeat with heading 90 to verify the bin filter; a crossing count is not collision-checked passability or authorization to navigate.
+
+## D239 — Fine-face directed source consensus
+
+Run on de_dust2:
+`yb explore fine-consensus d228_trials_02 256 2512 -92 39.2894287`
+The existing D238 snapshot should yield five faces, all with positive Insufficient and negative Unobserved, because the four crossing windows belong to only one source.
+In particular, the known coarse boundary face `axis=0 lower=(7,78,-3)` must remain Insufficient rather than ProgressEvidence.
+Run with heading 90 and expect zero faces.
+Only two strong separate sources supporting the same signed 32-unit face can produce homogeneous ProgressEvidence or RestrictionEvidence, and even that is not permission to navigate.

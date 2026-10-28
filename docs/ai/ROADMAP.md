@@ -484,3 +484,9 @@ D237.1 automatic Explorer CI passed at 475bca7 (run 40724223418), restoring stri
 D237.1 is accepted.
 D238 adds bounded, read-only detection of actual crossings of all 32-unit fine-cell faces, preserving strict interior geometry, class, travel sign and source provenance without changing existing commands or traversal behavior.
 Automatic CI and Windows x86 gameplay acceptance are pending.
+
+D238 automatic Build and Explorer CI passed at ae016e9; user confirmed five strictly crossed faces (four interior and one coarse), four Progress windows from one source and zero faces in heading bin 2 in HLDS.
+D238 is accepted.
+D239 adds per-signed-fine-face independent-source quality consensus using D229 thresholds, with source, face and travel-direction separation, conflicts, unobserved directions and nearest-first bounded output.
+D239 also corrects D238's CMake test registration so the fine-crossings test receives strict compiler warnings and the crossing-sectors CTest command is unmodified by extra arguments.
+Automatic CI and HLDS acceptance for D239 remain pending; the diagnosis never grants navigation authority.
