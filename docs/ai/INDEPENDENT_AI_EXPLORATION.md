@@ -506,3 +506,11 @@ The existing D238 snapshot should yield five faces, all with positive Insufficie
 In particular, the known coarse boundary face `axis=0 lower=(7,78,-3)` must remain Insufficient rather than ProgressEvidence.
 Run with heading 90 and expect zero faces.
 Only two strong separate sources supporting the same signed 32-unit face can produce homogeneous ProgressEvidence or RestrictionEvidence, and even that is not permission to navigate.
+
+## D240 — Fine-face cross-sector consensus
+
+Run on de_dust2 with the existing trial dataset:
+`yb explore fine-sectors d228_trials_02 256 2512 -92`
+The known evidence should retain five faces (four interior and one coarse), no cross-sector conflicts, five positive Insufficient directions and five negative Unobserved directions.
+The known `axis=0 lower=(7,78,-3)` face should show `progress_bins=0x02` for positive travel and zero restriction bits; its one source and one window cannot establish ProgressEvidence.
+Sector bitmasks describe requested yaw only, not guaranteed velocity intent or GoldSrc hull clearance.

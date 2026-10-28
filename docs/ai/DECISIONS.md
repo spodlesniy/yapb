@@ -3077,3 +3077,12 @@ Distinct faces and opposite signs never share votes; mixed or opposing evidence 
 Keep D238's nearest-first ordering and at most 24 face details in the console, while the status summary includes every discovered face.
 Correct the D238 CMake registration so its test receives strict compiler-warning flags and the D237 test command gets no extra executable argument.
 The audit is not GoldSrc collision verification, movement permission or a path; CSV, earlier commands and bot behavior remain unchanged.
+
+## D240 — Aggregate signed fine-face consensus across recorded yaw sectors
+
+D239 isolates one recorded yaw sector, although the same strictly crossed 32-unit physical face may have observations under other yaw headings.
+Add read-only `yb explore fine-sectors <trials> <x> <y> <z>`, retaining the D238 bounded 3x3x3 coarse-cell query window and strict interior-face crossing rules.
+Combine all recorded yaw sectors per exact (lower fine cell, axis, travel sign) without treating headings or repeated windows of one trial source as independent corroboration.
+Apply D229 source-quality rules after consolidation across sectors; separate opposite signs and adjacent physical faces, and preserve weak, mixed, conflicted and unobserved outcomes.
+Report per-direction Progress and restriction heading-bin masks, faces with multiple sectors, and directional conflict between sector outcomes, with nearest-first output capped at 24 faces.
+Retain the pre-existing CSV schema, commands and bot behavior; no crossing result establishes GoldSrc hull clearance, route connectivity or movement authorization.

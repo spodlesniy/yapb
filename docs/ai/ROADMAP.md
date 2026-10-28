@@ -490,3 +490,8 @@ D238 is accepted.
 D239 adds per-signed-fine-face independent-source quality consensus using D229 thresholds, with source, face and travel-direction separation, conflicts, unobserved directions and nearest-first bounded output.
 D239 also corrects D238's CMake test registration so the fine-crossings test receives strict compiler warnings and the crossing-sectors CTest command is unmodified by extra arguments.
 Automatic CI and HLDS acceptance for D239 remain pending; the diagnosis never grants navigation authority.
+
+D239 automatic Build and Explorer CI passed at 7d0e3e7; user confirmed five Insufficient positive directions, five Unobserved reverse directions, and no faces in heading bin 2 in HLDS.
+D239 is accepted.
+D240 adds bounded multi-sector source-quality consensus for signed 32-unit physical faces, with yaw-bin masks and cross-sector opposition, without counting one trial as multiple independent sources or changing navigation.
+Automatic CI and Windows x86 gameplay acceptance for D240 are pending.
