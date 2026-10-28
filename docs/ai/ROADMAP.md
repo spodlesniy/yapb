@@ -374,3 +374,7 @@ The focused regression checks the flag and spawn/touch order; automatic CI and u
 D218.3 passed automatic CI 40633530225; the user confirmed the recurring weapon pickup and materialization sound are resolved in-game.
 D219 adds read-only `yb explore progress` diagnostics for sustained low observed horizontal movement under grounded nonzero input, based on complete GoldSrc recordings.
 The engine-independent C++17 regression checks stationary, moving, interrupted and invalid evidence; automatic CI and Windows x86 gameplay acceptance remain required.
+
+D219 passed automatic build and Explorer CI on 078ac61f; user gameplay observations confirmed both free travel (0/9 low-progress windows) and persistent wall blockage (9/9 low-progress windows).
+D220 adds read-only completed-trace classification as Progress, BlockedCandidate or InsufficientEvidence based on actual direction-projected travel and consecutive low-travel windows.
+Collision contact remains unknown with CSV v2, and Windows x86 gameplay verification of the new classification command remains pending.

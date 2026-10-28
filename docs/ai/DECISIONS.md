@@ -2830,3 +2830,15 @@ Count a low-progress candidate only when at least 12 units were requested and ob
 Break windows on ineligible frames and exclude incomplete trailing windows; report counts, first candidate step, longest candidate window, and requested/observed travel summed across evaluated windows.
 These measurements do not prove collision or navigability and cannot be used as autonomous movement decisions yet.
 Require valid completed traces, preserving result on rejection; do not change recording, replay, queue, or Legacy/Training AI behavior.
+
+## D220 — Conservative direction-aware movement classification
+
+Add an engine-independent, C++17-compatible classifier over completed, validated GoldSrc trace v2 evidence and expose it through the admin-only `yb explore classify` command.
+Keep D219's eligibility floor of grounded endpoints, no jump/duck command and requested speed at least 100 units/s, and its nonoverlapping windows of at least 100 simulated milliseconds with at least 12 commanded units.
+Project the observed XY step displacement onto the commanded direction using the GoldSrc yaw and forward/strafe axes; report projected, absolute observed and requested travel separately.
+Classify Progress when at least one completed eligible window achieves projected travel of 15% of its requested distance, unless a sustained blocked candidate exists.
+Classify BlockedCandidate only for two consecutive completed eligible windows each measuring less than 15% of requested distance in absolute XY travel.
+Otherwise return InsufficientEvidence, including short traces, one isolated low-travel window, sideways sliding and backward movement.
+Ineligible steps break low-travel streaks; validate the full trace before publishing any results.
+The classification is per-trace evidence and does not assert physics collision, wall contact or navigability; the current CSV lacks a contact field, so display `contact=unknown`.
+No changes to CSV v2, GoldSrc movement, replay, AI action decisions or map graph are permitted.

@@ -311,3 +311,13 @@ Windows requesting at least 12 GoldSrc units and yielding less than 15% observed
 The report includes the first candidate frame, longest flagged window, and cumulative commanded/observed distances across evaluated windows.
 Neutral, airborne, duck-command, jump-command and short intervals do not produce evidence; invalid or active recordings are rejected.
 This is not collision detection, world reconstruction, or automated exploration; diagnostics remain read-only and CSV v2 unchanged.
+
+## D220 — Direction-aware classification of recorded ground movement
+
+Run `yb explore classify` on a completed recording or after `yb explore init <name> <bot>` loads one.
+Possible results are `Progress`, `BlockedCandidate`, and `InsufficientEvidence`; `contact=unknown` is always printed because CSV v2 has no collision observation.
+Progress requires a completed eligible 100 ms ground-input window with at least 12 requested units and at least 15% measured displacement projected along the commanded direction.
+BlockedCandidate requires two consecutive eligible windows with less than 15% requested distance observed as absolute horizontal movement; an isolated low-travel window is not sufficient.
+Neutral input, jumps, duck commands and airborne frames break the sequence; sideways or backwards movement without directed progress is insufficient evidence rather than a proven collision.
+Use `yb explore progress` to view the original D219 low-travel diagnostics; `classify` is a read-only second assessment.
+Neither command causes autonomous navigation or changes saved CSV v2 data.

@@ -3,6 +3,7 @@
 #include <aipb/explorer/engine_bridge_math.h>
 #include <aipb/explorer/engine_bridge_queue.h>
 #include <aipb/explorer/engine_bridge_trace.h>
+#include <aipb/explorer/engine_bridge_trace_classification.h>
 #include <aipb/explorer/engine_bridge_trace_io.h>
 #include <aipb/explorer/engine_bridge_trace_report.h>
 #include <crlib/files.h>
@@ -244,6 +245,27 @@ bool progress() {
       summary.firstLowProgressStep, summary.longestLowProgressMs);
    game.print("AiPB explorer progress: requested_units=%.2f, observed_horizontal_units=%.2f (evaluated windows)",
       summary.requestedUnits, summary.observedUnits);
+   return true;
+}
+
+bool classify() {
+   if (active()) {
+      return false;
+   }
+
+   aipb::explorer::bridge::TraceMovementClassification result {};
+
+   if (!aipb::explorer::bridge::classifyTraceMovement(trace, result)) {
+      return false;
+   }
+
+   game.print("AiPB explorer classify: result=%s, contact=unknown, windows=%d, progress=%d, low_travel=%d, direction_mismatch=%d",
+      aipb::explorer::bridge::movementClassificationName(result.classification),
+      result.evaluatedWindows, result.progressWindows, result.lowTravelWindows,
+      result.directionMismatchWindows);
+   game.print("AiPB explorer classify: first_blocked_step=%d, longest_low_streak=%d, requested=%.2f, observed=%.2f, projected=%.2f",
+      result.firstBlockedStep, result.longestLowTravelStreak, result.requestedUnits,
+      result.observedUnits, result.projectedUnits);
    return true;
 }
 
