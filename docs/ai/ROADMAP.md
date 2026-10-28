@@ -415,3 +415,7 @@ D226 passed automatic build and Explorer CI on b70a7064; the user verified a de_
 D227 adds a read-only, direction-specific conservative diagnostic assessment over the validated D223 spatial index: Unobserved, Insufficient, ProgressEvidence, RestrictionEvidence or Conflicted.
 Two windows are needed for a homogeneous evidence label; mixed outcomes in the requested sector are always Conflicted, and no output asserts collision, safety or traversal certainty.
 Automatic CI and user-controlled Windows x86 acceptance remain pending.
+
+D227 automatic build passed at 12f24a60, but Explorer CI failed on MSVC, GCC and Clang because the focused direction-assessment regression incorrectly expected no other-heading opposition for a DeflectedCandidate sector next to a Progress sector.
+D227.1 corrects this test expectation to match the D225/D227 directional contract and adds negative checks for solitary and unobserved sectors without changing production code.
+Automatic Explorer CI for the corrective commit and user-controlled Windows x86 acceptance remain required.

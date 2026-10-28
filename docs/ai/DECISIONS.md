@@ -2936,3 +2936,10 @@ Return Unobserved for zero postings, Insufficient for exactly one homogeneous po
 Different-heading opposition remains context only and must not vote on the requested sector status.
 Repeated windows in one recording are correlated; minimum counts are a diagnostic display threshold, not independent trials, probabilities, or verified movement permissions.
 Retain original source artifacts, graph and bot behavior unchanged; malformed input must not mutate the caller's result.
+
+## D227.1 — Correct the cross-heading opposition regression
+
+The D227 regression wrongly asserted `otherHeadingOpposition == false` when querying a 90-degree sector with DeflectedCandidate evidence in a cell that also contains Progress evidence in the 0-degree sector.
+D225 explicitly defines opposition across different requested heading sectors and D227 retains that diagnostic context regardless of whether the queried sector itself has enough evidence for a homogeneous assessment.
+Correct the fixture expectation to `true` and add explicit checks that isolated single-heading cells and unexplored sectors report no opposition.
+The production assessment rules, file formats, gameplay commands and runtime behavior are unchanged.

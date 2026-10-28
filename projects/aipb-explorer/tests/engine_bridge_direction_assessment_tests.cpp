@@ -39,16 +39,21 @@ int main() {
     require(result.observations == 2 && result.otherHeadingOpposition);
     require(assessDirectionalEvidence(index, 0, 0, 0, 90, result));
     require(result.status == DirectionAssessmentStatus::Insufficient);
-    require(result.observations == 1 && !result.otherHeadingOpposition);
+    require(result.observations == 1 && result.deflectedCandidates == 1);
+    // Restriction in this heading opposes Progress in heading bin 0.
+    require(result.otherHeadingOpposition);
     require(assessDirectionalEvidence(index, 200, 0, 0, 180, result));
     require(result.status == DirectionAssessmentStatus::ProgressEvidence);
-    require(result.observations == 2);
+    require(result.observations == 2 && !result.otherHeadingOpposition);
     require(assessDirectionalEvidence(index, 400, 0, 0, 45, result));
     require(result.status == DirectionAssessmentStatus::Insufficient);
+    require(result.blockedCandidates == 1 && !result.otherHeadingOpposition);
     require(assessDirectionalEvidence(index, 0, 0, 0, 180, result));
     require(result.status == DirectionAssessmentStatus::Unobserved);
+    require(result.observations == 0 && !result.otherHeadingOpposition);
     require(assessDirectionalEvidence(index, 1000, 0, 0, 0, result));
     require(result.status == DirectionAssessmentStatus::Unobserved);
+    require(result.observations == 0 && !result.otherHeadingOpposition);
     result.observations = 123;
     require(!assessDirectionalEvidence(index, 1e40, 0, 0, 0, result));
     require(result.observations == 123);
