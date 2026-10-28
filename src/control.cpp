@@ -25,6 +25,7 @@
 #include <aipb/explorer/engine_bridge_crossing_discovery.h>
 #include <aipb/explorer/engine_bridge_crossing_directions.h>
 #include <aipb/explorer/engine_bridge_directed_crossing_consensus.h>
+#include <aipb/explorer/engine_bridge_crossing_sectors.h>
 
 #include <ctime>
 #include <cmath>
@@ -1455,6 +1456,63 @@ int BotControl::cmdExplore () {
       }
       if (!ai::explore::classify()) {
          msg("AiPB explorer: classify requires a completed, valid trace; use init to load a recording.");
+      }
+      return BotCommandResult::Handled;
+   }
+   if (operation == "crossing-sectors") {
+      if (!hasArg(forward) || !hasArg(strafe) || !hasArg(jump)
+         || !hasArg(duck) || hasArg(yaw)) {
+         return BotCommandResult::BadFormat;
+      }
+      const auto name = arg <StringRef>(forward);
+      if (!aipb::explorer::bridge::safeName(name.chars())) {
+         return BotCommandResult::BadFormat;
+      }
+      const auto parse = [this](int position, double &value) {
+         const auto input = arg <StringRef>(position).chars();
+         char *end {};
+         value = std::strtod(input, &end);
+         return end != input && *end == '\0' && std::isfinite(value);
+      };
+      double x {}, y {}, z {};
+      if (!parse(strafe, x) || !parse(jump, y) || !parse(duck, z)) {
+         return BotCommandResult::BadFormat;
+      }
+      const auto directory = strings.joinPath(bstor.getRunningPath(), folders.data, "explorer");
+      const auto path = strings.joinPath(directory, strings.format("%s.trials.csv", name));
+      aipb::explorer::bridge::EvidenceTrialSet trials {};
+      aipb::explorer::bridge::CrossingSectorAudit report {};
+      if (!aipb::explorer::bridge::readEvidenceTrialSet(path.chars(), game.getMapName(), trials)
+         || !aipb::explorer::bridge::auditCrossingSectors(trials, x, y, z, report)) {
+         msg("AiPB explorer: cannot audit crossing sectors.");
+      }
+      else {
+         msg("AiPB explorer: crossing-sectors '%s': coarse=(%d,%d,%d) faces=%d multi_sector_faces=%d cross_sector_conflicts=%d progress=%d restriction=%d conflicted=%d insufficient=%d unobserved=%d.",
+            name, report.queryCoarse.x, report.queryCoarse.y, report.queryCoarse.z,
+            report.faces, report.multipleSectorFaces, report.crossSectorConflictDirections,
+            report.progressEvidenceDirections, report.restrictionEvidenceDirections,
+            report.conflictedDirections, report.insufficientDirections, report.unobservedDirections);
+         for (const auto &face : report.details) {
+            msg("AiPB explorer: sector crossing axis=%d lower=(%d,%d,%d) at=(%.2f,%.2f,%.2f).",
+               face.axis, face.lowerCell.x, face.lowerCell.y, face.lowerCell.z,
+               face.position[0], face.position[1], face.position[2]);
+            msg("AiPB explorer: positive status=%s progress_bins=0x%02x restriction_bins=0x%02x observed=%d weak=%d strong_progress=%d strong_restriction=%d mixed=%d progress_sources=%d restriction_sources=%d progress_windows=%d restriction_windows=%d.",
+               aipb::explorer::bridge::directionAssessmentName(face.positive.evidence.status),
+               face.positive.progressBins, face.positive.restrictionBins,
+               face.positive.evidence.observedSources, face.positive.evidence.weakSources,
+               face.positive.evidence.strongProgressSources, face.positive.evidence.strongRestrictionSources,
+               face.positive.evidence.mixedSources, face.positive.evidence.progressSources,
+               face.positive.evidence.restrictionSources, face.positive.evidence.progressWindows,
+               face.positive.evidence.restrictionWindows);
+            msg("AiPB explorer: negative status=%s progress_bins=0x%02x restriction_bins=0x%02x observed=%d weak=%d strong_progress=%d strong_restriction=%d mixed=%d progress_sources=%d restriction_sources=%d progress_windows=%d restriction_windows=%d.",
+               aipb::explorer::bridge::directionAssessmentName(face.negative.evidence.status),
+               face.negative.progressBins, face.negative.restrictionBins,
+               face.negative.evidence.observedSources, face.negative.evidence.weakSources,
+               face.negative.evidence.strongProgressSources, face.negative.evidence.strongRestrictionSources,
+               face.negative.evidence.mixedSources, face.negative.evidence.progressSources,
+               face.negative.evidence.restrictionSources, face.negative.evidence.progressWindows,
+               face.negative.evidence.restrictionWindows);
+         }
       }
       return BotCommandResult::Handled;
    }
@@ -3542,7 +3600,7 @@ BotControl::BotControl () {
       },
       {
          "explore",
-         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save <name> | list | init <name> <bot> | replay <name> <bot> | append <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | queue <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | run <save_name> | queueclear | report | progress | classify | observe <name> | merge <first> <second> <output> | index <source> <output> | near <index> <x> <y> <z> <radius> | areas <index> <output> | area <name> <x> <y> <z> | directions <index> <output> | direction <name> <x> <y> <z> <heading> | audit <index> <x> <y> <z> | assess <index> <x> <y> <z> <heading> | trials <first> <second> <output> | corroborate <trials> <x> <y> <z> <heading> | consensus <trials> <x> <y> <z> <heading> | localize <trials> <x> <y> <z> <heading> | region <trials> <x> <y> <z> <heading> | span <trials> <x> <y> <z> <heading> | crossings <trials> <x> <y> <z> <heading> | discover-crossings <trials> <x> <y> <z> <heading> | crossing-directions <trials> <x> <y> <z> <heading> | crossing-consensus <trials> <x> <y> <z> <heading> | clear | stop",
+         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save <name> | list | init <name> <bot> | replay <name> <bot> | append <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | queue <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | run <save_name> | queueclear | report | progress | classify | observe <name> | merge <first> <second> <output> | index <source> <output> | near <index> <x> <y> <z> <radius> | areas <index> <output> | area <name> <x> <y> <z> | directions <index> <output> | direction <name> <x> <y> <z> <heading> | audit <index> <x> <y> <z> | assess <index> <x> <y> <z> <heading> | trials <first> <second> <output> | corroborate <trials> <x> <y> <z> <heading> | consensus <trials> <x> <y> <z> <heading> | localize <trials> <x> <y> <z> <heading> | region <trials> <x> <y> <z> <heading> | span <trials> <x> <y> <z> <heading> | crossings <trials> <x> <y> <z> <heading> | discover-crossings <trials> <x> <y> <z> <heading> | crossing-directions <trials> <x> <y> <z> <heading> | crossing-consensus <trials> <x> <y> <z> <heading> | crossing-sectors <trials> <x> <y> <z> | clear | stop",
          "Runs an admin-only bounded GoldSrc movement probe.",
          &BotControl::cmdExplore
       },

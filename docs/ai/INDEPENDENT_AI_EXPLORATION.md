@@ -481,3 +481,11 @@ Additional independent strong trials of an identical face/sign are needed for Pr
 Each source requires at least two windows of the same outcome for a strong vote; mixed or opposing evidence is Conflicted.
 Strict intersection, recorded movement sign and yaw-sector filtering are inherited from D233–D235.
 These results never authorize movement or prove collision-free traversal.
+
+## D237 — Cross-sector crossing consensus
+
+On de_dust2 use the existing trial set:
+`yb explore crossing-sectors d228_trials_02 256 2512 -92`
+The known X=256 crossing should retain one positive Progress window and one weak source, producing positive Insufficient and negative Unobserved.
+The heading-independent command reports yaw-sector bitmasks, one bit per 45-degree sector (bin 0 is bit 0), and reports an inter-sector disagreement only when Progress and candidate restriction occur for the same face and travel sign in distinct bins.
+Multiple sector observations from one source cannot establish independent corroboration; no result implies a route or GoldSrc hull clearance.

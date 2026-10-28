@@ -470,3 +470,8 @@ D235 automatic Build and Explorer CI passed at 19e44458; the user verified the X
 D235 is accepted.
 D236 adds per-face and per-axis-sign independent-source consensus using the D229 strong-source threshold, while retaining mixed, weak, empty and conflicting evidence distinctions.
 This experimental diagnostic cannot establish GoldSrc clearance or navigation permission; D236 automatic CI and gameplay verification remain pending.
+
+D236 automatic build and Explorer CI passed at a134431d; user verified a single weak positive source, unobserved negative direction and an empty bin-2 query in HLDS.
+D236 is accepted.
+D237 adds read-only multi-yaw-sector crossing consensus per physical face and travel sign, retaining a single source vote across heading changes and exposing cross-sector opposition.
+CI and Windows x86 HLDS acceptance for D237 remain pending; neither source corroboration nor a crossing implies navigation authority.

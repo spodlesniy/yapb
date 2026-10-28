@@ -3042,3 +3042,12 @@ Reuse D229's quality gate: at least two observations per strong homogeneous sour
 A mixed source or even a weak opposing source makes the directed result Conflicted; one strong source or only weak compatible sources yield Insufficient, and no observations yield Unobserved.
 The selected heading is only a 45-degree sector filter: opposing yaw, strafing, backwards movement and momentum do not invalidate an observed sign.
 A crossing carrying a restriction candidate does not imply GoldSrc contact, and even corroborated Progress is not hull-tested passability.
+
+## D237 — Cross-sector consensus for signed physical crossings
+
+D236 source consensus is filtered to one 45-degree yaw sector, so the same physical crossing can have correlated observations in different sectors without a combined diagnostic.
+Add read-only `yb explore crossing-sectors <trials> <x> <y> <z>` to evaluate strict D234 coarse-boundary crossings across all recorded yaw sectors in the same bounded 3x3x3 coarse-cell window.
+Preserve the exact 32-unit physical face and actual axis travel sign as separate aggregation keys; do not borrow evidence across adjacent faces or reverse directions.
+Count each trace source once per face and sign regardless of how many heading sectors its windows occupy, and apply D229 strong-source quality thresholds to the combined windows.
+Report progress and restriction yaw-bin masks, faces observed in multiple sectors, and opposition between different sectors for the same signed crossing; an internally mixed source still conflicts.
+The presence of distinct yaw bins does not prove distinct experiments, GoldSrc contact or safe passability, and old commands, artifacts, navigation and bot motion remain untouched.
