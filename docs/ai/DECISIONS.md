@@ -3106,3 +3106,13 @@ Accumulate Progress and restriction-candidate windows per source and exact order
 Reuse D229 source thresholds and retain Insufficient, ProgressEvidence, RestrictionEvidence and Conflicted; opposite order, signs or other pairs do not corroborate one another.
 Discard ambiguous segments using D241 and retain the bounded query and 24-pair console limit.
 No pathfinding, cross-record linking, collision validation, CSV changes or movement authorization are introduced.
+
+## D243 — Multi-sector source consensus for ordered signed fine-face pairs
+
+D242 assesses ordered directed fine-face pairs within one requested-yaw sector.
+Add read-only `yb explore fine-pair-sectors <trials> <x> <y> <z>` that combines all eight recorded yaw bins while retaining the exact ordered pair of signed fine faces.
+For each pair aggregate Progress and restriction candidate windows by trial source, never treating changing yaw, repeated windows or several records as independent sources.
+Apply the existing D229 quality gate and distinguish Insufficient, ProgressEvidence, RestrictionEvidence and Conflicted, preserving opposite pair direction and ordering.
+Report progress and restriction heading-bin masks per pair, counts of pairs observed in multiple bins and conflicts with opposed outcomes across sectors.
+Reuse D241 strict record-local sequence extraction and ambiguous edge/corner rejection, retaining a bounded 3x3x3 coarse-cell query and 24-pair console output.
+The result is diagnostic interpolation of recorded endpoints, not a collision check, a route, or authorization to move; no CSV, earlier commands or bot control is changed.

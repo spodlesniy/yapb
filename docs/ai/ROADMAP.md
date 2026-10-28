@@ -506,3 +506,8 @@ D241 automatic Build and Explorer CI passed at e989158; in HLDS the bin-1 query 
 D241 is accepted.
 D242 introduces read-only independent-source consensus for each exact directed ordered pair of fine-face crossings, without joining different recordings or interpreting a pair as a collision-checked route.
 Automatic CI and HLDS acceptance for D242 remain pending.
+
+D242 automatic Build and Explorer CI passed at fdb7ceb; HLDS confirmed exactly one ordered pair and one weak source with Insufficient consensus in heading bin 1, while bin 2 was empty.
+D242 is accepted.
+D243 extends read-only ordered directed fine-face pair consensus across all eight yaw sectors with source-deduplicated votes, sector masks and cross-sector opposition, retaining the D241 record boundary and geometry restrictions.
+Automatic CI and Windows x86 gameplay acceptance remain pending for D243; no result establishes passability or routing.

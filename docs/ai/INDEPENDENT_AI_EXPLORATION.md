@@ -540,3 +540,12 @@ The D241 fixture should show `chains=1`, `windows=1`, `pairs=1`, `sources=1`, `i
 The known ordered pair begins at `axis=0 lower=(5,77,-3) sign=+` and ends at `axis=1 lower=(6,77,-3) sign=+`.
 Run `yb explore fine-pairs d228_trials_02 256 2512 -92 90` and expect zero pairs.
 A pair is recorded endpoint interpolation, not a verified walkable link or an instruction to navigate.
+
+## D243 — Ordered fine-face pair consensus across yaw sectors
+
+Run on de_dust2:
+`yb explore fine-pair-sectors d228_trials_02 256 2512 -92`
+The known bin-1 pair from source index 2 should remain `Insufficient` with one Progress window and `progress_bins=0x02`; additional pairs may appear from other yaw bins.
+All-sector pair counts must not be assumed from bin-1 alone.
+The exact pair identity includes both fine faces, their ordering and actual travel signs; a trial source changing yaw cannot provide independent corroboration.
+No pair or sequence from interpolated endpoints is a validated GoldSrc passage or a navigation edge.
