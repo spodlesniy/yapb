@@ -14,6 +14,7 @@
 #include <aipb/explorer/engine_bridge_spatial_index.h>
 #include <aipb/explorer/engine_bridge_area_statistics.h>
 #include <aipb/explorer/engine_bridge_direction_evidence.h>
+#include <aipb/explorer/engine_bridge_mixed_evidence_audit.h>
 
 #include <ctime>
 #include <cmath>
@@ -1444,6 +1445,51 @@ int BotControl::cmdExplore () {
       }
       if (!ai::explore::classify()) {
          msg("AiPB explorer: classify requires a completed, valid trace; use init to load a recording.");
+      }
+      return BotCommandResult::Handled;
+   }
+   if (operation == "audit") {
+      if (!hasArg(forward) || !hasArg(strafe) || !hasArg(jump)
+         || !hasArg(duck) || hasArg(yaw)) {
+         return BotCommandResult::BadFormat;
+      }
+      const auto name = arg <StringRef>(forward);
+      if (!aipb::explorer::bridge::safeName(name.chars())) {
+         return BotCommandResult::BadFormat;
+      }
+      const auto parseCoordinate = [this](int parameter, double &value) {
+         const auto input = arg <StringRef>(parameter).chars();
+         char *end {};
+         value = std::strtod(input, &end);
+         return end != input && *end == '\0' && std::isfinite(value);
+      };
+      double x {}, y {}, z {};
+      if (!parseCoordinate(strafe, x) || !parseCoordinate(jump, y)
+         || !parseCoordinate(duck, z)) {
+         return BotCommandResult::BadFormat;
+      }
+      const auto directory = strings.joinPath(bstor.getRunningPath(), folders.data, "explorer");
+      const auto path = strings.joinPath(directory, strings.format("%s.spatial.csv", name));
+      aipb::explorer::bridge::SpatialIndex index {};
+      aipb::explorer::bridge::MixedEvidenceAudit audit {};
+      if (!aipb::explorer::bridge::readSpatialIndex(path.chars(), game.getMapName(), index)
+         || !aipb::explorer::bridge::auditMixedEvidence(index, x, y, z, audit)) {
+         msg("AiPB explorer: audit requires a valid same-map index and XYZ.");
+         return BotCommandResult::Handled;
+      }
+      msg("AiPB explorer: audit '%s': cell=(%d,%d,%d) headings=%d observations=%d progress=%d blocked=%d deflected=%d same_heading_conflicts=%d other_heading_opposition=%d all_classes=%d.",
+         name, audit.cell.x, audit.cell.y, audit.cell.z, audit.occupiedHeadings,
+         audit.observations, audit.progress, audit.blockedCandidates,
+         audit.deflectedCandidates, audit.sameHeadingConflicts,
+         static_cast<int>(audit.otherHeadingOpposition),
+         static_cast<int>(audit.allClassesPresent));
+      for (int bin = 0; bin < aipb::explorer::bridge::kDirectionBins; ++bin) {
+         const auto &entry = audit.headings[bin];
+         if (entry.observations > 0) {
+            msg("AiPB explorer: audit bin=%d progress=%d blocked=%d deflected=%d conflict=%d.",
+               bin, entry.progress, entry.blockedCandidates, entry.deflectedCandidates,
+               static_cast<int>(aipb::explorer::bridge::directionConflict(entry)));
+         }
       }
       return BotCommandResult::Handled;
    }
@@ -3004,7 +3050,7 @@ BotControl::BotControl () {
       },
       {
          "explore",
-         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save <name> | list | init <name> <bot> | replay <name> <bot> | append <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | queue <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | run <save_name> | queueclear | report | progress | classify | observe <name> | merge <first> <second> <output> | index <source> <output> | near <index> <x> <y> <z> <radius> | areas <index> <output> | area <name> <x> <y> <z> | directions <index> <output> | direction <name> <x> <y> <z> <heading> | clear | stop",
+         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save <name> | list | init <name> <bot> | replay <name> <bot> | append <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | queue <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | run <save_name> | queueclear | report | progress | classify | observe <name> | merge <first> <second> <output> | index <source> <output> | near <index> <x> <y> <z> <radius> | areas <index> <output> | area <name> <x> <y> <z> | directions <index> <output> | direction <name> <x> <y> <z> <heading> | audit <index> <x> <y> <z> | clear | stop",
          "Runs an admin-only bounded GoldSrc movement probe.",
          &BotControl::cmdExplore
       },

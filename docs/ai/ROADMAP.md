@@ -406,3 +406,7 @@ The same observation can count in more than one intersected cell, so these are e
 D224 passed automatic build and Explorer CI at 53b34240; the user verified an area snapshot of six de_dust2 cells containing 22 Progress postings, plus a populated-cell and an empty-cell query.
 D225 introduces map-scoped directional aggregation into eight 45-degree requested-heading sectors per spatial cell, separating same-sector Progress versus restricted candidates from opposition across different headings.
 The directional snapshot remains diagnostic evidence, not proof of blocked geometry or permission to navigate; automatic CI and user-started Windows x86 gameplay validation remain pending.
+
+D225 automatic build and Explorer CI passed at 8d7116fc, and the user confirmed zero contradictions in a six-cell, 22-posting all-Progress snapshot.
+D226 adds a read-only per-cell audit against the validated original spatial index to enumerate directional Progress, BlockedCandidate and DeflectedCandidate evidence and separately report same-heading conflicts and different-heading opposition.
+Real-world acceptance requires additional genuine restrictive GoldSrc observations to be collected and merged; automatic CI and Windows x86 gameplay acceptance remain pending.

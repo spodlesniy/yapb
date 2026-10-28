@@ -2918,3 +2918,13 @@ Report different-heading opposition separately whenever a sector's outcome categ
 Persist an immutable map-bound directional-v1 CSV with deterministic cell/bin ordering, complete counts and validation; reject mismatched map, truncated or inconsistent data.
 Expose administrator-only `yb explore directions <index> <output>` and `yb explore direction <name> <x> <y> <z> <heading>`.
 Preserve movement, raw traces, old area snapshots and the existing spatial index contract.
+
+## D226 — Inspect mixed movement evidence without inventing observations
+
+Offer administrator-only `yb explore audit <index> <x> <y> <z>` to inspect all observed heading sectors of one 128-unit 3D cell.
+Rebuild D225's directional evidence from the validated D223 spatial index so the report is grounded in original records, not editable aggregate totals.
+Report per-sector Progress, BlockedCandidate and DeflectedCandidate counts, same-sector conflicts, distinct-sector opposition and whether all three classes occur in the cell.
+Return zero counts for unexplored cells without claiming that they are free or blocked.
+Use a standalone regression with all three observation classes; do not fabricate, alter or silently relabel game observations.
+Real mixed-evidence gameplay verification must come from real probes exported with D221.1, merged using D222 and reindexed using D223.
+Keep movement, raw CSV, spatial artifact format and existing D225 outputs unchanged.

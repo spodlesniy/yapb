@@ -380,3 +380,10 @@ Query one requested heading in a cell using `yb explore direction dust2_directio
 The command reports per-sector progress, blocked and deflected counts, plus same-heading conflict and other-heading opposition separately.
 A second direction within the same spatial cell may have different observations without a same-heading contradiction.
 The existing all-Progress index should produce zero same-heading conflicts; meaningful negative evidence requires new blocked or deflected probe traces merged and indexed separately.
+
+## D226 — Audit real mixed evidence in one area
+
+Run `yb explore audit dust2_index_01 448 2464 -92` to enumerate the complete directional evidence for the corresponding spatial cell.
+The audit reports all occupied heading bins, total Progress, BlockedCandidate and DeflectedCandidate counts, same-heading conflicts and different-heading opposition.
+To verify restrictions in the game, record separate grounded 1000 ms probes toward a wall and along it, export each with `observe`, merge with the existing collection using new names, rebuild the spatial index and repeat the audit at the measured wall coordinates.
+Do not count a missing category as failure: the original collection contains only Progress, and no contact is proven by a candidate classification.
