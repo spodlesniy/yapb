@@ -475,3 +475,7 @@ D236 automatic build and Explorer CI passed at a134431d; user verified a single 
 D236 is accepted.
 D237 adds read-only multi-yaw-sector crossing consensus per physical face and travel sign, retaining a single source vote across heading changes and exposing cross-sector opposition.
 CI and Windows x86 HLDS acceptance for D237 remain pending; neither source corroboration nor a crossing implies navigation authority.
+
+D237 automatic build and Explorer CI passed at 1321f9d; the user confirmed one weak positive Progress source in yaw bin 1, no observed negative crossing and no cross-sector conflict in HLDS.
+D237 functionality is verified, but post-CI review found that the crossing-directions test command received two unintended arguments and newer test executables were omitted from the strict-warning target list.
+D237.1 corrects only CMake test wiring without changing runtime behavior; automatic Explorer CI is required for acceptance.

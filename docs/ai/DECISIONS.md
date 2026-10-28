@@ -3051,3 +3051,9 @@ Preserve the exact 32-unit physical face and actual axis travel sign as separate
 Count each trace source once per face and sign regardless of how many heading sectors its windows occupy, and apply D229 strong-source quality thresholds to the combined windows.
 Report progress and restriction yaw-bin masks, faces observed in multiple sectors, and opposition between different sectors for the same signed crossing; an internally mixed source still conflicts.
 The presence of distinct yaw bins does not prove distinct experiments, GoldSrc contact or safe passability, and old commands, artifacts, navigation and bot motion remain untouched.
+
+## D237.1 — Correct CTest command and strict-warning target registration
+
+D236 and D237 accidentally appended two new test executable names to the earlier crossing-directions CTest command rather than to the common strict-warning target list.
+Restore the earlier CTest command to only its own executable, and register both new test targets in the compiler-warning list.
+Preserve test sources, artifacts, runtime diagnostics and movement behavior; validate the correction through automatic CI.
