@@ -436,3 +436,9 @@ D230 adds a read-only 32-unit 3D subcell query over the existing D228 trials-v1 
 Use exact segment-to-subcell intersections, not solely bounding-box postings, to avoid wrongly assigning diagonal movement to nearby space.
 Preserve the coarse conflict when a smaller locality has only homogeneous evidence or none; neither local result establishes passability.
 Automatic CI and Windows x86 gameplay acceptance remain pending.
+
+D230 automatic build and Explorer CI passed at a76ced10; live de_dust2 tests separated mixed wall evidence, progress-only approach evidence, restriction-only sliding evidence, and empty space inside the original coarse conflict cell.
+D231 introduces read-only, bounded six-face connected grouping of 32-unit 3D subcells inside one 128-unit coarse cell and one requested-heading sector, using actual segment/subcell intersections.
+Only occupied homogeneous Progress-only or restriction-only subcells join a region; mixed and unobserved cells stop expansion, and opposite evidence never merges.
+Report seed, coarse and grouped source-quality status separately; region windows are unique per source record rather than repeated subcell postings.
+This is diagnostic evidence adjacency, not verified walkable connectivity or route construction; automatic CI and user-controlled Windows x86 game acceptance remain pending.

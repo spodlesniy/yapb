@@ -422,3 +422,15 @@ Using the existing immutable `d228_trials_02.trials.csv` on de_dust2, run:
 `yb explore localize d228_trials_02 5000 5000 0 0`
 The original 128-unit wall cell remains Conflicted; fine 32-unit subcells distinguish wall restriction, earlier approach Progress and later deflection while retaining conservative source-quality labels.
 The fine query counts observation segments intersecting the exact subcell; these are not proven collision surfaces or route permissions.
+
+## D231 — Neighboring homogeneous evidence regions
+
+Use the existing `d228_trials_02.trials.csv` snapshot on de_dust2:
+`yb explore region d228_trials_02 496 2464 -92 0`
+`yb explore region d228_trials_02 460 2454 -92 0`
+`yb explore region d228_trials_02 496 2505 -92 0`
+`yb explore region d228_trials_02 5000 5000 0 0`
+The wall seed is Mixed, so it must yield `cells=0`, while the approach and sliding seeds may each form different homogeneous evidence groups within the same coarse cell.
+The empty seed yields zero grouped cells and Unobserved; no source artifacts are modified.
+The reported grouped evidence windows are deduplicated by source record when segments intersect multiple fine cells.
+All groups are capped at 64 fine cells within one coarse cell and use six-face adjacency only; group formation is not proof of traversability or a waypoint path.

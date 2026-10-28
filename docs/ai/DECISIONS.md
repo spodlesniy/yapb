@@ -2974,3 +2974,16 @@ Derive each fine posting by exact inclusive segment-versus-subcell AABB intersec
 Retain the original requested-heading 45-degree sector and source-based quality thresholds, counting each window once per queried fine cell and each source at most once for evidence quality.
 Never reinterpret a fine homogeneous/empty result as a verified free or blocked region; always display the coarse result alongside it.
 Do not modify source files, artifact schemas, movement, graph, or navigation behavior.
+
+## D231 — Bounded connected regions of homogeneous observation evidence
+
+D230 fine-cell localization exposes spatially separated observations inside a coarse cell without a connected-region summary.
+Add administrator-only `yb explore region <trials> <x> <y> <z> <heading>` over validated D228 trials-v1 snapshots, retaining the original requested-heading sector, D229 coarse status and D230-style fine evidence.
+Within the queried 128-unit coarse cell, inspect its 4x4x4 32-unit subcells using exact segment-to-AABB intersection; do not expand outside those 64 cells in this step.
+Treat a fine cell as ProgressOnly when it contains progress and no restriction observations, RestrictionOnly for restrictions without progress, Mixed when both exist, and Unobserved otherwise.
+Run a deterministic six-face flood fill from a homogeneous observed seed, joining only cells of the exact same polarity; corners and edges do not connect, and mixed, empty and opposing cells remain boundaries.
+For mixed or unobserved seeds, report zero grouped cells rather than manufacturing a homogeneous region.
+Report bounding coordinates and counts of terminating boundary *faces* by cause (mixed, unobserved, opposite, coarse-edge), not distinct boundary cell counts.
+Recompute the grouped source-quality consensus from unique per-source window records intersecting any member cell, rather than summing per-cell counts that repeat segments; retain the D229 two-strong-source requirement.
+Do not claim adjacency of evidence cells proves actual continuous safe geometry, reachability, collision, traversability or navigation permission.
+Do not alter trials, spatial index, observation schemas, bot movement or graph state.
