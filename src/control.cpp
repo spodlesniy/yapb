@@ -12,6 +12,7 @@
 #include <aipb/explorer/engine_bridge_trace_io.h>
 #include <aipb/explorer/engine_bridge_observation_collection.h>
 #include <aipb/explorer/engine_bridge_spatial_index.h>
+#include <aipb/explorer/engine_bridge_area_statistics.h>
 
 #include <ctime>
 #include <cmath>
@@ -1442,6 +1443,65 @@ int BotControl::cmdExplore () {
       }
       if (!ai::explore::classify()) {
          msg("AiPB explorer: classify requires a completed, valid trace; use init to load a recording.");
+      }
+      return BotCommandResult::Handled;
+   }
+   if (operation == "areas" || operation == "area") {
+      const auto directory = strings.joinPath(bstor.getRunningPath(), folders.data, "explorer");
+      if (operation == "areas") {
+         if (!hasArg(forward) || !hasArg(strafe) || hasArg(jump)) {
+            return BotCommandResult::BadFormat;
+         }
+         const auto source = arg <StringRef>(forward);
+         const auto output = arg <StringRef>(strafe);
+         if (!aipb::explorer::bridge::safeName(source.chars())
+            || !aipb::explorer::bridge::safeName(output.chars())) {
+            return BotCommandResult::BadFormat;
+         }
+         const auto sourcePath = strings.joinPath(directory, strings.format("%s.spatial.csv", source));
+         const auto outputPath = strings.joinPath(directory, strings.format("%s.areas.csv", output));
+         aipb::explorer::bridge::AreaStatisticsReport report {};
+         if (!aipb::explorer::bridge::writeAreaStatistics(sourcePath.chars(),
+            outputPath.chars(), game.getMapName(), report)) {
+            msg("AiPB explorer: cannot aggregate areas (invalid index, map, or output).");
+         }
+         else {
+            msg("AiPB explorer: areas '%s': cells=%d observations=%d progress=%d blocked=%d deflected=%d.",
+               output, report.cells, report.observations, report.progress,
+               report.blockedCandidates, report.deflectedCandidates);
+         }
+         return BotCommandResult::Handled;
+      }
+      if (!hasArg(forward) || !hasArg(strafe) || !hasArg(jump)
+         || !hasArg(duck) || hasArg(yaw)) {
+         return BotCommandResult::BadFormat;
+      }
+      const auto name = arg <StringRef>(forward);
+      if (!aipb::explorer::bridge::safeName(name.chars())) {
+         return BotCommandResult::BadFormat;
+      }
+      const auto parseCoordinate = [this](int parameter, double &value) {
+         const auto input = arg <StringRef>(parameter).chars();
+         char *end {};
+         value = std::strtod(input, &end);
+         return end != input && *end == '\0' && std::isfinite(value);
+      };
+      double x {}, y {}, z {};
+      if (!parseCoordinate(strafe, x) || !parseCoordinate(jump, y)
+         || !parseCoordinate(duck, z)) {
+         return BotCommandResult::BadFormat;
+      }
+      const auto path = strings.joinPath(directory, strings.format("%s.areas.csv", name));
+      aipb::explorer::bridge::AreaStatistics statistics {};
+      aipb::explorer::bridge::AreaEvidence result {};
+      if (!aipb::explorer::bridge::readAreaStatistics(path.chars(), game.getMapName(), statistics)
+         || !aipb::explorer::bridge::queryAreaStatistics(statistics, x, y, z, result)) {
+         msg("AiPB explorer: invalid area statistics, map, or coordinates.");
+      }
+      else {
+         msg("AiPB explorer: area '%s': cell=(%d,%d,%d) observations=%d progress=%d blocked=%d deflected=%d.",
+            name, result.cell.x, result.cell.y, result.cell.z, result.observations,
+            result.progress, result.blockedCandidates, result.deflectedCandidates);
       }
       return BotCommandResult::Handled;
    }
@@ -2879,7 +2939,7 @@ BotControl::BotControl () {
       },
       {
          "explore",
-         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save <name> | list | init <name> <bot> | replay <name> <bot> | append <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | queue <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | run <save_name> | queueclear | report | progress | classify | observe <name> | merge <first> <second> <output> | index <source> <output> | near <index> <x> <y> <z> <radius> | clear | stop",
+         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save <name> | list | init <name> <bot> | replay <name> <bot> | append <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | queue <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | run <save_name> | queueclear | report | progress | classify | observe <name> | merge <first> <second> <output> | index <source> <output> | near <index> <x> <y> <z> <radius> | areas <index> <output> | area <name> <x> <y> <z> | clear | stop",
          "Runs an admin-only bounded GoldSrc movement probe.",
          &BotControl::cmdExplore
       },

@@ -398,3 +398,7 @@ This stage does not infer spatial equivalence, change GoldSrc movement, or alter
 D222 passed automatic build and Explorer CI on edb2e4ee; user supplied two same-map collections confirming exact deduplication and accumulation from nine to eighteen unique progress observations.
 D223 adds a deterministic, map-bound 3D spatial index over validated observation collections, indexing each recorded movement segment across the cells of its axis-aligned bounds.
 The index is an immutable auxiliary file with verified postings and a bounded read-only near query; automatic CI and user-started Windows x86 gameplay acceptance remain pending.
+
+D223 automatic build and Explorer CI passed on ef460f25; the user verified a de_dust2 spatial index containing 18 records, 6 cells and 22 postings, with a seven-match near query.
+D224 introduces read-only per-cell counts of Progress, BlockedCandidate and DeflectedCandidate evidence derived from the validated D223 posting table, persisted in a separate map-bound area-statistics snapshot.
+The same observation can count in more than one intersected cell, so these are evidence postings rather than independent trials or proof of traversability; automatic CI and Windows x86 game acceptance remain pending.

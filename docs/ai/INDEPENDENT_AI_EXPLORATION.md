@@ -365,3 +365,10 @@ Use `yb explore near dust2_index_01 448 2464 -92 128` to count observed movement
 The index stores the map name, 128-unit grid resolution, records and cell postings with deterministic ordering and exact point-to-segment filtering at query time.
 The command reports the number of matching records and the nearest record's zero-based index and distance; a no-match result uses `nearest_record=-1`.
 Inputs and output files are not overwritten, and the index does not label space traversable or select a route.
+
+## D224 — Aggregate spatial movement evidence
+
+After creating a D223 index, run `yb explore areas dust2_index_01 dust2_areas_01` to write a separate immutable `data/explorer/dust2_areas_01.areas.csv`.
+Use `yb explore area dust2_areas_01 448 2464 -92` to inspect the exact 128-unit 3D grid cell containing that point.
+The command reports cell coordinates and independent counters for Progress, BlockedCandidate and DeflectedCandidate observation postings; an unobserved cell reports zeros.
+A single segment may be counted in several cells, and no counter implies verified collision or safe navigation.

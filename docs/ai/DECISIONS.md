@@ -2896,3 +2896,13 @@ Persist an immutable `aipb-explorer-spatial-index-v1` artifact with map, cell si
 Expose `yb explore index <source> <output>` and `yb explore near <index> <x> <y> <z> <radius>` with current-map validation and radius restricted to 1–512 GoldSrc units.
 Search nearby cells and calculate the true 3D point-to-segment distance after candidate deduplication, returning count and a stable nearest-record identifier without editing or acting on observations.
 The grid is an acceleration structure for diagnostic evidence, not a collision map, waypoint graph, or automatic route planner.
+
+## D224 — Aggregate confirmed observation evidence per spatial cell
+
+Derive per-cell evidence counts directly from validated D223 spatial index postings, preserving the fixed 128-unit XYZ cell definition.
+Count each unique observation posting once per cell; one observed segment may contribute to multiple intersected cells.
+Track total observation postings and separate Progress, BlockedCandidate and DeflectedCandidate counts without computing a false probabilistic passability score.
+Create an immutable map-scoped `aipb-explorer-area-statistics-v1` CSV containing source record/posting counts and sorted cell statistics, without modifying source index or collection.
+Check every declared count, sorted cell order, totals and file completeness on read; invalid files must not overwrite a caller's previous result.
+Expose administrator-only `yb explore areas <index> <output>` and `yb explore area <name> <x> <y> <z>`; the latter reports zero counts for unobserved cells.
+Keep diagnostic statistics separate from graph generation, action selection and collision authority.
