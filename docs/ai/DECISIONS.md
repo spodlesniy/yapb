@@ -2987,3 +2987,14 @@ Report bounding coordinates and counts of terminating boundary *faces* by cause 
 Recompute the grouped source-quality consensus from unique per-source window records intersecting any member cell, rather than summing per-cell counts that repeat segments; retain the D229 two-strong-source requirement.
 Do not claim adjacency of evidence cells proves actual continuous safe geometry, reachability, collision, traversability or navigation permission.
 Do not alter trials, spatial index, observation schemas, bot movement or graph state.
+
+## D232 — Bounded cross-cell evidence span
+
+D231 intentionally stops homogeneous 32-unit regions at the enclosing 128-unit cell boundary, potentially splitting observed evidence between adjacent coarse cells.
+Introduce administrator-only `yb explore span <trials> <x> <y> <z> <heading>`, preserving D231 six-face polarity matching, Mixed and Unobserved barriers, 45-degree requested heading and D229 per-source quality thresholds.
+Restrict the query to exactly 3x3x3 coarse cells centered on the seed coarse cell (12 fine cells per axis), rejecting excessive candidate work rather than returning a silently incomplete region.
+Scan source-trace segments using exact 3D segment/subcell intersection, with a finite candidate budget, and construct only observed fine-cell entries; do not assume axis-aligned bounding boxes imply real segment crossings.
+Report distinct coarse cells occupied, member fine cells, fine bounds, window-edge boundary faces and per-source unique record counts; no window is counted twice when intersecting several fine cells.
+Preserve original coarse-cell consensus separately and return zero members for Mixed or Unobserved seeds.
+A bounded edge is not necessarily a true region boundary outside the query window, and observed face adjacency does not establish collision-free traversal, connectivity or route permissions.
+Do not change original CSVs, bot movement, navigation, or prior commands.

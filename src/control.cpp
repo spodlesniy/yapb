@@ -20,6 +20,7 @@
 #include <aipb/explorer/engine_bridge_source_consensus.h>
 #include <aipb/explorer/engine_bridge_spatial_localization.h>
 #include <aipb/explorer/engine_bridge_spatial_regions.h>
+#include <aipb/explorer/engine_bridge_cross_cell_regions.h>
 
 #include <ctime>
 #include <cmath>
@@ -1450,6 +1451,57 @@ int BotControl::cmdExplore () {
       }
       if (!ai::explore::classify()) {
          msg("AiPB explorer: classify requires a completed, valid trace; use init to load a recording.");
+      }
+      return BotCommandResult::Handled;
+   }
+   if (operation == "span") {
+      if (!hasArg(forward) || !hasArg(strafe) || !hasArg(jump)
+         || !hasArg(duck) || !hasArg(yaw) || hasArg(frames)) {
+         return BotCommandResult::BadFormat;
+      }
+      const auto name = arg <StringRef>(forward);
+      if (!aipb::explorer::bridge::safeName(name.chars())) {
+         return BotCommandResult::BadFormat;
+      }
+      const auto parse = [this](int position, double &value) {
+         const auto input = arg <StringRef>(position).chars();
+         char *end {};
+         value = std::strtod(input, &end);
+         return end != input && *end == '\0' && std::isfinite(value);
+      };
+      double x {}, y {}, z {}, heading {};
+      if (!parse(strafe, x) || !parse(jump, y) || !parse(duck, z) || !parse(yaw, heading)) {
+         return BotCommandResult::BadFormat;
+      }
+      const auto directory = strings.joinPath(bstor.getRunningPath(), folders.data, "explorer");
+      const auto path = strings.joinPath(directory, strings.format("%s.trials.csv", name));
+      aipb::explorer::bridge::EvidenceTrialSet trials {};
+      aipb::explorer::bridge::CrossCellRegion report {};
+      if (!aipb::explorer::bridge::readEvidenceTrialSet(path.chars(), game.getMapName(), trials)
+         || !aipb::explorer::bridge::spanSourceEvidence(trials, x, y, z, heading, report)) {
+         msg("AiPB explorer: cannot span source evidence.");
+      }
+      else {
+         msg("AiPB explorer: span '%s': coarse=(%d,%d,%d) seed=(%d,%d,%d) bin=%d coarse_status=%s seed_kind=%s seed_status=%s cells=%d coarse_cells=%d region_status=%s.",
+            name, report.seedCoarse.x, report.seedCoarse.y, report.seedCoarse.z,
+            report.seedCell.x, report.seedCell.y, report.seedCell.z, report.headingBin,
+            aipb::explorer::bridge::directionAssessmentName(report.coarse.status),
+            aipb::explorer::bridge::regionEvidenceName(report.seedKind),
+            aipb::explorer::bridge::directionAssessmentName(report.seed.status),
+            report.memberCells, report.coarseCells,
+            aipb::explorer::bridge::directionAssessmentName(report.region.status));
+         if (report.memberCells > 0) {
+            msg("AiPB explorer: span bounds=(%d,%d,%d)..(%d,%d,%d) sources=%d observed=%d weak=%d strong_progress=%d strong_restriction=%d mixed=%d unique_windows=%d progress=%d blocked=%d deflected=%d.",
+               report.minCell.x, report.minCell.y, report.minCell.z,
+               report.maxCell.x, report.maxCell.y, report.maxCell.z,
+               report.region.sources, report.region.observedSources, report.region.weakSources,
+               report.region.strongProgressSources, report.region.strongRestrictionSources,
+               report.region.mixedSources, report.region.windows, report.region.progress,
+               report.region.blockedCandidates, report.region.deflectedCandidates);
+            msg("AiPB explorer: span boundary_faces mixed=%d unobserved=%d opposite=%d window_edge=%d.",
+               report.boundaryMixed, report.boundaryUnobserved, report.boundaryOpposite,
+               report.boundaryWindowEdge);
+         }
       }
       return BotCommandResult::Handled;
    }
@@ -3292,7 +3344,7 @@ BotControl::BotControl () {
       },
       {
          "explore",
-         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save <name> | list | init <name> <bot> | replay <name> <bot> | append <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | queue <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | run <save_name> | queueclear | report | progress | classify | observe <name> | merge <first> <second> <output> | index <source> <output> | near <index> <x> <y> <z> <radius> | areas <index> <output> | area <name> <x> <y> <z> | directions <index> <output> | direction <name> <x> <y> <z> <heading> | audit <index> <x> <y> <z> | assess <index> <x> <y> <z> <heading> | trials <first> <second> <output> | corroborate <trials> <x> <y> <z> <heading> | consensus <trials> <x> <y> <z> <heading> | localize <trials> <x> <y> <z> <heading> | region <trials> <x> <y> <z> <heading> | clear | stop",
+         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save <name> | list | init <name> <bot> | replay <name> <bot> | append <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | queue <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | run <save_name> | queueclear | report | progress | classify | observe <name> | merge <first> <second> <output> | index <source> <output> | near <index> <x> <y> <z> <radius> | areas <index> <output> | area <name> <x> <y> <z> | directions <index> <output> | direction <name> <x> <y> <z> <heading> | audit <index> <x> <y> <z> | assess <index> <x> <y> <z> <heading> | trials <first> <second> <output> | corroborate <trials> <x> <y> <z> <heading> | consensus <trials> <x> <y> <z> <heading> | localize <trials> <x> <y> <z> <heading> | region <trials> <x> <y> <z> <heading> | span <trials> <x> <y> <z> <heading> | clear | stop",
          "Runs an admin-only bounded GoldSrc movement probe.",
          &BotControl::cmdExplore
       },

@@ -434,3 +434,13 @@ The wall seed is Mixed, so it must yield `cells=0`, while the approach and slidi
 The empty seed yields zero grouped cells and Unobserved; no source artifacts are modified.
 The reported grouped evidence windows are deduplicated by source record when segments intersect multiple fine cells.
 All groups are capped at 64 fine cells within one coarse cell and use six-face adjacency only; group formation is not proof of traversability or a waypoint path.
+
+## D232 — Bounded spans across coarse-cell boundaries
+
+Using the existing immutable trials snapshot on de_dust2, run:
+`yb explore span d228_trials_02 460 2454 -92 0`
+`yb explore span d228_trials_02 496 2464 -92 0`
+`yb explore span d228_trials_02 5000 5000 0 0`
+Compare the first result to `yb explore region d228_trials_02 460 2454 -92 0`; a span may extend across coarse-cell boundaries only where neighboring observed homogeneous fine cells exist.
+The wall Mixed seed and unobserved seed must have zero member cells.
+A span is a bounded diagnostic region, not collision authority or a path.

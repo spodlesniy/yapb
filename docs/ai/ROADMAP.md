@@ -442,3 +442,8 @@ D231 introduces read-only, bounded six-face connected grouping of 32-unit 3D sub
 Only occupied homogeneous Progress-only or restriction-only subcells join a region; mixed and unobserved cells stop expansion, and opposite evidence never merges.
 Report seed, coarse and grouped source-quality status separately; region windows are unique per source record rather than repeated subcell postings.
 This is diagnostic evidence adjacency, not verified walkable connectivity or route construction; automatic CI and user-controlled Windows x86 game acceptance remain pending.
+
+D231 automatic build and Explorer CI passed at e3f9db17; user verified mixed, progress-only, restriction-only and unobserved seeds on de_dust2, including unique per-source region windows and boundary face counts.
+D232 introduces a read-only six-face evidence span across 128-unit coarse-cell boundaries, restricted to a fixed 3x3x3 coarse-cell query window (12x12x12 fine cells).
+Existing D229 source-quality rules remain unchanged; the search uses exact segment/fine-cell intersection, unique per-source window consolidation and explicit window-edge boundaries.
+This is diagnostic grouping only, without navigation, inferred safety or global map coverage; automatic CI and Windows x86 gameplay acceptance remain pending.
