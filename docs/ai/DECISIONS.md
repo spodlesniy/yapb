@@ -2886,3 +2886,13 @@ Bound the collection to 16384 unique rows and reject truncated, corrupt, mismatc
 Create a new `aipb-explorer-collection-v1` CSV through exclusive creation, with a map and row count header and unchanged observation-v2 columns; never overwrite an existing file or modify sources.
 Allow a collection snapshot as input so repeated commands can accumulate multiple experiments without retaining all data in the game DLL.
 Keep this feature read-only with respect to bot movement, replay and the navigation graph; collision candidates remain unverified evidence.
+
+## D223 — Map-bound three-dimensional observation lookup
+
+Index the validated D222 observation rows without modifying collection CSV or claiming navigability.
+Use fixed 128-unit XYZ grid cells, indexing all cells in the axis-aligned bounds of each observed start/end segment rather than only its endpoints or midpoint.
+Bound each source segment to 64 postings, all postings to 131072 and input observations to the existing 16384-record collection cap, rejecting pathological geometry or excess index size.
+Persist an immutable `aipb-explorer-spatial-index-v1` artifact with map, cell size, canonical record rows and deterministically sorted cell/record postings; readers reconstruct and compare the posting table to reject corrupt or inconsistent files.
+Expose `yb explore index <source> <output>` and `yb explore near <index> <x> <y> <z> <radius>` with current-map validation and radius restricted to 1–512 GoldSrc units.
+Search nearby cells and calculate the true 3D point-to-segment distance after candidate deduplication, returning count and a stable nearest-record identifier without editing or acting on observations.
+The grid is an acceleration structure for diagnostic evidence, not a collision map, waypoint graph, or automatic route planner.

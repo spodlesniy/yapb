@@ -357,3 +357,11 @@ For example `yb explore merge wall_slide_03 wall_slide_04 dust2_collection_01` f
 The result stores map identity, unique observation row count and the same observation columns; identical normalized records are only included once.
 Inputs are never modified and output files cannot be overwritten.
 Do not treat spatially similar movements as duplicates, nor these records as a verified navigation mesh.
+
+## D223 — Spatial index of observation evidence
+
+After D222 creates a collection, run `yb explore index collection_02 dust2_index_01` to create `data/explorer/dust2_index_01.spatial.csv`.
+Use `yb explore near dust2_index_01 448 2464 -92 128` to count observed movement segments within 128 GoldSrc units of a world-space XYZ coordinate.
+The index stores the map name, 128-unit grid resolution, records and cell postings with deterministic ordering and exact point-to-segment filtering at query time.
+The command reports the number of matching records and the nearest record's zero-based index and distance; a no-match result uses `nearest_record=-1`.
+Inputs and output files are not overwritten, and the index does not label space traversable or select a route.

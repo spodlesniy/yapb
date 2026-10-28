@@ -394,3 +394,7 @@ The observation artifact is versioned as v2 with explicit direct, retrospective,
 D221.1 passed standalone Explorer CI at 363bf031, and the user verified that exported wall-slide observations include the retrospective first window without a gap.
 D222 adds explicit same-map merging of independent observation CSV v2 files or prior merged collections into a new immutable snapshot, validating every row and suppressing canonical exact duplicates.
 This stage does not infer spatial equivalence, change GoldSrc movement, or alter trajectory CSV v2; automatic CI and manual game acceptance remain pending.
+
+D222 passed automatic build and Explorer CI on edb2e4ee; user supplied two same-map collections confirming exact deduplication and accumulation from nine to eighteen unique progress observations.
+D223 adds a deterministic, map-bound 3D spatial index over validated observation collections, indexing each recorded movement segment across the cells of its axis-aligned bounds.
+The index is an immutable auxiliary file with verified postings and a bounded read-only near query; automatic CI and user-started Windows x86 gameplay acceptance remain pending.

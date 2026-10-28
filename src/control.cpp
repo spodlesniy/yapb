@@ -11,6 +11,7 @@
 #include <aipb/explorer/engine_bridge_math.h>
 #include <aipb/explorer/engine_bridge_trace_io.h>
 #include <aipb/explorer/engine_bridge_observation_collection.h>
+#include <aipb/explorer/engine_bridge_spatial_index.h>
 
 #include <ctime>
 #include <cmath>
@@ -1444,6 +1445,65 @@ int BotControl::cmdExplore () {
       }
       return BotCommandResult::Handled;
    }
+   if (operation == "index" || operation == "near") {
+      if (operation == "index") {
+         if (!hasArg(forward) || !hasArg(strafe) || hasArg(jump)) {
+            return BotCommandResult::BadFormat;
+         }
+         const auto source = arg <StringRef>(forward);
+         const auto output = arg <StringRef>(strafe);
+         if (!aipb::explorer::bridge::safeName(source.chars())
+            || !aipb::explorer::bridge::safeName(output.chars())) {
+            msg("AiPB explorer: invalid spatial index name.");
+            return BotCommandResult::Handled;
+         }
+         const auto directory = strings.joinPath(bstor.getRunningPath(), folders.data, "explorer");
+         const auto sourcePath = strings.joinPath(directory, strings.format("%s.observations.csv", source));
+         const auto outputPath = strings.joinPath(directory, strings.format("%s.spatial.csv", output));
+         aipb::explorer::bridge::SpatialIndexReport report {};
+         if (!aipb::explorer::bridge::writeSpatialIndex(sourcePath.chars(), outputPath.chars(),
+            game.getMapName(), report)) {
+            msg("AiPB explorer: cannot build spatial index (input, map, size, or output invalid).");
+         }
+         else {
+            msg("AiPB explorer: spatial index '%s': records=%d cells=%d postings=%d.",
+               output, report.records, report.cells, report.postings);
+         }
+         return BotCommandResult::Handled;
+      }
+      if (!hasArg(forward) || !hasArg(strafe) || !hasArg(jump)
+         || !hasArg(duck) || !hasArg(yaw) || hasArg(frames)) {
+         return BotCommandResult::BadFormat;
+      }
+      const auto name = arg <StringRef>(forward);
+      if (!aipb::explorer::bridge::safeName(name.chars())) {
+         return BotCommandResult::BadFormat;
+      }
+      const auto parseCoordinate = [this](int parameter, double &value) {
+         const auto input = arg <StringRef>(parameter).chars();
+         char *end {};
+         value = std::strtod(input, &end);
+         return end != input && *end == '\0' && std::isfinite(value);
+      };
+      double x {}, y {}, z {}, radius {};
+      if (!parseCoordinate(strafe, x) || !parseCoordinate(jump, y)
+         || !parseCoordinate(duck, z) || !parseCoordinate(yaw, radius)) {
+         return BotCommandResult::BadFormat;
+      }
+      const auto directory = strings.joinPath(bstor.getRunningPath(), folders.data, "explorer");
+      const auto path = strings.joinPath(directory, strings.format("%s.spatial.csv", name));
+      aipb::explorer::bridge::SpatialIndex index {};
+      aipb::explorer::bridge::SpatialQueryResult report {};
+      if (!aipb::explorer::bridge::readSpatialIndex(path.chars(), game.getMapName(), index)
+         || !aipb::explorer::bridge::searchSpatialIndex(index, x, y, z, radius, report)) {
+         msg("AiPB explorer: invalid spatial index, map, or query.");
+      }
+      else {
+         msg("AiPB explorer: near '%s': matches=%d nearest_record=%d distance=%.2f.",
+            name, report.matches, report.nearestRecord, report.nearestDistance);
+      }
+      return BotCommandResult::Handled;
+   }
    if (operation == "merge") {
       if (!hasArg(forward) || !hasArg(strafe) || !hasArg(jump) || hasArg(duck)) {
          return BotCommandResult::BadFormat;
@@ -2819,7 +2879,7 @@ BotControl::BotControl () {
       },
       {
          "explore",
-         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save <name> | list | init <name> <bot> | replay <name> <bot> | append <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | queue <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | run <save_name> | queueclear | report | progress | classify | observe <name> | merge <first> <second> <output> | clear | stop",
+         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save <name> | list | init <name> <bot> | replay <name> <bot> | append <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | queue <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | run <save_name> | queueclear | report | progress | classify | observe <name> | merge <first> <second> <output> | index <source> <output> | near <index> <x> <y> <z> <radius> | clear | stop",
          "Runs an admin-only bounded GoldSrc movement probe.",
          &BotControl::cmdExplore
       },
