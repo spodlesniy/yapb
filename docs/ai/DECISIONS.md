@@ -2954,3 +2954,14 @@ Each name is a user-supplied source identifier, not a cryptographically certifie
 Provide `yb explore corroborate <trials> <x> <y> <z> <heading>` that counts at most one Progress vote and one restriction vote per trace in the chosen 128-unit cell and 45-degree heading sector, alongside raw windows.
 Unobserved means no source has evidence; a single-source homogeneous result stays Insufficient even with many windows; at least two Progress-only sources yield ProgressEvidence; at least two restriction-only sources yield RestrictionEvidence; a mix anywhere in the requested sector yields Conflicted.
 All outcomes remain diagnostic candidates rather than confidence probabilities, confirmed collision or navigation permissions.
+
+## D229 — Separate source quality from correlated window volume
+
+D228 preserves source-trace boundaries but treats a one-window source equal to a multi-window source in homogeneous corroboration.
+Introduce read-only `yb explore consensus <trials> <x> <y> <z> <heading>` over validated trials-v1 snapshots.
+Count each source at most once in each of weak, strong-progress, strong-restriction or mixed categories for the queried cell and direction.
+A homogeneous source is strong only with at least two observed windows in the requested cell and sector.
+An internally mixed source is Conflicted even with one window of either outcome and cannot count as a strong homogeneous source.
+Any Progress/restriction opposition across sources is Conflicted, including weak evidence; a lone weak source cannot overturn the lack of information into corroborated evidence.
+At least two strong homogeneous sources without opposition are required for a homogeneous evidence label; retain raw counts as diagnostic context only.
+Do not infer source independence from trace labels, confidence probabilities, collision truth, passability, navigation graphs or bot actions.

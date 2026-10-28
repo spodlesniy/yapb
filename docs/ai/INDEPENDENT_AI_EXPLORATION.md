@@ -404,3 +404,11 @@ The report separates `sources`, `observed_sources`, `progress_sources`, `restric
 Continue with `yb explore trials d228_trials_01 d226_slide d228_trials_02` for another raw trace; files never overwrite prior snapshots.
 Original collection-v1 and spatial-v1 lack source provenance and cannot be converted into independently sourced trials.
 Source names are administrative declarations; the system rejects exact overlapping rows but cannot prove trials were conducted independently.
+
+## D229 — Source-quality consensus
+
+Inspect existing D228 source snapshot without creating new files:
+`yb explore consensus d228_trials_02 496 2464 -92 0`.
+Expected status is Conflicted: the wall source contains only restrictions, the deflected trace is internally mixed, and the slide trace has no evidence in this cell.
+Inspect empty space with `yb explore consensus d228_trials_02 5000 5000 0 0`; expect Unobserved.
+The output separates strong homogeneous, weak and mixed sources; neither count of windows nor 45-degree bin membership alone proves collision or a safe route.

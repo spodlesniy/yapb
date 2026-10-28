@@ -425,3 +425,8 @@ D228 introduces explicitly named source-trace grouping in a separate immutable t
 Per-direction evidence classification now counts distinct supplied trace sources, not consecutive windows; two agreeing sources are required for homogeneous evidence, and any opposed source evidence remains Conflicted.
 The sources are distinct trace files rather than scientifically verified independent trials; repeat exports and overlapping canonical rows are rejected, without modifying old observation/index artifacts.
 Automatic CI and user-controlled Windows x86 acceptance remain required.
+
+D228 passed automatic build and Explorer CI on 4ff81532; the user verified two- and three-source corroboration on de_dust2, including an irrelevant third source that did not change observed-source counts.
+D229 adds read-only per-direction source-quality consensus over D228 trials-v1 provenance, distinguishing weak (one window), corroborated homogeneous (at least two windows per source), and internally mixed sources.
+Any Progress/restriction opposition remains Conflicted regardless of relative window counts; two homogeneous qualifying sources are required for ProgressEvidence or RestrictionEvidence, with no probability or movement authorization.
+Automatic CI and user-controlled Windows x86 gameplay acceptance remain pending.
