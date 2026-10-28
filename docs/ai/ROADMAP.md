@@ -363,3 +363,7 @@ Production Windows x86 compilation and live AWP/M249 pickup/replay checks remain
 D218.1 addresses an observed MSVC x86 `/WX` build failure C1060 during `TrainingBuffer` default-constructor generation while compiling `src/ai/ai_navvis.cpp`.
 Five fixed-capacity training/event arrays move from inline object storage to individually lazy allocated arrays, retaining fixed capacity, contiguous read-only access, counters, compaction and existing dataset schema.
 A unit regression checks the compact descriptor and allocation/release/reuse lifecycle; full target Windows x86 confirmation remains user-controlled and pending.
+
+D218.2 fixes the confirmed GCC 13 unit-test build regression in D218.1: the public training recorder header exposed STL placement-new declarations before the legacy crlib allocator.
+All five fixed-capacity stores retain lazy, nothrow, value-initialized allocation and release through a separate allocation-only translation unit that is linked into both the game DLL and standalone AI tests.
+The D218.1 automatic run 40624591326 failed during `src/ai/ai_training_dataset.cpp` compilation; D218.2 automatic CI and user-started Windows x86 compilation remain required before D218 gameplay acceptance.

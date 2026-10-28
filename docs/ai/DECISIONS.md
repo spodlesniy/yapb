@@ -2803,3 +2803,11 @@ The training transition `data()` still provides contiguous storage once a transi
 Disable implicit copy of the owning buffer, preserving its singleton/shared-reference semantics and preventing unintended deep copies.
 The fix targets compiler memory pressure and does not change training record capacity, compaction rules or serialized dataset format.
 MSVC x86 manual build is required for final acceptance.
+
+## D218.2 — Isolate training record allocation from crlib placement new
+
+The D218.1 public recorder header pulled `<memory>` and `<new>` into the standalone training dataset writer before `crlib/files.h`, causing GCC 13 to reject duplicate placement `operator new` declarations.
+Keep each fixed-capacity, compact, single-owner training/event store but replace its public STL ownership dependency with a minimal noncopyable typed owner that releases its allocation with `delete[]`.
+Explicitly instantiate the five nothrow, value-initialized array allocators in an engine-independent `src/ai/ai_training_buffer_storage.cpp` that never includes crlib or `yapb.h`.
+Link this translation unit into the game DLL and standalone unit test target, and extend the include-order regression to guard the allocation boundary.
+Preserve all existing append, clear, reset, overflow, compaction and JSONL contracts, and require automatic Linux AI CI plus the user-started Windows x86 build for validation.

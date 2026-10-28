@@ -10,8 +10,6 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <memory>
-#include <new>
 
 #include <ai/ai_action_result.h>
 #include <ai/ai_aim_event.h>
@@ -20,6 +18,41 @@
 #include <ai/ai_navigation_event.h>
 
 namespace ai {
+
+// The allocator is defined in its own translation unit so this public header
+// never combines STL placement-new declarations with crlib's placement new.
+template <typename T>
+T *allocateTrainingRecords(size_t capacity) noexcept;
+
+// Owns a fixed-capacity stream while keeping the descriptor small.
+template <typename T>
+class LazyTrainingArray final {
+private:
+  T *m_data {};
+
+public:
+  LazyTrainingArray() = default;
+  ~LazyTrainingArray() { delete[] m_data; }
+  LazyTrainingArray(const LazyTrainingArray &) = delete;
+  LazyTrainingArray &operator=(const LazyTrainingArray &) = delete;
+
+  bool ensure(size_t capacity) {
+    if (!m_data) {
+      m_data = allocateTrainingRecords<T>(capacity);
+    }
+    return m_data != nullptr;
+  }
+
+  void reset() {
+    delete[] m_data;
+    m_data = nullptr;
+  }
+
+  explicit operator bool() const { return m_data != nullptr; }
+  T *get() const { return m_data; }
+  T &operator[](size_t index) const { return m_data[index]; }
+};
+
 
 constexpr size_t kTrainingTransitionCapacity = 1024;
 constexpr size_t kTrainingCombatEventCapacity = 4096;
@@ -48,11 +81,11 @@ class TrainingBuffer final {
 private:
   // Allocate large recording stores only when they first receive data.
   // Keeping them in the object forces MSVC x86 to expand a huge constructor.
-  std::unique_ptr<TrainingTransition[]> m_transitions {};
-  std::unique_ptr<CombatEvent[]> m_combatEvents {};
-  std::unique_ptr<NavigationEvent[]> m_navigationEvents {};
-  std::unique_ptr<DefuseEvent[]> m_defuseEvents {};
-  std::unique_ptr<AimEvent[]> m_aimEvents {};
+  LazyTrainingArray<TrainingTransition> m_transitions {};
+  LazyTrainingArray<CombatEvent> m_combatEvents {};
+  LazyTrainingArray<NavigationEvent> m_navigationEvents {};
+  LazyTrainingArray<DefuseEvent> m_defuseEvents {};
+  LazyTrainingArray<AimEvent> m_aimEvents {};
   size_t m_aimEventCount {}, m_droppedAimEvents {};
   size_t m_defuseEventCount {};
   size_t m_droppedDefuseEvents {};
@@ -98,7 +131,7 @@ public:
     }
 
     if (!m_transitions) {
-      m_transitions.reset(new (std::nothrow) TrainingTransition[kTrainingTransitionCapacity] {});
+      m_transitions.ensure(kTrainingTransitionCapacity);
 
       if (!m_transitions) {
         ++m_droppedTransitions;
@@ -126,7 +159,7 @@ public:
       return false;
     }
     if (!m_combatEvents) {
-      m_combatEvents.reset(new (std::nothrow) CombatEvent[kTrainingCombatEventCapacity] {});
+      m_combatEvents.ensure(kTrainingCombatEventCapacity);
 
       if (!m_combatEvents) {
         ++m_droppedCombatEvents;
@@ -143,7 +176,7 @@ public:
 
   bool appendNavigationEvent(const NavigationEvent &event) {
     if (!m_navigationEvents) {
-      m_navigationEvents.reset(new (std::nothrow) NavigationEvent[kTrainingNavigationEventCapacity] {});
+      m_navigationEvents.ensure(kTrainingNavigationEventCapacity);
 
       if (!m_navigationEvents) {
         ++m_droppedNavigationEvents;
@@ -175,7 +208,7 @@ public:
       return false;
     }
     if (!m_defuseEvents) {
-      m_defuseEvents.reset(new (std::nothrow) DefuseEvent[kTrainingDefuseEventCapacity] {});
+      m_defuseEvents.ensure(kTrainingDefuseEventCapacity);
 
       if (!m_defuseEvents) {
         ++m_droppedDefuseEvents;
@@ -191,7 +224,7 @@ public:
 
   bool appendAimEvent(const AimEvent &e) {
     if (!m_aimEvents) {
-      m_aimEvents.reset(new (std::nothrow) AimEvent[kTrainingAimEventCapacity] {});
+      m_aimEvents.ensure(kTrainingAimEventCapacity);
 
       if (!m_aimEvents) {
         ++m_droppedAimEvents;

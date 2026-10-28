@@ -92,6 +92,17 @@ class YapbFirstIncludeTests(unittest.TestCase):
         self.assertIn("ai/ai_training_dataset.h", headers)
         self.assertIn("cstdio", headers)
 
+    def test_training_buffer_storage_avoids_crlib_placement_new_collision(self) -> None:
+        recorder = (ROOT / "inc" / "ai" / "ai_training_recorder.h").read_text(encoding="utf-8")
+        self.assertNotRegex(recorder, r"(?m)^\s*#\s*include\s*<(?:memory|new)>",
+                            "public recorder header must not include STL allocation headers")
+        storage = (ROOT / "src" / "ai" / "ai_training_buffer_storage.cpp").read_text(encoding="utf-8")
+        self.assertIn("#include <new>", storage)
+        self.assertNotIn("#include <crlib/", storage)
+        meson = (ROOT / "meson.build").read_text(encoding="utf-8")
+        self.assertEqual(meson.count("'src/ai/ai_training_buffer_storage.cpp'"), 2,
+                         "both game DLL and standalone AI tests need the allocation boundary")
+
     def test_recent_windows_x86_regression_contracts(self) -> None:
         yapb_header = (ROOT / "inc" / "yapb.h").read_text(encoding="utf-8")
         defuse_header = (ROOT / "inc" / "ai" / "ai_defuse_event.h").read_text(encoding="utf-8")
