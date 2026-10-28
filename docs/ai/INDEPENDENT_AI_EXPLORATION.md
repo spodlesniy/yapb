@@ -387,3 +387,10 @@ Run `yb explore audit dust2_index_01 448 2464 -92` to enumerate the complete dir
 The audit reports all occupied heading bins, total Progress, BlockedCandidate and DeflectedCandidate counts, same-heading conflicts and different-heading opposition.
 To verify restrictions in the game, record separate grounded 1000 ms probes toward a wall and along it, export each with `observe`, merge with the existing collection using new names, rebuild the spatial index and repeat the audit at the measured wall coordinates.
 Do not count a missing category as failure: the original collection contains only Progress, and no contact is proven by a candidate classification.
+
+## D227 — Conservative assessment of one movement direction
+
+Use `yb explore assess d226_index_02 496 2464 -92 0` to assess the verified mixed-evidence cell in requested sector 0; expected status is Conflicted with 5 Progress, 9 BlockedCandidate and 4 DeflectedCandidate postings.
+Use `yb explore assess d226_index_02 496 2464 -92 -105` for sector 6; expected status is ProgressEvidence with three Progress postings and no restriction candidates.
+Use `yb explore assess d226_index_02 5000 5000 0 0` for an unexplored cell; status Unobserved.
+The label is a conservative evidence summary, not a collision check or permission to select a route.

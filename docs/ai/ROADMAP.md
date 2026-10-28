@@ -410,3 +410,8 @@ The directional snapshot remains diagnostic evidence, not proof of blocked geome
 D225 automatic build and Explorer CI passed at 8d7116fc, and the user confirmed zero contradictions in a six-cell, 22-posting all-Progress snapshot.
 D226 adds a read-only per-cell audit against the validated original spatial index to enumerate directional Progress, BlockedCandidate and DeflectedCandidate evidence and separately report same-heading conflicts and different-heading opposition.
 Real-world acceptance requires additional genuine restrictive GoldSrc observations to be collected and merged; automatic CI and Windows x86 gameplay acceptance remain pending.
+
+D226 passed automatic build and Explorer CI on b70a7064; the user verified a de_dust2 cell with eight Progress, nine BlockedCandidate and four DeflectedCandidate postings, including same-heading conflict and other-heading opposition.
+D227 adds a read-only, direction-specific conservative diagnostic assessment over the validated D223 spatial index: Unobserved, Insufficient, ProgressEvidence, RestrictionEvidence or Conflicted.
+Two windows are needed for a homogeneous evidence label; mixed outcomes in the requested sector are always Conflicted, and no output asserts collision, safety or traversal certainty.
+Automatic CI and user-controlled Windows x86 acceptance remain pending.

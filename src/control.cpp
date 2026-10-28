@@ -15,6 +15,7 @@
 #include <aipb/explorer/engine_bridge_area_statistics.h>
 #include <aipb/explorer/engine_bridge_direction_evidence.h>
 #include <aipb/explorer/engine_bridge_mixed_evidence_audit.h>
+#include <aipb/explorer/engine_bridge_direction_assessment.h>
 
 #include <ctime>
 #include <cmath>
@@ -1445,6 +1446,44 @@ int BotControl::cmdExplore () {
       }
       if (!ai::explore::classify()) {
          msg("AiPB explorer: classify requires a completed, valid trace; use init to load a recording.");
+      }
+      return BotCommandResult::Handled;
+   }
+   if (operation == "assess") {
+      if (!hasArg(forward) || !hasArg(strafe) || !hasArg(jump)
+         || !hasArg(duck) || !hasArg(yaw) || hasArg(frames)) {
+         return BotCommandResult::BadFormat;
+      }
+      const auto name = arg <StringRef>(forward);
+      if (!aipb::explorer::bridge::safeName(name.chars())) {
+         return BotCommandResult::BadFormat;
+      }
+      const auto parseNumber = [this](int parameter, double &value) {
+         const auto input = arg <StringRef>(parameter).chars();
+         char *end {};
+         value = std::strtod(input, &end);
+         return end != input && *end == '\0' && std::isfinite(value);
+      };
+      double x {}, y {}, z {}, heading {};
+      if (!parseNumber(strafe, x) || !parseNumber(jump, y)
+         || !parseNumber(duck, z) || !parseNumber(yaw, heading)) {
+         return BotCommandResult::BadFormat;
+      }
+      const auto directory = strings.joinPath(bstor.getRunningPath(), folders.data, "explorer");
+      const auto path = strings.joinPath(directory, strings.format("%s.spatial.csv", name));
+      aipb::explorer::bridge::SpatialIndex index {};
+      aipb::explorer::bridge::DirectionAssessment result {};
+      if (!aipb::explorer::bridge::readSpatialIndex(path.chars(), game.getMapName(), index)
+         || !aipb::explorer::bridge::assessDirectionalEvidence(index,
+            x, y, z, heading, result)) {
+         msg("AiPB explorer: assess requires a valid same-map index and coordinates.");
+      }
+      else {
+         msg("AiPB explorer: assess '%s': cell=(%d,%d,%d) bin=%d status=%s observations=%d progress=%d blocked=%d deflected=%d other_heading_opposition=%d.",
+            name, result.cell.x, result.cell.y, result.cell.z, result.headingBin,
+            aipb::explorer::bridge::directionAssessmentName(result.status),
+            result.observations, result.progress, result.blockedCandidates,
+            result.deflectedCandidates, static_cast<int>(result.otherHeadingOpposition));
       }
       return BotCommandResult::Handled;
    }
@@ -3050,7 +3089,7 @@ BotControl::BotControl () {
       },
       {
          "explore",
-         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save <name> | list | init <name> <bot> | replay <name> <bot> | append <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | queue <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | run <save_name> | queueclear | report | progress | classify | observe <name> | merge <first> <second> <output> | index <source> <output> | near <index> <x> <y> <z> <radius> | areas <index> <output> | area <name> <x> <y> <z> | directions <index> <output> | direction <name> <x> <y> <z> <heading> | audit <index> <x> <y> <z> | clear | stop",
+         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save <name> | list | init <name> <bot> | replay <name> <bot> | append <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | queue <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | run <save_name> | queueclear | report | progress | classify | observe <name> | merge <first> <second> <output> | index <source> <output> | near <index> <x> <y> <z> <radius> | areas <index> <output> | area <name> <x> <y> <z> | directions <index> <output> | direction <name> <x> <y> <z> <heading> | audit <index> <x> <y> <z> | assess <index> <x> <y> <z> <heading> | clear | stop",
          "Runs an admin-only bounded GoldSrc movement probe.",
          &BotControl::cmdExplore
       },

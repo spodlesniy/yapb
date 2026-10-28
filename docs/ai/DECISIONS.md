@@ -2928,3 +2928,11 @@ Return zero counts for unexplored cells without claiming that they are free or b
 Use a standalone regression with all three observation classes; do not fabricate, alter or silently relabel game observations.
 Real mixed-evidence gameplay verification must come from real probes exported with D221.1, merged using D222 and reindexed using D223.
 Keep movement, raw CSV, spatial artifact format and existing D225 outputs unchanged.
+
+## D227 — Conservative direction-specific evidence assessment
+
+Add administrator-only `yb explore assess <index> <x> <y> <z> <heading>` to classify the requested 45-degree heading sector of one 128-unit spatial cell using validated D223 source observations.
+Return Unobserved for zero postings, Insufficient for exactly one homogeneous posting, ProgressEvidence for at least two Progress postings, RestrictionEvidence for at least two blocked/deflected candidate postings, and Conflicted for any mix of Progress and restriction in the same sector.
+Different-heading opposition remains context only and must not vote on the requested sector status.
+Repeated windows in one recording are correlated; minimum counts are a diagnostic display threshold, not independent trials, probabilities, or verified movement permissions.
+Retain original source artifacts, graph and bot behavior unchanged; malformed input must not mutate the caller's result.
