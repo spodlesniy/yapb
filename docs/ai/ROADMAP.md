@@ -466,4 +466,7 @@ D234.1 Explorer CI passed at a1b8f176 (run 40713825949) after removal of the str
 D234 is accepted.
 D235 adds read-only directional interpretation of strict recorded coarse-boundary crossings: positive/negative axis travel, relationship to the record's own requested yaw, per-face sources and classes, and deduplicated aggregate window counts.
 Near-tangential yaw and vertical-axis movements are explicitly separated; results do not authorize navigation.
-Automatic Explorer CI and Windows x86 gameplay acceptance remain pending.
+D235 automatic Build and Explorer CI passed at 19e44458; the user verified the X=256 positive crossing with yaw agreement and an empty alternate heading bin in HLDS.
+D235 is accepted.
+D236 adds per-face and per-axis-sign independent-source consensus using the D229 strong-source threshold, while retaining mixed, weak, empty and conflicting evidence distinctions.
+This experimental diagnostic cannot establish GoldSrc clearance or navigation permission; D236 automatic CI and gameplay verification remain pending.

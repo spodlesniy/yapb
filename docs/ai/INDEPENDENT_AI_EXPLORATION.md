@@ -470,3 +470,14 @@ On de_dust2 run:
 Expect one X=256 positive-axis Progress crossing with `with=1`, `against=0` and no opposed-heading windows.
 Run `yb explore crossing-directions d228_trials_02 256 2512 -92 90` to verify sector 2 remains empty.
 The reported heading agreement is not a verified route, physical independence certificate or collision check.
+
+## D236 — Directional face crossing consensus
+On de_dust2 use the existing snapshot:
+`yb explore crossing-consensus d228_trials_02 256 2512 -92 39.2894287`
+The known X=256 positive Progress crossing has only one source, so expect `positive status=Insufficient` and `negative status=Unobserved`, not a confirmed passage.
+The summary counts statuses per direction, thus one discovered face contributes two direction statuses.
+`yb explore crossing-consensus d228_trials_02 256 2512 -92 90` should show `faces=0`.
+Additional independent strong trials of an identical face/sign are needed for ProgressEvidence or RestrictionEvidence.
+Each source requires at least two windows of the same outcome for a strong vote; mixed or opposing evidence is Conflicted.
+Strict intersection, recorded movement sign and yaw-sector filtering are inherited from D233–D235.
+These results never authorize movement or prove collision-free traversal.

@@ -3032,3 +3032,13 @@ Query heading selects the 45-degree sector; yaw agreement uses each recording's 
 Count source-records once in aggregate alignment summaries even when a segment crosses two distinct faces.
 These are descriptions, not evidence of a navigation bug or passability; strafing, reversing and momentum can disagree with yaw.
 No changes to movement, graphs or artifact schemas.
+
+## D236 — Independent source consensus for directional face crossings
+D235 reports actual coarse-face crossing sign and class but lacks source-quality consensus per signed face.
+Add read-only `yb explore crossing-consensus <trials> <x> <y> <z> <heading>` without altering D233–D235, CSV formats, runtime movement or navigation.
+Evaluate each (strictly crossed face, signed axis direction) independently; the opposite sign is a separate observation, not support or contradiction.
+For each direction and face, a source can vote for Progress and/or BlockedCandidate/DeflectedCandidate, but repeated windows in a trace never become independent sources.
+Reuse D229's quality gate: at least two observations per strong homogeneous source and at least two strong sources for ProgressEvidence or RestrictionEvidence.
+A mixed source or even a weak opposing source makes the directed result Conflicted; one strong source or only weak compatible sources yield Insufficient, and no observations yield Unobserved.
+The selected heading is only a 45-degree sector filter: opposing yaw, strafing, backwards movement and momentum do not invalidate an observed sign.
+A crossing carrying a restriction candidate does not imply GoldSrc contact, and even corroborated Progress is not hull-tested passability.
