@@ -394,3 +394,13 @@ Use `yb explore assess d226_index_02 496 2464 -92 0` to assess the verified mixe
 Use `yb explore assess d226_index_02 496 2464 -92 -105` for sector 6; expected status is ProgressEvidence with three Progress postings and no restriction candidates.
 Use `yb explore assess d226_index_02 5000 5000 0 0` for an unexplored cell; status Unobserved.
 The label is a conservative evidence summary, not a collision check or permission to select a route.
+
+## D228 — Distinct source-trace corroboration
+
+Create a new immutable trace-group snapshot from original exported observation-v2 files (not the merged collection-v1):
+`yb explore trials d226_wall d226_deflected d228_trials_01`.
+Inspect `yb explore corroborate d228_trials_01 496 2464 -92 0` for per-source evidence at the known wall.
+The report separates `sources`, `observed_sources`, `progress_sources`, `restriction_sources`, `mixed_sources` and raw `windows`, with status determined by distinct sources, not count of windows.
+Continue with `yb explore trials d228_trials_01 d226_slide d228_trials_02` for another raw trace; files never overwrite prior snapshots.
+Original collection-v1 and spatial-v1 lack source provenance and cannot be converted into independently sourced trials.
+Source names are administrative declarations; the system rejects exact overlapping rows but cannot prove trials were conducted independently.

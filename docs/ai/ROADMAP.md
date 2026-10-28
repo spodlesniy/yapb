@@ -419,3 +419,9 @@ Automatic CI and user-controlled Windows x86 acceptance remain pending.
 D227 automatic build passed at 12f24a60, but Explorer CI failed on MSVC, GCC and Clang because the focused direction-assessment regression incorrectly expected no other-heading opposition for a DeflectedCandidate sector next to a Progress sector.
 D227.1 corrects this test expectation to match the D225/D227 directional contract and adds negative checks for solitary and unobserved sectors without changing production code.
 Automatic Explorer CI for the corrective commit and user-controlled Windows x86 acceptance remain required.
+
+D227.1 passed automatic Explorer CI on 6f57ecf5; the user verified Conflicted, ProgressEvidence and Unobserved in-game using the existing de_dust2 mixed-evidence index.
+D228 introduces explicitly named source-trace grouping in a separate immutable trials-v1 snapshot, preserving source boundaries absent from D222/D223.
+Per-direction evidence classification now counts distinct supplied trace sources, not consecutive windows; two agreeing sources are required for homogeneous evidence, and any opposed source evidence remains Conflicted.
+The sources are distinct trace files rather than scientifically verified independent trials; repeat exports and overlapping canonical rows are rejected, without modifying old observation/index artifacts.
+Automatic CI and user-controlled Windows x86 acceptance remain required.

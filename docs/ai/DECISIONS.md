@@ -2943,3 +2943,14 @@ The D227 regression wrongly asserted `otherHeadingOpposition == false` when quer
 D225 explicitly defines opposition across different requested heading sectors and D227 retains that diagnostic context regardless of whether the queried sector itself has enough evidence for a homogeneous assessment.
 Correct the fixture expectation to `true` and add explicit checks that isolated single-heading cells and unexplored sectors report no opposition.
 The production assessment rules, file formats, gameplay commands and runtime behavior are unchanged.
+
+## D228 — Preserve source-trace boundaries for cautious corroboration
+
+D221.1 observation-v2 exports identify a map, bot and frame count but have no durable experiment ID in each window; D222 collection-v1 and D223 spatial-v1 discard source boundaries.
+Do not pretend that windows from a merged old collection are independent experiments or infer source identity from timestamp, frame number or geometry.
+Introduce an immutable, map-bound `aipb-explorer-trials-v1` file, explicitly listing up to 16 named raw observation-v2 source traces and their canonical rows.
+Combine two distinct observation sources or extend a prior trials snapshot using `yb explore trials <first> <second> <output>`; reject repeated source names, exact shared canonical rows, corrupt data, different maps and output overwrite.
+Each name is a user-supplied source identifier, not a cryptographically certified experiment identity; explicitly reject identical payload windows, but cannot prove physical independence of different recordings.
+Provide `yb explore corroborate <trials> <x> <y> <z> <heading>` that counts at most one Progress vote and one restriction vote per trace in the chosen 128-unit cell and 45-degree heading sector, alongside raw windows.
+Unobserved means no source has evidence; a single-source homogeneous result stays Insufficient even with many windows; at least two Progress-only sources yield ProgressEvidence; at least two restriction-only sources yield RestrictionEvidence; a mix anywhere in the requested sector yields Conflicted.
+All outcomes remain diagnostic candidates rather than confidence probabilities, confirmed collision or navigation permissions.
