@@ -453,3 +453,7 @@ D233 adds a read-only strict coarse-boundary crossing audit for D232 spans, dist
 Report coarse boundary faces, directly crossed faces, per-source crossing windows, distinct crossing sources and faces observed by multiple progress sources.
 Tangent, endpoint-only, shared-edge and corner contacts do not count as direct crossings; this remains diagnostic evidence, not collision-checked passability.
 Automatic CI and Windows x86 gameplay acceptance remain pending.
+
+D233 automatic build and Explorer CI passed at 81c9e631, and the user verified zero boundary faces for the known single-coarse-cell ProgressOnly span plus Mixed and Unobserved seeds.
+D234 adds bounded read-only discovery of raw trajectory crossings at 128-unit coarse boundaries without requiring a pre-existing connected region, reporting face locations and distinct source counts.
+Strict interior face crossing and requested heading filtering remain mandatory; automatic CI and user-controlled Windows x86 game acceptance remain pending.

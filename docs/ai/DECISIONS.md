@@ -3009,3 +3009,10 @@ Only source records from the requested 45-degree heading sector vote, and each r
 Classify BlockedCandidate and DeflectedCandidate crossings as restrictive candidate evidence, not successful traversal.
 Bound crossing detection to the D232 fixed 3x3x3 coarse-cell window and retain mixed/unobserved seed barriers and original immutable artifacts.
 Even multiple Progress sources do not prove GoldSrc hull clearance, successful transition, travel direction, or safe navigation.
+
+## D234 — Locate recorded coarse-boundary crossings without span membership
+
+D233 audits only faces inside an existing homogeneous D232 connected span, which may contain no coarse-crossing faces even when other recorded trajectories cross elsewhere.
+Provide administrator-only `yb explore discover-crossings <trials> <x> <y> <z> <heading>` to scan source observations within the existing 3x3x3 coarse-cell window, independent of the seed's span status.
+Reuse strict D233 plane/interior-face crossing and source provenance, count each source record once for summary windows, and list face axis, lower fine-cell coordinates, first recorded crossing location, window and distinct-source totals.
+Do not infer safety, independent physical trials or route permissions from crossing counts; no input artifact, old command or navigation behavior changes.

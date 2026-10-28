@@ -454,3 +454,11 @@ On de_dust2 use the existing snapshot:
 The known approach region remains in one coarse cell, so `boundary_faces=0` and `supported_faces=0`; Mixed and Unobserved seeds likewise have no grouped crossing faces.
 A separate source dataset containing genuine boundary-spanning observations is required to observe nonzero crossing counters.
 Strict plane crossing is distinct from mere occupancy of adjacent coarse cells, and no count authorizes navigation.
+
+## D234 — Locate actual recorded crossings
+
+On de_dust2, use the existing snapshot:
+`yb explore discover-crossings d228_trials_02 256 2512 -92 39.2894287`
+The `d226_slide` trace contains a Progress segment crossing the X=256 plane at approximately (256,2512,-92), which should appear in sector 1 with one source.
+Repeat with heading 90 to confirm that the sector filter excludes that movement.
+This command discovers recorded crossings regardless of existing connected regions; it does not prove collision-free traversal.
