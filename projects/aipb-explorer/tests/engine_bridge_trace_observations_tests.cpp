@@ -48,19 +48,24 @@ static int runTests() {
   std::remove(path);
   ObservationWriteResult result {};
   require(writeTraceObservations(trace, "de_dust2", path, result));
-  require(result.records == 3 && result.progress == 1);
-  require(result.deflectedCandidates == 2 && result.blockedCandidates == 0);
+  require(result.records == 4 && result.progress == 1);
+  require(result.deflectedCandidates == 3 && result.blockedCandidates == 0);
   std::FILE *file = openTraceFile(path, "rt");
   require(file != nullptr);
   char line[1024] {};
   require(std::fgets(line, sizeof(line), file) != nullptr);
-  require(std::strcmp(line, "aipb-explorer-observations-v1,de_dust2,1,16\n") == 0);
+  require(std::strcmp(line, "aipb-explorer-observations-v2,de_dust2,1,16\n") == 0);
   require(std::fgets(line, sizeof(line), file) != nullptr);
   require(std::strcmp(line, kObservationCsvColumns) == 0);
   require(std::fgets(line, sizeof(line), file) != nullptr);
-  require(std::strstr(line, ",Progress,unknown,") != nullptr);
+  require(std::strstr(line, ",Progress,direct,unknown,") != nullptr);
   require(std::fgets(line, sizeof(line), file) != nullptr);
-  require(std::strstr(line, ",DeflectedCandidate,unknown,") != nullptr);
+  require(std::strstr(line, "4,7,4,DeflectedCandidate,retrospective,unknown,") != nullptr);
+  require(std::fgets(line, sizeof(line), file) != nullptr);
+  require(std::strstr(line, "8,11,4,DeflectedCandidate,confirming,unknown,") != nullptr);
+  require(std::fgets(line, sizeof(line), file) != nullptr);
+  require(std::strstr(line, "12,15,4,DeflectedCandidate,continuation,unknown,") != nullptr);
+  require(std::fgets(line, sizeof(line), file) == nullptr);
   require(std::fclose(file) == 0);
   ObservationWriteResult unchanged = result;
   require(!writeTraceObservations(trace, "de_dust2", path, result));
@@ -69,7 +74,16 @@ static int runTests() {
 
   TraceBuffer stalled = traceWithMovement(0, 0, 12);
   require(writeTraceObservations(stalled, "de_dust2", path, result));
-  require(result.blockedCandidates == 2 && result.records == 2);
+  require(result.blockedCandidates == 3 && result.records == 3);
+  file = openTraceFile(path, "rt");
+  require(file != nullptr);
+  require(std::fgets(line, sizeof(line), file) != nullptr);
+  require(std::fgets(line, sizeof(line), file) != nullptr);
+  require(std::fgets(line, sizeof(line), file) != nullptr);
+  require(std::strstr(line, "0,3,0,BlockedCandidate,retrospective,unknown,") != nullptr);
+  require(std::fgets(line, sizeof(line), file) != nullptr);
+  require(std::strstr(line, "4,7,0,BlockedCandidate,confirming,unknown,") != nullptr);
+  require(std::fclose(file) == 0);
   std::remove(path);
 
   TraceBuffer shortTrace = traceWithMovement(0, 0, 4);

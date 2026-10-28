@@ -386,3 +386,7 @@ The classifier still has no engine-contact evidence; automatic CI and user-start
 D220.1 passed automatic build and Explorer CI at bdb20ed6, and the user confirmed five sustained deflection windows after wall contact with final DeflectedCandidate.
 D221 adds an explicit, map-bound local observation export from completed GoldSrc traces, recording individual confirmed movement windows with positions, heading, duration, and measured versus requested travel.
 The observation CSV is separate from replay CSV v2 and never overwrites an existing name; automatic CI and Windows x86 gameplay acceptance remain pending.
+
+D221 automatic build and Explorer CI passed at ae9fdf2a; user-provided observation exports confirmed map-bound records and exposed the omission of the first low-travel or lateral window before a second-window confirmation.
+D221.1 retroactively exports the first qualifying window only when its consecutive matching successor confirms BlockedCandidate or DeflectedCandidate, preserving chronological order and excluding unconfirmed single windows.
+The observation artifact is versioned as v2 with explicit direct, retrospective, confirming and continuation markers; trace CSV v2 is unchanged and Windows x86 validation remains user-controlled.

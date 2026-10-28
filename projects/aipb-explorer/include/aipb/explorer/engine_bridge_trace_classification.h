@@ -22,6 +22,14 @@ enum class MovementWindowOutcome {
   DirectionMismatch
 };
 
+// The first candidate is published only after a second matching window.
+enum class WindowConfirmation {
+  Direct,
+  Retrospective,
+  Confirming,
+  Continuation
+};
+
 // A complete eligible observation window, with no inferred collision contact.
 struct TraceWindowEvidence {
   int firstStep {};
@@ -29,6 +37,7 @@ struct TraceWindowEvidence {
   int durationMs {};
   int stateStartStep { -1 };
   MovementClassification classification { MovementClassification::InsufficientEvidence };
+  WindowConfirmation confirmation { WindowConfirmation::Direct };
   AipbExplorerBridgeState start {};
   AipbExplorerBridgeState end {};
   double headingDegrees {};
@@ -91,6 +100,8 @@ inline bool classifyTraceMovement(
   double windowProjected = 0.0;
   double windowLateral = 0.0;
   double headingDegrees = 0.0;
+  TraceWindowEvidence provisional {};
+  bool hasProvisional = false;
 
   for (int i = 0; i < trace.count; ++i) {
     const TraceSample &sample = trace.samples[i];
@@ -110,6 +121,7 @@ inline bool classifyTraceMovement(
       lowStreakStart = -1;
       deflectionStreakStart = -1;
       previousLateralSign = 0;
+      hasProvisional = false;
       continue;
     }
 
@@ -229,7 +241,7 @@ inline bool classifyTraceMovement(
         ++next.directionMismatchWindows;
       }
 
-      if (observer && next.classification != MovementClassification::InsufficientEvidence) {
+      if (observer) {
         TraceWindowEvidence evidence {};
         evidence.firstStep = windowStart;
         evidence.lastStep = i;
@@ -243,7 +255,41 @@ inline bool classifyTraceMovement(
         evidence.observedUnits = windowObserved;
         evidence.projectedUnits = windowProjected;
         evidence.lateralUnits = windowLateral;
-        observer(observerContext, evidence);
+
+        if (directedProgress) {
+          evidence.confirmation = WindowConfirmation::Direct;
+          observer(observerContext, evidence);
+          hasProvisional = false;
+        }
+        else if (lowTravel || lateralDeflection) {
+          const int streak = lowTravel ? consecutiveLow : consecutiveDeflected;
+          const MovementClassification candidate = lowTravel
+            ? MovementClassification::BlockedCandidate
+            : MovementClassification::DeflectedCandidate;
+
+          if (streak == 1) {
+            provisional = evidence;
+            provisional.classification = candidate;
+            provisional.confirmation = WindowConfirmation::Retrospective;
+            provisional.stateStartStep = windowStart;
+            hasProvisional = true;
+          }
+          else {
+            if (streak == 2 && hasProvisional
+              && provisional.classification == candidate
+              && provisional.firstStep == next.classificationStartStep) {
+              observer(observerContext, provisional);
+            }
+
+            evidence.confirmation = streak == 2
+              ? WindowConfirmation::Confirming : WindowConfirmation::Continuation;
+            observer(observerContext, evidence);
+            hasProvisional = false;
+          }
+        }
+        else {
+          hasProvisional = false;
+        }
       }
 
       windowStart = -1;
@@ -272,6 +318,21 @@ inline const char *movementClassificationName(MovementClassification classificat
   }
 
   return "InsufficientEvidence";
+}
+
+inline const char *windowConfirmationName(WindowConfirmation confirmation) {
+  switch (confirmation) {
+  case WindowConfirmation::Direct:
+    return "direct";
+  case WindowConfirmation::Retrospective:
+    return "retrospective";
+  case WindowConfirmation::Confirming:
+    return "confirming";
+  case WindowConfirmation::Continuation:
+    return "continuation";
+  }
+
+  return "unknown";
 }
 
 inline const char *movementWindowOutcomeName(MovementWindowOutcome outcome) {

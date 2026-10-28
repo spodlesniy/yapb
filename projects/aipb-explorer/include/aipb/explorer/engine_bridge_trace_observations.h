@@ -10,7 +10,7 @@
 namespace aipb::explorer::bridge {
 
 inline constexpr const char kObservationCsvColumns[] =
-  "first_step,last_step,state_start_step,classification,contact,duration_ms,"
+  "first_step,last_step,state_start_step,classification,confirmation,contact,duration_ms,"
   "start_x,start_y,start_z,end_x,end_y,end_z,heading_degrees,"
   "requested_units,observed_xy_units,projected_units,lateral_units\n";
 
@@ -33,7 +33,7 @@ inline bool formatObservationHeader(
   }
 
   const int written = std::snprintf(buffer, capacity,
-    "aipb-explorer-observations-v1,%s,%d,%d\n",
+    "aipb-explorer-observations-v2,%s,%d,%d\n",
     map, trace.botIndex, trace.count);
 
   return written > 0 && static_cast<std::size_t>(written) < capacity;
@@ -49,6 +49,10 @@ inline bool formatObservation(
     || window.stateStartStep < 0 || window.stateStartStep > window.firstStep
     || window.durationMs < 100
     || window.classification == MovementClassification::InsufficientEvidence
+    || (window.classification == MovementClassification::Progress
+      && window.confirmation != WindowConfirmation::Direct)
+    || (window.classification != MovementClassification::Progress
+      && window.confirmation == WindowConfirmation::Direct)
     || !validState(window.start) || !validState(window.end)
     || !std::isfinite(window.headingDegrees) || !std::isfinite(window.requestedUnits)
     || !std::isfinite(window.observedUnits) || !std::isfinite(window.projectedUnits)
@@ -58,11 +62,12 @@ inline bool formatObservation(
   }
 
   const int written = std::snprintf(buffer, capacity,
-    "%d,%d,%d,%s,unknown,%d,"
+    "%d,%d,%d,%s,%s,unknown,%d,"
     "%.17g,%.17g,%.17g,%.17g,%.17g,%.17g,%.9g,"
     "%.17g,%.17g,%.17g,%.17g\n",
     window.firstStep, window.lastStep, window.stateStartStep,
-    movementClassificationName(window.classification), window.durationMs,
+    movementClassificationName(window.classification),
+    windowConfirmationName(window.confirmation), window.durationMs,
     window.start.x, window.start.y, window.start.z,
     window.end.x, window.end.y, window.end.z, window.headingDegrees,
     window.requestedUnits, window.observedUnits,

@@ -2864,3 +2864,14 @@ Each record contains start/end step and world position, first-step heading, comm
 Keep physical contact explicitly unknown, preserve the unmodified raw trace CSV v2, and reject incomplete/corrupt traces, map mismatches and duplicate output filenames.
 Do not append records automatically, mutate AI state, infer traversable edges, or treat these observations as authoritative geometry.
 Require standalone C++17 validation and user-run Windows x86 acceptance.
+
+## D221.1 — Retain the first window of confirmed movement anomalies
+
+D221 writes only windows already classified by D220.1, dropping the first member of each two-window BlockedCandidate or DeflectedCandidate run.
+Keep the conservative two-window confirmation gate, but stage one candidate window in the engine-neutral classifier's optional observation callback path.
+On the second consecutive matching low-travel or same-side deflection window, emit the staged window as retrospective before the confirming window; subsequent matching windows are continuation.
+Discard staged candidates on ineligible input, direction/sign change, ordinary progress or incompatible windows; never export an isolated candidate.
+Retain the original first/last step range and source measurements for both windows, avoiding invented coordinates or merged durations.
+Version the observation CSV header as `aipb-explorer-observations-v2` and add a confirmation column with direct, retrospective, confirming or continuation values.
+Preserve exclusive output creation, read-only classification outputs, raw movement CSV v2 and the lack of direct collision evidence.
+Add regression cases for both candidate kinds, ordering, continuation, file version, and rejection of an unconfirmed single window.

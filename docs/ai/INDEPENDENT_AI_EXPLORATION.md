@@ -340,3 +340,11 @@ Version 1 records the source map, bot index and sample count plus each confirmed
 Only Progress, two-window BlockedCandidate and two-window same-side DeflectedCandidate windows are written; isolated or insufficient windows are omitted.
 The data is local diagnostic evidence, not a navigation graph, obstacle identity, automatic exploration policy or verified engine contact.
 Existing trace CSV v2 remains intact.
+
+## D221.1 — Export the entire confirmed observation pair
+
+`yb explore observe <name>` now writes observation CSV v2 rather than v1, without changing the movement trace CSV v2.
+Each record adds `confirmation`: direct for immediate Progress, retrospective for the first candidate window of a subsequently confirmed pair, confirming for the second, and continuation for later matching windows.
+Retrospective and confirming rows preserve their original step ranges, coordinates and movement measurements and are emitted chronologically after the second window establishes confirmation.
+A solitary low-travel or lateral window is never exported; a reset or opposite-side deflection discards its provisional evidence.
+Use a fresh observation name because existing exports cannot be overwritten.
