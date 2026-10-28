@@ -3016,3 +3016,8 @@ D233 audits only faces inside an existing homogeneous D232 connected span, which
 Provide administrator-only `yb explore discover-crossings <trials> <x> <y> <z> <heading>` to scan source observations within the existing 3x3x3 coarse-cell window, independent of the seed's span status.
 Reuse strict D233 plane/interior-face crossing and source provenance, count each source record once for summary windows, and list face axis, lower fine-cell coordinates, first recorded crossing location, window and distinct-source totals.
 Do not infer safety, independent physical trials or route permissions from crossing counts; no input artifact, old command or navigation behavior changes.
+
+## D234.1 — Correct malformed crossing-discovery test source
+
+All three Explorer compilers rejected a standalone `undefined` token after the test main function.
+Remove that token only, retain existing assertions and production code, and require successful automatic CI.

@@ -457,3 +457,7 @@ Automatic CI and Windows x86 gameplay acceptance remain pending.
 D233 automatic build and Explorer CI passed at 81c9e631, and the user verified zero boundary faces for the known single-coarse-cell ProgressOnly span plus Mixed and Unobserved seeds.
 D234 adds bounded read-only discovery of raw trajectory crossings at 128-unit coarse boundaries without requiring a pre-existing connected region, reporting face locations and distinct source counts.
 Strict interior face crossing and requested heading filtering remain mandatory; automatic CI and user-controlled Windows x86 game acceptance remain pending.
+
+D234 verified in HLDS: one Progress source crossed X=256 at (256,2512,-91.97) in heading bin 1, and bin 2 was empty.
+Automatic build succeeded at 7c07ac8d but Explorer CI failed across MSVC, GCC and Clang due to an accidental trailing `undefined` token in the new test source.
+D234.1 removes this token without production changes; automatic Explorer CI must pass before D234 acceptance.
