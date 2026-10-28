@@ -531,3 +531,12 @@ The bin-2 query should yield zero chains because D238/D239 found no strict fine-
 `chains` and `pairs` count ordered crossings from one record only; `single` counts accepted records with one face and `ambiguous` counts records excluded because an in-window edge/corner is not a strict face intersection.
 Console details give zero-based source index, first recorded step, classification, travel sign, and intersection position.
 Sequences derive only from straight interpolation between recorded endpoints, not collision-verified player movement, continuous observed trajectories or route connectivity.
+
+## D242 — Ordered pair source evidence
+
+On de_dust2 run:
+`yb explore fine-pairs d228_trials_02 256 2512 -92 39.2894287`
+The D241 fixture should show `chains=1`, `windows=1`, `pairs=1`, `sources=1`, `insufficient=1`, `progress=0`, `restriction=0`, and `conflicted=0`.
+The known ordered pair begins at `axis=0 lower=(5,77,-3) sign=+` and ends at `axis=1 lower=(6,77,-3) sign=+`.
+Run `yb explore fine-pairs d228_trials_02 256 2512 -92 90` and expect zero pairs.
+A pair is recorded endpoint interpolation, not a verified walkable link or an instruction to navigate.

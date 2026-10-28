@@ -30,6 +30,7 @@
 #include <aipb/explorer/engine_bridge_fine_crossing_consensus.h>
 #include <aipb/explorer/engine_bridge_fine_crossing_sectors.h>
 #include <aipb/explorer/engine_bridge_fine_crossing_sequences.h>
+#include <aipb/explorer/engine_bridge_fine_sequence_pairs.h>
 
 #include <ctime>
 #include <cmath>
@@ -1460,6 +1461,61 @@ int BotControl::cmdExplore () {
       }
       if (!ai::explore::classify()) {
          msg("AiPB explorer: classify requires a completed, valid trace; use init to load a recording.");
+      }
+      return BotCommandResult::Handled;
+   }
+   if (operation == "fine-pairs") {
+      if (!hasArg(forward) || !hasArg(strafe) || !hasArg(jump)
+         || !hasArg(duck) || !hasArg(yaw) || hasArg(frames)) {
+         return BotCommandResult::BadFormat;
+      }
+      const auto name = arg <StringRef>(forward);
+      if (!aipb::explorer::bridge::safeName(name.chars())) {
+         return BotCommandResult::BadFormat;
+      }
+      const auto parse = [this](int position, double &value) {
+         const auto input = arg <StringRef>(position).chars();
+         char *end {};
+         value = std::strtod(input, &end);
+         return end != input && *end == '\0' && std::isfinite(value);
+      };
+      double x {}, y {}, z {}, heading {};
+      if (!parse(strafe, x) || !parse(jump, y) || !parse(duck, z) || !parse(yaw, heading)) {
+         return BotCommandResult::BadFormat;
+      }
+      const auto directory = strings.joinPath(bstor.getRunningPath(), folders.data, "explorer");
+      const auto path = strings.joinPath(directory, strings.format("%s.trials.csv", name));
+      aipb::explorer::bridge::EvidenceTrialSet trials {};
+      aipb::explorer::bridge::FinePairAudit report {};
+      if (!aipb::explorer::bridge::readEvidenceTrialSet(path.chars(), game.getMapName(), trials)
+         || !aipb::explorer::bridge::auditFineSequencePairs(trials, x, y, z, heading, report)) {
+         msg("AiPB explorer: cannot audit fine pairs.");
+      }
+      else {
+         msg("AiPB explorer: fine-pairs '%s': coarse=(%d,%d,%d) bin=%d chains=%d windows=%d pairs=%d sources=%d progress=%d restriction=%d conflicted=%d insufficient=%d.",
+            name, report.sequences.queryCoarse.x, report.sequences.queryCoarse.y,
+            report.sequences.queryCoarse.z, report.sequences.headingBin,
+            report.sequences.chains, report.sequences.orderedPairs, report.distinctPairs,
+            report.observedSources, report.progressEvidencePairs, report.restrictionEvidencePairs,
+            report.conflictedPairs, report.insufficientPairs);
+         const auto limit = static_cast<int>(report.details.size()) < aipb::explorer::bridge::kMaxFinePairPrinted
+            ? static_cast<int>(report.details.size()) : aipb::explorer::bridge::kMaxFinePairPrinted;
+         for (int i = 0; i < limit; ++i) {
+            const auto &pair = report.details[i];
+            msg("AiPB explorer: fine pair first axis=%d lower=(%d,%d,%d) sign=%c second axis=%d lower=(%d,%d,%d) sign=%c status=%s sources=%d weak=%d strong_progress=%d strong_restriction=%d mixed=%d progress_windows=%d restriction_windows=%d.",
+               pair.pair.first.axis, pair.pair.first.lowerCell.x, pair.pair.first.lowerCell.y,
+               pair.pair.first.lowerCell.z, pair.pair.first.positive ? '+' : '-',
+               pair.pair.second.axis, pair.pair.second.lowerCell.x, pair.pair.second.lowerCell.y,
+               pair.pair.second.lowerCell.z, pair.pair.second.positive ? '+' : '-',
+               aipb::explorer::bridge::directionAssessmentName(pair.consensus.status),
+               pair.consensus.observedSources, pair.consensus.weakSources,
+               pair.consensus.strongProgressSources, pair.consensus.strongRestrictionSources,
+               pair.consensus.mixedSources, pair.consensus.progressWindows,
+               pair.consensus.restrictionWindows);
+         }
+         if (report.distinctPairs > limit) {
+            msg("AiPB explorer: fine-pairs omitted %d pairs.", report.distinctPairs - limit);
+         }
       }
       return BotCommandResult::Handled;
    }
@@ -3847,7 +3903,7 @@ BotControl::BotControl () {
       },
       {
          "explore",
-         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save <name> | list | init <name> <bot> | replay <name> <bot> | append <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | queue <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | run <save_name> | queueclear | report | progress | classify | observe <name> | merge <first> <second> <output> | index <source> <output> | near <index> <x> <y> <z> <radius> | areas <index> <output> | area <name> <x> <y> <z> | directions <index> <output> | direction <name> <x> <y> <z> <heading> | audit <index> <x> <y> <z> | assess <index> <x> <y> <z> <heading> | trials <first> <second> <output> | corroborate <trials> <x> <y> <z> <heading> | consensus <trials> <x> <y> <z> <heading> | localize <trials> <x> <y> <z> <heading> | region <trials> <x> <y> <z> <heading> | span <trials> <x> <y> <z> <heading> | crossings <trials> <x> <y> <z> <heading> | discover-crossings <trials> <x> <y> <z> <heading> | crossing-directions <trials> <x> <y> <z> <heading> | crossing-consensus <trials> <x> <y> <z> <heading> | crossing-sectors <trials> <x> <y> <z> | fine-crossings <trials> <x> <y> <z> <heading> | fine-consensus <trials> <x> <y> <z> <heading> | fine-sectors <trials> <x> <y> <z> | fine-sequences <trials> <x> <y> <z> <heading> | clear | stop",
+         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save <name> | list | init <name> <bot> | replay <name> <bot> | append <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | queue <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | run <save_name> | queueclear | report | progress | classify | observe <name> | merge <first> <second> <output> | index <source> <output> | near <index> <x> <y> <z> <radius> | areas <index> <output> | area <name> <x> <y> <z> | directions <index> <output> | direction <name> <x> <y> <z> <heading> | audit <index> <x> <y> <z> | assess <index> <x> <y> <z> <heading> | trials <first> <second> <output> | corroborate <trials> <x> <y> <z> <heading> | consensus <trials> <x> <y> <z> <heading> | localize <trials> <x> <y> <z> <heading> | region <trials> <x> <y> <z> <heading> | span <trials> <x> <y> <z> <heading> | crossings <trials> <x> <y> <z> <heading> | discover-crossings <trials> <x> <y> <z> <heading> | crossing-directions <trials> <x> <y> <z> <heading> | crossing-consensus <trials> <x> <y> <z> <heading> | crossing-sectors <trials> <x> <y> <z> | fine-crossings <trials> <x> <y> <z> <heading> | fine-consensus <trials> <x> <y> <z> <heading> | fine-sectors <trials> <x> <y> <z> | fine-sequences <trials> <x> <y> <z> <heading> | fine-pairs <trials> <x> <y> <z> <heading> | clear | stop",
          "Runs an admin-only bounded GoldSrc movement probe.",
          &BotControl::cmdExplore
       },

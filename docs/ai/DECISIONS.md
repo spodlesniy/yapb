@@ -3097,3 +3097,12 @@ Retain per-record source index, first step, yaw sector, and Progress/BlockedCand
 Count ordered face pairs only within a valid segment sequence; cap console details to eight sequences and twelve faces each while retaining complete aggregate counters.
 An ordered interpolation of observed endpoints is not a measured continuous GoldSrc movement trajectory, collision-clearance guarantee, navigable route, or permission to move.
 No changes to CSV schemas, older read-only commands, or bot behavior.
+
+## D242 — Independent source assessment for observed ordered fine-face pairs
+
+D241 identifies ordered adjacent strict fine-face crossings inside individual recorded segments without joining separate records.
+Add read-only `yb explore fine-pairs <trials> <x> <y> <z> <heading>` keyed by both consecutive directed fine-face crossings in their observed order.
+Accumulate Progress and restriction-candidate windows per source and exact ordered pair; repeated windows from one trace do not count as independent sources.
+Reuse D229 source thresholds and retain Insufficient, ProgressEvidence, RestrictionEvidence and Conflicted; opposite order, signs or other pairs do not corroborate one another.
+Discard ambiguous segments using D241 and retain the bounded query and 24-pair console limit.
+No pathfinding, cross-record linking, collision validation, CSV changes or movement authorization are introduced.

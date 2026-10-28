@@ -501,3 +501,8 @@ D240 is accepted.
 D241 introduces read-only, bounded ordering of strictly crossed 32-unit faces within one source record's straight endpoint interpolation, preserving sign, class and provenance without joining records.
 Ambiguous edge/corner intersections and non-contiguous face transitions are excluded from sequences; aggregate summary and console output remain bounded.
 Automatic Build/Explorer CI and in-game verification for D241 remain pending. The result does not grant navigation authority.
+
+D241 automatic Build and Explorer CI passed at e989158; in HLDS the bin-1 query contained 9 records, 4 crossing records (3 single-face and one two-face chain), one ordered pair in source index 2 at first_step=154 and no ambiguous records; bin 2 was empty.
+D241 is accepted.
+D242 introduces read-only independent-source consensus for each exact directed ordered pair of fine-face crossings, without joining different recordings or interpreting a pair as a collision-checked route.
+Automatic CI and HLDS acceptance for D242 remain pending.
