@@ -3057,3 +3057,12 @@ The presence of distinct yaw bins does not prove distinct experiments, GoldSrc c
 D236 and D237 accidentally appended two new test executable names to the earlier crossing-directions CTest command rather than to the common strict-warning target list.
 Restore the earlier CTest command to only its own executable, and register both new test targets in the compiler-warning list.
 Preserve test sources, artifacts, runtime diagnostics and movement behavior; validate the correction through automatic CI.
+
+## D238 — Discover strict 32-unit fine-face crossings
+
+D234 through D237 discover only coarse 128-unit boundary crossings, although D230 through D232 already examine 32-unit local occupancy.
+Add read-only `yb explore fine-crossings <trials> <x> <y> <z> <heading>` scanning all interior 32-unit planes of the same bounded 3x3x3 coarse-cell window and one 45-degree heading sector.
+Require endpoints strictly on opposite sides of a fine plane and intersection strictly in the face interior; reject endpoint contact, edge/corner contact and coplanar travel.
+Key each face by lower fine cell and axis; classify every crossing record as Progress, BlockedCandidate or DeflectedCandidate and retain actual positive/negative axis sign and distinct trace-source provenance.
+Count records once in aggregate windows even when they cross multiple fine faces, distinguish internal and coarse-boundary faces, and sort by query distance while limiting console detail to 24 faces.
+This is geometric evidence only, with no inference of hull clearance, autonomous navigation, successful traversal, source independence or route permission; existing commands and CSV remain unchanged.

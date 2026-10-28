@@ -489,3 +489,11 @@ On de_dust2 use the existing trial set:
 The known X=256 crossing should retain one positive Progress window and one weak source, producing positive Insufficient and negative Unobserved.
 The heading-independent command reports yaw-sector bitmasks, one bit per 45-degree sector (bin 0 is bit 0), and reports an inter-sector disagreement only when Progress and candidate restriction occur for the same face and travel sign in distinct bins.
 Multiple sector observations from one source cannot establish independent corroboration; no result implies a route or GoldSrc hull clearance.
+
+## D238 — Fine-grid crossing discovery
+
+On de_dust2 run:
+`yb explore fine-crossings d228_trials_02 256 2512 -92 39.2894287`
+The known X=256 crossing should appear as a `coarse=1` fine face at `axis=0 lower=(7,78,-3)`, alongside any additional observed 32-unit interior-face crossings within the 3x3x3 coarse-cell query window.
+The face summary is complete, while per-face console details show at most the 24 nearest faces.
+Repeat with heading 90 to verify the bin filter; a crossing count is not collision-checked passability or authorization to navigate.

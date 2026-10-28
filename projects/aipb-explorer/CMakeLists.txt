@@ -134,9 +134,14 @@ if(BUILD_TESTING)
     target_include_directories(aipb_explorer_directed_crossing_consensus_tests PRIVATE include)
 
     add_executable(aipb_explorer_crossing_sectors_tests tests/engine_bridge_crossing_sectors_tests.cpp)
-    add_test(NAME aipb_explorer_crossing_sectors COMMAND aipb_explorer_crossing_sectors_tests)
+    add_test(NAME aipb_explorer_crossing_sectors COMMAND aipb_explorer_crossing_sectors_tests aipb_explorer_fine_crossings_tests)
     target_compile_features(aipb_explorer_crossing_sectors_tests PRIVATE cxx_std_17)
     target_include_directories(aipb_explorer_crossing_sectors_tests PRIVATE include)
+
+    add_executable(aipb_explorer_fine_crossings_tests tests/engine_bridge_fine_crossings_tests.cpp)
+    add_test(NAME aipb_explorer_fine_crossings COMMAND aipb_explorer_fine_crossings_tests)
+    target_compile_features(aipb_explorer_fine_crossings_tests PRIVATE cxx_std_17)
+    target_include_directories(aipb_explorer_fine_crossings_tests PRIVATE include)
 
     add_executable(aipb_explorer_bridge_math_tests tests/engine_bridge_math_tests.cpp)
     add_test(NAME aipb_explorer_bridge_math COMMAND aipb_explorer_bridge_math_tests)

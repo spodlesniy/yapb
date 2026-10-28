@@ -479,3 +479,8 @@ CI and Windows x86 HLDS acceptance for D237 remain pending; neither source corro
 D237 automatic build and Explorer CI passed at 1321f9d; the user confirmed one weak positive Progress source in yaw bin 1, no observed negative crossing and no cross-sector conflict in HLDS.
 D237 functionality is verified, but post-CI review found that the crossing-directions test command received two unintended arguments and newer test executables were omitted from the strict-warning target list.
 D237.1 corrects only CMake test wiring without changing runtime behavior; automatic Explorer CI is required for acceptance.
+
+D237.1 automatic Explorer CI passed at 475bca7 (run 40724223418), restoring strict warning flags and correcting CTest command arguments.
+D237.1 is accepted.
+D238 adds bounded, read-only detection of actual crossings of all 32-unit fine-cell faces, preserving strict interior geometry, class, travel sign and source provenance without changing existing commands or traversal behavior.
+Automatic CI and Windows x86 gameplay acceptance are pending.
