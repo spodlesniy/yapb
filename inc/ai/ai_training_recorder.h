@@ -10,6 +10,8 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <memory>
+#include <new>
 
 #include <ai/ai_action_result.h>
 #include <ai/ai_aim_event.h>
@@ -44,11 +46,13 @@ struct TrainingTransition {
 
 class TrainingBuffer final {
 private:
-  TrainingTransition m_transitions[kTrainingTransitionCapacity] {};
-  CombatEvent m_combatEvents[kTrainingCombatEventCapacity] {};
-  NavigationEvent m_navigationEvents[kTrainingNavigationEventCapacity] {};
-  DefuseEvent m_defuseEvents[kTrainingDefuseEventCapacity] {};
-  AimEvent m_aimEvents[kTrainingAimEventCapacity] {};
+  // Allocate large recording stores only when they first receive data.
+  // Keeping them in the object forces MSVC x86 to expand a huge constructor.
+  std::unique_ptr<TrainingTransition[]> m_transitions {};
+  std::unique_ptr<CombatEvent[]> m_combatEvents {};
+  std::unique_ptr<NavigationEvent[]> m_navigationEvents {};
+  std::unique_ptr<DefuseEvent[]> m_defuseEvents {};
+  std::unique_ptr<AimEvent[]> m_aimEvents {};
   size_t m_aimEventCount {}, m_droppedAimEvents {};
   size_t m_defuseEventCount {};
   size_t m_droppedDefuseEvents {};
@@ -73,6 +77,10 @@ private:
   }
 
 public:
+  TrainingBuffer() = default;
+  TrainingBuffer(const TrainingBuffer &) = delete;
+  TrainingBuffer &operator=(const TrainingBuffer &) = delete;
+
   uint64_t beginEpisode() {
     const auto episodeId = m_nextEpisodeId++;
 
@@ -87,6 +95,15 @@ public:
     if (m_size >= kTrainingTransitionCapacity) {
       ++m_droppedTransitions;
       return false;
+    }
+
+    if (!m_transitions) {
+      m_transitions.reset(new (std::nothrow) TrainingTransition[kTrainingTransitionCapacity] {});
+
+      if (!m_transitions) {
+        ++m_droppedTransitions;
+        return false;
+      }
     }
 
     if (!containsEpisode(episodeId)) {
@@ -108,6 +125,14 @@ public:
       ++m_droppedCombatEvents;
       return false;
     }
+    if (!m_combatEvents) {
+      m_combatEvents.reset(new (std::nothrow) CombatEvent[kTrainingCombatEventCapacity] {});
+
+      if (!m_combatEvents) {
+        ++m_droppedCombatEvents;
+        return false;
+      }
+    }
     m_combatEvents[m_combatEventCount++] = event;
     return true;
   }
@@ -117,6 +142,14 @@ public:
   const CombatEvent &combatEventAt(size_t index) const { return m_combatEvents[index]; }
 
   bool appendNavigationEvent(const NavigationEvent &event) {
+    if (!m_navigationEvents) {
+      m_navigationEvents.reset(new (std::nothrow) NavigationEvent[kTrainingNavigationEventCapacity] {});
+
+      if (!m_navigationEvents) {
+        ++m_droppedNavigationEvents;
+        return false;
+      }
+    }
     if (m_navigationEventCount >= kTrainingNavigationEventCapacity) {
       // Preserve an ordered sample of earlier events and make room for new ones.
       const size_t kept = kTrainingNavigationEventCapacity / 2;
@@ -141,6 +174,14 @@ public:
       ++m_droppedDefuseEvents;
       return false;
     }
+    if (!m_defuseEvents) {
+      m_defuseEvents.reset(new (std::nothrow) DefuseEvent[kTrainingDefuseEventCapacity] {});
+
+      if (!m_defuseEvents) {
+        ++m_droppedDefuseEvents;
+        return false;
+      }
+    }
     m_defuseEvents[m_defuseEventCount++] = event;
     return true;
   }
@@ -149,6 +190,14 @@ public:
   const DefuseEvent &defuseEventAt(size_t index) const { return m_defuseEvents[index]; }
 
   bool appendAimEvent(const AimEvent &e) {
+    if (!m_aimEvents) {
+      m_aimEvents.reset(new (std::nothrow) AimEvent[kTrainingAimEventCapacity] {});
+
+      if (!m_aimEvents) {
+        ++m_droppedAimEvents;
+        return false;
+      }
+    }
     if (m_aimEventCount >= kTrainingAimEventCapacity) {
       const size_t kept = kTrainingAimEventCapacity / 2;
       for (size_t i = 0; i < kept; ++i) m_aimEvents[i] = m_aimEvents[i * 2];
@@ -162,9 +211,11 @@ public:
   size_t droppedAimEvents() const { return m_droppedAimEvents; }
   const AimEvent &aimEventAt(size_t i) const { return m_aimEvents[i]; }
   void clear() {
-    for (size_t i = 0; i < kTrainingTransitionCapacity; ++i) {
-      m_transitions[i] = {};
-    }
+    m_transitions.reset();
+    m_combatEvents.reset();
+    m_navigationEvents.reset();
+    m_defuseEvents.reset();
+    m_aimEvents.reset();
     m_size = 0;
     m_combatEventCount = 0;
     m_droppedCombatEvents = 0;
@@ -213,7 +264,7 @@ public:
   }
 
   const TrainingTransition *data() const {
-    return m_transitions;
+    return m_transitions.get();
   }
 };
 

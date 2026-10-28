@@ -62,6 +62,24 @@ AI_TEST(testTrainingRecorderEndsEpisode) {
   expect(buffer.empty(), "endEpisode preserves the completed transition buffer");
 }
 
+AI_TEST(testTrainingBufferIsCompactAndReallocatesAfterClear) {
+   static_assert(sizeof(ai::TrainingBuffer) < 256, "training buffer must not embed event arrays");
+   ai::TrainingBuffer buffer {};
+   expect(buffer.data() == nullptr, "empty training buffer allocates no transitions");
+   const auto episode = buffer.beginEpisode();
+   expect(buffer.append(episode, makeObservation(1.0f, 40), makeMoveAction(41), 1.0f,
+      makeObservation(1.5f, 41), makeCompletedResult(ai::ActionType::MoveToNode)),
+      "lazy transition storage accepts its first record");
+   expect(buffer.data() != nullptr && buffer.size() == 1,
+      "first append allocates contiguous transition storage");
+   buffer.clear();
+   expect(buffer.data() == nullptr && buffer.empty(), "clear releases the storage");
+   expect(buffer.append(episode, makeObservation(2.0f, 41), makeMoveAction(42), 2.0f,
+      makeObservation(2.5f, 42), makeCompletedResult(ai::ActionType::MoveToNode)),
+      "append reallocates the transition storage after clear");
+   expect(buffer.at(0).reward == 2.0f, "reallocated storage keeps the new sample");
+}
+
 AI_TEST(testTrainingBufferCountsBufferedEpisodes) {
   ai::TrainingBuffer buffer {};
   const auto firstEpisode = buffer.beginEpisode();

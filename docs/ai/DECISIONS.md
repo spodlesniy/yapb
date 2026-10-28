@@ -2792,3 +2792,14 @@ Use the configured weapon classname to create a GoldSrc entity, call `MDLL_Spawn
 If pickup fails, report the failure and remove the unclaimed spawned entity; if the weapon is already owned, only select it.
 No weapons are given to other bots, and normal shop, economic, model or training behavior is left unchanged unless the administrator explicitly issues the command.
 Automatic Linux AI CI cannot validate game DLL item-pickup behavior; a user-controlled Windows x86 build and in-game verification are required.
+
+## D218.1 — Avoid enormous MSVC x86 training-buffer constructor
+
+The Windows x86 compiler reports C1060 out of heap in the generated `TrainingBuffer` constructor from `ai_training_recorder.h`, reached through shared `yapb.h` even by unrelated translation units.
+Keep all five logical fixed capacities and existing element interfaces, but store each large array behind a `std::unique_ptr<T[]>` and allocate it on the first append to the corresponding stream.
+Use `new (std::nothrow)` and return the existing append failure result with the matching dropped count on allocation failure.
+`clear` releases allocated arrays while resetting diagnostic counters and preserving the episode sequence; `reset` also resets the episode sequence.
+The training transition `data()` still provides contiguous storage once a transition has been appended; the empty buffer has a null data pointer.
+Disable implicit copy of the owning buffer, preserving its singleton/shared-reference semantics and preventing unintended deep copies.
+The fix targets compiler memory pressure and does not change training record capacity, compaction rules or serialized dataset format.
+MSVC x86 manual build is required for final acceptance.

@@ -359,3 +359,7 @@ D218 adds an administrator-only `yb giveweapon <bot_index> <alias>` diagnostic f
 The exact alias is resolved against the existing YaPB `BotSupport::m_weaponAliases`; GoldSrc creates, spawns and touches the weapon entity, and an occupied primary slot is released via normal bot weapon/drop commands before a replacement attempt.
 Equipment, grenades, knife, shield and unknown aliases are rejected; pickup failures are reported instead of assuming the bot received a weapon.
 Production Windows x86 compilation and live AWP/M249 pickup/replay checks remain user-controlled and pending.
+
+D218.1 addresses an observed MSVC x86 `/WX` build failure C1060 during `TrainingBuffer` default-constructor generation while compiling `src/ai/ai_navvis.cpp`.
+Five fixed-capacity training/event arrays move from inline object storage to individually lazy allocated arrays, retaining fixed capacity, contiguous read-only access, counters, compaction and existing dataset schema.
+A unit regression checks the compact descriptor and allocation/release/reuse lifecycle; full target Windows x86 confirmation remains user-controlled and pending.
