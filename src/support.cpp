@@ -315,6 +315,15 @@ StringRef BotSupport::weaponIdToAlias (int32_t id) {
    return none;
 }
 
+int32_t BotSupport::weaponAliasToId (StringRef alias) {
+   for (const auto &[id, names] : m_weaponAliases) {
+      if (names.first == alias) {
+         return id;
+      }
+   }
+   return -1;
+}
+
 float BotSupport::getWaveFileDuration (StringRef filename) {
    constexpr auto kZeroLength = 0.0f;
 

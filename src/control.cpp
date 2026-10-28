@@ -219,6 +219,91 @@ int BotControl::cmdWeaponMode () {
    return BotCommandResult::Handled;
 }
 
+int BotControl::cmdGiveWeapon () {
+   enum args { alias = 1, botIndex, weaponAlias };
+
+   if (!hasArg (botIndex) || !hasArg (weaponAlias) || hasArg (weaponAlias + 1)) {
+      return BotCommandResult::BadFormat;
+   }
+   const auto input = arg <StringRef> (botIndex).chars ();
+   char *end {};
+   const auto index = std::strtol (input, &end, 10);
+
+   if (input == end || *end != '\0' || index < 0 || index >= kGameMaxPlayers) {
+      return BotCommandResult::BadFormat;
+   }
+   auto *bot = bots.findBotByIndex (static_cast <int> (index));
+
+   if (!bot || !game.isAliveEntity (bot->ent ())) {
+      msg ("AiPB explorer: bot #%d not found or not alive.", static_cast <int> (index));
+      return BotCommandResult::Handled;
+   }
+   const auto name = arg <StringRef> (weaponAlias);
+   const int id = util.weaponAliasToId (name);
+
+   // Only standard firearms are supported, not equipment or special items.
+   if (id < 0 || id == Weapon::Knife || id == Weapon::Shield
+      || id == Weapon::Flashbang || id == Weapon::Explosive || id == Weapon::Smoke
+      || id == Weapon::Armor || id == Weapon::ArmorHelm || id == Weapon::Defuser) {
+      msg ("AiPB explorer: unsupported weapon alias '%s'.", name);
+      return BotCommandResult::Handled;
+   }
+   if (bot->pev->weapons & cr::bit (id)) {
+      bot->issueCommand (conf.findWeaponById (id).name.chars ());
+      msg ("AiPB explorer: bot #%d already owns '%s'; selected it.", static_cast <int> (index), name);
+      return BotCommandResult::Handled;
+   }
+   const auto isPrimary = [] (int type) {
+      return type == WeaponType::Shotgun || type == WeaponType::SMG
+         || type == WeaponType::Rifle || type == WeaponType::ZoomRifle
+         || type == WeaponType::Sniper || type == WeaponType::Heavy;
+   };
+   const auto targetType = conf.getWeaponType (id);
+
+   if (isPrimary (targetType)) {
+      for (const auto &weapon : conf.getWeapons ()) {
+         if (weapon.id != id && isPrimary (weapon.type)
+            && (bot->pev->weapons & cr::bit (weapon.id))) {
+            bot->issueCommand (weapon.name.chars ());
+            bot->issueCommand ("drop");
+
+            if (bot->pev->weapons & cr::bit (weapon.id)) {
+               msg ("AiPB explorer: cannot drop existing primary weapon before giving '%s'.", name);
+               return BotCommandResult::Handled;
+            }
+            break;
+         }
+      }
+   }
+   const auto classname = conf.findWeaponById (id).name;
+
+   if (classname.empty ()) {
+      msg ("AiPB explorer: no game entity for '%s'.", name);
+      return BotCommandResult::Handled;
+   }
+   auto *item = engfuncs.pfnCreateNamedEntity (classname.chars ());
+
+   if (game.isNullEntity (item)) {
+      msg ("AiPB explorer: cannot create '%s'.", name);
+      return BotCommandResult::Handled;
+   }
+   engfuncs.pfnSetOrigin (item, bot->pev->origin);
+   MDLL_Spawn (item);
+   MDLL_Touch (item, bot->ent ());
+
+   if (!(bot->pev->weapons & cr::bit (id))) {
+      msg ("AiPB explorer: pickup of '%s' failed (weapon slot may be occupied).", name);
+      if (!game.isNullEntity (item)) {
+         engfuncs.pfnRemoveEntity (item);
+      }
+   }
+   else {
+      bot->issueCommand (classname.chars ());
+      msg ("AiPB explorer: gave '%s' to bot #%d; selection requested.", name, static_cast <int> (index));
+   }
+   return BotCommandResult::Handled;
+}
+
 int BotControl::cmdVersion () {
    constexpr auto &bi = product.bi;
 
@@ -2605,6 +2690,12 @@ BotControl::BotControl () {
          "Forces all the bots to vote for the specified map.",
 
          &BotControl::cmdVote
+      },
+      {
+         "giveweapon",
+         "giveweapon <bot_index> <alias>",
+         "Gives a firearm pickup to a living bot for diagnostic tests.",
+         &BotControl::cmdGiveWeapon
       },
       {
          "weapons/weaponmode",

@@ -31,6 +31,9 @@ public:
    // converts weapon id to alias name
    StringRef weaponIdToAlias (int32_t id);
 
+   // Resolve an exact configured weapon alias; returns -1 for an unknown alias.
+   int32_t weaponAliasToId (StringRef alias);
+
    // nearest player search helper
    bool findNearestPlayer (void **holder, edict_t *to, float searchDistance = 4096.0, bool sameTeam = false, bool needBot = false, bool needAlive = false, bool needDrawn = false, bool needBotWithC4 = false);
 

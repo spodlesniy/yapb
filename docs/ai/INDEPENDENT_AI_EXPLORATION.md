@@ -274,3 +274,22 @@ The command also checks the current cap before each replay frame in case the wea
 No attempt is made to force the saved `max_speed` onto the player or pretend a recorded peak horizontal velocity is attainable as an ordinary run-speed limit.
 A knife cannot eliminate non-weapon movement caps or ensure matching jumps under different physical conditions.
 The existing `yb explore init <name> <bot>` can be repeated before another replay attempt.
+
+## D218 — Give a specific gun to a bot for replay tests
+
+Use `yb giveweapon <bot_index> <alias>` as an administrator to give or select a standard firearm for the chosen living bot (zero-based index).
+Supported aliases include `awp`, `m249`, `m4a1`, `ak47`, `scout`, and the other firearm names in `BotSupport::m_weaponAliases`.
+The command uses a real GoldSrc weapon entity pickup, not an inventory-bit or speed-limit override.
+If the bot already has a primary gun, the command tries to select and drop that gun before the new pickup.
+Unknown aliases, grenades, knife, equipment and shield are rejected; a failed pickup is reported.
+Weapon selection and GoldSrc `pev->maxspeed` updates may complete after the command, so inspect the live speed in the replay preflight message rather than assuming the gun equipped immediately.
+
+Example:
+
+```text
+yb giveweapon 1 m249
+yb explore init knife_jump_01 1
+yb explore replay knife_jump_01 1
+```
+
+The replay preflight should detect a reduced current weapon cap and request the knife if the recorded input requires more speed.

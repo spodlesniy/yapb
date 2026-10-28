@@ -96,6 +96,7 @@ private:
    int cmdFill ();
    int cmdVote ();
    int cmdWeaponMode ();
+   int cmdGiveWeapon ();
    int cmdVersion ();
    int cmdNodeMenu ();
    int cmdMenu ();

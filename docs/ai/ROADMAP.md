@@ -354,3 +354,8 @@ D217 makes named-trajectory replay weapon-speed-aware: validate the maximum hori
 Replay waits briefly for the live movement cap to update and rejects unavailable/insufficient knife, timeout, changed start pose or any subsequent speed-cap drop instead of silently replaying with an impossible weapon constraint.
 The recorded horizontal velocity peak is reported separately as observed momentum, not treated as a weapon-speed requirement; CSV v2 and the 4096-frame bound are unchanged.
 Automatic CI and manual Windows x86 replay checks with slow weapons and knife fallback remain pending.
+
+D218 adds an administrator-only `yb giveweapon <bot_index> <alias>` diagnostic for selecting or granting standard firearms to a living bot without buyzone/money restrictions.
+The exact alias is resolved against the existing YaPB `BotSupport::m_weaponAliases`; GoldSrc creates, spawns and touches the weapon entity, and an occupied primary slot is released via normal bot weapon/drop commands before a replacement attempt.
+Equipment, grenades, knife, shield and unknown aliases are rejected; pickup failures are reported instead of assuming the bot received a weapon.
+Production Windows x86 compilation and live AWP/M249 pickup/replay checks remain user-controlled and pending.

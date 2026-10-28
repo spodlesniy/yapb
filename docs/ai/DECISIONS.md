@@ -2780,3 +2780,15 @@ During replay, verify the current speed cap before every recorded step and stop 
 This is a necessary command-speed compatibility check, not a guarantee of identical physics: crouch state, ground friction, slope, water, dynamic collisions and hidden engine state still affect movement and jump outcomes.
 Keep CSV v2 identical, reject absent knife explicitly and maintain all manual queue, clear, init and replay behavior outside the added preflight.
 Regression tests cover normalized diagonal input, partial input, observed momentum beyond nominal speed, corrupt traces and cap comparisons.
+
+## D218 — Admin-only weapon pickup for a selected bot
+
+Expose `yb giveweapon <bot_index> <alias>` using the existing YaPB admin-command authorization path and zero-based bot index convention.
+Resolve exact lowercase aliases from the existing `BotSupport::m_weaponAliases` instead of maintaining a second name-to-weapon map; the reverse lookup returns -1 for unknown aliases.
+Limit the command to real standard firearms for controlled replay tests, rejecting knife, grenades, C4 (not in the alias table), shield, armor and non-weapon equipment.
+Do not manipulate `pev->weapons` or weapon movement caps directly.
+If a primary slot is occupied, use the normal game DLL selection and drop client commands before spawning a replacement; reject the replacement if the previous primary cannot be dropped.
+Use the configured weapon classname to create a GoldSrc entity, call `MDLL_Spawn` and `MDLL_Touch` for the selected living bot, and verify the resulting inventory bit before claiming success.
+If pickup fails, report the failure and remove the unclaimed spawned entity; if the weapon is already owned, only select it.
+No weapons are given to other bots, and normal shop, economic, model or training behavior is left unchanged unless the administrator explicitly issues the command.
+Automatic Linux AI CI cannot validate game DLL item-pickup behavior; a user-controlled Windows x86 build and in-game verification are required.
