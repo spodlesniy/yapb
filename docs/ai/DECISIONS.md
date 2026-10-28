@@ -2906,3 +2906,15 @@ Create an immutable map-scoped `aipb-explorer-area-statistics-v1` CSV containing
 Check every declared count, sorted cell order, totals and file completeness on read; invalid files must not overwrite a caller's previous result.
 Expose administrator-only `yb explore areas <index> <output>` and `yb explore area <name> <x> <y> <z>`; the latter reports zero counts for unobserved cells.
 Keep diagnostic statistics separate from graph generation, action selection and collision authority.
+
+## D225 — Direction-aware evidence and conservative conflict reporting
+
+D224's per-cell aggregate conflates opposing directions and cannot distinguish one-way restrictions from contradictions.
+Build per-cell, per-heading-sector counts over validated D223 index postings with eight 45-degree sectors, wrapping the source observation's requested heading into [0, 360).
+The heading comes from the original commanded direction, not the actual sliding displacement.
+Count Progress, BlockedCandidate and DeflectedCandidate independently in each occupied sector, with each observation counted once per intersected cell.
+Mark a same-heading conflict only if one occupied sector contains Progress and at least one restricted candidate.
+Report different-heading opposition separately whenever a sector's outcome category is opposed by some other sector in the same cell; do not call it a contradiction.
+Persist an immutable map-bound directional-v1 CSV with deterministic cell/bin ordering, complete counts and validation; reject mismatched map, truncated or inconsistent data.
+Expose administrator-only `yb explore directions <index> <output>` and `yb explore direction <name> <x> <y> <z> <heading>`.
+Preserve movement, raw traces, old area snapshots and the existing spatial index contract.

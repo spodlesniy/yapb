@@ -13,6 +13,7 @@
 #include <aipb/explorer/engine_bridge_observation_collection.h>
 #include <aipb/explorer/engine_bridge_spatial_index.h>
 #include <aipb/explorer/engine_bridge_area_statistics.h>
+#include <aipb/explorer/engine_bridge_direction_evidence.h>
 
 #include <ctime>
 #include <cmath>
@@ -1443,6 +1444,70 @@ int BotControl::cmdExplore () {
       }
       if (!ai::explore::classify()) {
          msg("AiPB explorer: classify requires a completed, valid trace; use init to load a recording.");
+      }
+      return BotCommandResult::Handled;
+   }
+   if (operation == "directions" || operation == "direction") {
+      const auto directory = strings.joinPath(bstor.getRunningPath(), folders.data, "explorer");
+      if (operation == "directions") {
+         if (!hasArg(forward) || !hasArg(strafe) || hasArg(jump)) {
+            return BotCommandResult::BadFormat;
+         }
+         const auto source = arg <StringRef>(forward);
+         const auto output = arg <StringRef>(strafe);
+         if (!aipb::explorer::bridge::safeName(source.chars())
+            || !aipb::explorer::bridge::safeName(output.chars())) {
+            return BotCommandResult::BadFormat;
+         }
+         const auto in = strings.joinPath(directory, strings.format("%s.spatial.csv", source));
+         const auto out = strings.joinPath(directory, strings.format("%s.directions.csv", output));
+         aipb::explorer::bridge::DirectionStatisticsReport report {};
+         if (!aipb::explorer::bridge::writeDirectionalEvidence(in.chars(), out.chars(),
+            game.getMapName(), report)) {
+            msg("AiPB explorer: cannot aggregate directional evidence.");
+         }
+         else {
+            msg("AiPB explorer: directions '%s': cells=%d bins=%d observations=%d same_heading_conflicts=%d cross_heading_mixed_cells=%d.",
+               output, report.cells, report.bins, report.observations,
+               report.conflictedBins, report.crossHeadingMixedCells);
+         }
+         return BotCommandResult::Handled;
+      }
+      if (!hasArg(forward) || !hasArg(strafe) || !hasArg(jump) || !hasArg(duck)
+         || !hasArg(yaw) || hasArg(frames)) {
+         return BotCommandResult::BadFormat;
+      }
+      const auto name = arg <StringRef>(forward);
+      if (!aipb::explorer::bridge::safeName(name.chars())) {
+         return BotCommandResult::BadFormat;
+      }
+      const auto parseCoordinate = [this](int parameter, double &value) {
+         const auto input = arg <StringRef>(parameter).chars();
+         char *end {};
+         value = std::strtod(input, &end);
+         return end != input && *end == '\0' && std::isfinite(value);
+      };
+      double x {}, y {}, z {}, heading {};
+      if (!parseCoordinate(strafe, x) || !parseCoordinate(jump, y)
+         || !parseCoordinate(duck, z) || !parseCoordinate(yaw, heading)) {
+         return BotCommandResult::BadFormat;
+      }
+      const auto path = strings.joinPath(directory, strings.format("%s.directions.csv", name));
+      aipb::explorer::bridge::DirectionStatistics statistics {};
+      aipb::explorer::bridge::DirectionQuery query {};
+      if (!aipb::explorer::bridge::readDirectionalEvidence(path.chars(),
+         game.getMapName(), statistics)
+         || !aipb::explorer::bridge::queryDirectionalEvidence(statistics,
+            x, y, z, heading, query)) {
+         msg("AiPB explorer: invalid directional evidence, map, or coordinates.");
+      }
+      else {
+         msg("AiPB explorer: direction '%s': cell=(%d,%d,%d) bin=%d headings=%d observations=%d progress=%d blocked=%d deflected=%d same_heading_conflict=%d other_heading_opposition=%d.",
+            name, query.evidence.cell.x, query.evidence.cell.y, query.evidence.cell.z,
+            query.evidence.bin, query.headingsInCell, query.evidence.observations,
+            query.evidence.progress, query.evidence.blockedCandidates,
+            query.evidence.deflectedCandidates, static_cast<int>(query.sameHeadingConflict),
+            static_cast<int>(query.otherHeadingOpposition));
       }
       return BotCommandResult::Handled;
    }
@@ -2939,7 +3004,7 @@ BotControl::BotControl () {
       },
       {
          "explore",
-         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save <name> | list | init <name> <bot> | replay <name> <bot> | append <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | queue <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | run <save_name> | queueclear | report | progress | classify | observe <name> | merge <first> <second> <output> | index <source> <output> | near <index> <x> <y> <z> <radius> | areas <index> <output> | area <name> <x> <y> <z> | clear | stop",
+         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save <name> | list | init <name> <bot> | replay <name> <bot> | append <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | queue <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | run <save_name> | queueclear | report | progress | classify | observe <name> | merge <first> <second> <output> | index <source> <output> | near <index> <x> <y> <z> <radius> | areas <index> <output> | area <name> <x> <y> <z> | directions <index> <output> | direction <name> <x> <y> <z> <heading> | clear | stop",
          "Runs an admin-only bounded GoldSrc movement probe.",
          &BotControl::cmdExplore
       },

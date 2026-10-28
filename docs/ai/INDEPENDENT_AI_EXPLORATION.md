@@ -372,3 +372,11 @@ After creating a D223 index, run `yb explore areas dust2_index_01 dust2_areas_01
 Use `yb explore area dust2_areas_01 448 2464 -92` to inspect the exact 128-unit 3D grid cell containing that point.
 The command reports cell coordinates and independent counters for Progress, BlockedCandidate and DeflectedCandidate observation postings; an unobserved cell reports zeros.
 A single segment may be counted in several cells, and no counter implies verified collision or safe navigation.
+
+## D225 — Requested-direction evidence
+
+Run `yb explore directions dust2_index_01 dust2_directions_01` to create `data/explorer/dust2_directions_01.directions.csv` from a D223 spatial index.
+Query one requested heading in a cell using `yb explore direction dust2_directions_01 448 2464 -92 -105`; heading sectors are 45 degrees wide and wrap at 360 degrees.
+The command reports per-sector progress, blocked and deflected counts, plus same-heading conflict and other-heading opposition separately.
+A second direction within the same spatial cell may have different observations without a same-heading contradiction.
+The existing all-Progress index should produce zero same-heading conflicts; meaningful negative evidence requires new blocked or deflected probe traces merged and indexed separately.

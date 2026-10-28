@@ -402,3 +402,7 @@ The index is an immutable auxiliary file with verified postings and a bounded re
 D223 automatic build and Explorer CI passed on ef460f25; the user verified a de_dust2 spatial index containing 18 records, 6 cells and 22 postings, with a seven-match near query.
 D224 introduces read-only per-cell counts of Progress, BlockedCandidate and DeflectedCandidate evidence derived from the validated D223 posting table, persisted in a separate map-bound area-statistics snapshot.
 The same observation can count in more than one intersected cell, so these are evidence postings rather than independent trials or proof of traversability; automatic CI and Windows x86 game acceptance remain pending.
+
+D224 passed automatic build and Explorer CI at 53b34240; the user verified an area snapshot of six de_dust2 cells containing 22 Progress postings, plus a populated-cell and an empty-cell query.
+D225 introduces map-scoped directional aggregation into eight 45-degree requested-heading sectors per spatial cell, separating same-sector Progress versus restricted candidates from opposition across different headings.
+The directional snapshot remains diagnostic evidence, not proof of blocked geometry or permission to navigate; automatic CI and user-started Windows x86 gameplay validation remain pending.
