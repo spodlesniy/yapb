@@ -461,3 +461,9 @@ Strict interior face crossing and requested heading filtering remain mandatory; 
 D234 verified in HLDS: one Progress source crossed X=256 at (256,2512,-91.97) in heading bin 1, and bin 2 was empty.
 Automatic build succeeded at 7c07ac8d but Explorer CI failed across MSVC, GCC and Clang due to an accidental trailing `undefined` token in the new test source.
 D234.1 removes this token without production changes; automatic Explorer CI must pass before D234 acceptance.
+
+D234.1 Explorer CI passed at a1b8f176 (run 40713825949) after removal of the stray test token, and D234 game verification confirmed the X=256 crossing in heading bin 1 with bin 2 empty.
+D234 is accepted.
+D235 adds read-only directional interpretation of strict recorded coarse-boundary crossings: positive/negative axis travel, relationship to the record's own requested yaw, per-face sources and classes, and deduplicated aggregate window counts.
+Near-tangential yaw and vertical-axis movements are explicitly separated; results do not authorize navigation.
+Automatic Explorer CI and Windows x86 gameplay acceptance remain pending.

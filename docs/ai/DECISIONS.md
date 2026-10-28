@@ -3021,3 +3021,14 @@ Do not infer safety, independent physical trials or route permissions from cross
 
 All three Explorer compilers rejected a standalone `undefined` token after the test main function.
 Remove that token only, retain existing assertions and production code, and require successful automatic CI.
+
+## D235 — Record observed crossing signs and yaw-relative movement
+
+D234 identifies strict crossing faces, but not lower-to-higher versus higher-to-lower motion or whether the recorded yaw is in the same half-plane as displacement.
+Add read-only `yb explore crossing-directions <trials> <x> <y> <z> <heading>` reusing D234's bounded discovery and trace provenance.
+Report positive/negative travel along the crossed axis for Progress versus restriction candidates, bidirectional faces, and alignment to each record's yaw, using cosine for X and sine for Y.
+Classify a yaw normal projection below 0.25 as Transverse, and all Z crossings as Vertical (yaw alone cannot determine vertical intent).
+Query heading selects the 45-degree sector; yaw agreement uses each recording's heading, not the query value.
+Count source-records once in aggregate alignment summaries even when a segment crosses two distinct faces.
+These are descriptions, not evidence of a navigation bug or passability; strafing, reversing and momentum can disagree with yaw.
+No changes to movement, graphs or artifact schemas.

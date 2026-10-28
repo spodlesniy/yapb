@@ -23,6 +23,7 @@
 #include <aipb/explorer/engine_bridge_cross_cell_regions.h>
 #include <aipb/explorer/engine_bridge_boundary_crossings.h>
 #include <aipb/explorer/engine_bridge_crossing_discovery.h>
+#include <aipb/explorer/engine_bridge_crossing_directions.h>
 
 #include <ctime>
 #include <cmath>
@@ -1453,6 +1454,56 @@ int BotControl::cmdExplore () {
       }
       if (!ai::explore::classify()) {
          msg("AiPB explorer: classify requires a completed, valid trace; use init to load a recording.");
+      }
+      return BotCommandResult::Handled;
+   }
+   if (operation == "crossing-directions") {
+      if (!hasArg(forward) || !hasArg(strafe) || !hasArg(jump)
+         || !hasArg(duck) || !hasArg(yaw) || hasArg(frames)) {
+         return BotCommandResult::BadFormat;
+      }
+      const auto name = arg <StringRef>(forward);
+      if (!aipb::explorer::bridge::safeName(name.chars())) {
+         return BotCommandResult::BadFormat;
+      }
+      const auto parse = [this](int position, double &value) {
+         const auto input = arg <StringRef>(position).chars();
+         char *end {};
+         value = std::strtod(input, &end);
+         return end != input && *end == '\0' && std::isfinite(value);
+      };
+      double x {}, y {}, z {}, heading {};
+      if (!parse(strafe, x) || !parse(jump, y) || !parse(duck, z) || !parse(yaw, heading)) {
+         return BotCommandResult::BadFormat;
+      }
+      const auto directory = strings.joinPath(bstor.getRunningPath(), folders.data, "explorer");
+      const auto path = strings.joinPath(directory, strings.format("%s.trials.csv", name));
+      aipb::explorer::bridge::EvidenceTrialSet trials {};
+      aipb::explorer::bridge::CrossingDirectionAudit report {};
+      if (!aipb::explorer::bridge::readEvidenceTrialSet(path.chars(), game.getMapName(), trials)
+         || !aipb::explorer::bridge::auditCrossingDirections(trials, x, y, z, heading, report)) {
+         msg("AiPB explorer: cannot audit crossing directions.");
+      }
+      else {
+         msg("AiPB explorer: crossing-directions '%s': coarse=(%d,%d,%d) bin=%d faces=%d positive_faces=%d negative_faces=%d bidirectional_faces=%d against_heading_faces=%d against_heading_windows=%d transverse_windows=%d vertical_windows=%d.",
+            name, report.discovered.queryCoarse.x, report.discovered.queryCoarse.y,
+            report.discovered.queryCoarse.z, report.discovered.headingBin, report.discovered.faces,
+            report.positiveFaces, report.negativeFaces, report.bidirectionalFaces,
+            report.againstHeadingFaces, report.againstHeadingWindows,
+            report.transverseHeadingWindows, report.verticalAxisWindows);
+         for (const auto &face : report.details) {
+            msg("AiPB explorer: crossing direction axis=%d lower=(%d,%d,%d) at=(%.2f,%.2f,%.2f) positive_progress=%d negative_progress=%d positive_restriction=%d negative_restriction=%d.",
+               face.discovered.axis, face.discovered.lowerCell.x,
+               face.discovered.lowerCell.y, face.discovered.lowerCell.z,
+               face.discovered.position[0], face.discovered.position[1],
+               face.discovered.position[2], face.positiveProgress, face.negativeProgress,
+               face.positiveRestriction, face.negativeRestriction);
+            msg("AiPB explorer: crossing heading with=%d against=%d transverse=%d vertical=%d positive_sources=%d negative_sources=%d against_sources=%d.",
+               face.withHeading, face.againstHeading, face.transverseHeading,
+               face.verticalAxis, static_cast<int>(face.positiveSources.size()),
+               static_cast<int>(face.negativeSources.size()),
+               static_cast<int>(face.againstHeadingSources.size()));
+         }
       }
       return BotCommandResult::Handled;
    }
@@ -3431,7 +3482,7 @@ BotControl::BotControl () {
       },
       {
          "explore",
-         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save <name> | list | init <name> <bot> | replay <name> <bot> | append <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | queue <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | run <save_name> | queueclear | report | progress | classify | observe <name> | merge <first> <second> <output> | index <source> <output> | near <index> <x> <y> <z> <radius> | areas <index> <output> | area <name> <x> <y> <z> | directions <index> <output> | direction <name> <x> <y> <z> <heading> | audit <index> <x> <y> <z> | assess <index> <x> <y> <z> <heading> | trials <first> <second> <output> | corroborate <trials> <x> <y> <z> <heading> | consensus <trials> <x> <y> <z> <heading> | localize <trials> <x> <y> <z> <heading> | region <trials> <x> <y> <z> <heading> | span <trials> <x> <y> <z> <heading> | crossings <trials> <x> <y> <z> <heading> | discover-crossings <trials> <x> <y> <z> <heading> | clear | stop",
+         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save <name> | list | init <name> <bot> | replay <name> <bot> | append <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | queue <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | run <save_name> | queueclear | report | progress | classify | observe <name> | merge <first> <second> <output> | index <source> <output> | near <index> <x> <y> <z> <radius> | areas <index> <output> | area <name> <x> <y> <z> | directions <index> <output> | direction <name> <x> <y> <z> <heading> | audit <index> <x> <y> <z> | assess <index> <x> <y> <z> <heading> | trials <first> <second> <output> | corroborate <trials> <x> <y> <z> <heading> | consensus <trials> <x> <y> <z> <heading> | localize <trials> <x> <y> <z> <heading> | region <trials> <x> <y> <z> <heading> | span <trials> <x> <y> <z> <heading> | crossings <trials> <x> <y> <z> <heading> | discover-crossings <trials> <x> <y> <z> <heading> | crossing-directions <trials> <x> <y> <z> <heading> | clear | stop",
          "Runs an admin-only bounded GoldSrc movement probe.",
          &BotControl::cmdExplore
       },

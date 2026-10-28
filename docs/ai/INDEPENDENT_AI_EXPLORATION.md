@@ -462,3 +462,11 @@ On de_dust2, use the existing snapshot:
 The `d226_slide` trace contains a Progress segment crossing the X=256 plane at approximately (256,2512,-92), which should appear in sector 1 with one source.
 Repeat with heading 90 to confirm that the sector filter excludes that movement.
 This command discovers recorded crossings regardless of existing connected regions; it does not prove collision-free traversal.
+
+## D235 — Crossing direction and recorded yaw
+
+On de_dust2 run:
+`yb explore crossing-directions d228_trials_02 256 2512 -92 39.2894287`
+Expect one X=256 positive-axis Progress crossing with `with=1`, `against=0` and no opposed-heading windows.
+Run `yb explore crossing-directions d228_trials_02 256 2512 -92 90` to verify sector 2 remains empty.
+The reported heading agreement is not a verified route, physical independence certificate or collision check.
