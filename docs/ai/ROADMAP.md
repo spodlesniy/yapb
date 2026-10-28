@@ -430,3 +430,9 @@ D228 passed automatic build and Explorer CI on 4ff81532; the user verified two- 
 D229 adds read-only per-direction source-quality consensus over D228 trials-v1 provenance, distinguishing weak (one window), corroborated homogeneous (at least two windows per source), and internally mixed sources.
 Any Progress/restriction opposition remains Conflicted regardless of relative window counts; two homogeneous qualifying sources are required for ProgressEvidence or RestrictionEvidence, with no probability or movement authorization.
 Automatic CI and user-controlled Windows x86 gameplay acceptance remain pending.
+
+D229 passed automatic build and Explorer CI on 8ef86ee2, and live de_dust2 tests verified mixed and restricted sources at the wall plus an unobserved cell.
+D230 adds a read-only 32-unit 3D subcell query over the existing D228 trials-v1 source snapshots, comparing local source-quality evidence with the existing 128-unit D229 consensus.
+Use exact segment-to-subcell intersections, not solely bounding-box postings, to avoid wrongly assigning diagonal movement to nearby space.
+Preserve the coarse conflict when a smaller locality has only homogeneous evidence or none; neither local result establishes passability.
+Automatic CI and Windows x86 gameplay acceptance remain pending.

@@ -412,3 +412,13 @@ Inspect existing D228 source snapshot without creating new files:
 Expected status is Conflicted: the wall source contains only restrictions, the deflected trace is internally mixed, and the slide trace has no evidence in this cell.
 Inspect empty space with `yb explore consensus d228_trials_02 5000 5000 0 0`; expect Unobserved.
 The output separates strong homogeneous, weak and mixed sources; neither count of windows nor 45-degree bin membership alone proves collision or a safe route.
+
+## D230 — Spatial localization within the coarse cell
+
+Using the existing immutable `d228_trials_02.trials.csv` on de_dust2, run:
+`yb explore localize d228_trials_02 496 2464 -92 0`
+`yb explore localize d228_trials_02 460 2454 -92 0`
+`yb explore localize d228_trials_02 496 2505 -92 0`
+`yb explore localize d228_trials_02 5000 5000 0 0`
+The original 128-unit wall cell remains Conflicted; fine 32-unit subcells distinguish wall restriction, earlier approach Progress and later deflection while retaining conservative source-quality labels.
+The fine query counts observation segments intersecting the exact subcell; these are not proven collision surfaces or route permissions.

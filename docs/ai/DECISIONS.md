@@ -2965,3 +2965,12 @@ An internally mixed source is Conflicted even with one window of either outcome 
 Any Progress/restriction opposition across sources is Conflicted, including weak evidence; a lone weak source cannot overturn the lack of information into corroborated evidence.
 At least two strong homogeneous sources without opposition are required for a homogeneous evidence label; retain raw counts as diagnostic context only.
 Do not infer source independence from trace labels, confidence probabilities, collision truth, passability, navigation graphs or bot actions.
+
+## D230 — Localize source evidence without erasing coarse conflicts
+
+128-unit spatial cells mix different surfaces, so coarse D229 Conflicted can be driven by evidence from distant regions of one cell.
+Add administrator-only `yb explore localize <trials> <x> <y> <z> <heading>` to report D229 source consensus for both the original 128-unit cell and the enclosing 32-unit 3D subcell.
+Derive each fine posting by exact inclusive segment-versus-subcell AABB intersection, after finding candidates from the validated source index, instead of assigning every bounding-box-overlapping diagonal segment.
+Retain the original requested-heading 45-degree sector and source-based quality thresholds, counting each window once per queried fine cell and each source at most once for evidence quality.
+Never reinterpret a fine homogeneous/empty result as a verified free or blocked region; always display the coarse result alongside it.
+Do not modify source files, artifact schemas, movement, graph, or navigation behavior.

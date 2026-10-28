@@ -18,6 +18,7 @@
 #include <aipb/explorer/engine_bridge_direction_assessment.h>
 #include <aipb/explorer/engine_bridge_trial_corroboration.h>
 #include <aipb/explorer/engine_bridge_source_consensus.h>
+#include <aipb/explorer/engine_bridge_spatial_localization.h>
 
 #include <ctime>
 #include <cmath>
@@ -1448,6 +1449,49 @@ int BotControl::cmdExplore () {
       }
       if (!ai::explore::classify()) {
          msg("AiPB explorer: classify requires a completed, valid trace; use init to load a recording.");
+      }
+      return BotCommandResult::Handled;
+   }
+   if (operation == "localize") {
+      if (!hasArg(forward) || !hasArg(strafe) || !hasArg(jump)
+         || !hasArg(duck) || !hasArg(yaw) || hasArg(frames)) {
+         return BotCommandResult::BadFormat;
+      }
+      const auto name = arg <StringRef>(forward);
+      if (!aipb::explorer::bridge::safeName(name.chars())) {
+         return BotCommandResult::BadFormat;
+      }
+      const auto parse = [this](int position, double &value) {
+         const auto input = arg <StringRef>(position).chars();
+         char *end {};
+         value = std::strtod(input, &end);
+         return end != input && *end == '\0' && std::isfinite(value);
+      };
+      double x {}, y {}, z {}, heading {};
+      if (!parse(strafe, x) || !parse(jump, y) || !parse(duck, z) || !parse(yaw, heading)) {
+         return BotCommandResult::BadFormat;
+      }
+      const auto directory = strings.joinPath(bstor.getRunningPath(), folders.data, "explorer");
+      const auto path = strings.joinPath(directory, strings.format("%s.trials.csv", name));
+      aipb::explorer::bridge::EvidenceTrialSet trials {};
+      aipb::explorer::bridge::LocalizedSourceEvidence report {};
+      if (!aipb::explorer::bridge::readEvidenceTrialSet(path.chars(), game.getMapName(), trials)
+         || !aipb::explorer::bridge::localizeSourceEvidence(trials, x, y, z, heading, report)) {
+         msg("AiPB explorer: cannot localize source evidence.");
+      }
+      else {
+         msg("AiPB explorer: localize '%s': coarse=(%d,%d,%d) fine=(%d,%d,%d) bin=%d coarse_status=%s fine_status=%s coarse_windows=%d fine_windows=%d.",
+            name, report.coarse.cell.x, report.coarse.cell.y, report.coarse.cell.z,
+            report.fineCell.x, report.fineCell.y, report.fineCell.z,
+            report.fine.headingBin,
+            aipb::explorer::bridge::directionAssessmentName(report.coarse.status),
+            aipb::explorer::bridge::directionAssessmentName(report.fine.status),
+            report.coarse.windows, report.fine.windows);
+         msg("AiPB explorer: localize fine sources=%d observed=%d weak=%d strong_progress=%d strong_restriction=%d mixed=%d progress=%d blocked=%d deflected=%d.",
+            report.fine.sources, report.fine.observedSources, report.fine.weakSources,
+            report.fine.strongProgressSources, report.fine.strongRestrictionSources,
+            report.fine.mixedSources, report.fine.progress,
+            report.fine.blockedCandidates, report.fine.deflectedCandidates);
       }
       return BotCommandResult::Handled;
    }
@@ -3195,7 +3239,7 @@ BotControl::BotControl () {
       },
       {
          "explore",
-         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save <name> | list | init <name> <bot> | replay <name> <bot> | append <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | queue <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | run <save_name> | queueclear | report | progress | classify | observe <name> | merge <first> <second> <output> | index <source> <output> | near <index> <x> <y> <z> <radius> | areas <index> <output> | area <name> <x> <y> <z> | directions <index> <output> | direction <name> <x> <y> <z> <heading> | audit <index> <x> <y> <z> | assess <index> <x> <y> <z> <heading> | trials <first> <second> <output> | corroborate <trials> <x> <y> <z> <heading> | consensus <trials> <x> <y> <z> <heading> | clear | stop",
+         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save <name> | list | init <name> <bot> | replay <name> <bot> | append <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | queue <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | run <save_name> | queueclear | report | progress | classify | observe <name> | merge <first> <second> <output> | index <source> <output> | near <index> <x> <y> <z> <radius> | areas <index> <output> | area <name> <x> <y> <z> | directions <index> <output> | direction <name> <x> <y> <z> <heading> | audit <index> <x> <y> <z> | assess <index> <x> <y> <z> <heading> | trials <first> <second> <output> | corroborate <trials> <x> <y> <z> <heading> | consensus <trials> <x> <y> <z> <heading> | localize <trials> <x> <y> <z> <heading> | clear | stop",
          "Runs an admin-only bounded GoldSrc movement probe.",
          &BotControl::cmdExplore
       },
