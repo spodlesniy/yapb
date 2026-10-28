@@ -321,3 +321,12 @@ BlockedCandidate requires two consecutive eligible windows with less than 15% re
 Neutral input, jumps, duck commands and airborne frames break the sequence; sideways or backwards movement without directed progress is insufficient evidence rather than a proven collision.
 Use `yb explore progress` to view the original D219 low-travel diagnostics; `classify` is a read-only second assessment.
 Neither command causes autonomous navigation or changes saved CSV v2 data.
+
+## D220.1 — Latest movement state and lateral deflection
+
+`yb explore classify` now distinguishes `DeflectedCandidate` from total stopping and ordinary directed progress.
+Two consecutive eligible ground-input windows (at least 100 simulated ms each) must show sideways displacement at least 15% of requested distance, larger than absolute forward projection, without sufficient directed progress, and with the same lateral sign.
+The command displays `last_window`, `last_step`, `state_start`, `deflected_windows`, `first_deflected_step`, `longest_deflection_streak` and `lateral` alongside existing fields.
+A successful initial approach followed by persistent wall-side sliding can therefore end as DeflectedCandidate instead of Progress.
+A later successful window restores Progress, while a brief or alternating-side deflection remains InsufficientEvidence; stationary-wall probes continue to use BlockedCandidate.
+Engine contact is still unknown, and these candidates remain diagnostic rather than proof of a wall or an autonomous movement command.

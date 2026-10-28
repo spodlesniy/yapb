@@ -378,3 +378,7 @@ The engine-independent C++17 regression checks stationary, moving, interrupted a
 D219 passed automatic build and Explorer CI on 078ac61f; user gameplay observations confirmed both free travel (0/9 low-progress windows) and persistent wall blockage (9/9 low-progress windows).
 D220 adds read-only completed-trace classification as Progress, BlockedCandidate or InsufficientEvidence based on actual direction-projected travel and consecutive low-travel windows.
 Collision contact remains unknown with CSV v2, and Windows x86 gameplay verification of the new classification command remains pending.
+
+D220 automatic build and Explorer CI passed on 84145c80; user gameplay showed free running and named jump replay classified as Progress, but a wall approach followed by sustained wall sliding remained Progress because earlier successful windows dominated the trace.
+D220.1 classifies the latest completed eligible movement window sequence, adds DeflectedCandidate for two same-side lateral windows without directed progress, and preserves BlockedCandidate for consecutive low-travel windows.
+The classifier still has no engine-contact evidence; automatic CI and user-started Windows x86 game validation remain required.

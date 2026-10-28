@@ -266,6 +266,10 @@ bool classify() {
    game.print("AiPB explorer classify: first_blocked_step=%d, longest_low_streak=%d, requested=%.2f, observed=%.2f, projected=%.2f",
       result.firstBlockedStep, result.longestLowTravelStreak, result.requestedUnits,
       result.observedUnits, result.projectedUnits);
+   game.print("AiPB explorer classify: last_window=%s, last_step=%d, state_start=%d, deflected_windows=%d, first_deflected_step=%d, longest_deflection_streak=%d, lateral=%.2f",
+      aipb::explorer::bridge::movementWindowOutcomeName(result.lastWindow),
+      result.lastWindowStep, result.classificationStartStep, result.deflectedWindows,
+      result.firstDeflectedStep, result.longestDeflectionStreak, result.lateralUnits);
    return true;
 }
 

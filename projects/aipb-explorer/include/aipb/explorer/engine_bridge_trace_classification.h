@@ -10,7 +10,16 @@ namespace aipb::explorer::bridge {
 enum class MovementClassification {
   Progress,
   BlockedCandidate,
+  DeflectedCandidate,
   InsufficientEvidence
+};
+
+enum class MovementWindowOutcome {
+  None,
+  Progress,
+  LowTravel,
+  Deflected,
+  DirectionMismatch
 };
 
 struct TraceMovementClassification {
@@ -20,11 +29,18 @@ struct TraceMovementClassification {
   int progressWindows {};
   int lowTravelWindows {};
   int directionMismatchWindows {};
+  int deflectedWindows {};
   int longestLowTravelStreak {};
+  int longestDeflectionStreak {};
   int firstBlockedStep { -1 };
+  int firstDeflectedStep { -1 };
+  int classificationStartStep { -1 };
+  int lastWindowStep { -1 };
+  MovementWindowOutcome lastWindow { MovementWindowOutcome::None };
   double requestedUnits {};
   double observedUnits {};
   double projectedUnits {};
+  double lateralUnits {};
 };
 
 // Trace v2 contains observed positions, not engine contact or collision evidence.
@@ -46,10 +62,14 @@ inline bool classifyTraceMovement(
   int windowStart = -1;
   int windowMs = 0;
   int consecutiveLow = 0;
+  int consecutiveDeflected = 0;
   int lowStreakStart = -1;
+  int deflectionStreakStart = -1;
+  int previousLateralSign = 0;
   double windowRequested = 0.0;
   double windowObserved = 0.0;
   double windowProjected = 0.0;
+  double windowLateral = 0.0;
 
   for (int i = 0; i < trace.count; ++i) {
     const TraceSample &sample = trace.samples[i];
@@ -63,8 +83,12 @@ inline bool classifyTraceMovement(
       windowRequested = 0.0;
       windowObserved = 0.0;
       windowProjected = 0.0;
+      windowLateral = 0.0;
       consecutiveLow = 0;
+      consecutiveDeflected = 0;
       lowStreakStart = -1;
+      deflectionStreakStart = -1;
+      previousLateralSign = 0;
       continue;
     }
 
@@ -88,15 +112,29 @@ inline bool classifyTraceMovement(
     windowRequested += static_cast<double>(inputSpeed) * sample.msec / 1000.0;
     windowObserved += std::hypot(dx, dy);
     windowProjected += dx * directionX + dy * directionY;
+    windowLateral += directionX * dy - directionY * dx;
 
     if (windowMs >= kWindowMs) {
       ++next.evaluatedWindows;
       next.requestedUnits += windowRequested;
       next.observedUnits += windowObserved;
       next.projectedUnits += windowProjected;
+      next.lateralUnits += std::abs(windowLateral);
+      next.lastWindowStep = windowStart;
+      next.classification = MovementClassification::InsufficientEvidence;
+      next.classificationStartStep = -1;
+      next.lastWindow = MovementWindowOutcome::None;
 
-      if (windowRequested >= kMinimumRequest
-        && windowObserved < kLowTravelRatio * windowRequested) {
+      const bool enoughInput = windowRequested >= kMinimumRequest;
+      const double minimumTravel = kLowTravelRatio * windowRequested;
+      const bool lowTravel = enoughInput && windowObserved < minimumTravel;
+      const bool directedProgress = enoughInput && windowProjected >= minimumTravel;
+      const bool lateralDeflection = enoughInput && !lowTravel && !directedProgress
+        && std::abs(windowLateral) >= minimumTravel
+        && std::abs(windowLateral) > std::abs(windowProjected);
+
+      if (lowTravel) {
+        next.lastWindow = MovementWindowOutcome::LowTravel;
         ++next.lowTravelWindows;
 
         if (consecutiveLow == 0) {
@@ -107,21 +145,60 @@ inline bool classifyTraceMovement(
         next.longestLowTravelStreak = std::max(next.longestLowTravelStreak,
           consecutiveLow);
 
-        if (consecutiveLow >= 2 && next.firstBlockedStep < 0) {
-          next.firstBlockedStep = lowStreakStart;
+        if (consecutiveLow >= 2) {
+          if (next.firstBlockedStep < 0) {
+            next.firstBlockedStep = lowStreakStart;
+          }
+
+          next.classification = MovementClassification::BlockedCandidate;
+          next.classificationStartStep = lowStreakStart;
         }
       }
       else {
         consecutiveLow = 0;
         lowStreakStart = -1;
+      }
 
-        if (windowRequested >= kMinimumRequest
-          && windowProjected >= kLowTravelRatio * windowRequested) {
-          ++next.progressWindows;
+      if (lateralDeflection) {
+        next.lastWindow = MovementWindowOutcome::Deflected;
+        ++next.deflectedWindows;
+
+        if (next.firstDeflectedStep < 0) {
+          next.firstDeflectedStep = windowStart;
         }
-        else if (windowRequested >= kMinimumRequest) {
-          ++next.directionMismatchWindows;
+
+        const int sign = windowLateral > 0.0 ? 1 : -1;
+
+        if (consecutiveDeflected == 0 || sign != previousLateralSign) {
+          consecutiveDeflected = 0;
+          deflectionStreakStart = windowStart;
         }
+
+        ++consecutiveDeflected;
+        previousLateralSign = sign;
+        next.longestDeflectionStreak = std::max(next.longestDeflectionStreak,
+          consecutiveDeflected);
+
+        if (consecutiveDeflected >= 2) {
+          next.classification = MovementClassification::DeflectedCandidate;
+          next.classificationStartStep = deflectionStreakStart;
+        }
+      }
+      else {
+        consecutiveDeflected = 0;
+        deflectionStreakStart = -1;
+        previousLateralSign = 0;
+      }
+
+      if (directedProgress) {
+        next.lastWindow = MovementWindowOutcome::Progress;
+        ++next.progressWindows;
+        next.classification = MovementClassification::Progress;
+        next.classificationStartStep = windowStart;
+      }
+      else if (enoughInput && !lowTravel && !lateralDeflection) {
+        next.lastWindow = MovementWindowOutcome::DirectionMismatch;
+        ++next.directionMismatchWindows;
       }
 
       windowStart = -1;
@@ -129,14 +206,8 @@ inline bool classifyTraceMovement(
       windowRequested = 0.0;
       windowObserved = 0.0;
       windowProjected = 0.0;
+      windowLateral = 0.0;
     }
-  }
-
-  if (next.firstBlockedStep >= 0) {
-    next.classification = MovementClassification::BlockedCandidate;
-  }
-  else if (next.progressWindows > 0) {
-    next.classification = MovementClassification::Progress;
   }
 
   result = next;
@@ -149,11 +220,30 @@ inline const char *movementClassificationName(MovementClassification classificat
     return "Progress";
   case MovementClassification::BlockedCandidate:
     return "BlockedCandidate";
+  case MovementClassification::DeflectedCandidate:
+    return "DeflectedCandidate";
   case MovementClassification::InsufficientEvidence:
     return "InsufficientEvidence";
   }
 
   return "InsufficientEvidence";
+}
+
+inline const char *movementWindowOutcomeName(MovementWindowOutcome outcome) {
+  switch (outcome) {
+  case MovementWindowOutcome::None:
+    return "None";
+  case MovementWindowOutcome::Progress:
+    return "Progress";
+  case MovementWindowOutcome::LowTravel:
+    return "LowTravel";
+  case MovementWindowOutcome::Deflected:
+    return "Deflected";
+  case MovementWindowOutcome::DirectionMismatch:
+    return "DirectionMismatch";
+  }
+
+  return "None";
 }
 
 } // namespace aipb::explorer::bridge

@@ -2842,3 +2842,15 @@ Otherwise return InsufficientEvidence, including short traces, one isolated low-
 Ineligible steps break low-travel streaks; validate the full trace before publishing any results.
 The classification is per-trace evidence and does not assert physics collision, wall contact or navigability; the current CSV lacks a contact field, so display `contact=unknown`.
 No changes to CSV v2, GoldSrc movement, replay, AI action decisions or map graph are permitted.
+
+## D220.1 — Identify persistent lateral deflection and report the latest state
+
+Real GoldSrc D220 evidence shows a successful approach followed by movement constrained along a wall: four directed-progress windows and five direction-mismatch windows still produced a whole-trace Progress classification.
+Keep the existing complete-trace validation, eligibility and minimum window/request thresholds, but classify the latest completed eligible window sequence rather than allowing an earlier success to mask a later restriction.
+Project horizontal displacement both along and perpendicular to each recorded commanded direction, using the same GoldSrc yaw and strafe convention as D220.
+Recognize DeflectedCandidate only after two consecutive completed windows with lateral displacement at least 15% of requested distance, greater than absolute forward projection, and no sufficient directed progress or low absolute travel.
+Require matching lateral signs across the consecutive windows; opposite-side movement, reversal, isolated deflection and short/unqualified data remain InsufficientEvidence rather than inferred collisions.
+Retain BlockedCandidate for two successive low-absolute-travel windows, and Progress for the latest window meeting directed-progress criteria; later recovery from either candidate can return Progress.
+Record the first deflected step, latest completed window and starting step of the latest classified sequence, lateral distance and longest deflection streak.
+Do not claim actual wall contact: CSV v2 still has no engine collision result and the command must continue to print contact=unknown.
+Preserve read-only behavior, CSV v2, movement/replay/queue semantics, and legacy runtime control.

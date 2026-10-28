@@ -91,18 +91,72 @@ static int runTests() {
 
   TraceBuffer lateral = buildGroundTrace(8, 1.0f, 0.0f, 0.0, 5.0);
   require(classifyTraceMovement(lateral, result));
-  require(result.classification == MovementClassification::InsufficientEvidence);
-  require(result.directionMismatchWindows == 2 && result.lowTravelWindows == 0);
+  require(result.classification == MovementClassification::DeflectedCandidate);
+  require(result.deflectedWindows == 2 && result.lowTravelWindows == 0);
+  require(result.firstDeflectedStep == 0 && result.longestDeflectionStreak == 2);
+  require(result.classificationStartStep == 0);
+  require(result.lastWindow == MovementWindowOutcome::Deflected);
 
   TraceBuffer reversed = buildGroundTrace(8, 1.0f, 0.0f, -5.0, 0.0);
   require(classifyTraceMovement(reversed, result));
   require(result.classification == MovementClassification::InsufficientEvidence);
+  require(result.directionMismatchWindows == 2);
   require(result.projectedUnits == -40.0);
 
   TraceBuffer turned = buildGroundTrace(8, 1.0f, 0.0f, 0.0, 5.0, 90.0f);
   require(classifyTraceMovement(turned, result));
   require(result.classification == MovementClassification::Progress);
   require(std::abs(result.projectedUnits - 40.0) < 0.00001);
+
+
+  // Initial approach followed by sustained same-side wall sliding.
+  TraceBuffer wallSlide = buildGroundTrace(16, 1.0f, 0.0f, 5.0, 0.0);
+
+  for (int i = 4; i < 16; ++i) {
+    wallSlide.samples[i].before.x = 20.0;
+    wallSlide.samples[i].after.x = 20.0;
+    wallSlide.samples[i].before.y = (i - 4) * 5.0;
+    wallSlide.samples[i].after.y = (i - 3) * 5.0;
+  }
+
+  require(classifyTraceMovement(wallSlide, result));
+  require(result.classification == MovementClassification::DeflectedCandidate);
+  require(result.progressWindows == 1 && result.deflectedWindows == 3);
+  require(result.firstDeflectedStep == 4 && result.classificationStartStep == 4);
+  require(result.lastWindowStep == 12 && result.longestDeflectionStreak == 3);
+
+  // A transient lateral window does not override later clean progress.
+  TraceBuffer recovered = buildGroundTrace(12, 1.0f, 0.0f, 5.0, 0.0);
+
+  for (int i = 4; i < 8; ++i) {
+    recovered.samples[i].before.x = 20.0;
+    recovered.samples[i].after.x = 20.0;
+    recovered.samples[i].before.y = (i - 4) * 5.0;
+    recovered.samples[i].after.y = (i - 3) * 5.0;
+  }
+
+  for (int i = 8; i < 12; ++i) {
+    recovered.samples[i].before.x = 20.0 + (i - 8) * 5.0;
+    recovered.samples[i].after.x = 25.0 + (i - 8) * 5.0;
+    recovered.samples[i].before.y = 20.0;
+    recovered.samples[i].after.y = 20.0;
+  }
+
+  require(classifyTraceMovement(recovered, result));
+  require(result.classification == MovementClassification::Progress);
+  require(result.firstDeflectedStep == 4 && result.classificationStartStep == 8);
+
+  // Opposite lateral signs are not a sustained same-side deflection.
+  TraceBuffer alternating = buildGroundTrace(8, 1.0f, 0.0f, 0.0, 5.0);
+
+  for (int i = 4; i < 8; ++i) {
+    alternating.samples[i].before.y = 20.0 - (i - 4) * 5.0;
+    alternating.samples[i].after.y = 15.0 - (i - 4) * 5.0;
+  }
+
+  require(classifyTraceMovement(alternating, result));
+  require(result.classification == MovementClassification::InsufficientEvidence);
+  require(result.deflectedWindows == 2 && result.longestDeflectionStreak == 1);
 
   // Neutral frames interrupt short windows rather than joining them.
   TraceBuffer interrupted = buildGroundTrace(7, 1.0f, 0.0f, 0.0, 0.0);
