@@ -20,6 +20,20 @@ class ExplorerGiveWeaponTests(unittest.TestCase):
         self.assertIn(("M249", "m249"), entries)
         self.assertIn(("M4A1", "m4a1"), entries)
 
+    def test_giveweapon_disables_world_weapon_respawn(self):
+        control = (ROOT / "src/control.cpp").read_text(encoding="utf-8")
+        command = control.split("int BotControl::cmdGiveWeapon () {", 1)[1].split(
+            "\nint BotControl::cmdVersion () {", 1
+        )[0]
+        self.assertRegex(command, r"constexpr int kWeaponNoRespawn = 1 << 30;")
+        create = command.index("pfnCreateNamedEntity (classname.chars ())")
+        flag = command.index("item->v.spawnflags |= kWeaponNoRespawn;")
+        spawn = command.index("MDLL_Spawn (item)")
+        touch = command.index("MDLL_Touch (item, bot->ent ())")
+        self.assertLess(create, flag)
+        self.assertLess(flag, spawn)
+        self.assertLess(spawn, touch)
+
     def test_giveweapon_routes_only_to_game_pickup(self):
         control = (ROOT / "src/control.cpp").read_text(encoding="utf-8")
         support = (ROOT / "src/support.cpp").read_text(encoding="utf-8")

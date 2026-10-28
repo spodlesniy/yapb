@@ -2811,3 +2811,11 @@ Keep each fixed-capacity, compact, single-owner training/event store but replace
 Explicitly instantiate the five nothrow, value-initialized array allocators in an engine-independent `src/ai/ai_training_buffer_storage.cpp` that never includes crlib or `yapb.h`.
 Link this translation unit into the game DLL and standalone unit test target, and extend the include-order regression to guard the allocation boundary.
 Preserve all existing append, clear, reset, overflow, compaction and JSONL contracts, and require automatic Linux AI CI plus the user-started Windows x86 build for validation.
+## D218.3 — Prevent respawn copies of admin-issued firearms
+
+A user-started Windows x86 game check confirms that `yb giveweapon` grants AWP/M249 and replay can switch to knife, but weapons periodically rematerialize at the original grant location.
+The D218 entity-spawn path omits GoldSrc `SF_NORESPAWN`, so the game DLL can treat the grant as a world weapon pickup and schedule another entity at its original origin.
+Set the GoldSrc no-respawn bit (`1 << 30`) on the new weapon entity before `MDLL_Spawn`, and keep `MDLL_Touch` as the inventory transfer.
+Do not remove the successfully picked-up entity: it becomes the player's actual inventory item; retain the existing cleanup only when pickup fails.
+The flag is limited to admin-created firearms, leaving normal map weapon spawns, legitimate drops, and unrelated AI logic unchanged.
+A source-contract regression checks the ordering of create, no-respawn flag, spawn and touch; user-started Windows x86 in-game validation is needed to confirm no repeating weapon or materialization sound.

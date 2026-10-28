@@ -358,7 +358,7 @@ Automatic CI and manual Windows x86 replay checks with slow weapons and knife fa
 D218 adds an administrator-only `yb giveweapon <bot_index> <alias>` diagnostic for selecting or granting standard firearms to a living bot without buyzone/money restrictions.
 The exact alias is resolved against the existing YaPB `BotSupport::m_weaponAliases`; GoldSrc creates, spawns and touches the weapon entity, and an occupied primary slot is released via normal bot weapon/drop commands before a replacement attempt.
 Equipment, grenades, knife, shield and unknown aliases are rejected; pickup failures are reported instead of assuming the bot received a weapon.
-Production Windows x86 compilation and live AWP/M249 pickup/replay checks remain user-controlled and pending.
+The user confirmed Windows x86 gameplay weapon grants and knife fallback for AWP and M249, but repeated weapon materialization at the original grant position exposed a missing no-respawn flag.
 
 D218.1 addresses an observed MSVC x86 `/WX` build failure C1060 during `TrainingBuffer` default-constructor generation while compiling `src/ai/ai_navvis.cpp`.
 Five fixed-capacity training/event arrays move from inline object storage to individually lazy allocated arrays, retaining fixed capacity, contiguous read-only access, counters, compaction and existing dataset schema.
@@ -366,4 +366,7 @@ A unit regression checks the compact descriptor and allocation/release/reuse lif
 
 D218.2 fixes the confirmed GCC 13 unit-test build regression in D218.1: the public training recorder header exposed STL placement-new declarations before the legacy crlib allocator.
 All five fixed-capacity stores retain lazy, nothrow, value-initialized allocation and release through a separate allocation-only translation unit that is linked into both the game DLL and standalone AI tests.
-The D218.1 automatic run 40624591326 failed during `src/ai/ai_training_dataset.cpp` compilation; D218.2 automatic CI and user-started Windows x86 compilation remain required before D218 gameplay acceptance.
+The D218.1 automatic run 40624591326 failed during `src/ai/ai_training_dataset.cpp` compilation; D218.2 automatic run 40627119126 passed, and the user verified Windows x86 gameplay weapon switching with AWP and M249.
+
+D218.3 sets the GoldSrc no-respawn spawnflag on admin-created firearms before engine spawn and touch, preventing a picked-up test weapon from leaving a recurring world pickup at its grant position.
+The focused regression checks the flag and spawn/touch order; automatic CI and user-started Windows x86 in-game no-respawn verification remain required.

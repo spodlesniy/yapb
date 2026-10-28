@@ -293,3 +293,12 @@ yb explore replay knife_jump_01 1
 ```
 
 The replay preflight should detect a reduced current weapon cap and request the knife if the recorded input requires more speed.
+
+## D218.3 — Do not respawn admin-issued test weapons
+
+The `yb giveweapon` command now marks its newly created GoldSrc firearm entity `SF_NORESPAWN` before spawning and touching it.
+Successful pickup still transfers the actual item to the bot; the command never deletes a claimed item or changes weapon speed directly.
+This prevents the game rules from producing a fresh world weapon at the original grant position on respawn timers.
+Existing world copies created by older builds may remain until the map changes; use a fresh map session for the verification.
+After issuing `yb giveweapon 1 awp` or `yb giveweapon 1 m249`, move away and observe the grant position beyond normal weapon respawn intervals, then verify `yb explore init knife_jump_01 1` and `yb explore replay knife_jump_01 1` still switch to knife as required.
+The no-respawn gameplay result remains pending user-controlled Windows x86 validation.

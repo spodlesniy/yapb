@@ -287,6 +287,9 @@ int BotControl::cmdGiveWeapon () {
       msg ("AiPB explorer: cannot create '%s'.", name);
       return BotCommandResult::Handled;
    }
+   // GoldSrc SF_NORESPAWN stops this admin-created pickup from spawning a world replacement.
+   constexpr int kWeaponNoRespawn = 1 << 30;
+   item->v.spawnflags |= kWeaponNoRespawn;
    engfuncs.pfnSetOrigin (item, bot->pev->origin);
    MDLL_Spawn (item);
    MDLL_Touch (item, bot->ent ());
