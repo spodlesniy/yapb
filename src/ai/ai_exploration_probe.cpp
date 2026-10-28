@@ -5,6 +5,7 @@
 #include <aipb/explorer/engine_bridge_trace.h>
 #include <aipb/explorer/engine_bridge_trace_classification.h>
 #include <aipb/explorer/engine_bridge_trace_io.h>
+#include <aipb/explorer/engine_bridge_trace_observations.h>
 #include <aipb/explorer/engine_bridge_trace_report.h>
 #include <crlib/files.h>
 
@@ -270,6 +271,23 @@ bool classify() {
       aipb::explorer::bridge::movementWindowOutcomeName(result.lastWindow),
       result.lastWindowStep, result.classificationStartStep, result.deflectedWindows,
       result.firstDeflectedStep, result.longestDeflectionStreak, result.lateralUnits);
+   return true;
+}
+
+bool observeToFile(const char *path) {
+   if (active() || !aipb::explorer::bridge::validMetadata(metadata)
+      || std::strcmp(metadata.map, game.getMapName()) != 0) {
+      return false;
+   }
+
+   aipb::explorer::bridge::ObservationWriteResult summary {};
+   if (!aipb::explorer::bridge::writeTraceObservations(trace, metadata.map, path, summary)) {
+      return false;
+   }
+
+   game.print("AiPB explorer: observations saved: records=%d progress=%d blocked=%d deflected=%d",
+      summary.records, summary.progress, summary.blockedCandidates,
+      summary.deflectedCandidates);
    return true;
 }
 

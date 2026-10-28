@@ -2854,3 +2854,13 @@ Retain BlockedCandidate for two successive low-absolute-travel windows, and Prog
 Record the first deflected step, latest completed window and starting step of the latest classified sequence, lateral distance and longest deflection streak.
 Do not claim actual wall contact: CSV v2 still has no engine collision result and the command must continue to print contact=unknown.
 Preserve read-only behavior, CSV v2, movement/replay/queue semantics, and legacy runtime control.
+
+## D221 — Export map-bound local movement evidence
+
+Add the administrator-only `yb explore observe <name>` operation to export confirmed movement windows from the most recent completed recording or a validated named recording loaded through `init`.
+Store the derived records separately as `data/explorer/<name>.observations.csv` using exclusive creation and a versioned `aipb-explorer-observations-v1` header with map identity, bot index and source trace length.
+Emit nonoverlapping windows only when the D220.1 classifier has confirmed Progress, BlockedCandidate or DeflectedCandidate; do not promote isolated low-travel or lateral windows to confirmed observations.
+Each record contains start/end step and world position, first-step heading, commanded and observed XY travel, projected and lateral movement, duration, and candidate state.
+Keep physical contact explicitly unknown, preserve the unmodified raw trace CSV v2, and reject incomplete/corrupt traces, map mismatches and duplicate output filenames.
+Do not append records automatically, mutate AI state, infer traversable edges, or treat these observations as authoritative geometry.
+Require standalone C++17 validation and user-run Windows x86 acceptance.

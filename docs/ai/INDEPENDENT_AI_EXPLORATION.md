@@ -330,3 +330,13 @@ The command displays `last_window`, `last_step`, `state_start`, `deflected_windo
 A successful initial approach followed by persistent wall-side sliding can therefore end as DeflectedCandidate instead of Progress.
 A later successful window restores Progress, while a brief or alternating-side deflection remains InsufficientEvidence; stationary-wall probes continue to use BlockedCandidate.
 Engine contact is still unknown, and these candidates remain diagnostic rather than proof of a wall or an autonomous movement command.
+
+## D221 — Persistent local movement observations
+
+After a successful manual probe or queue recording run `yb explore observe <name>`.
+The command creates a new `data/explorer/<name>.observations.csv` file, refusing to overwrite an existing observation file.
+The same operation can derive observations from a named recording after `yb explore init <saved_trace> <bot>`; `replay` is not required.
+Version 1 records the source map, bot index and sample count plus each confirmed eligible window's step range, beginning/ending XYZ, heading, duration, expected travel and observed/projected/lateral distances.
+Only Progress, two-window BlockedCandidate and two-window same-side DeflectedCandidate windows are written; isolated or insufficient windows are omitted.
+The data is local diagnostic evidence, not a navigation graph, obstacle identity, automatic exploration policy or verified engine contact.
+Existing trace CSV v2 remains intact.

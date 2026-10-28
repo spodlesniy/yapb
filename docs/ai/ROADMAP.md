@@ -382,3 +382,7 @@ Collision contact remains unknown with CSV v2, and Windows x86 gameplay verifica
 D220 automatic build and Explorer CI passed on 84145c80; user gameplay showed free running and named jump replay classified as Progress, but a wall approach followed by sustained wall sliding remained Progress because earlier successful windows dominated the trace.
 D220.1 classifies the latest completed eligible movement window sequence, adds DeflectedCandidate for two same-side lateral windows without directed progress, and preserves BlockedCandidate for consecutive low-travel windows.
 The classifier still has no engine-contact evidence; automatic CI and user-started Windows x86 game validation remain required.
+
+D220.1 passed automatic build and Explorer CI at bdb20ed6, and the user confirmed five sustained deflection windows after wall contact with final DeflectedCandidate.
+D221 adds an explicit, map-bound local observation export from completed GoldSrc traces, recording individual confirmed movement windows with positions, heading, duration, and measured versus requested travel.
+The observation CSV is separate from replay CSV v2 and never overwrites an existing name; automatic CI and Windows x86 gameplay acceptance remain pending.

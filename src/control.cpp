@@ -1443,6 +1443,31 @@ int BotControl::cmdExplore () {
       }
       return BotCommandResult::Handled;
    }
+   if (operation == "observe") {
+      if (!hasArg(forward) || hasArg(strafe)) {
+         return BotCommandResult::BadFormat;
+      }
+      const auto name = arg <StringRef>(forward);
+      if (!aipb::explorer::bridge::safeName(name.chars())) {
+         msg("AiPB explorer: invalid observation name.");
+         return BotCommandResult::Handled;
+      }
+      const auto dataPath = strings.joinPath(bstor.getRunningPath(), folders.data);
+      const auto directory = strings.joinPath(dataPath, "explorer");
+      if ((!plat.fileExists(dataPath.chars()) && !plat.createDirectory(dataPath.chars()))
+         || (!plat.fileExists(directory.chars()) && !plat.createDirectory(directory.chars()))) {
+         msg("AiPB explorer: cannot prepare observation directory.");
+         return BotCommandResult::Handled;
+      }
+      const auto path = strings.joinPath(directory, strings.format("%s.observations.csv", name));
+      if (plat.fileExists(path.chars())) {
+         msg("AiPB explorer: observations '%s' already exist.", name);
+      }
+      else if (!ai::explore::observeToFile(path.chars())) {
+         msg("AiPB explorer: cannot save observations (invalid/empty evidence or I/O failure).");
+      }
+      return BotCommandResult::Handled;
+   }
    if (operation == "queueclear") {
       if (hasArg(forward)) {
          return BotCommandResult::BadFormat;
@@ -2761,7 +2786,7 @@ BotControl::BotControl () {
       },
       {
          "explore",
-         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save <name> | list | init <name> <bot> | replay <name> <bot> | append <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | queue <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | run <save_name> | queueclear | report | progress | classify | clear | stop",
+         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save <name> | list | init <name> <bot> | replay <name> <bot> | append <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | queue <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | run <save_name> | queueclear | report | progress | classify | observe <name> | clear | stop",
          "Runs an admin-only bounded GoldSrc movement probe.",
          &BotControl::cmdExplore
       },

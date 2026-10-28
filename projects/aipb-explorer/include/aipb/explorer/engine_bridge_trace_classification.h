@@ -22,6 +22,24 @@ enum class MovementWindowOutcome {
   DirectionMismatch
 };
 
+// A complete eligible observation window, with no inferred collision contact.
+struct TraceWindowEvidence {
+  int firstStep {};
+  int lastStep {};
+  int durationMs {};
+  int stateStartStep { -1 };
+  MovementClassification classification { MovementClassification::InsufficientEvidence };
+  AipbExplorerBridgeState start {};
+  AipbExplorerBridgeState end {};
+  double headingDegrees {};
+  double requestedUnits {};
+  double observedUnits {};
+  double projectedUnits {};
+  double lateralUnits {};
+};
+
+using TraceWindowObserver = void (*)(void *, const TraceWindowEvidence &);
+
 struct TraceMovementClassification {
   MovementClassification classification { MovementClassification::InsufficientEvidence };
   int eligibleFrames {};
@@ -46,7 +64,9 @@ struct TraceMovementClassification {
 // Trace v2 contains observed positions, not engine contact or collision evidence.
 inline bool classifyTraceMovement(
   const TraceBuffer &trace,
-  TraceMovementClassification &result
+  TraceMovementClassification &result,
+  TraceWindowObserver observer = nullptr,
+  void *observerContext = nullptr
 ) {
   TraceReport validated {};
 
@@ -70,6 +90,7 @@ inline bool classifyTraceMovement(
   double windowObserved = 0.0;
   double windowProjected = 0.0;
   double windowLateral = 0.0;
+  double headingDegrees = 0.0;
 
   for (int i = 0; i < trace.count; ++i) {
     const TraceSample &sample = trace.samples[i];
@@ -94,6 +115,13 @@ inline bool classifyTraceMovement(
 
     if (windowStart < 0) {
       windowStart = i;
+      const double yawRadians = (sample.before.yaw + sample.command.yaw_delta)
+        * kRadiansPerDegree;
+      headingDegrees = std::atan2(
+        sample.command.forward * std::sin(yawRadians)
+          - sample.command.strafe * std::cos(yawRadians),
+        sample.command.forward * std::cos(yawRadians)
+          + sample.command.strafe * std::sin(yawRadians)) / kRadiansPerDegree;
     }
 
     const double yawRadians = (sample.before.yaw + sample.command.yaw_delta)
@@ -199,6 +227,23 @@ inline bool classifyTraceMovement(
       else if (enoughInput && !lowTravel && !lateralDeflection) {
         next.lastWindow = MovementWindowOutcome::DirectionMismatch;
         ++next.directionMismatchWindows;
+      }
+
+      if (observer && next.classification != MovementClassification::InsufficientEvidence) {
+        TraceWindowEvidence evidence {};
+        evidence.firstStep = windowStart;
+        evidence.lastStep = i;
+        evidence.durationMs = windowMs;
+        evidence.stateStartStep = next.classificationStartStep;
+        evidence.classification = next.classification;
+        evidence.start = trace.samples[windowStart].before;
+        evidence.end = sample.after;
+        evidence.headingDegrees = headingDegrees;
+        evidence.requestedUnits = windowRequested;
+        evidence.observedUnits = windowObserved;
+        evidence.projectedUnits = windowProjected;
+        evidence.lateralUnits = windowLateral;
+        observer(observerContext, evidence);
       }
 
       windowStart = -1;
