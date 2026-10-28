@@ -514,3 +514,20 @@ Run on de_dust2 with the existing trial dataset:
 The known evidence should retain five faces (four interior and one coarse), no cross-sector conflicts, five positive Insufficient directions and five negative Unobserved directions.
 The known `axis=0 lower=(7,78,-3)` face should show `progress_bins=0x02` for positive travel and zero restriction bits; its one source and one window cannot establish ProgressEvidence.
 Sector bitmasks describe requested yaw only, not guaranteed velocity intent or GoldSrc hull clearance.
+## D240 gameplay acceptance note
+
+On the actual `d228_trials_02` dataset the all-sector `fine-sectors` query returns nine faces rather than the earlier estimate of five.
+Four additional bin-0 faces (three Progress and one restriction candidate) supplement the five bin-1 faces; no face has a cross-sector conflict.
+All nine positive directions remain Insufficient and all nine negative directions Unobserved, consistent with single-source observations.
+
+## D241 — Ordered fine-face sequences within one record
+
+On de_dust2 run:
+`yb explore fine-sequences d228_trials_02 256 2512 -92 39.2894287`
+Run the control query:
+`yb explore fine-sequences d228_trials_02 256 2512 -92 90`
+The known bin-1 dataset contains four recorded Progress windows with one or more fine-face crossings; the sequence count is not established in advance.
+The bin-2 query should yield zero chains because D238/D239 found no strict fine-face crossing there.
+`chains` and `pairs` count ordered crossings from one record only; `single` counts accepted records with one face and `ambiguous` counts records excluded because an in-window edge/corner is not a strict face intersection.
+Console details give zero-based source index, first recorded step, classification, travel sign, and intersection position.
+Sequences derive only from straight interpolation between recorded endpoints, not collision-verified player movement, continuous observed trajectories or route connectivity.

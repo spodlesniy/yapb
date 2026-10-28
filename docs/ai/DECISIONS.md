@@ -3086,3 +3086,14 @@ Combine all recorded yaw sectors per exact (lower fine cell, axis, travel sign) 
 Apply D229 source-quality rules after consolidation across sectors; separate opposite signs and adjacent physical faces, and preserve weak, mixed, conflicted and unobserved outcomes.
 Report per-direction Progress and restriction heading-bin masks, faces with multiple sectors, and directional conflict between sector outcomes, with nearest-first output capped at 24 faces.
 Retain the pre-existing CSV schema, commands and bot behavior; no crossing result establishes GoldSrc hull clearance, route connectivity or movement authorization.
+## D241 — Ordered strict fine-face crossings inside one recorded segment
+
+D240 summarizes per-face consensus but does not expose the order in which one recorded segment intersects consecutive 32-unit faces.
+Add administrator-only read-only `yb explore fine-sequences <trials> <x> <y> <z> <heading>` for strict fine-face intersections in the existing bounded 3x3x3 coarse-cell window and one yaw sector.
+Sort crossed faces by the intersection fraction along each individual recorded straight segment; derive each step's actual axis travel sign and verify that the destination fine cell of each step matches the origin cell of the next.
+Report only sequences containing at least two successive faces; count isolated single-face records separately, and never join separate trace records or different sources.
+Conservatively discard a record containing any intermediate ambiguous grid-edge or grid-corner crossing inside the query window; count ambiguous and discontinuous records without manufacturing links.
+Retain per-record source index, first step, yaw sector, and Progress/BlockedCandidate/DeflectedCandidate classification.
+Count ordered face pairs only within a valid segment sequence; cap console details to eight sequences and twelve faces each while retaining complete aggregate counters.
+An ordered interpolation of observed endpoints is not a measured continuous GoldSrc movement trajectory, collision-clearance guarantee, navigable route, or permission to move.
+No changes to CSV schemas, older read-only commands, or bot behavior.

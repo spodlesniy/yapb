@@ -495,3 +495,9 @@ D239 automatic Build and Explorer CI passed at 7d0e3e7; user confirmed five Insu
 D239 is accepted.
 D240 adds bounded multi-sector source-quality consensus for signed 32-unit physical faces, with yaw-bin masks and cross-sector opposition, without counting one trial as multiple independent sources or changing navigation.
 Automatic CI and Windows x86 gameplay acceptance for D240 are pending.
+D240 automatic Build and Explorer CI passed at be04b75; the user observed nine strict fine faces (eight interior, one coarse), nine Insufficient forward directions, nine Unobserved reverse directions, and no cross-sector conflicts in HLDS.
+Five faces occur in yaw bin 1 and four additional faces in bin 0, including one restriction candidate; therefore the earlier five-face single-sector expectation was not a valid total for the all-sector query.
+D240 is accepted.
+D241 introduces read-only, bounded ordering of strictly crossed 32-unit faces within one source record's straight endpoint interpolation, preserving sign, class and provenance without joining records.
+Ambiguous edge/corner intersections and non-contiguous face transitions are excluded from sequences; aggregate summary and console output remain bounded.
+Automatic Build/Explorer CI and in-game verification for D241 remain pending. The result does not grant navigation authority.
