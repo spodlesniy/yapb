@@ -2819,3 +2819,14 @@ Set the GoldSrc no-respawn bit (`1 << 30`) on the new weapon entity before `MDLL
 Do not remove the successfully picked-up entity: it becomes the player's actual inventory item; retain the existing cleanup only when pickup fails.
 The flag is limited to admin-created firearms, leaving normal map weapon spawns, legitimate drops, and unrelated AI logic unchanged.
 A source-contract regression checks the ordering of create, no-respawn flag, spawn and touch; user-started Windows x86 in-game validation is needed to confirm no repeating weapon or materialization sound.
+
+## D219 — Read-only sustained movement progress diagnostics
+
+The next exploration prerequisite is to quantify when an engine-executed movement input fails to produce meaningful horizontal travel.
+Offer `yb explore progress` over a completed valid recording, including a named recording loaded by `init`, without altering GoldSrc movement or CSV v2.
+Evaluate consecutive windows of at least 100 milliseconds of engine-command time with both frame endpoints grounded, no held jump or duck, and requested horizontal input speed at least 100 units/s.
+Use the stored maxspeed and normalized command magnitude to estimate requested distance; use the observed horizontal path length from frame positions rather than inferred velocity.
+Count a low-progress candidate only when at least 12 units were requested and observed travel was below 15% of the request.
+Break windows on ineligible frames and exclude incomplete trailing windows; report counts, first candidate step, longest candidate window, and requested/observed travel summed across evaluated windows.
+These measurements do not prove collision or navigability and cannot be used as autonomous movement decisions yet.
+Require valid completed traces, preserving result on rejection; do not change recording, replay, queue, or Legacy/Training AI behavior.

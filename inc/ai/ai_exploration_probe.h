@@ -18,6 +18,7 @@ bool load(const char *filePath);
 bool init(int botIndex);
 int recordedSteps();
 bool report();
+bool progress();
 bool clear();
 bool frame(Bot &bot);
 void reset();

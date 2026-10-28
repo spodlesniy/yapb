@@ -1425,6 +1425,15 @@ int BotControl::cmdExplore () {
       }
       return BotCommandResult::Handled;
    }
+   if (operation == "progress") {
+      if (hasArg(forward)) {
+         return BotCommandResult::BadFormat;
+      }
+      if (!ai::explore::progress()) {
+         msg("AiPB explorer: progress requires a completed, valid trace; use init to load a named recording.");
+      }
+      return BotCommandResult::Handled;
+   }
    if (operation == "queueclear") {
       if (hasArg(forward)) {
          return BotCommandResult::BadFormat;
@@ -2743,7 +2752,7 @@ BotControl::BotControl () {
       },
       {
          "explore",
-         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save <name> | list | init <name> <bot> | replay <name> <bot> | append <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | queue <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | run <save_name> | queueclear | report | clear | stop",
+         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save <name> | list | init <name> <bot> | replay <name> <bot> | append <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | queue <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | run <save_name> | queueclear | report | progress | clear | stop",
          "Runs an admin-only bounded GoldSrc movement probe.",
          &BotControl::cmdExplore
       },

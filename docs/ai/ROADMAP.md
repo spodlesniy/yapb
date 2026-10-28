@@ -370,3 +370,7 @@ The D218.1 automatic run 40624591326 failed during `src/ai/ai_training_dataset.c
 
 D218.3 sets the GoldSrc no-respawn spawnflag on admin-created firearms before engine spawn and touch, preventing a picked-up test weapon from leaving a recurring world pickup at its grant position.
 The focused regression checks the flag and spawn/touch order; automatic CI and user-started Windows x86 in-game no-respawn verification remain required.
+
+D218.3 passed automatic CI 40633530225; the user confirmed the recurring weapon pickup and materialization sound are resolved in-game.
+D219 adds read-only `yb explore progress` diagnostics for sustained low observed horizontal movement under grounded nonzero input, based on complete GoldSrc recordings.
+The engine-independent C++17 regression checks stationary, moving, interrupted and invalid evidence; automatic CI and Windows x86 gameplay acceptance remain required.

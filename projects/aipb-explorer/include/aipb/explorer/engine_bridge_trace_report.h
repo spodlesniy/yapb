@@ -75,4 +75,84 @@ inline bool summarizeTrace(const TraceBuffer &trace, TraceReport &result) {
   return true;
 }
 
+// Sustained low progress is a diagnostic signal, not proof of a collision.
+struct TraceProgressReport {
+  int groundedInputFrames {};
+  int evaluatedWindows {};
+  int lowProgressWindows {};
+  int firstLowProgressStep { -1 };
+  int longestLowProgressMs {};
+  double requestedUnits {};
+  double observedUnits {};
+};
+
+inline bool summarizeTraceProgress(
+  const TraceBuffer &trace,
+  TraceProgressReport &result
+) {
+  TraceReport validated {};
+
+  if (!summarizeTrace(trace, validated)) {
+    return false;
+  }
+
+  constexpr int kWindowMs = 100;
+  constexpr double kMinimumRequest = 12.0;
+  constexpr double kLowProgressRatio = 0.15;
+  TraceProgressReport next {};
+  int start = -1;
+  int duration = 0;
+  double requested = 0.0;
+  double observed = 0.0;
+
+  for (int i = 0; i < trace.count; ++i) {
+    const TraceSample &sample = trace.samples[i];
+    const float speed = requestedHorizontalSpeed(sample);
+    const bool eligible = sample.before.on_ground && sample.after.on_ground
+      && !sample.command.jump && !sample.command.duck && speed >= 100.0f;
+
+    if (!eligible) {
+      start = -1;
+      duration = 0;
+      requested = 0.0;
+      observed = 0.0;
+      continue;
+    }
+
+    if (start < 0) {
+      start = i;
+    }
+
+    ++next.groundedInputFrames;
+    duration += sample.msec;
+    requested += static_cast<double>(speed) * sample.msec / 1000.0;
+    observed += std::hypot(sample.after.x - sample.before.x,
+      sample.after.y - sample.before.y);
+
+    if (duration >= kWindowMs) {
+      ++next.evaluatedWindows;
+      next.requestedUnits += requested;
+      next.observedUnits += observed;
+
+      if (requested >= kMinimumRequest && observed < kLowProgressRatio * requested) {
+        ++next.lowProgressWindows;
+
+        if (next.firstLowProgressStep < 0) {
+          next.firstLowProgressStep = start;
+        }
+
+        next.longestLowProgressMs = std::max(next.longestLowProgressMs, duration);
+      }
+
+      start = -1;
+      duration = 0;
+      requested = 0.0;
+      observed = 0.0;
+    }
+  }
+
+  result = next;
+  return true;
+}
+
 } // namespace aipb::explorer::bridge

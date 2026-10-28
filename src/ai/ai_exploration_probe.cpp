@@ -228,6 +228,25 @@ bool report() {
    return true;
 }
 
+bool progress() {
+   if (active()) {
+      return false;
+   }
+
+   aipb::explorer::bridge::TraceProgressReport summary {};
+
+   if (!aipb::explorer::bridge::summarizeTraceProgress(trace, summary)) {
+      return false;
+   }
+
+   game.print("AiPB explorer progress: grounded_input=%d, windows=%d, low_progress=%d, first_step=%d, longest_ms=%d",
+      summary.groundedInputFrames, summary.evaluatedWindows, summary.lowProgressWindows,
+      summary.firstLowProgressStep, summary.longestLowProgressMs);
+   game.print("AiPB explorer progress: requested_units=%.2f, observed_horizontal_units=%.2f (evaluated windows)",
+      summary.requestedUnits, summary.observedUnits);
+   return true;
+}
+
 bool clear() {
    // Preserve the active recording or replay until it finishes or is stopped.
    if (active()) {

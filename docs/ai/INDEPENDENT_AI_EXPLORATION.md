@@ -302,3 +302,12 @@ This prevents the game rules from producing a fresh world weapon at the original
 Existing world copies created by older builds may remain until the map changes; use a fresh map session for the verification.
 After issuing `yb giveweapon 1 awp` or `yb giveweapon 1 m249`, move away and observe the grant position beyond normal weapon respawn intervals, then verify `yb explore init knife_jump_01 1` and `yb explore replay knife_jump_01 1` still switch to knife as required.
 The no-respawn gameplay result remains pending user-controlled Windows x86 validation.
+
+## D219 — Observe grounded movement progress
+
+After a completed `yb explore` probe, queue recording, or `yb explore init <name> <bot>`, run `yb explore progress`.
+The report counts windows of at least 100 milliseconds of continuous grounded commanded travel above 100 units/s, excluding jump and duck input.
+Windows requesting at least 12 GoldSrc units and yielding less than 15% observed horizontal path length are flagged as low-progress candidates.
+The report includes the first candidate frame, longest flagged window, and cumulative commanded/observed distances across evaluated windows.
+Neutral, airborne, duck-command, jump-command and short intervals do not produce evidence; invalid or active recordings are rejected.
+This is not collision detection, world reconstruction, or automated exploration; diagnostics remain read-only and CSV v2 unchanged.
