@@ -390,3 +390,7 @@ The observation CSV is separate from replay CSV v2 and never overwrites an exist
 D221 automatic build and Explorer CI passed at ae9fdf2a; user-provided observation exports confirmed map-bound records and exposed the omission of the first low-travel or lateral window before a second-window confirmation.
 D221.1 retroactively exports the first qualifying window only when its consecutive matching successor confirms BlockedCandidate or DeflectedCandidate, preserving chronological order and excluding unconfirmed single windows.
 The observation artifact is versioned as v2 with explicit direct, retrospective, confirming and continuation markers; trace CSV v2 is unchanged and Windows x86 validation remains user-controlled.
+
+D221.1 passed standalone Explorer CI at 363bf031, and the user verified that exported wall-slide observations include the retrospective first window without a gap.
+D222 adds explicit same-map merging of independent observation CSV v2 files or prior merged collections into a new immutable snapshot, validating every row and suppressing canonical exact duplicates.
+This stage does not infer spatial equivalence, change GoldSrc movement, or alter trajectory CSV v2; automatic CI and manual game acceptance remain pending.

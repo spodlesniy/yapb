@@ -348,3 +348,12 @@ Each record adds `confirmation`: direct for immediate Progress, retrospective fo
 Retrospective and confirming rows preserve their original step ranges, coordinates and movement measurements and are emitted chronologically after the second window establishes confirmation.
 A solitary low-travel or lateral window is never exported; a reset or opposite-side deflection discards its provisional evidence.
 Use a fresh observation name because existing exports cannot be overwritten.
+
+## D222 — Combine observations from multiple experiments
+
+Use `yb explore merge <first> <second> <output>` to combine two existing observation files under the explorer data directory into a fresh `<output>.observations.csv` snapshot.
+Inputs may be observation CSV v2 exports or collection-v1 snapshots, but both must contain valid evidence for the current map.
+For example `yb explore merge wall_slide_03 wall_slide_04 dust2_collection_01` followed by `yb explore merge dust2_collection_01 wall_block_01 dust2_collection_02`.
+The result stores map identity, unique observation row count and the same observation columns; identical normalized records are only included once.
+Inputs are never modified and output files cannot be overwritten.
+Do not treat spatially similar movements as duplicates, nor these records as a verified navigation mesh.

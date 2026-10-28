@@ -10,6 +10,7 @@
 #include <ai/ai_exploration_probe.h>
 #include <aipb/explorer/engine_bridge_math.h>
 #include <aipb/explorer/engine_bridge_trace_io.h>
+#include <aipb/explorer/engine_bridge_observation_collection.h>
 
 #include <ctime>
 #include <cmath>
@@ -1443,6 +1444,38 @@ int BotControl::cmdExplore () {
       }
       return BotCommandResult::Handled;
    }
+   if (operation == "merge") {
+      if (!hasArg(forward) || !hasArg(strafe) || !hasArg(jump) || hasArg(duck)) {
+         return BotCommandResult::BadFormat;
+      }
+      const auto first = arg <StringRef>(forward);
+      const auto second = arg <StringRef>(strafe);
+      const auto output = arg <StringRef>(jump);
+      if (!aipb::explorer::bridge::safeName(first.chars())
+         || !aipb::explorer::bridge::safeName(second.chars())
+         || !aipb::explorer::bridge::safeName(output.chars())) {
+         msg("AiPB explorer: invalid collection name.");
+         return BotCommandResult::Handled;
+      }
+      const auto directory = strings.joinPath(bstor.getRunningPath(), folders.data, "explorer");
+      const auto firstPath = strings.joinPath(directory, strings.format("%s.observations.csv", first));
+      const auto secondPath = strings.joinPath(directory, strings.format("%s.observations.csv", second));
+      const auto resultPath = strings.joinPath(directory, strings.format("%s.observations.csv", output));
+      if (plat.fileExists(resultPath.chars())) {
+         msg("AiPB explorer: collection '%s' already exists.", output);
+         return BotCommandResult::Handled;
+      }
+      aipb::explorer::bridge::ObservationCollectionReport summary {};
+      if (!aipb::explorer::bridge::mergeObservationCollections(firstPath.chars(),
+         secondPath.chars(), resultPath.chars(), game.getMapName(), summary)) {
+         msg("AiPB explorer: merge failed (map, format, input, or output invalid).");
+      }
+      else {
+         msg("AiPB explorer: merged '%s': input=%d unique=%d duplicates=%d.",
+            output, summary.inputRows, summary.total, summary.duplicates);
+      }
+      return BotCommandResult::Handled;
+   }
    if (operation == "observe") {
       if (!hasArg(forward) || hasArg(strafe)) {
          return BotCommandResult::BadFormat;
@@ -2786,7 +2819,7 @@ BotControl::BotControl () {
       },
       {
          "explore",
-         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save <name> | list | init <name> <bot> | replay <name> <bot> | append <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | queue <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | run <save_name> | queueclear | report | progress | classify | observe <name> | clear | stop",
+         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save <name> | list | init <name> <bot> | replay <name> <bot> | append <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | queue <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | run <save_name> | queueclear | report | progress | classify | observe <name> | merge <first> <second> <output> | clear | stop",
          "Runs an admin-only bounded GoldSrc movement probe.",
          &BotControl::cmdExplore
       },

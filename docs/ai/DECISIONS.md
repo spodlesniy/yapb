@@ -2875,3 +2875,14 @@ Retain the original first/last step range and source measurements for both windo
 Version the observation CSV header as `aipb-explorer-observations-v2` and add a confirmation column with direct, retrospective, confirming or continuation values.
 Preserve exclusive output creation, read-only classification outputs, raw movement CSV v2 and the lack of direct collision evidence.
 Add regression cases for both candidate kinds, ordering, continuation, file version, and rejection of an unconfirmed single window.
+
+## D222 — Merge map-scoped observation collections without altering sources
+
+Implement administrator-only `yb explore merge <first> <second> <output>` for existing `data/explorer/<name>.observations.csv` source files.
+Accept exactly the D221.1 observation CSV v2 header/columns or a D222 collection-v1 snapshot, and require the current map name to match both inputs before creating output.
+Parse and validate every observation row including finite coordinates, step bounds, duration, classification/confirmation pair, and positive requested travel.
+Canonicalize each parsed row through the existing observation formatter and deduplicate only exactly identical normalized row content, preserving first-seen order; near-identical geometry is not proof of duplication.
+Bound the collection to 16384 unique rows and reject truncated, corrupt, mismatched or oversized input without publishing a partial snapshot.
+Create a new `aipb-explorer-collection-v1` CSV through exclusive creation, with a map and row count header and unchanged observation-v2 columns; never overwrite an existing file or modify sources.
+Allow a collection snapshot as input so repeated commands can accumulate multiple experiments without retaining all data in the game DLL.
+Keep this feature read-only with respect to bot movement, replay and the navigation graph; collision candidates remain unverified evidence.
