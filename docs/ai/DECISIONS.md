@@ -3404,3 +3404,10 @@ The `strings.format` return was incorrectly treated as a String object and deref
 D270 passes that pointer directly to `Game::clientPrint` and `Game::print`, retaining explicit `%s` format strings and including regression assertions against `message.chars()`.
 The original YaPB implementation and published history are unchanged.
 The preceding D269 Linux build workflow failure arose in the Training tools dependency installation; AI unit tests succeeded and the Windows job was skipped.
+
+## D271 — Pin the training-tools CI Python ABI
+
+The D270 push workflow failed before Python tests because `setup-python` resolved `3.x` to CPython 3.15.1, for which the pinned ONNX Runtime 1.30.0 has no published wheel.
+Pin the Training tools tests job to CPython 3.13, which has compatible Linux x64 wheels for the pinned PyTorch CPU, ONNX, ONNX Script, and ONNX Runtime dependencies.
+Treat `.github/workflows/build.yml` edits as training-tools changes so the corrected job executes during automatic push CI rather than being skipped.
+Keep other Python setup jobs and dependency pins unchanged.

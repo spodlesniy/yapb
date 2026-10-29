@@ -127,6 +127,8 @@ using:
 python -m unittest discover -s tools/aipb_training/tests -t . -p 'test_*.py'
 ```
 
+The training-tool job pins CPython 3.13 because all requirements have compatible Linux x64 wheels, while ONNX Runtime 1.30.0 lacks a CPython 3.15 wheel.
+The `.github/workflows/build.yml` path filter must trigger training-tool tests when the build workflow changes, so Python setup corrections are tested by the automatic push workflow.
 The training-tool job uses `actions/setup-python` pip caching with `tools/aipb_training/requirements.txt` as the dependency cache key input, so package downloads are reused until the requirements change.
 The requirements use CPU-only PyTorch, avoiding CUDA/NVIDIA runtime downloads in the CI environment.
 Test output is captured to `python-test.log` and uploaded as the `python-test-logs` artifact when the training-tool job fails.
