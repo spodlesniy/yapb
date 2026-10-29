@@ -192,3 +192,11 @@ D260 registers `aipb_scenario_init_equipment <name>` through the existing AiPB e
 It applies only the D259 health and compatible numeric armor plans under fail-closed live preflight, after the first frame of a bot.
 No weapon or inventory creation, game DLL armor-type change, scenario action execution or result recording is included.
 The user-run Windows x86/HLDS acceptance gate remains mandatory.
+
+## D261 — Scenario Executor task decomposition
+
+The implementation tasks, dependencies and exit gates are in `docs/ai/SCENARIO_ACTION_EXECUTOR_TASKS.md`.
+D261 adds the read-only, fail-closed console entry commands and their tests.
+The next tasks must implement a complete fresh start gate, deterministic action scheduler, movement adapter, safe cancellation and session arbitration.
+The YaPB menu is a mandatory task **before manual HLDS execution acceptance**, and is blocked until the user supplies details.
+The Stage A experiment result format and reproducibility remain later tasks.

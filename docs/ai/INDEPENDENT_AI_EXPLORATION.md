@@ -729,3 +729,11 @@ D260 user HLDS acceptance confirmed that `aipb_scenario_init_equipment equipment
 The two remaining preflight findings concerned the bot's starting y position and yaw, not health.
 The first automatic Explorer CI for D260 failed because the new test mistakenly read from `scenarios/scenarios`; D260.1 fixes only that test path.
 To verify the fully prepared start, run `yb explore scenario init-pose equipment_health_01` followed promptly by `yb explore scenario preflight equipment_health_01` while the bot remains alive and stable.
+
+## D261 — Scenario command entry shell
+
+D261 registers `aipb_scenario_run <name>`, `aipb_scenario_stop`, and `aipb_scenario_status` after the first bot frame, alongside the existing `aipb_scenario_init_equipment`.
+Run loads a named scenario from the existing safe directory and performs only entry checks for map, bot presence, life, team and Explorer activity.
+A valid entry reports `ExecutorUnavailable` instead of starting actions, because full start-state admission and engine control are not implemented in this step.
+Stop and status report idle without canceling the existing Explorer probe.
+The menu control for these commands will be added in a later task before HLDS execution testing, after the user provides its required details.

@@ -617,3 +617,10 @@ User HLDS confirmed health initialization from equipment_health_01, rejection of
 D260.1 corrects only the independent test fixture root to match loadScenario's appended scenarios directory and reports the actual loader error on failure.
 No runtime command behavior, original YaPB files or gameplay DLL sources change in D260.1.
 D260.1 automatic CI is pending; Stage A execution, durable results and reproducibility remain incomplete.
+
+D260.1 automatic Explorer CI passed at 823085c; user HLDS subsequently confirmed the full explicit init-pose → init-equipment → preflight chain with `ready=1` for equipment_health_01.
+D261 begins Scenario Action Executor Stage A as a sequence of small tasks documented in `docs/ai/SCENARIO_ACTION_EXECUTOR_TASKS.md`.
+The first task T261-01 registers fail-closed `aipb_scenario_run`, `aipb_scenario_stop`, and `aipb_scenario_status` server-console entrypoints from the existing AiPB hook, with bounded loading and map/bot/team/Explorer-busy checks.
+There is **no** scenario action execution or start-state authorization in D261: valid entry checks end with `ExecutorUnavailable`.
+The YaPB menu integration task T261-06 is a required gate **before user-run HLDS acceptance** and awaits the user's detailed requirements; future D-IDs are not preassigned.
+D261 automatic CI and user-run Windows x86 validation are pending; Stage A remains incomplete.

@@ -3318,3 +3318,14 @@ D260 successfully initialized scenario health in user HLDS and rejected an unsat
 Its new Explorer fixture test nonetheless failed on all three CI compilers because the CMake fixture root included `/scenarios` while `loadScenario` itself appends `scenarios/<name>.scenario`.
 D260.1 changes the test definition to the project root, matching the already passing scenario-loader tests, and improves the fixture failure diagnostic.
 Production runtime code and all original YaPB files stay unchanged.
+
+## D261 — Fail-closed Scenario Runner command surface and task breakdown
+
+D260.1 Explorer CI passed, and user HLDS confirmed a fully prepared scenario with zero start-state findings.
+The user requested concrete independently verifiable Scenario Action Executor tasks and a new YaPB menu integration task before live testing.
+Record these tasks, dependencies, acceptance criteria, explicit deferrals and menu blocker in `docs/ai/SCENARIO_ACTION_EXECUTOR_TASKS.md`, without preassigning future D-IDs.
+D261 implements only the first task: console commands `aipb_scenario_run <name>`, `aipb_scenario_stop`, and `aipb_scenario_status` registered via the AiPB frame hook.
+The `run` command safely loads a scenario and checks basic map/bot/team/Explorer availability, but explicitly refuses with `ExecutorUnavailable` even when that entry gate passes.
+The `stop` and `status` commands report an idle runner; they do not alter existing Explorer sessions.
+This step cannot execute any `[action]`, write a result, or claim that the full scenario preflight has passed.
+No original YaPB files or upstream repository are modified.

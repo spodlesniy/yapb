@@ -3,6 +3,7 @@
 #include <aipb/explorer/engine_bridge_math.h>
 #include <aipb/explorer/engine_bridge_scenario_equipment_init.h>
 #include <aipb/explorer/engine_bridge_scenario_loader.h>
+#include <aipb/explorer/engine_bridge_scenario_run_entry.h>
 #include <aipb/explorer/engine_bridge_queue.h>
 #include <aipb/explorer/engine_bridge_trace.h>
 #include <aipb/explorer/engine_bridge_trace_classification.h>
@@ -174,6 +175,64 @@ void initScenarioEquipmentCommand() {
    game.print("AiPB scenario equipment: '%s' applied: bot=%d health=%s armor=%s; other equipment unchanged; no actions executed.",
       name, scenario.botIndex, decision.plan.setHealth ? "set" : "unchanged",
       decision.plan.setArmor ? "set" : "unchanged");
+}
+
+// The entry surface stays read-only until start-state gating and execution
+// have their own acceptance tests. Do not treat this command as a trial.
+void runScenarioEntryCommand() {
+   const int argc = engfuncs.pfnCmd_Argc();
+   const char *name = argc == 2 ? engfuncs.pfnCmd_Argv(1) : nullptr;
+
+   if (!name || !aipb::explorer::scenario::validScenarioRunArguments(argc, name)) {
+      game.print("Usage: aipb_scenario_run <scenario_name>");
+      return;
+   }
+
+   const auto directory = strings.joinPath(bstor.getRunningPath(), folders.data, "explorer");
+   aipb::explorer::scenario::Scenario scenario {};
+   std::string detail {};
+   const auto loaded = aipb::explorer::scenario::loadScenario(
+      directory.chars(), name, scenario, detail);
+
+   if (loaded != aipb::explorer::scenario::LoadStatus::Ok) {
+      game.print("AiPB scenario run: '%s' rejected (%s): %s; no actions executed.",
+         name, aipb::explorer::scenario::loadStatusName(loaded), detail.c_str());
+      return;
+   }
+
+   const auto *bot = bots.findBotByIndex(scenario.botIndex);
+   const int team = bot == nullptr ? 0 : bot->m_team == Team::CT ? 2
+      : bot->m_team == Team::Terrorist ? 1 : 0;
+   const auto entry = aipb::explorer::scenario::checkScenarioRunEntry(
+      scenario, game.getMapName(), bot != nullptr,
+      bot != nullptr && game.isAliveEntity(bot->ent()), team,
+      active() || queue.running);
+
+   if (entry != aipb::explorer::scenario::RunEntryStatus::Validated) {
+      game.print("AiPB scenario run: '%s' rejected (%s); no actions executed.",
+         name, aipb::explorer::scenario::runEntryStatusName(entry));
+      return;
+   }
+
+   game.print("AiPB scenario run: '%s' rejected (ExecutorUnavailable); entry checks passed, full start preflight and actions are not implemented.", name);
+}
+
+void stopScenarioEntryCommand() {
+   if (!aipb::explorer::scenario::validScenarioControlArguments(engfuncs.pfnCmd_Argc())) {
+      game.print("Usage: aipb_scenario_stop");
+      return;
+   }
+
+   game.print("AiPB scenario run: idle; executor not enabled, no action to stop.");
+}
+
+void statusScenarioEntryCommand() {
+   if (!aipb::explorer::scenario::validScenarioControlArguments(engfuncs.pfnCmd_Argc())) {
+      game.print("Usage: aipb_scenario_status");
+      return;
+   }
+
+   game.print("AiPB scenario run: idle (ExecutorUnavailable); no actions executed.");
 }
 
 AipbExplorerBridgeState observe(const Bot &bot) {
@@ -569,12 +628,21 @@ void cancelBot(int botIndex) {
 bool frame(Bot &bot) {
    // The first bot frame is the earliest existing AiPB hook with a ready engine.
    // GoldSrc server commands persist across map changes.
-   static bool equipmentCommandRegistered {};
-   if (!equipmentCommandRegistered) {
+   static bool scenarioCommandsRegistered {};
+   if (!scenarioCommandsRegistered) {
       game.registerEngineCommand("aipb_scenario_init_equipment", [] () {
          initScenarioEquipmentCommand();
       });
-      equipmentCommandRegistered = true;
+      game.registerEngineCommand("aipb_scenario_run", [] () {
+         runScenarioEntryCommand();
+      });
+      game.registerEngineCommand("aipb_scenario_stop", [] () {
+         stopScenarioEntryCommand();
+      });
+      game.registerEngineCommand("aipb_scenario_status", [] () {
+         statusScenarioEntryCommand();
+      });
+      scenarioCommandsRegistered = true;
    }
 
    if (session.botIndex != bot.index()) {
