@@ -672,3 +672,6 @@ D273 passed automatic Build/Explorer CI, but HLDS testing identified stale Run/S
 D274 refreshes only the currently owned AiPB menu when the scenario-running state changes, removes literal disabled suffixes while keeping color/key-mask guards and requires Windows x86/HLDS acceptance before T261-06 can close.
 D275 adds a 10-percent rounded-up default per-action wall-clock timeout margin, preserves strict explicit timeouts, and permits an omitted team requirement while still requiring T/CT eligibility. A new ground-forward test fixture keeps only weapon-related equipment constraints; Windows x86/HLDS acceptance remains pending.
 D276 replaces the team-neutral forward fixture with equipment-free `ground_forward_02.scenario` and closes still-owned AiPB menus on the next round ID (including pre-frame selections); automatic CI and user-run HLDS acceptance remain required.
+D276 automatic Build and Explorer CI passed at 0a361d14; the user reported that the menu and scenario flow work in HLDS, including new-round menu closure.
+D277 prepares a supervised T261-07 HLDS acceptance matrix and a long idle scenario fixture for stop and lifecycle checks, with automatic loader coverage.
+T261-06/T261-07 are not declared fully accepted until the remaining negative-path matrix and user-run Windows x86 evidence are reviewed; Stage A result persistence remains deferred.

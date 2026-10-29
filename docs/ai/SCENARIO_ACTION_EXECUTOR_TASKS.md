@@ -21,8 +21,8 @@ If menu integration cannot avoid changes to original YaPB files, stop and reques
 | T261-03 — Sequential scheduler | Own one scenario and action index; track per-action commanded milliseconds and wall-clock deadlines, global timeout and maximum frame count; advance actions in file order without idle frame insertion | T261-02 | Deterministic tests for one/multiple actions, deadline expiration, zero progress, completion and limits | D263 completed; Explorer CI passed |
 | T261-04 — GoldSrc movement adapter | Feed normalized `forward/strafe`, held `jump/duck`, and distributed total `yaw_delta/pitch_delta` into `pfnRunPlayerMove` through existing AiPB frame hook; preserve body/view angle conventions | T261-03 | Mock translation/angle tests; real physics remains engine-owned and command completion is not movement success | D264 completed; Build and Explorer CI passed |
 | T261-05 — Lifecycle and conflicts | Add cancellation, idle/running/completed/failed/aborted statuses, cleanup of buttons and session ownership, no concurrent Explorer probe/queue/replay, stop on bot/map/team/death/disconnect/unsafe timing, **round completion/restart** | T261-04 | Unit tests for abort/restart, resource cleanup, simultaneous commands and failure reasons | D265 completed; Build and Explorer CI passed |
-| T261-06 — YaPB menu integration | Add a separate `aipb menu`, `aipb scenario overlay on|off`, disabled start/stop states, a flat scenario-file browser with five entries per page, Previous/Next and Back; `aipb scenario run` prepares supported initial state, strictly verifies and runs | T261-05 and user details | Standalone AiPB menu via authorized `src/linkage.cpp` bridge; Game build/HLDS acceptance pending | D268 implementation published; CI pending |
-| T261-07 — Acceptance on de_dust2 | Provide a two-action fixture with no optional inventory dependencies, exercise `init-pose`, `init-equipment`, preflight, menu start/stop/status, completion and safe cancellation; inspect actual GoldSrc observations | T261-06 | CI passed plus user-run Windows x86/HLDS positive and negative tests with no stuck inputs, race or unexpected bot control | Pending |
+| T261-06 — YaPB menu integration | Add a separate `aipb menu`, `aipb scenario overlay on|off`, disabled start/stop states, a flat scenario-file browser with five entries per page, Previous/Next and Back; `aipb scenario run` prepares supported initial state, strictly verifies and runs | T261-05 and user details | Standalone AiPB menu via authorized `src/linkage.cpp` bridge; final HLDS acceptance under T261-07 | D268–D276 implemented; user reports core menu behavior works; final negative-path checks pending |
+| T261-07 — Acceptance on de_dust2 | Use equipment-free two-action and long hold fixtures; exercise pose/preflight, auto equipment preparation, menu run/stop/status, completion, conflicts and safe lifecycle cancellation | T261-06 | CI passed plus user-run Windows x86/HLDS A01–A11 checks in `SCENARIO_ACTION_EXECUTOR_ACCEPTANCE.md`, with no stuck inputs or unexpected bot control | D277 acceptance fixtures/protocol prepared; user-run matrix pending |
 
 ## Explicitly deferred
 
@@ -104,3 +104,13 @@ Automated scenario parsing/loader/preflight tests cover these contracts; real HL
 Replace `ground_forward_any_team_01.scenario` with `ground_forward_02.scenario`, containing no `[equipment]` section, with the same two movement actions and omitted team requirement.
 On a new telemetry round ID, close each still-owned AiPB root/browser menu and clear its session. Check on every server frame and before processing menu selection to avoid stale controls. Do not close foreign menus or reset the overlay configuration.
 Automated scenario-loader, menu-state, and source-contract tests are added. HLDS confirmation is pending.
+
+## D277 — T261-07 manual acceptance setup
+
+The user confirmed that the D276 menu and scenario basics work in HLDS.
+D276 Build and Explorer CI both passed.
+The existing `ground_forward_02.scenario` is the equipment-free, team-optional two-action movement fixture.
+D277 adds `scenario_lifecycle_01.scenario` with one long idle action for safe supervised Stop, bot loss and round-transition testing, and loader tests for its constraints.
+The exact manual acceptance steps and evidence requirements are in [SCENARIO_ACTION_EXECUTOR_ACCEPTANCE.md](SCENARIO_ACTION_EXECUTOR_ACCEPTANCE.md).
+Current `aipb scenario run` performs equipment preparation automatically; the old `aipb_scenario_init_equipment` entrypoint is not part of the supported CLI.
+T261-07 remains open until user-run Windows x86/HLDS positive and negative cases are recorded and accepted.

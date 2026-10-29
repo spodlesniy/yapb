@@ -3447,3 +3447,11 @@ The real-game timing behavior remains subject to user-run HLDS verification.
 AiPB menus now record the telemetry round ID when shown and close on a change, including an early menuselect before StartFrame refresh. Only a currently owned AiPB menu is closed; a foreign ShowMenu/VGUIMenu has already released ownership. New-round closure does not modify the persistent overlay setting or scenario scheduler.
 Replace the D275 `ground_forward_any_team_01.scenario` fixture with `ground_forward_02.scenario`, preserving both movement actions and the team wildcard while entirely removing the equipment section and its requirements. Existing `ground_forward_01.scenario` stays unchanged.
 The full game UI behavior must be verified in a user-run HLDS session.
+
+## D277 — Stage A executor acceptance must be evidence-driven
+
+T261-07 uses explicit positive and negative HLDS checks, recorded per case, before marking Scenario Runner accepted.
+The short `ground_forward_02.scenario` validates repeatable two-action movement; the new `scenario_lifecycle_01.scenario` runs a nonmoving 8-second action to leave time for supervised Stop, bot loss and round changes.
+The current run command includes supported pose/equipment preparation and a fresh strict preflight; acceptance must not depend on removed `aipb_scenario_*` entrypoints.
+No production DLL behavior changes in this step.
+CI success and a user report of basic functionality alone do not satisfy the full T261-07 exit gate, and persistent experiment results and movement-success inference remain Stage A follow-up work.

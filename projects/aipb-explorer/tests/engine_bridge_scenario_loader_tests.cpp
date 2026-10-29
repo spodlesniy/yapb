@@ -76,6 +76,21 @@ duration_ms=100
       && eitherTeam.actions[0].forward == 1.0f);
     check(eitherTeam.actions[1].durationMs == 250
       && eitherTeam.actions[1].yawDelta == 45.0f);
+    Scenario hold {};
+    check(loadScenario(fixtureRoot, "scenario_lifecycle_01", hold, detail)
+      == LoadStatus::Ok);
+    check(hold.name == "scenario_lifecycle_01");
+    check(hold.team == 0 && !hold.hasBot("team"));
+    check(hold.equipment.specified.empty());
+    check(checkScenarioPreflight(hold, "de_dust2", true, true, 1)
+      == PreflightStatus::Ok);
+    check(checkScenarioPreflight(hold, "de_dust2", true, true, 2)
+      == PreflightStatus::Ok);
+    check(hold.actions.size() == 1);
+    check(hold.actions[0].durationMs == 8000
+      && hold.actions[0].timeoutMs == 10500);
+    check(hold.actions[0].forward == 0.0f && hold.actions[0].strafe == 0.0f);
+    check(!hold.actions[0].jump && !hold.actions[0].duck);
     check(!omitted.hasBot("vx") && !omitted.hasBot("crouching"));
     check(omitted.equipment.has("secondary") && !omitted.equipment.has("secondary_clip"));
     check(!omitted.equipment.has("secondary_reserve") && !omitted.equipment.has("health"));

@@ -1,0 +1,23 @@
+# Manual T261-07 lifecycle acceptance fixture on de_dust2.
+# No movement or equipment assumptions; stop/abort before the 8-second limit.
+[scenario]
+version=aipb-scenario-v1
+name=scenario_lifecycle_01
+map=de_dust2
+timeout_ms=12000
+
+[bot]
+index=1
+x=448
+y=2368
+z=-92
+yaw=-105
+pitch=0
+vx=0
+vy=0
+vz=0
+crouching=0
+
+[action]
+duration_ms=8000
+timeout_ms=10500
