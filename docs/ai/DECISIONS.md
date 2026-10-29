@@ -3126,3 +3126,12 @@ Aggregate all eight recorded yaw sectors without inflating independent source co
 Report progress/restriction sector masks, multi-sector triplets and cross-sector opposition; cap console detail to 24 triplets while retaining complete counts.
 Continue excluding ambiguous edge/corner intersections through D241; even corroborated triplets remain recorded-endpoint interpolations rather than GoldSrc collision-checked routes or navigation permission.
 CSV formats, existing diagnostics and bot movement remain unchanged.
+
+## D245 — Diagnose fine sequence coverage and missing long chains
+
+D244 has no recorded three-face sequences in the de_dust2 trial fixture; extending sequence length without understanding the available evidence would be uninformative.
+Add read-only `yb explore fine-coverage <trials> <x> <y> <z>` to summarize D241's strict record-local extraction across all eight yaw bins.
+Partition each classified record into zero-face, single-face, two-face, three-or-more-face, ambiguous or discontinuous outcomes, without joining different records or treating zero-face observations as restrictions.
+Report per-bin and total chain/pair/triplet-window counts, longest observed face count and distinct chain/triplet source counts, deduplicated across yaw bins.
+Retain the eight longest deterministic chain examples by source, recorded first step, sector and classification; the summary includes all records.
+Preserve the 3x3x3 bounded coarse-cell window, CSV formats, earlier commands and gameplay behavior; interpolation remains diagnostic and cannot establish navigable clearance.

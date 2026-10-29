@@ -33,6 +33,7 @@
 #include <aipb/explorer/engine_bridge_fine_sequence_pairs.h>
 #include <aipb/explorer/engine_bridge_fine_pair_sectors.h>
 #include <aipb/explorer/engine_bridge_fine_triplet_sectors.h>
+#include <aipb/explorer/engine_bridge_fine_sequence_coverage.h>
 
 #include <ctime>
 #include <cmath>
@@ -1463,6 +1464,57 @@ int BotControl::cmdExplore () {
       }
       if (!ai::explore::classify()) {
          msg("AiPB explorer: classify requires a completed, valid trace; use init to load a recording.");
+      }
+      return BotCommandResult::Handled;
+   }
+   if (operation == "fine-coverage") {
+      if (!hasArg(forward) || !hasArg(strafe) || !hasArg(jump)
+         || !hasArg(duck) || hasArg(yaw)) {
+         return BotCommandResult::BadFormat;
+      }
+      const auto name = arg <StringRef>(forward);
+      if (!aipb::explorer::bridge::safeName(name.chars())) {
+         return BotCommandResult::BadFormat;
+      }
+      const auto parse = [this](int position, double &value) {
+         const auto input = arg <StringRef>(position).chars();
+         char *end {};
+         value = std::strtod(input, &end);
+         return end != input && *end == '\0' && std::isfinite(value);
+      };
+      double x {}, y {}, z {};
+      if (!parse(strafe, x) || !parse(jump, y) || !parse(duck, z)) {
+         return BotCommandResult::BadFormat;
+      }
+      const auto directory = strings.joinPath(bstor.getRunningPath(), folders.data, "explorer");
+      const auto path = strings.joinPath(directory, strings.format("%s.trials.csv", name));
+      aipb::explorer::bridge::EvidenceTrialSet trials {};
+      aipb::explorer::bridge::FineCoverageAudit report {};
+      if (!aipb::explorer::bridge::readEvidenceTrialSet(path.chars(), game.getMapName(), trials)
+         || !aipb::explorer::bridge::auditFineSequenceCoverage(trials, x, y, z, report)) {
+         msg("AiPB explorer: cannot audit fine sequence coverage.");
+      }
+      else {
+         msg("AiPB explorer: fine-coverage '%s': coarse=(%d,%d,%d) sources=%d records=%d zero=%d single=%d two=%d three_plus=%d ambiguous=%d discontinuous=%d pairs=%d triplet_windows=%d chain_sources=%d triplet_sources=%d max_faces=%d.",
+            name, report.queryCoarse.x, report.queryCoarse.y, report.queryCoarse.z,
+            report.sources, report.records, report.zeroFaceRecords, report.singleFaceRecords,
+            report.twoFaceChains, report.threePlusChains, report.ambiguousRecords,
+            report.discontinuousRecords, report.pairWindows, report.tripletWindows,
+            report.chainSources, report.tripletSources, report.longestFaces);
+         for (int bin = 0; bin < aipb::explorer::bridge::kDirectionBins; ++bin) {
+            const auto &bucket = report.bins[bin];
+            msg("AiPB explorer: fine coverage bin=%d records=%d zero=%d single=%d two=%d three_plus=%d ambiguous=%d discontinuous=%d pairs=%d triplet_windows=%d chain_sources=%d triplet_sources=%d max_faces=%d.",
+               bin, bucket.records, bucket.zeroFaceRecords, bucket.singleFaceRecords,
+               bucket.twoFaceChains, bucket.threePlusChains, bucket.ambiguousRecords,
+               bucket.discontinuousRecords, bucket.pairWindows, bucket.tripletWindows,
+               bucket.chainSources, bucket.tripletSources, bucket.longestFaces);
+         }
+         for (const auto &candidate : report.longest) {
+            msg("AiPB explorer: fine coverage longest source=%d first_step=%d bin=%d class=%s faces=%d.",
+               candidate.source, candidate.firstStep, candidate.headingBin,
+               aipb::explorer::bridge::movementClassificationName(candidate.classification),
+               candidate.faces);
+         }
       }
       return BotCommandResult::Handled;
    }
@@ -4021,7 +4073,7 @@ BotControl::BotControl () {
       },
       {
          "explore",
-         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save <name> | list | init <name> <bot> | replay <name> <bot> | append <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | queue <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | run <save_name> | queueclear | report | progress | classify | observe <name> | merge <first> <second> <output> | index <source> <output> | near <index> <x> <y> <z> <radius> | areas <index> <output> | area <name> <x> <y> <z> | directions <index> <output> | direction <name> <x> <y> <z> <heading> | audit <index> <x> <y> <z> | assess <index> <x> <y> <z> <heading> | trials <first> <second> <output> | corroborate <trials> <x> <y> <z> <heading> | consensus <trials> <x> <y> <z> <heading> | localize <trials> <x> <y> <z> <heading> | region <trials> <x> <y> <z> <heading> | span <trials> <x> <y> <z> <heading> | crossings <trials> <x> <y> <z> <heading> | discover-crossings <trials> <x> <y> <z> <heading> | crossing-directions <trials> <x> <y> <z> <heading> | crossing-consensus <trials> <x> <y> <z> <heading> | crossing-sectors <trials> <x> <y> <z> | fine-crossings <trials> <x> <y> <z> <heading> | fine-consensus <trials> <x> <y> <z> <heading> | fine-sectors <trials> <x> <y> <z> | fine-sequences <trials> <x> <y> <z> <heading> | fine-pairs <trials> <x> <y> <z> <heading> | fine-pair-sectors <trials> <x> <y> <z> | fine-triplets <trials> <x> <y> <z> | clear | stop",
+         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save <name> | list | init <name> <bot> | replay <name> <bot> | append <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | queue <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | run <save_name> | queueclear | report | progress | classify | observe <name> | merge <first> <second> <output> | index <source> <output> | near <index> <x> <y> <z> <radius> | areas <index> <output> | area <name> <x> <y> <z> | directions <index> <output> | direction <name> <x> <y> <z> <heading> | audit <index> <x> <y> <z> | assess <index> <x> <y> <z> <heading> | trials <first> <second> <output> | corroborate <trials> <x> <y> <z> <heading> | consensus <trials> <x> <y> <z> <heading> | localize <trials> <x> <y> <z> <heading> | region <trials> <x> <y> <z> <heading> | span <trials> <x> <y> <z> <heading> | crossings <trials> <x> <y> <z> <heading> | discover-crossings <trials> <x> <y> <z> <heading> | crossing-directions <trials> <x> <y> <z> <heading> | crossing-consensus <trials> <x> <y> <z> <heading> | crossing-sectors <trials> <x> <y> <z> | fine-crossings <trials> <x> <y> <z> <heading> | fine-consensus <trials> <x> <y> <z> <heading> | fine-sectors <trials> <x> <y> <z> | fine-sequences <trials> <x> <y> <z> <heading> | fine-pairs <trials> <x> <y> <z> <heading> | fine-pair-sectors <trials> <x> <y> <z> | fine-triplets <trials> <x> <y> <z> | fine-coverage <trials> <x> <y> <z> | clear | stop",
          "Runs an admin-only bounded GoldSrc movement probe.",
          &BotControl::cmdExplore
       },

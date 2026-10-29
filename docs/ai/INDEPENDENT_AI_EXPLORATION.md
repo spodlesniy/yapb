@@ -557,3 +557,12 @@ Run on de_dust2:
 In the D243 trial set only two-face chains have been reported, so the expected result is `triplets=0` and `windows=0` unless another source record has a chain of at least three strict fine-face crossings.
 The command also reports total chains, unique sources, classification statuses, yaw-bin masks and cross-sector conflicts for any triplets.
 A triplet is a three-crossing subsequence from a single recorded segment's straight interpolation; it does not represent a validated GoldSrc traversal or a navigation route.
+
+## D245 — Fine sequence evidence coverage
+
+On de_dust2 run:
+`yb explore fine-coverage d228_trials_02 256 2512 -92`
+The previous D241 and D243 results establish two two-face chains (one in yaw bin 1 and one in bin 0), and D244 establishes no three-face chain, so expect `two=2`, `three_plus=0`, `triplet_windows=0`, `max_faces=2` and `chain_sources=2`.
+Other per-sector record counts and zero-face or ambiguous totals should be read from the fresh game output rather than assumed.
+The eight sector summaries count recorded windows once per requested-yaw bin; distinct source counters deduplicate across bins.
+Even a long endpoint-interpolated sequence does not establish collision-free navigation or a route.

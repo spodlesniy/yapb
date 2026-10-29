@@ -516,3 +516,8 @@ D243 automatic Build and Explorer CI passed at 9c68eb2; HLDS confirmed two separ
 D243 is accepted.
 D244 adds read-only source-quality consensus for exact ordered three-face crossing sequences across all yaw bins, with no cross-record joining or inference of passability.
 Automatic CI and Windows x86 gameplay verification for D244 are pending.
+
+D244 automatic Build and Explorer CI passed at 1050749; HLDS reported two chains, zero triplet windows and zero distinct triplets, matching the prior two-face-only evidence.
+D244 is accepted.
+D245 adds bounded read-only per-sector coverage diagnostics for zero-face, single-face, two-face, three-plus, ambiguous and discontinuous records, with source-deduplicated and longest-chain summaries.
+Automatic CI and HLDS acceptance for D245 are pending; no movement authority is inferred.
