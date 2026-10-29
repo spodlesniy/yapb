@@ -584,3 +584,11 @@ Expect `records=27`, `zero=20`, `grouped_windows=20` and at most three distinct 
 Each group is keyed by a recorded start fine cell and yaw bin, and shows raw windows, unique sources, movement class and D246 zero-reason counts.
 Multiple stationary windows at (496,2464,-91.97) should remain one source, not eight independent corroborations.
 Example start coordinates are observations for planning supervised trials, not validated safe bot placement or collision-checked navigation.
+
+## D248 — Fine-grained evidence refinement
+
+On de_dust2 run:
+`yb explore fine-refinement d228_trials_02 256 2512 -92`
+Expect `records=27`, `zero=20`, `windows=20`, and `sources=3`, with grouping finer than D247's seven 32-unit/yaw groups.
+Each group is keyed by an 8-unit starting subcell, recorded yaw bin, and actual endpoint displacement direction (`travel_bin=-1` stationary, `0..7` horizontal, `8` upward and `9` downward).
+Review mixed Progress/Restriction groups without interpreting them as a confirmed wall or navigation edge; all coordinates are observed starts, not autonomous reposition commands.

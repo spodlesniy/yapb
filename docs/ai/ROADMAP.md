@@ -531,3 +531,9 @@ D246 automatic Build and Explorer CI passed at bf39e33; HLDS reconciled 27 recor
 D246 is accepted.
 D247 groups all zero-face observations by actual starting 32-unit cell and yaw sector, showing raw repetitions separately from distinct sources and prioritizing under-observed locations for future trials.
 The diagnostic remains read-only with no inferred passability, automated replay or CSV changes; D247 CI and HLDS acceptance remain pending.
+
+D247 automatic Build and Explorer CI passed at 0b03e3f; HLDS confirmed 27 records, 20 zero-face windows, seven 32-unit/yaw groups and three distinct sources.
+The dense group cell=(15,77,-3), bin 0 includes twelve windows from two sources (eleven restriction, one progress), with eight stationary observations; spatially distinct observations must not be classified as one physical contradiction.
+D247 is accepted.
+D248 adds 8-unit localization and observed travel-direction separation to zero-face records, with source-preserving mixed-outcome diagnostics and bounded console output.
+D248 automatic CI and HLDS acceptance remain pending; no movement authorization follows from the diagnostic.

@@ -3155,3 +3155,12 @@ Report raw windows, distinct trace sources, classification and reason counts, pl
 Deterministically rank groups with fewer independent sources first, then restriction evidence, repeated windows, fine-cell coordinates and heading sector; cap console output at sixteen groups without truncating aggregate counts.
 A recorded starting position is a reference for a potential human-supervised experiment, not a validated safe spawn, automated movement request, or proof of a wall.
 Do not change the D246 zero-reason classification, old CSV schemas, source-quality thresholds or bot control.
+
+## D248 — Local refinement of zero-face evidence by actual displacement
+
+D247 groups all zero-face records in 32-unit start cells and requested yaw sectors, but different physical positions and travel vectors can share a group.
+Add read-only `yb explore fine-refinement <trials> <x> <y> <z>` to regroup those same records by 8-unit starting subcell, requested yaw bin and observed displacement direction.
+Represent zero displacement separately, use eight horizontal movement bins for observed motion, and distinguish upward and downward dominant vertical displacement.
+Report progress and restriction counts, D246 reason counts, unique source identities, first observed coordinates and actual deltas; mixed outcomes indicate a review candidate, not a collision or traversability conflict.
+Reconcile all records against D247 totals and per-sector D245 zero-face counts, retaining bounded output and deterministic ordering.
+No new automatic movement, safe-start assertion, CSV mutation or changes to previous diagnostics are permitted.
