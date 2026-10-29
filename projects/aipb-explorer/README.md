@@ -18,6 +18,8 @@ ctest --preset debug
 
 Use `release` instead of `debug` for the optimized build.
 See [Exploration specification](../../docs/ai/INDEPENDENT_AI_EXPLORATION.md).
+For the next capability-focused milestones, see the [Movement Discovery plan](../../docs/ai/INDEPENDENT_AI_MOVEMENT_DISCOVERY.md).
+The plan does not reserve future D-numbers or introduce engine behavior.
 
 ## D212 — Engine movement experiments
 

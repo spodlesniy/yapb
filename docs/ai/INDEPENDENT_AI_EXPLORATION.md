@@ -610,3 +610,10 @@ The seven weak Progress groups and four weak restriction groups retain original 
 One Progress group already has one strong source and needs one more strong independent source; all ten other moving groups have zero strong sources.
 Under the D229 threshold a one-window source needs one additional same-outcome window to become strong, but remains the same source; an entirely new independent source needs at least two qualifying windows.
 Plans are diagnostic suggestions for supervised trial design, not executable commands or validated safe spawn and navigation instructions.
+
+## D251 — Movement Discovery implementation plan
+
+The persistent next-stage plan is [Movement Discovery](INDEPENDENT_AI_MOVEMENT_DISCOVERY.md).
+It contains seven ordered implementation milestones with deliverables, dependencies and exit gates, but does not reserve future Dxxx identifiers.
+D250 remains the independent follow-up-trial diagnostic step and cannot be reinterpreted as an experiment framework.
+D251 adds no engine behavior, no new experiment results and no claim of autonomous physical discovery.

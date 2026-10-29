@@ -36,6 +36,9 @@ Do not fabricate completion records or historical names for Phases 1–6 without
 
 ## Parallel experimental track — Independent AI (`ai/independent-ai`)
 
+The staged [Movement Discovery execution plan](INDEPENDENT_AI_MOVEMENT_DISCOVERY.md) defines the next capability-oriented research track without assigning future D-numbers.
+Its A–G stages are planned and do not supersede D250's supervised trial-gap diagnostics or imply that engine experiments are autonomous.
+
 Independent AI is a separate research track forked from `ai/phase-07-training` at `cbb2b3b`; it does not replace Phase 7 stabilization or the proposed Phases 8–12.
 Its goal is independently specified decision logic and self-generated gameplay experience rather than imitation of the YaPB-based teacher.
 D200 establishes the [independent architecture](INDEPENDENT_AI.md) and [waypoint/practice source audit](INDEPENDENT_AI_WAYPOINT_AUDIT.md), without implemented behavior, model training or game testing.
@@ -549,3 +552,6 @@ D249 is accepted.
 D250 adds a read-only supervised repeat-trial plan listing missing strong sources, weak-source completion windows and remaining independent new-source requirements for exact observed moving groups.
 Stationary controls and already confirmed groups are excluded from plans, while conflicting evidence requires review rather than numeric corroboration instructions.
 D250 automatic CI and HLDS acceptance remain pending; plans do not execute movement.
+D251 records the seven-stage Movement Discovery execution plan (Experiment Framework, Ground Movement, Jump Discovery, Traversal Discovery, Capability Model, Active Experimentation and Validation) as a documentation-only milestone.
+D250 remains assigned to read-only follow-up trial planning, while implementation D-numbers will be allocated as each later step begins.
+Movement Discovery acceptance still requires controlled GoldSrc trials and measured capability validation; no runtime implementation or gameplay verification is claimed by this plan.

@@ -3185,3 +3185,13 @@ Conflict reviews carry no numeric confirmation plan because outcomes disagree; c
 Prioritize conflicts, then restriction reviews, then progress corroboration, retaining deterministic keys and at most sixteen console plans while reporting full totals.
 Reported observed starts and deltas are evidence references, not safe bot placement, automatic trial execution, collision proof or authorization to navigate.
 Existing CSV formats, old commands, source quality rules and gameplay behavior remain unchanged.
+
+## D251 — Plan capability-driven Movement Discovery
+
+Keep D250 assigned to its existing read-only movement trial plan; never repurpose or renumber it.
+Introduce `docs/ai/INDEPENDENT_AI_MOVEMENT_DISCOVERY.md` as the durable seven-stage execution plan for experiment contracts, grounded movement, jumping, specialized traversals, capability modeling, active trials and evaluation.
+Do not preallocate numeric Dxxx identifiers for those planned implementation stages.
+Prioritize new controlled GoldSrc evidence over more read-only interpretation of the existing `d228_trials_02` snapshot unless a specific missing validation requires another diagnostic.
+Preserve source independence and uncertainty, bound engine experiments, and require separately verified automatic CI and user-operated Windows x86/HLDS acceptance.
+Limit initial live acceptance to `de_dust2` and distinguish the later Transition Discovery and Autonomous Exploration phases from Movement Discovery.
+D251 is documentation only; it creates no new executable commands, physics conclusions, data format or navigation links.
