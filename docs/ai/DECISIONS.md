@@ -3470,3 +3470,9 @@ User-run HLDS positive evidence exists, but the remaining T261-07 negative accep
 Save new terminal CSV files under `explorer/scenarios/results/<scenario>/`, rather than beside `scenarios/`.
 Preserve timestamped exclusive creation, result schema and movement behavior; do not migrate existing files.
 The menu only lists direct `.scenario` files and ignores nested results.
+
+## D280 — Correct D279 source-contract test whitespace handling
+
+The D279 output path is correct, but the new Python source-contract assertion embedded a literal backslash-n rather than a line break.
+Assert the result directory structure using a whitespace-tolerant regular expression while preserving all other checks.
+No runtime or storage behavior changes; D279 acceptance requires the corrected automatic CI to succeed.

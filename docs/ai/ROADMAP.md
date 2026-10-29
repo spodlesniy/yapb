@@ -681,3 +681,5 @@ Stage A remains incomplete: results lack a per-frame trace, replay comparison an
 D278 automatic Build and Explorer CI passed at 232979a1; a user-run result CSV confirmed Completed with 394 frames, 750 commanded ms and distinct observed start/end positions.
 D279 moves only future result files from `explorer/results/<scenario>/` into `explorer/scenarios/results/<scenario>/`; no existing files are migrated or overwritten.
 Stage A and the postponed T261-07 negative checks remain open.
+D279 automatic Build CI failed only the new Training tools source-contract test: its Python assertion expected a literal `\\n` while the C++ source contains a real line break; AI unit tests passed.
+D280 corrects the test to match the nested result path across whitespace, without changing game DLL code or output layout; CI verification is required.
