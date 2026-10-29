@@ -3135,3 +3135,13 @@ Partition each classified record into zero-face, single-face, two-face, three-or
 Report per-bin and total chain/pair/triplet-window counts, longest observed face count and distinct chain/triplet source counts, deduplicated across yaw bins.
 Retain the eight longest deterministic chain examples by source, recorded first step, sector and classification; the summary includes all records.
 Preserve the 3x3x3 bounded coarse-cell window, CSV formats, earlier commands and gameplay behavior; interpolation remains diagnostic and cannot establish navigable clearance.
+
+## D246 — Explain zero-face recorded segments conservatively
+
+D245 recorded 20 zero-face observations in the de_dust2 trial fixture and could not explain why no strict 32-unit crossing was found.
+Add read-only `yb explore fine-zero-reasons <trials> <x> <y> <z>` using D241's bounded 3x3x3 coarse-cell window and all eight heading sectors.
+Partition only records counted as zero-face by D245 into mutually exclusive OutsideWindow, Stationary, BoundaryContact, SameFineCell and Other classifications in that priority order.
+Keep D241's ambiguous and discontinuous records separate; reconcile total and per-sector zero counts against D245 before committing a result.
+Report up to twelve source-preserving examples with first step, classification, heading and endpoint coordinates to guide future collection.
+An endpoint touching a fine grid plane is not a strict passage; zero-face reasons do not imply walls, movement failures, passability or a route.
+No changes to bot movement, earlier commands or CSV formats.

@@ -566,3 +566,12 @@ The previous D241 and D243 results establish two two-face chains (one in yaw bin
 Other per-sector record counts and zero-face or ambiguous totals should be read from the fresh game output rather than assumed.
 The eight sector summaries count recorded windows once per requested-yaw bin; distinct source counters deduplicate across bins.
 Even a long endpoint-interpolated sequence does not establish collision-free navigation or a route.
+
+## D246 — Zero-face record reasons
+
+Run on de_dust2:
+`yb explore fine-zero-reasons d228_trials_02 256 2512 -92`
+Expect `records=27`, `zero=20`, `ambiguous=0`, `discontinuous=0`; the reason counts should sum to 20 and also reconcile separately for bins 0 and 1 (15 and 5 zero-face records respectively).
+The five mutually exclusive reasons are OutsideWindow, Stationary, BoundaryContact, SameFineCell and Other in priority order.
+Only a bounded set of twelve example records is printed, retaining source and first-step provenance.
+These classifications describe recorded endpoint geometry, not GoldSrc hull clearance or blocked navigation.

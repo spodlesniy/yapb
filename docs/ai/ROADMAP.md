@@ -521,3 +521,8 @@ D244 automatic Build and Explorer CI passed at 1050749; HLDS reported two chains
 D244 is accepted.
 D245 adds bounded read-only per-sector coverage diagnostics for zero-face, single-face, two-face, three-plus, ambiguous and discontinuous records, with source-deduplicated and longest-chain summaries.
 Automatic CI and HLDS acceptance for D245 are pending; no movement authority is inferred.
+
+D245 automatic Build and Explorer CI passed at 572c49c; HLDS recorded 27 observations, 20 zero-face, 5 single-face and 2 two-face chains from two sources, with no triplets or ambiguous records.
+D245 is accepted.
+D246 introduces read-only reason classification for D245 zero-face observations, with all-sector reconciliation, bounded provenance examples and no interpretation of zero-face as an obstacle.
+D246 CI and HLDS acceptance remain pending.
