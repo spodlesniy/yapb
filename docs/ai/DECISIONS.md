@@ -3195,3 +3195,16 @@ Prioritize new controlled GoldSrc evidence over more read-only interpretation of
 Preserve source independence and uncertainty, bound engine experiments, and require separately verified automatic CI and user-operated Windows x86/HLDS acceptance.
 Limit initial live acceptance to `de_dust2` and distinguish the later Transition Discovery and Autonomous Exploration phases from Movement Discovery.
 D251 is documentation only; it creates no new executable commands, physics conclusions, data format or navigation links.
+
+## D252 — Stage A initial versioned ground experiment contract
+
+D251 introduces the Movement Discovery execution plan and remains documentation only.
+D252 is the first narrow implementation step of Stage A (Experiment Framework), not completion of the stage.
+Introduce a versioned, bounded straight-ground experiment descriptor with explicit map, experiment and independent source IDs, observed start pose/velocity/stance, declared verification, weapon identifier and measured speed cap, a fixed frame-count command sequence, elapsed-time limit, and a projected travel target.
+Require a preverified grounded start in the contract, but do not treat a caller-provided verification flag or historical position as an engine authorization to spawn or teleport.
+Provide strict descriptor formatting/parsing, transactional input validation, and a result record that carries the same experiment/source identity.
+Evaluate an existing actual engine trace deterministically against its declared start, commands, speed cap, ground state, duration, and target with Success, Failure, Inconclusive and Diverged statuses and explicit reasons.
+The evaluator makes no assertion about collision contact or navigable passage from a successful projected displacement.
+Reuse existing engine-neutral bridge trace/state/speed contracts and register focused CTest mock and parser regressions with strict GCC/Clang/MSVC warnings.
+Do not add automatic experiment execution, new gameplay commands, changes to old traces, or bypass the current GoldSrc probe/replay safety checks.
+The Stage A execution/recording adapter, persistence of results from real HLDS runs, supervised repetition, and acceptance gate remain pending.

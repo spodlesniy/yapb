@@ -617,3 +617,12 @@ The persistent next-stage plan is [Movement Discovery](INDEPENDENT_AI_MOVEMENT_D
 It contains seven ordered implementation milestones with deliverables, dependencies and exit gates, but does not reserve future Dxxx identifiers.
 D250 remains the independent follow-up-trial diagnostic step and cannot be reinterpreted as an experiment framework.
 D251 adds no engine behavior, no new experiment results and no claim of autonomous physical discovery.
+
+## D252 — Experiment Framework contract, first Stage A slice
+
+The new engine-neutral experiment contract is defined in `projects/aipb-explorer/include/aipb/explorer/engine_bridge_experiment_contract.h`.
+It accepts a versioned descriptor with map/run/source identity, a declared verified grounded start (including velocity and yaw), weapon speed cap, a bounded sequence of frame-count commands, time limit and projected movement target.
+`engine_bridge_experiment_evaluation.h` evaluates pre-recorded engine trace samples against that declaration, returning an explicit Success, Failure, Inconclusive or Diverged reason and a versioned result line.
+A successful projected displacement is not proof of hull clearance or a route.
+D252 is a library/test milestone: it does not introduce a `yb explore` command or execute an experiment.
+The subsequent Stage A runtime adapter must enforce authorization and preflight against real GoldSrc state before any live trial, with user-run HLDS replay acceptance.

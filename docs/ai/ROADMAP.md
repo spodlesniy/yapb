@@ -555,3 +555,7 @@ D250 automatic CI and HLDS acceptance remain pending; plans do not execute movem
 D251 records the seven-stage Movement Discovery execution plan (Experiment Framework, Ground Movement, Jump Discovery, Traversal Discovery, Capability Model, Active Experimentation and Validation) as a documentation-only milestone.
 D250 remains assigned to read-only follow-up trial planning, while implementation D-numbers will be allocated as each later step begins.
 Movement Discovery acceptance still requires controlled GoldSrc trials and measured capability validation; no runtime implementation or gameplay verification is claimed by this plan.
+
+D252 begins Movement Discovery Stage A (Experiment Framework) with an engine-neutral v1 ground experiment descriptor, bounded command sequence, mock/parser tests, deterministic evaluation of an existing GoldSrc trace, and versioned result formatting.
+D252 does not enable automatic or supervised execution in HLDS yet; the engine adapter, real trace/result persistence and a verified replay or explicit divergence remain outstanding.
+Stage A is in progress and cannot be accepted from code publication or mock CI alone.

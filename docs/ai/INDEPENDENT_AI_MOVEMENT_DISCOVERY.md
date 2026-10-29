@@ -127,3 +127,11 @@ Review failure examples and rollback/uncertainty handling before enabling capabi
 First confirm D250's automatic CI and user-led HLDS verification independently of this documentation change.
 Then scope the first implementation step of Stage A, starting with the versioned experiment descriptor and explicit success/failure evaluation for one real ground-movement trial.
 No new runtime behavior is introduced by D251 itself.
+
+## Stage A implementation progress
+
+D252 implements the first engine-neutral Stage A slice: a versioned straight-ground experiment contract, strict parser/formatter, bounded program, deterministic trace evaluation and a versioned result line.
+It reuses the existing engine bridge state/command/trace structures and is covered by synthetic CTest cases for success, failure, inconclusive results and recorded-state or command divergence.
+The caller-supplied verified-start marker is not a security or geometry proof; actual GoldSrc authorization and safe initialization still require runtime preflight.
+The next Stage A slice must connect a predeclared descriptor to administrator-authorized GoldSrc probe/replay, save actual engine pre/post observations and result provenance, and verify repetition or divergence on de_dust2.
+Do not mark Stage A complete until the user-run HLDS exit gate has passed.
