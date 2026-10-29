@@ -21,7 +21,7 @@ If menu integration cannot avoid changes to original YaPB files, stop and reques
 | T261-03 — Sequential scheduler | Own one scenario and action index; track per-action commanded milliseconds and wall-clock deadlines, global timeout and maximum frame count; advance actions in file order without idle frame insertion | T261-02 | Deterministic tests for one/multiple actions, deadline expiration, zero progress, completion and limits | D263 completed; Explorer CI passed |
 | T261-04 — GoldSrc movement adapter | Feed normalized `forward/strafe`, held `jump/duck`, and distributed total `yaw_delta/pitch_delta` into `pfnRunPlayerMove` through existing AiPB frame hook; preserve body/view angle conventions | T261-03 | Mock translation/angle tests; real physics remains engine-owned and command completion is not movement success | D264 completed; Build and Explorer CI passed |
 | T261-05 — Lifecycle and conflicts | Add cancellation, idle/running/completed/failed/aborted statuses, cleanup of buttons and session ownership, no concurrent Explorer probe/queue/replay, stop on bot/map/team/death/disconnect/unsafe timing, **round completion/restart** | T261-04 | Unit tests for abort/restart, resource cleanup, simultaneous commands and failure reasons | D265 completed; Build and Explorer CI passed |
-| T261-06 — YaPB menu integration | Add a separate `aipb menu`, `aipb scenario overlay on|off`, disabled start/stop states, a flat scenario-file browser with five entries per page, Previous/Next and Back; `aipb scenario run` prepares supported initial state, strictly verifies and runs | T261-05 and user details | Model tested; live YaPB menu integration requires authorization for minimal changes in original `inc/control.h` and `src/control.cpp` | D267 flat browser model staged; game integration and automatic start preparation still pending |
+| T261-06 — YaPB menu integration | Add a separate `aipb menu`, `aipb scenario overlay on|off`, disabled start/stop states, a flat scenario-file browser with five entries per page, Previous/Next and Back; `aipb scenario run` prepares supported initial state, strictly verifies and runs | T261-05 and user details | Standalone AiPB menu via authorized `src/linkage.cpp` bridge; Game build/HLDS acceptance pending | D268 implementation published; CI pending |
 | T261-07 — Acceptance on de_dust2 | Provide a two-action fixture with no optional inventory dependencies, exercise `init-pose`, `init-equipment`, preflight, menu start/stop/status, completion and safe cancellation; inspect actual GoldSrc observations | T261-06 | CI passed plus user-run Windows x86/HLDS positive and negative tests with no stuck inputs, race or unexpected bot control | Pending |
 
 ## Explicitly deferred
@@ -45,3 +45,14 @@ No equipment item appears in the menu, and `run` must safely prepare all support
 Fail closed when explicit equipment constraints cannot be satisfied and never claim initialization of unsupported equipment.
 The user authorized a narrow client-command bridge in original `src/linkage.cpp`, but not edits to original `src/control.cpp` or `inc/control.h`.
 D267 addresses only the independent flat menu contract and its tests; live menu routing, safe start preparation and runtime overlay remain outstanding.
+
+## D268 standalone integration
+
+The menu is a new AiPB C++ runtime module with a narrow pre-handler in the authorized `src/linkage.cpp`.
+It lists only regular `.scenario` files directly in `explorer/scenarios`, sorted in five-entry pages.
+It exposes `aipb menu`, `aipb scenario run <name>`, `aipb scenario stop`, `aipb scenario status`, and `aipb scenario overlay on|off`.
+The previous `aipb_scenario_*` commands are removed without aliases.
+Run checks scenario and bot safety, plans supported pose/equipment before writing, applies them, then re-observes and performs full preflight; failure triggers restoration of saved state.
+Equipment that cannot safely be provided is rejected by the existing fail-closed planner.
+A running scenario is cancelled when the round ends by the existing lifecycle guard.
+Automatic build and real HLDS acceptance remain required before marking T261-06 completed.

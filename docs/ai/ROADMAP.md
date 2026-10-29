@@ -655,3 +655,7 @@ D267 updates the independent Scenario Menu browser to list only scenario basenam
 The user specified a standalone `aipb` command tree and automatic supported start-state preparation followed by strict preflight; these runtime changes are not yet implemented by D267.
 A minimal `src/linkage.cpp` client bridge is authorized, while original `src/control.cpp` and `inc/control.h` remain unchanged.
 Menu activation and live HLDS acceptance remain pending.
+D268 integrates a separate in-DLL AiPB menu using the explicitly authorized client-command hook in original `src/linkage.cpp`; `src/control.cpp` and `inc/control.h` remain untouched.
+New `aipb` commands supersede legacy `aipb_scenario_*` registrations with no aliases, and a flat five-file scenario browser and overlay are wired through the new AiPB menu module.
+The run command automatically prepares supported pose, health and armor after bounded validation, then re-reads the bot for strict start admission; unsupported explicit equipment fails closed.
+D268 automatic game build and Explorer CI are pending and HLDS acceptance is required before declaring T261-06 complete.

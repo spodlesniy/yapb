@@ -8,6 +8,7 @@
 #include <yapb.h>
 #include <ai/ai_navvis.h>
 #include <ai/ai_exploration_probe.h>
+#include <ai/ai_menu.h>
 
 ConVar cv_version ("version", product.version.chars (), Var::ReadOnly);
 
@@ -309,6 +310,13 @@ CR_EXPORT int GetEntityAPI (gamefuncs_t *table, int interfaceVersion) {
       // could type in his game console, or real new client commands, but we wouldn't want to do
       // so as this is just a bot DLL, not a MOD. The purpose is not to add functionality to
       // clients. Hence it can lack of commenting a bit, since this code is very subject to change.
+
+      if (ai::menu::handleClient(ent)) {
+         if (game.is (GameFlags::Metamod)) {
+            RETURN_META (MRES_SUPERCEDE);
+         }
+         return;
+      }
 
       if (ctrl.handleClientCommands (ent)) {
          if (game.is (GameFlags::Metamod)) {

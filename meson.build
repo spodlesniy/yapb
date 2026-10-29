@@ -297,6 +297,7 @@ sources = files(
    'src/ai/ai_bot_runtime.cpp',
    'src/ai/ai_navvis.cpp',
    'src/ai/ai_exploration_probe.cpp',
+   'src/ai/ai_menu.cpp',
    'src/ai/ai_navvis_format.cpp',
    'src/ai/ai_training_collector.cpp',
    'src/ai/ai_training_buffer_storage.cpp',

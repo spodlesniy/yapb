@@ -3380,3 +3380,12 @@ The user removed folder navigation from the requested menu and specified a singl
 D267 narrows the independent menu model to a sorted, validated flat set of scenario basenames with five entries per page and Previous/Next navigation.
 Its tests cover empty, multi-page and invalid-name cases.
 The step does not yet wire the client hook, display the menu or overlay, rename engine commands, or apply initial state; those require a separate runtime implementation with CI and HLDS acceptance.
+
+## D268 — Separate AiPB client menu, console namespace, and guarded start preparation
+
+The user explicitly authorized editing only `src/linkage.cpp` in original YaPB for a minimal client-command interception bridge.
+A separate `src/ai/ai_menu.cpp` implements `aipb menu`, flat scenario browser, five-item pages, status overlay and command dispatch, while existing `BotControl` remains unchanged.
+The commands are renamed under `aipb scenario` without retaining the legacy `aipb_scenario_*` aliases.
+The run operation now stages a supported pose/equipment plan, validates target support and preconditions, applies engine state, performs a fresh full preflight, and restores earlier state upon refusal.
+Unsupported equipment constraints remain fail-closed, not silently initialized.
+Automated CI and user-run HLDS acceptance are gates before this behavior is marked production-ready.

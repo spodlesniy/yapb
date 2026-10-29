@@ -767,3 +767,11 @@ The overlay labels are exactly `Сценарий не запущен` and `Сц�
 This is an engine-neutral tested contract, not an installed game menu.
 Original YaPB menu dispatch lives in `src/control.cpp` / `inc/control.h` and does not expose a registration extension point.
 To complete the requested T261-06 menu, obtain explicit permission for narrow original-file integration and then implement safe filesystem enumeration, live status overlay and menu event dispatch.
+
+## D268 — Standalone client menu and automatic start preparation
+
+The AiPB-owned menu is separate from YaPB `BotControl` and uses a narrow `src/linkage.cpp` bridge authorized by the user.
+It exposes the `aipb` command namespace, sorted flat five-entry selection pages, disabled run/stop states and Russian HUD overlay.
+Run combines supported pose and equipment preparation with fresh strict preflight before the movement scheduler can acquire the selected bot.
+Incompatible or unknown required equipment is rejected.
+Legacy `aipb_scenario_*` registrations are removed.

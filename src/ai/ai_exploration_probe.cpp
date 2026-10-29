@@ -1,5 +1,7 @@
 #include <yapb.h>
 #include <ai/ai_exploration_probe.h>
+#include <ai/ai_menu.h>
+#include <aipb/explorer/engine_bridge_scenario_pose.h>
 #include <aipb/explorer/engine_bridge_math.h>
 #include <aipb/explorer/engine_bridge_scenario_equipment_init.h>
 #include <aipb/explorer/engine_bridge_scenario_loader.h>
@@ -148,156 +150,120 @@ ScenarioRuntimeObservation readScenarioRuntimeObservation(
    return { actual, primary, secondary, selected };
 }
 
-void initScenarioEquipmentCommand() {
-   if (engfuncs.pfnCmd_Argc() != 2) {
-      game.print("Usage: aipb_scenario_init_equipment <scenario_name>");
-      return;
-   }
-
-   const char *name = engfuncs.pfnCmd_Argv(1);
+bool runScenarioInternal(const char *name) {
    if (!name || !aipb::explorer::scenario::safeIdentifier(name)) {
-      game.print("AiPB scenario equipment: invalid scenario name.");
-      return;
+      game.print("AiPB scenario: invalid name.");
+      return false;
    }
-
    const auto directory = strings.joinPath(bstor.getRunningPath(), folders.data, "explorer");
    aipb::explorer::scenario::Scenario scenario {};
    std::string detail {};
-   const auto load = aipb::explorer::scenario::loadScenario(
-      directory.chars(), name, scenario, detail);
-
-   if (load != aipb::explorer::scenario::LoadStatus::Ok) {
-      game.print("AiPB scenario equipment: '%s' load failed (%s): %s.", name,
-         aipb::explorer::scenario::loadStatusName(load), detail.c_str());
-      return;
+   const auto loaded = aipb::explorer::scenario::loadScenario(directory.chars(), name, scenario, detail);
+   if (loaded != aipb::explorer::scenario::LoadStatus::Ok) {
+      game.print("AiPB scenario: '%s' load failed (%s): %s.", name,
+         aipb::explorer::scenario::loadStatusName(loaded), detail.c_str());
+      return false;
    }
-
    auto *bot = bots.findBotByIndex(scenario.botIndex);
-   const int team = !bot ? 0 : bot->m_team == Team::CT ? 2
-      : bot->m_team == Team::Terrorist ? 1 : 0;
-   const auto preflight = aipb::explorer::scenario::checkScenarioPreflight(
-      scenario, game.getMapName(), bot != nullptr,
-      bot != nullptr && game.isAliveEntity(bot->ent()), team);
-
-   if (preflight != aipb::explorer::scenario::PreflightStatus::Ok) {
-      game.print("AiPB scenario equipment: '%s' rejected (%s); no changes.", name,
-         aipb::explorer::scenario::preflightStatusName(preflight));
-      return;
+   const int team = bot == nullptr ? 0 : bot->m_team == Team::CT ? 2 :
+      bot->m_team == Team::Terrorist ? 1 : 0;
+   const auto entry = aipb::explorer::scenario::checkScenarioRunEntry(scenario,
+      game.getMapName(), bot != nullptr, bot && game.isAliveEntity(bot->ent()), team,
+      active() || queue.running || scenarioScheduler.running());
+   if (entry != aipb::explorer::scenario::RunEntryStatus::Validated || gameState.isRoundOver()) {
+      game.print("AiPB scenario: '%s' rejected (%s).", name,
+         gameState.isRoundOver() ? "RoundOver" :
+         aipb::explorer::scenario::runEntryStatusName(entry));
+      return false;
    }
-
-   if (active() || queue.running) {
-      game.print("AiPB scenario equipment: '%s' rejected (ExplorerBusy); no changes.", name);
-      return;
+   // Reject unsupported actions before changing any engine-owned state.
+   for (const auto &action : scenario.actions) {
+      if (action.attack || action.attack2 || action.use || action.select != "none") {
+         game.print("AiPB scenario: '%s' rejected (UnsupportedAction).", name);
+         return false;
+      }
    }
-
-   const auto observed = readScenarioRuntimeObservation(bot, scenario);
-   const auto decision = aipb::explorer::scenario::planScenarioEquipment(
-      scenario, observed.actual, false, observed.primary, observed.secondary, observed.selected);
-
-   if (!decision.ready()) {
-      game.print("AiPB scenario equipment: '%s' rejected (%s, field=%s); no changes.",
-         name, aipb::explorer::scenario::equipmentInitStatusName(decision.status),
-         decision.detail.c_str());
-      return;
+   auto observation = readScenarioRuntimeObservation(bot, scenario);
+   aipb::explorer::scenario::PoseInitPlan pose {};
+   const auto poseStatus = aipb::explorer::scenario::planScenarioPose(
+      scenario, observation.actual, false, pose);
+   if (poseStatus != aipb::explorer::scenario::PoseInitStatus::Ready) {
+      game.print("AiPB scenario: '%s' pose rejected (%s).", name,
+         aipb::explorer::scenario::poseInitStatusName(poseStatus));
+      return false;
    }
-
+   const Vector target(pose.position[0], pose.position[1], pose.position[2]);
+   const auto hull = pose.crouching ? head_hull : human_hull;
+   TraceResult occupancy {}, support {};
+   game.testHull(target, target, TraceIgnore::None, hull, bot->ent(), &occupancy);
+   game.testHull(target, target - Vector(0.0f, 0.0f, 4.0f),
+      TraceIgnore::None, hull, bot->ent(), &support);
+   if (occupancy.fStartSolid || occupancy.fAllSolid
+      || support.fStartSolid || support.fAllSolid
+      || support.flFraction >= 1.0f || support.vecPlaneNormal.z < 0.7f) {
+      game.print("AiPB scenario: '%s' blocked or unsupported pose.", name);
+      return false;
+   }
+   const auto equipment = aipb::explorer::scenario::planScenarioEquipment(
+      scenario, observation.actual, false, observation.primary,
+      observation.secondary, observation.selected);
+   if (!equipment.ready()) {
+      game.print("AiPB scenario: '%s' equipment rejected (%s, field=%s).", name,
+         aipb::explorer::scenario::equipmentInitStatusName(equipment.status),
+         equipment.detail.c_str());
+      return false;
+   }
+   // Plan and check every constraint before making any writes.
+   const Vector oldOrigin = bot->pev->origin;
+   const Vector oldVelocity = bot->pev->velocity;
+   const Vector oldView = bot->pev->v_angle;
+   const Vector oldAngles = bot->pev->angles;
    const float oldHealth = bot->pev->health;
    const float oldHealthValue = bot->m_healthValue;
    const float oldArmor = bot->pev->armorvalue;
-
-   if (decision.plan.setArmor) {
-      bot->pev->armorvalue = decision.plan.armor;
-   }
-   if (decision.plan.setHealth) {
-      bot->pev->health = decision.plan.health;
-      bot->m_healthValue = decision.plan.health;
-   }
-
-   const bool applied = (!decision.plan.setHealth
-      || bot->pev->health == decision.plan.health)
-      && (!decision.plan.setArmor || bot->pev->armorvalue == decision.plan.armor);
-
-   if (!applied) {
+   const int oldButtons = bot->pev->button;
+   const int oldOldButtons = bot->pev->oldbuttons;
+   const int oldImpulse = bot->pev->impulse;
+   const int oldFlags = bot->pev->flags;
+   const auto restore = [&] () {
+      engfuncs.pfnSetOrigin(bot->ent(), oldOrigin);
+      bot->pev->velocity = oldVelocity;
+      bot->pev->v_angle = oldView;
+      bot->pev->angles = oldAngles;
       bot->pev->health = oldHealth;
       bot->m_healthValue = oldHealthValue;
       bot->pev->armorvalue = oldArmor;
-      game.print("AiPB scenario equipment: '%s' rejected (post-write check); restored values.", name);
-      return;
+      bot->pev->button = oldButtons;
+      bot->pev->oldbuttons = oldOldButtons;
+      bot->pev->impulse = oldImpulse;
+      bot->pev->flags = oldFlags;
+   };
+   engfuncs.pfnSetOrigin(bot->ent(), target);
+   bot->pev->velocity = Vector(pose.velocity[0], pose.velocity[1], pose.velocity[2]);
+   bot->pev->v_angle = Vector(pose.pitch, pose.yaw, 0.0f);
+   bot->pev->angles = Vector(-pose.pitch / 3.0f, pose.yaw, 0.0f);
+   bot->pev->button = 0;
+   bot->pev->oldbuttons = 0;
+   bot->pev->impulse = 0;
+   bot->pev->flags |= FL_ONGROUND;
+   if (equipment.plan.setHealth) {
+      bot->pev->health = equipment.plan.health;
+      bot->m_healthValue = equipment.plan.health;
    }
-
-   game.print("AiPB scenario equipment: '%s' applied: bot=%d health=%s armor=%s; other equipment unchanged; no actions executed.",
-      name, scenario.botIndex, decision.plan.setHealth ? "set" : "unchanged",
-      decision.plan.setArmor ? "set" : "unchanged");
-}
-
-// The entry surface stays read-only until start-state gating and execution
-// have their own acceptance tests. Do not treat this command as a trial.
-void runScenarioEntryCommand() {
-   const int argc = engfuncs.pfnCmd_Argc();
-   const char *name = argc == 2 ? engfuncs.pfnCmd_Argv(1) : nullptr;
-
-   if (!name || !aipb::explorer::scenario::validScenarioRunArguments(argc, name)) {
-      game.print("Usage: aipb_scenario_run <scenario_name>");
-      return;
+   if (equipment.plan.setArmor) {
+      bot->pev->armorvalue = equipment.plan.armor;
    }
-
-   const auto directory = strings.joinPath(bstor.getRunningPath(), folders.data, "explorer");
-   aipb::explorer::scenario::Scenario scenario {};
-   std::string detail {};
-   const auto loaded = aipb::explorer::scenario::loadScenario(
-      directory.chars(), name, scenario, detail);
-
-   if (loaded != aipb::explorer::scenario::LoadStatus::Ok) {
-      game.print("AiPB scenario run: '%s' rejected (%s): %s; no actions executed.",
-         name, aipb::explorer::scenario::loadStatusName(loaded), detail.c_str());
-      return;
-   }
-
-   auto *bot = bots.findBotByIndex(scenario.botIndex);
-   const int team = bot == nullptr ? 0 : bot->m_team == Team::CT ? 2
-      : bot->m_team == Team::Terrorist ? 1 : 0;
-   const auto entry = aipb::explorer::scenario::checkScenarioRunEntry(
-      scenario, game.getMapName(), bot != nullptr,
-      bot != nullptr && game.isAliveEntity(bot->ent()), team,
-      active() || queue.running || scenarioScheduler.running());
-
-   if (entry != aipb::explorer::scenario::RunEntryStatus::Validated) {
-      game.print("AiPB scenario run: '%s' rejected (%s); no actions executed.",
-         name, aipb::explorer::scenario::runEntryStatusName(entry));
-      return;
-   }
-
-   // A prior preflight is never an execution permit: sample the bot again now.
-   const auto observed = readScenarioRuntimeObservation(bot, scenario);
+   observation = readScenarioRuntimeObservation(bot, scenario);
    const auto gate = aipb::explorer::scenario::checkScenarioRunStart(
-      scenario, observed.actual, observed.primary, observed.secondary, observed.selected);
-
-   if (!gate.ready()) {
-      if (gate.status == aipb::explorer::scenario::RunStartStatus::UnsupportedAction) {
-         game.print("AiPB scenario run: '%s' rejected (UnsupportedAction, action=%d, field=%s); no actions executed.",
-            name, static_cast<int>(gate.actionIndex) + 1, gate.unsupportedField);
-      }
-      else {
-         game.print("AiPB scenario run: '%s' rejected (%s, mismatches=%d, unverified=%d); no actions executed.",
-            name, aipb::explorer::scenario::runStartStatusName(gate.status),
-            gate.assessment.mismatches, gate.assessment.unverified);
-         for (const auto &finding : gate.assessment.findings) {
-            game.print("AiPB scenario run: %s %s expected=%.2f observed=%.2f.",
-               finding.unverified ? "unverified" : "mismatch", finding.field.c_str(),
-               finding.expected, finding.observed);
-         }
-      }
-      return;
-   }
-
-   if (gameState.isRoundOver()) {
-      game.print("AiPB scenario run: '%s' rejected (RoundOver).", name);
-      return;
-   }
+      scenario, observation.actual, observation.primary,
+      observation.secondary, observation.selected);
    const int64_t clock = scenarioTimeMs();
-   if (clock < 0 || !scenarioScheduler.begin(scenario, gate, clock)) {
-      game.print("AiPB scenario run: '%s' rejected (SchedulerUnavailable); no actions executed.", name);
-      return;
+   if (!gate.ready() || clock < 0 || gameState.isRoundOver()
+      || !scenarioScheduler.begin(scenario, gate, clock)) {
+      restore();
+      game.print("AiPB scenario: '%s' start preflight failed (mismatches=%d, unverified=%d).",
+         name, gate.assessment.mismatches, gate.assessment.unverified);
+      return false;
    }
    std::snprintf(scenarioName, sizeof(scenarioName), "%s", name);
    std::snprintf(scenarioMap, sizeof(scenarioMap), "%s", game.getMapName());
@@ -306,18 +272,14 @@ void runScenarioEntryCommand() {
    scenarioRoundId = gameState.getTelemetryRoundId();
    scenarioTeam = team;
    scenarioBot = bot;
-   game.print("AiPB scenario run: '%s' started; bot=%d actions=%d.", name,
+   game.print("AiPB scenario: '%s' started; bot=%d actions=%d.", name,
       scenario.botIndex, static_cast<int>(scenario.actions.size()));
+   return true;
 }
 
-void stopScenarioEntryCommand() {
-   if (!aipb::explorer::scenario::validScenarioControlArguments(engfuncs.pfnCmd_Argc())) {
-      game.print("Usage: aipb_scenario_stop");
-      return;
-   }
-
+void stopScenarioInternal() {
    if (!scenarioScheduler.running()) {
-      game.print("AiPB scenario run: idle; no action to stop.");
+      game.print("AiPB scenario: idle; no action to stop.");
       return;
    }
    auto *bot = bots.findBotByIndex(scenarioScheduler.botIndex());
@@ -325,17 +287,18 @@ void stopScenarioEntryCommand() {
    scenarioEnd(bot == scenarioBot ? bot : nullptr, "stopped");
 }
 
-void statusScenarioEntryCommand() {
-   if (!aipb::explorer::scenario::validScenarioControlArguments(engfuncs.pfnCmd_Argc())) {
-      game.print("Usage: aipb_scenario_status");
-      return;
-   }
-
-   game.print("AiPB scenario run: '%s' status=%s action=%d frames=%d command_ms=%d.",
+void statusScenarioInternal(edict_t *client) {
+   const auto message = strings.format("AiPB scenario: '%s' status=%s action=%d frames=%d command_ms=%d.",
       scenarioName,
       aipb::explorer::scenario::actionScheduleStatusName(scenarioScheduler.status()),
       static_cast<int>(scenarioScheduler.actionIndex()) + 1,
       scenarioScheduler.frames(), scenarioScheduler.totalMilliseconds());
+   if (client) {
+      game.clientPrint(client, message);
+   }
+   else {
+      game.print(message);
+   }
 }
 
 AipbExplorerBridgeState observe(const Bot &bot) {
@@ -369,6 +332,12 @@ void stop(const char *reason) {
 }
 
 } // namespace
+
+bool scenarioRunning() { return scenarioScheduler.running(); }
+const char *currentScenarioName() { return scenarioName; }
+bool runScenario(const char *name) { return runScenarioInternal(name); }
+void stopScenario() { stopScenarioInternal(); }
+void printScenarioStatus(edict_t *client) { statusScenarioInternal(client); }
 
 bool active() {
    return session.botIndex >= 0 || scenarioScheduler.running();
@@ -740,22 +709,14 @@ void cancelBot(int botIndex) {
 bool frame(Bot &bot) {
    // The first bot frame is the earliest existing AiPB hook with a ready engine.
    // GoldSrc server commands persist across map changes.
-   static bool scenarioCommandsRegistered {};
-   if (!scenarioCommandsRegistered) {
-      game.registerEngineCommand("aipb_scenario_init_equipment", [] () {
-         initScenarioEquipmentCommand();
+   static bool aipbCommandRegistered {};
+   if (!aipbCommandRegistered) {
+      game.registerEngineCommand("aipb", [] () {
+         ai::menu::handleServer();
       });
-      game.registerEngineCommand("aipb_scenario_run", [] () {
-         runScenarioEntryCommand();
-      });
-      game.registerEngineCommand("aipb_scenario_stop", [] () {
-         stopScenarioEntryCommand();
-      });
-      game.registerEngineCommand("aipb_scenario_status", [] () {
-         statusScenarioEntryCommand();
-      });
-      scenarioCommandsRegistered = true;
+      aipbCommandRegistered = true;
    }
+   ai::menu::frame();
 
    if (scenarioScheduler.running() && scenarioScheduler.botIndex() == bot.index()) {
       const auto currentTeam = bot.m_team == Team::CT ? 2

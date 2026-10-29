@@ -3,6 +3,8 @@
 #include <aipb/explorer/engine_bridge.h>
 
 class Bot;
+class edict_s;
+using edict_t = edict_s;
 
 namespace ai::explore {
 
@@ -26,5 +28,10 @@ bool frame(Bot &bot);
 void reset();
 void cancelBot(int botIndex);
 bool active();
+bool scenarioRunning();
+const char *currentScenarioName();
+bool runScenario(const char *name);
+void stopScenario();
+void printScenarioStatus(edict_t *client);
 
 }
