@@ -4,6 +4,7 @@
 #include <aipb/explorer/engine_bridge_scenario_equipment_init.h>
 #include <aipb/explorer/engine_bridge_scenario_loader.h>
 #include <aipb/explorer/engine_bridge_scenario_run_entry.h>
+#include <aipb/explorer/engine_bridge_scenario_run_gate.h>
 #include <aipb/explorer/engine_bridge_queue.h>
 #include <aipb/explorer/engine_bridge_trace.h>
 #include <aipb/explorer/engine_bridge_trace_classification.h>
@@ -45,6 +46,76 @@ Session session {};
 
 // This server-console-only command is registered from the existing AiPB bot
 // frame hook, so legacy YaPB control and message handlers are not modified.
+struct ScenarioRuntimeObservation {
+   aipb::explorer::scenario::ScenarioStartObservation actual {};
+   int primary {};
+   int secondary {};
+   int selected {};
+};
+
+// Read only live engine state. The same source is used by both equipment
+// preparation and execution admission to prevent conflicting observations.
+ScenarioRuntimeObservation readScenarioRuntimeObservation(
+   Bot *bot, const aipb::explorer::scenario::Scenario &scenario
+) {
+   const auto &e = scenario.equipment;
+   const auto weaponId = [](const std::string &alias) {
+      return alias == "none" ? 0 : util.weaponAliasToId(alias.c_str());
+   };
+
+   const int primary = weaponId(e.primary.type);
+   const int secondary = weaponId(e.secondary.type);
+   const int selected = e.selected == "knife" ? Weapon::Knife
+      : e.selected == "primary" ? primary
+      : e.selected == "secondary" ? secondary
+      : e.selected == "he" ? Weapon::Explosive
+      : e.selected == "flash" ? Weapon::Flashbang
+      : e.selected == "smoke" ? Weapon::Smoke : -1;
+
+   aipb::explorer::scenario::ScenarioStartObservation actual {};
+   actual.velocity[0] = bot->pev->velocity.x;
+   actual.velocity[1] = bot->pev->velocity.y;
+   actual.velocity[2] = bot->pev->velocity.z;
+   actual.position[0] = bot->pev->origin.x;
+   actual.position[1] = bot->pev->origin.y;
+   actual.position[2] = bot->pev->origin.z;
+   actual.yaw = bot->pev->v_angle.y;
+   actual.pitch = bot->pev->v_angle.x;
+   actual.onGround = !!(bot->pev->flags & FL_ONGROUND);
+   actual.crouching = !!(bot->pev->flags & FL_DUCKING);
+   actual.health = bot->pev->health;
+   actual.armor = bot->pev->armorvalue;
+   actual.maxSpeed = bot->pev->maxspeed;
+   actual.money = bot->m_moneyAmount;
+   actual.defuseKit = bot->m_hasDefuser;
+   actual.selectedId = bot->m_currentWeapon;
+   const auto weapons = static_cast<std::uint32_t>(bot->pev->weapons);
+   actual.primaryId = aipb::explorer::scenario::observedScenarioWeaponId(
+      weapons, static_cast<std::uint32_t>(kPrimaryWeaponMask));
+   actual.secondaryId = aipb::explorer::scenario::observedScenarioWeaponId(
+      weapons, static_cast<std::uint32_t>(kSecondaryWeaponMask));
+
+   if (primary > 0 && actual.primaryId == primary) {
+      actual.primaryClip = bot->m_ammoInClip[primary];
+      actual.primaryReserve = bot->getAmmo(primary);
+   }
+   if (secondary > 0 && actual.secondaryId == secondary) {
+      actual.secondaryClip = bot->m_ammoInClip[secondary];
+      actual.secondaryReserve = bot->getAmmo(secondary);
+   }
+
+   actual.he = aipb::explorer::scenario::observedScenarioGrenadeCount(
+      !!(weapons & cr::bit(Weapon::Explosive)), 0, 1);
+   actual.flash = aipb::explorer::scenario::observedScenarioGrenadeCount(
+      !!(weapons & cr::bit(Weapon::Flashbang)),
+      bot->getAmmo(Weapon::Flashbang), 2);
+   actual.smoke = aipb::explorer::scenario::observedScenarioGrenadeCount(
+      !!(weapons & cr::bit(Weapon::Smoke)), 0, 1);
+   // No trustworthy helmet observation is currently supplied by YaPB.
+
+   return { actual, primary, secondary, selected };
+}
+
 void initScenarioEquipmentCommand() {
    if (engfuncs.pfnCmd_Argc() != 2) {
       game.print("Usage: aipb_scenario_init_equipment <scenario_name>");
@@ -87,59 +158,9 @@ void initScenarioEquipmentCommand() {
       return;
    }
 
-   const auto &e = scenario.equipment;
-   const auto weaponId = [](const std::string &alias) {
-      return alias == "none" ? 0 : util.weaponAliasToId(alias.c_str());
-   };
-
-   const int primary = weaponId(e.primary.type);
-   const int secondary = weaponId(e.secondary.type);
-   const int selected = e.selected == "knife" ? Weapon::Knife
-      : e.selected == "primary" ? primary
-      : e.selected == "secondary" ? secondary
-      : e.selected == "he" ? Weapon::Explosive
-      : e.selected == "flash" ? Weapon::Flashbang
-      : e.selected == "smoke" ? Weapon::Smoke : -1;
-
-   aipb::explorer::scenario::ScenarioStartObservation actual {};
-   actual.position[0] = bot->pev->origin.x;
-   actual.position[1] = bot->pev->origin.y;
-   actual.position[2] = bot->pev->origin.z;
-   actual.yaw = bot->pev->v_angle.y;
-   actual.pitch = bot->pev->v_angle.x;
-   actual.onGround = !!(bot->pev->flags & FL_ONGROUND);
-   actual.crouching = !!(bot->pev->flags & FL_DUCKING);
-   actual.health = bot->pev->health;
-   actual.armor = bot->pev->armorvalue;
-   actual.maxSpeed = bot->pev->maxspeed;
-   actual.money = bot->m_moneyAmount;
-   actual.defuseKit = bot->m_hasDefuser;
-   actual.selectedId = bot->m_currentWeapon;
-   const auto weapons = static_cast<std::uint32_t>(bot->pev->weapons);
-   actual.primaryId = aipb::explorer::scenario::observedScenarioWeaponId(
-      weapons, static_cast<std::uint32_t>(kPrimaryWeaponMask));
-   actual.secondaryId = aipb::explorer::scenario::observedScenarioWeaponId(
-      weapons, static_cast<std::uint32_t>(kSecondaryWeaponMask));
-
-   if (primary > 0 && actual.primaryId == primary) {
-      actual.primaryClip = bot->m_ammoInClip[primary];
-      actual.primaryReserve = bot->getAmmo(primary);
-   }
-   if (secondary > 0 && actual.secondaryId == secondary) {
-      actual.secondaryClip = bot->m_ammoInClip[secondary];
-      actual.secondaryReserve = bot->getAmmo(secondary);
-   }
-
-   actual.he = aipb::explorer::scenario::observedScenarioGrenadeCount(
-      !!(weapons & cr::bit(Weapon::Explosive)), 0, 1);
-   actual.flash = aipb::explorer::scenario::observedScenarioGrenadeCount(
-      !!(weapons & cr::bit(Weapon::Flashbang)),
-      bot->getAmmo(Weapon::Flashbang), 2);
-   actual.smoke = aipb::explorer::scenario::observedScenarioGrenadeCount(
-      !!(weapons & cr::bit(Weapon::Smoke)), 0, 1);
-   // No trustworthy helmet observation is currently supplied by YaPB.
+   const auto observed = readScenarioRuntimeObservation(bot, scenario);
    const auto decision = aipb::explorer::scenario::planScenarioEquipment(
-      scenario, actual, false, primary, secondary, selected);
+      scenario, observed.actual, false, observed.primary, observed.secondary, observed.selected);
 
    if (!decision.ready()) {
       game.print("AiPB scenario equipment: '%s' rejected (%s, field=%s); no changes.",
@@ -200,7 +221,7 @@ void runScenarioEntryCommand() {
       return;
    }
 
-   const auto *bot = bots.findBotByIndex(scenario.botIndex);
+   auto *bot = bots.findBotByIndex(scenario.botIndex);
    const int team = bot == nullptr ? 0 : bot->m_team == Team::CT ? 2
       : bot->m_team == Team::Terrorist ? 1 : 0;
    const auto entry = aipb::explorer::scenario::checkScenarioRunEntry(
@@ -214,7 +235,30 @@ void runScenarioEntryCommand() {
       return;
    }
 
-   game.print("AiPB scenario run: '%s' rejected (ExecutorUnavailable); entry checks passed, full start preflight and actions are not implemented.", name);
+   // A prior preflight is never an execution permit: sample the bot again now.
+   const auto observed = readScenarioRuntimeObservation(bot, scenario);
+   const auto gate = aipb::explorer::scenario::checkScenarioRunStart(
+      scenario, observed.actual, observed.primary, observed.secondary, observed.selected);
+
+   if (!gate.ready()) {
+      if (gate.status == aipb::explorer::scenario::RunStartStatus::UnsupportedAction) {
+         game.print("AiPB scenario run: '%s' rejected (UnsupportedAction, action=%d, field=%s); no actions executed.",
+            name, static_cast<int>(gate.actionIndex) + 1, gate.unsupportedField);
+      }
+      else {
+         game.print("AiPB scenario run: '%s' rejected (%s, mismatches=%d, unverified=%d); no actions executed.",
+            name, aipb::explorer::scenario::runStartStatusName(gate.status),
+            gate.assessment.mismatches, gate.assessment.unverified);
+         for (const auto &finding : gate.assessment.findings) {
+            game.print("AiPB scenario run: %s %s expected=%.2f observed=%.2f.",
+               finding.unverified ? "unverified" : "mismatch", finding.field.c_str(),
+               finding.expected, finding.observed);
+         }
+      }
+      return;
+   }
+
+   game.print("AiPB scenario run: '%s' rejected (ExecutorUnavailable); fresh start preflight ready; no actions executed.", name);
 }
 
 void stopScenarioEntryCommand() {

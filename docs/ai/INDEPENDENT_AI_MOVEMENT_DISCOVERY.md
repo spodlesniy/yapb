@@ -200,3 +200,9 @@ D261 adds the read-only, fail-closed console entry commands and their tests.
 The next tasks must implement a complete fresh start gate, deterministic action scheduler, movement adapter, safe cancellation and session arbitration.
 The YaPB menu is a mandatory task **before manual HLDS execution acceptance**, and is blocked until the user supplies details.
 The Stage A experiment result format and reproducibility remain later tasks.
+
+## D262 — Scenario Runner full start gate
+
+The independent gate introduced by D262 verifies freshly observed scenario start properties and rejects unsupported movement-slice controls before an executor can acquire control.
+This gate does not run actions or consume their durations.
+It is followed by T261-03 action scheduling, T261-04 GoldSrc movement, T261-05 safe lifecycle, and then the user-specified menu and HLDS acceptance.

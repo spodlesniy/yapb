@@ -624,3 +624,10 @@ The first task T261-01 registers fail-closed `aipb_scenario_run`, `aipb_scenario
 There is **no** scenario action execution or start-state authorization in D261: valid entry checks end with `ExecutorUnavailable`.
 The YaPB menu integration task T261-06 is a required gate **before user-run HLDS acceptance** and awaits the user's detailed requirements; future D-IDs are not preassigned.
 D261 automatic CI and user-run Windows x86 validation are pending; Stage A remains incomplete.
+
+D261 automatic Build and Explorer CI succeeded at 3298fab.
+D262 implements T261-02: every `aipb_scenario_run` request now reads a new engine observation and compares the strict start pose, velocity/stance assertions, safety state and only explicitly present equipment constraints.
+The independent gate rejects unsupported action `attack`, `attack2`, `use`, or `select` before any action is scheduled and reports mismatches separately from unknown values.
+The runtime shares one observation adapter between equipment setup and the run gate to avoid differences in slot/ammo/grenade reading, including actual bot velocity.
+All successful checks still end in `ExecutorUnavailable`; no player movement, scenario action, or result artifact is produced.
+D262 automatic Build/Explorer CI pending; Stage A remains incomplete and the menu task remains before user-run HLDS executor testing.

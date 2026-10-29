@@ -737,3 +737,11 @@ Run loads a named scenario from the existing safe directory and performs only en
 A valid entry reports `ExecutorUnavailable` instead of starting actions, because full start-state admission and engine control are not implemented in this step.
 Stop and status report idle without canceling the existing Explorer probe.
 The menu control for these commands will be added in a later task before HLDS execution testing, after the user provides its required details.
+
+## D262 — Fresh full start assessment for run
+
+After D262, `aipb_scenario_run <name>` performs a new full start-state assessment for every request.
+If the scenario includes `attack=1`, `attack2=1`, `use=1` or `select` other than `none` in any action, the command reports `UnsupportedAction` and the action number.
+If actual start values differ it reports `StartMismatch` with the existing field findings; unknown explicitly constrained values return `StartUnverified`.
+A fully ready start still returns `ExecutorUnavailable` and cannot move the bot, because the action scheduler is not active.
+No manual HLDS executor acceptance is scheduled until the YaPB menu task T261-06 has been implemented to user requirements.

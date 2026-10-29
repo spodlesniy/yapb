@@ -3329,3 +3329,13 @@ The `run` command safely loads a scenario and checks basic map/bot/team/Explorer
 The `stop` and `status` commands report an idle runner; they do not alter existing Explorer sessions.
 This step cannot execute any `[action]`, write a result, or claim that the full scenario preflight has passed.
 No original YaPB files or upstream repository are modified.
+
+## D262 — Fresh full Scenario Runner start admission (T261-02)
+
+D261 automatic Build and Explorer CI succeeded.
+D262 adds an engine-independent movement-slice admission gate and rereads the live bot state for every `aipb_scenario_run` invocation rather than relying on any earlier `preflight` result.
+The gate checks the existing strict position/view, grounded and speed checks, optional bot velocity/stance properties, and only explicitly constrained equipment.
+A mismatch and an unverified reading both reject entry, with explicit field diagnostics and no mutation.
+Any non-default combat, use, or weapon-selection command in any action rejects the entire scenario before execution.
+The runtime observation is refactored into one AiPB-only helper shared by equipment initialization and run admission; no original YaPB files change.
+Even a fully ready start continues to return `ExecutorUnavailable` until the scheduler and movement adapter are implemented.
