@@ -3426,3 +3426,11 @@ Use only English strings in the AiPB scenario menu and HUD overlay.
 Display unavailable Run Scenario and Stop Scenario actions in disabled styling with an explicit label; prevent invocation through both the menu key mask and selection dispatch.
 Drive the key mask and selection guards from the engine-neutral scenario-menu availability model, and add regression coverage for idle/running states.
 The T261-06 game acceptance gate remains open pending user-run Windows x86 and HLDS checks.
+
+## D274 — Refresh scenario menu on asynchronous completion
+
+A scenario may complete or abort without any menu interaction; the HUD updates from the scheduler, but the already displayed root menu retained its previous ShowMenu key mask and styling.
+Track the running state used for each player's displayed root menu and refresh the owned menu only when it changes, or when an external scenario start invalidates the file browser.
+Keep menu refresh in server StartFrame before the overlay-enabled early exit, and relinquish control when another menu owns the client.
+Remove literal `(disabled)` suffixes while retaining disabled colors, key masks and guarded selections.
+Use engine-neutral refresh transition tests and a production source-contract guard; do not claim in-game acceptance before a user-run Windows x86/HLDS check.

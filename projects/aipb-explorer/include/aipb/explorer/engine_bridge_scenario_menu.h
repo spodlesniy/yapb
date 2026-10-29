@@ -16,6 +16,16 @@ inline constexpr std::size_t kScenarioMenuMaxEntries = 256;
 
 enum class ScenarioMenuScreen { Closed, Root, Browser };
 
+// Refresh an owned menu only when its action availability has changed.
+inline bool scenarioMenuNeedsRefresh(
+  ScenarioMenuScreen screen,
+  bool renderedRunning,
+  bool running
+) {
+  return (screen == ScenarioMenuScreen::Root && renderedRunning != running)
+    || (screen == ScenarioMenuScreen::Browser && running);
+}
+
 // Ownership ends when another menu becomes active.
 class ScenarioMenuSession {
 public:

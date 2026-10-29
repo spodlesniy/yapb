@@ -17,6 +17,7 @@ constexpr int kMenuChunk = 140;
 struct PlayerMenu {
    aipb::explorer::scenario::ScenarioMenuSession session {};
    aipb::explorer::scenario::ScenarioMenuBrowser browser {};
+   bool renderedRunning {};
 };
 PlayerMenu players[kPlayers] {};
 bool overlayEnabled {};
@@ -99,16 +100,14 @@ void root(edict_t *ent) {
    auto &state = players[index];
    state.session.showRoot();
    const bool running = ai::explore::scenarioRunning();
+   state.renderedRunning = running;
    const auto availability = aipb::explorer::scenario::scenarioMenuAvailability(running);
    String text {};
    text.assignf("\\yAiPB Scenarios\\w\n\n1. Overlay: %s\n",
       overlayEnabled ? "ON" : "OFF");
-   text.appendf("%s2. Run Scenario%s\n",
-      availability.start ? "\\w" : "\\d",
-      availability.start ? "" : " (disabled)");
-   text.appendf("%s3. Stop Scenario%s\n\n\\w0. Exit",
-      availability.stop ? "\\w" : "\\d",
-      availability.stop ? "" : " (disabled)");
+   text.appendf("%s2. Run Scenario\n", availability.start ? "\\w" : "\\d");
+   text.appendf("%s3. Stop Scenario\n\n\\w0. Exit",
+      availability.stop ? "\\w" : "\\d");
    const int keys = static_cast<int>(aipb::explorer::scenario::scenarioMenuRootKeyMask(running));
    send(ent, keys, text);
 }
@@ -318,6 +317,23 @@ void handleServer() {
 }
 
 void frame() {
+   const bool running = ai::explore::scenarioRunning();
+   for (int i = 0; i < kPlayers; ++i) {
+      auto &state = players[i];
+      if (state.session.screen() == aipb::explorer::scenario::ScenarioMenuScreen::Closed) {
+         continue;
+      }
+      auto *player = game.playerOfIndex(i);
+      if (!allowed(player) || !state.session.ownsSelection(util.getClient(i).menu != Menu::None)) {
+         state.session.release();
+         continue;
+      }
+      if (aipb::explorer::scenario::scenarioMenuNeedsRefresh(
+         state.session.screen(), state.renderedRunning, running)) {
+         root(player);
+      }
+   }
+
    if (!overlayEnabled || game.time() < nextOverlay) {
       return;
    }

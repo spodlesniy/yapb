@@ -143,17 +143,25 @@ class YapbFirstIncludeTests(unittest.TestCase):
         self.assertIn("session.ownsSelection(util.getClient(index).menu != Menu::None)", menu)
         self.assertIn("game.sendHudMessage(player, parameters, label.c_str());", menu)
 
-    def test_aipb_menu_english_labels_and_disabled_stop(self) -> None:
+    def test_aipb_menu_english_labels_and_live_availability(self) -> None:
         menu = (ROOT / "src" / "ai" / "ai_menu.cpp").read_text(encoding="utf-8")
         model = (ROOT / "projects" / "aipb-explorer" / "include" /
                  "aipb" / "explorer" / "engine_bridge_scenario_menu.h").read_text(encoding="utf-8")
         self.assertTrue(menu.isascii())
         self.assertTrue(model.isascii())
-        self.assertIn('3. Stop Scenario%s', menu)
-        self.assertIn('availability.stop ? "" : " (disabled)"', menu)
-        self.assertIn('availability.stop ? "\\\\w" : "\\\\d"', menu)
+        self.assertIn("3. Stop Scenario", menu)
+        self.assertIn("2. Run Scenario", menu)
+        self.assertNotIn("(disabled)", menu)
+        self.assertIn('availability.stop ? "', menu)
+        self.assertIn('availability.start ? "', menu)
         self.assertIn("scenarioMenuRootKeyMask(running)", menu)
         self.assertIn("selected == 3 && availability.stop", menu)
+        self.assertIn("state.renderedRunning = running;", menu)
+        self.assertIn("scenarioMenuNeedsRefresh(", menu)
+        self.assertIn("state.session.ownsSelection(util.getClient(i).menu != Menu::None)", menu)
+        frame = menu.split("void frame() {", 1)[1]
+        self.assertLess(frame.index("scenarioMenuNeedsRefresh("),
+                        frame.index("if (!overlayEnabled"))
         self.assertIn('"No scenario running"', model)
         self.assertIn('" is running"', model)
 

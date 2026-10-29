@@ -82,3 +82,12 @@ When no scenario is executing, Stop Scenario is visibly disabled, excluded from 
 Run Scenario is disabled with the same protections while executing.
 The state, key mask and handler use the shared scenario-menu availability contract.
 Windows x86 and user-run HLDS acceptance remain pending.
+
+## D274 refresh menu on scenario lifecycle changes
+
+User-run HLDS checks exposed stale Run/Stop enabled state in the already open root menu after a scenario ended without an explicit menu selection.
+D274 removes the literal `(disabled)` suffixes; disabled actions remain dimmed, absent from the key mask and rejected by selection handlers.
+The server StartFrame compares the currently displayed scenario-running state against the actual scheduler state and redraws an owned root menu only on a change.
+If a scenario starts while the file browser is open, the browser returns to the root menu.
+The refresh is independent of the HUD overlay toggle and does not reopen a closed or externally replaced menu.
+Automated regression tests accompany the correction; Windows x86/HLDS acceptance remains pending.

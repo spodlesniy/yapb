@@ -27,6 +27,15 @@ int main() {
     check((scenarioMenuRootKeyMask(false) & (1u << 2)) == 0u);
     check((scenarioMenuRootKeyMask(true) & (1u << 1)) == 0u);
 
+    // An open root must update on both start and completion, even with HUD off.
+    check(!scenarioMenuNeedsRefresh(ScenarioMenuScreen::Closed, true, false));
+    check(!scenarioMenuNeedsRefresh(ScenarioMenuScreen::Root, false, false));
+    check(!scenarioMenuNeedsRefresh(ScenarioMenuScreen::Root, true, true));
+    check(scenarioMenuNeedsRefresh(ScenarioMenuScreen::Root, false, true));
+    check(scenarioMenuNeedsRefresh(ScenarioMenuScreen::Root, true, false));
+    check(!scenarioMenuNeedsRefresh(ScenarioMenuScreen::Browser, false, false));
+    check(scenarioMenuNeedsRefresh(ScenarioMenuScreen::Browser, false, true));
+
     ScenarioMenuSession session {};
     check(!session.ownsSelection(false));
     session.showRoot();
