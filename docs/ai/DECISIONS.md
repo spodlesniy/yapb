@@ -3349,3 +3349,11 @@ Track simulated command time separately from monotonic wall-clock time so action
 Terminate with explicit Completed, Cancelled, ActionTimeout, ScenarioTimeout, FrameLimit, InvalidClock or InvalidScenario statuses.
 A next action is scheduled on the next actual engine frame without a synthetic gap, and command completion is not a claim that movement succeeded.
 D263 does not register another command, mutate bot state, or edit original YaPB files; actual runtime adapter and cleanup follow in T261-04/T261-05.
+
+## D264 — GoldSrc Scenario Action movement adapter (T261-04)
+
+D263 passed Explorer CI and its engine-neutral scheduler is now used from the existing AiPB frame hook.
+The command starts a scenario only after fresh full preflight, and each issued frame invokes GoldSrc pfnRunPlayerMove before exact commit.
+Yaw and pitch deltas are cumulative action totals, movement axes are normalized, and held jump/duck buttons are submitted with the command.
+The adapter has basic explicit stop, bot/map invalidation and cleanup to prevent leaving a live movement session behind, but comprehensive lifecycle conflict tests are reserved for T261-05.
+No original YaPB files were changed and no result artifact or physics success claim is produced.

@@ -753,3 +753,9 @@ Each prepared frame is a proposal with one ticket and bounded msec; only exactly
 Timeouts, frame limits, invalid clocks and cancel produce terminal states without applying commands.
 There is no live command change in D263: `aipb_scenario_run` still reports `ExecutorUnavailable` after successful preflight.
 Manual HLDS executor testing stays deferred until the requested menu integration task.
+
+## D264 — Runtime movement adapter
+
+After D264, a fully admissible `aipb_scenario_run <name>` launches the scheduler and controls the selected bot using `pfnRunPlayerMove` in the AiPB hook.
+`aipb_scenario_status` reports live progress and `aipb_scenario_stop` cancels the run.
+This is not yet an accepted HLDS execution feature: validate the automated CI first, complete the T261-05 lifecycle work, then implement the user-specified YaPB menu before manual HLDS testing.

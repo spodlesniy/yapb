@@ -212,3 +212,10 @@ It is followed by T261-03 action scheduling, T261-04 GoldSrc movement, T261-05 s
 The two-phase ActionScheduler introduced by D263 holds an admitted scenario and issues bounded frame commands in file order.
 It tracks action and global durations in commanded milliseconds, independent monotonic wall-clock deadlines, a 4096-frame safety cap, terminal reasons and cancellation.
 It does not run GoldSrc, move bots, record physics or prove success; T261-04 must integrate its output through the existing AiPB frame hook.
+
+## D264 — First GoldSrc action execution slice
+
+D264 wires the bounded scheduler to RunPlayerMove through the existing AiPB frame hook and separates its action commands from the legacy explorer queue.
+All action movement comes from real engine frames; the independently tested translation computes normalized forward/strafe speeds, held jump/duck and cumulative bounded view rotations.
+Status and stop now observe/cancel the scenario session, while full cancellation and mutual-exclusion hardening are planned for T261-05.
+Menu integration is still required before manual HLDS acceptance.

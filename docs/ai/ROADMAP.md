@@ -637,3 +637,8 @@ The scheduler bounds GoldSrc frame milliseconds to 1..255, tracks action and sce
 Consecutive actions start with the next prepared frame, without inserted idle frames; abort and pending-frame validation never fabricate execution.
 It is not wired into HLDS, cannot acquire a bot, cannot perform `pfnRunPlayerMove`, and does not write result artifacts.
 D263 Explorer CI pending; T261-04 is the next integration task, and the user-specified menu remains a gate before live executor acceptance.
+D263 automatic Explorer CI passed at 409bad5.
+D264 connects the existing ActionScheduler to the AiPB frame hook and GoldSrc pfnRunPlayerMove with cumulative yaw/pitch and normalized movement axes.
+An accepted run now acquires one bot and executes bounded movement actions; stop and status are connected to the scheduler.
+Basic disconnect/map/death cancellation and button release are included as safety prerequisites, while full lifecycle arbitration and regression hardening remain T261-05.
+D264 CI and user-run Windows x86 acceptance are pending; menu integration still precedes manual HLDS execution acceptance.

@@ -5,6 +5,8 @@
 #include <aipb/explorer/engine_bridge_scenario_loader.h>
 #include <aipb/explorer/engine_bridge_scenario_run_entry.h>
 #include <aipb/explorer/engine_bridge_scenario_run_gate.h>
+#include <aipb/explorer/engine_bridge_scenario_action_scheduler.h>
+#include <aipb/explorer/engine_bridge_scenario_movement.h>
 #include <aipb/explorer/engine_bridge_queue.h>
 #include <aipb/explorer/engine_bridge_trace.h>
 #include <aipb/explorer/engine_bridge_trace_classification.h>
@@ -43,6 +45,31 @@ static char queueSavePath[512] {};
 static aipb::explorer::bridge::TraceMetadata metadata {};
 
 Session session {};
+aipb::explorer::scenario::ActionScheduler scenarioScheduler {};
+char scenarioName[64] {};
+char scenarioMap[64] {};
+float scenarioLastTime {};
+float scenarioActionYaw {};
+float scenarioActionPitch {};
+int scenarioActionIndex { -1 };
+
+int64_t scenarioTimeMs() {
+   const float now = game.time();
+   return std::isfinite(now) && now >= 0.0f
+      ? static_cast<int64_t>(static_cast<double>(now) * 1000.0 + 0.5) : -1;
+}
+
+void scenarioEnd(Bot *bot, const char *reason) {
+   if (bot && bot->pev) {
+      bot->pev->button = 0;
+      bot->pev->impulse = 0;
+   }
+   game.print("AiPB scenario: '%s' %s, status=%s, frames=%d, command_ms=%d.",
+      scenarioName, reason,
+      aipb::explorer::scenario::actionScheduleStatusName(scenarioScheduler.status()),
+      scenarioScheduler.frames(), scenarioScheduler.totalMilliseconds());
+}
+
 
 // This server-console-only command is registered from the existing AiPB bot
 // frame hook, so legacy YaPB control and message handlers are not modified.
@@ -227,7 +254,7 @@ void runScenarioEntryCommand() {
    const auto entry = aipb::explorer::scenario::checkScenarioRunEntry(
       scenario, game.getMapName(), bot != nullptr,
       bot != nullptr && game.isAliveEntity(bot->ent()), team,
-      active() || queue.running);
+      active() || queue.running || scenarioScheduler.running());
 
    if (entry != aipb::explorer::scenario::RunEntryStatus::Validated) {
       game.print("AiPB scenario run: '%s' rejected (%s); no actions executed.",
@@ -258,7 +285,17 @@ void runScenarioEntryCommand() {
       return;
    }
 
-   game.print("AiPB scenario run: '%s' rejected (ExecutorUnavailable); fresh start preflight ready; no actions executed.", name);
+   const int64_t clock = scenarioTimeMs();
+   if (clock < 0 || !scenarioScheduler.begin(scenario, gate, clock)) {
+      game.print("AiPB scenario run: '%s' rejected (SchedulerUnavailable); no actions executed.", name);
+      return;
+   }
+   std::snprintf(scenarioName, sizeof(scenarioName), "%s", name);
+   std::snprintf(scenarioMap, sizeof(scenarioMap), "%s", game.getMapName());
+   scenarioLastTime = game.time();
+   scenarioActionIndex = -1;
+   game.print("AiPB scenario run: '%s' started; bot=%d actions=%d.", name,
+      scenario.botIndex, static_cast<int>(scenario.actions.size()));
 }
 
 void stopScenarioEntryCommand() {
@@ -267,7 +304,13 @@ void stopScenarioEntryCommand() {
       return;
    }
 
-   game.print("AiPB scenario run: idle; executor not enabled, no action to stop.");
+   if (!scenarioScheduler.running()) {
+      game.print("AiPB scenario run: idle; no action to stop.");
+      return;
+   }
+   auto *bot = bots.findBotByIndex(scenarioScheduler.botIndex());
+   scenarioScheduler.cancel();
+   scenarioEnd(bot, "stopped");
 }
 
 void statusScenarioEntryCommand() {
@@ -276,7 +319,11 @@ void statusScenarioEntryCommand() {
       return;
    }
 
-   game.print("AiPB scenario run: idle (ExecutorUnavailable); no actions executed.");
+   game.print("AiPB scenario run: '%s' status=%s action=%d frames=%d command_ms=%d.",
+      scenarioName,
+      aipb::explorer::scenario::actionScheduleStatusName(scenarioScheduler.status()),
+      static_cast<int>(scenarioScheduler.actionIndex()) + 1,
+      scenarioScheduler.frames(), scenarioScheduler.totalMilliseconds());
 }
 
 AipbExplorerBridgeState observe(const Bot &bot) {
@@ -312,7 +359,7 @@ void stop(const char *reason) {
 } // namespace
 
 bool active() {
-   return session.botIndex >= 0;
+   return session.botIndex >= 0 || scenarioScheduler.running();
 }
 
 bool begin(int botIndex, const AipbExplorerBridgeCommand &command, int limit, bool milliseconds, bool append) {
@@ -660,10 +707,19 @@ bool init(int botIndex) {
 }
 
 void reset() {
+   if (scenarioScheduler.running()) {
+      auto *bot = bots.findBotByIndex(scenarioScheduler.botIndex());
+      scenarioScheduler.cancel();
+      scenarioEnd(bot, "cancelled");
+   }
    stop("cancelled");
 }
 
 void cancelBot(int botIndex) {
+   if (scenarioScheduler.running() && scenarioScheduler.botIndex() == botIndex) {
+      scenarioScheduler.cancel();
+      scenarioEnd(nullptr, "bot disconnected");
+   }
    if (session.botIndex == botIndex) {
       stop("bot disconnected");
    }
@@ -687,6 +743,61 @@ bool frame(Bot &bot) {
          statusScenarioEntryCommand();
       });
       scenarioCommandsRegistered = true;
+   }
+
+   if (scenarioScheduler.running() && scenarioScheduler.botIndex() == bot.index()) {
+      if (!game.isAliveEntity(bot.ent())
+         || std::strcmp(scenarioMap, game.getMapName()) != 0
+         || !std::isfinite(bot.pev->maxspeed) || bot.pev->maxspeed < 10.0f) {
+         scenarioScheduler.cancel();
+         scenarioEnd(&bot, "bot or map unavailable");
+         return true;
+      }
+      const float now = game.time();
+      const float elapsed = now - scenarioLastTime;
+      scenarioLastTime = now;
+      const int msec = std::isfinite(elapsed) && elapsed > 0.0f
+         ? cr::clamp(static_cast<int>(elapsed * 1000.0f + 0.5f), 1, 255) : 1;
+      const int64_t clock = scenarioTimeMs();
+      const auto planned = scenarioScheduler.prepareFrame(clock, msec);
+      if (!planned.ticket) {
+         scenarioEnd(&bot, "scheduler stopped");
+         return true;
+      }
+      if (scenarioActionIndex != static_cast<int>(planned.actionIndex)) {
+         scenarioActionIndex = static_cast<int>(planned.actionIndex);
+         scenarioActionYaw = bot.pev->v_angle.y;
+         scenarioActionPitch = bot.pev->v_angle.x;
+      }
+      const auto movement = aipb::explorer::scenario::planScenarioFrameMovement(
+         planned, scenarioScheduler.actionMilliseconds(), scenarioActionYaw,
+         scenarioActionPitch, bot.pev->maxspeed);
+      if (!movement.valid) {
+         scenarioScheduler.cancel();
+         scenarioEnd(&bot, "invalid movement plan");
+         return true;
+      }
+      auto angles = bot.pev->v_angle;
+      angles.y = movement.yaw;
+      angles.x = movement.pitch;
+      bot.pev->v_angle = angles;
+      bot.pev->angles.x = -angles.x / 3.0f;
+      bot.pev->angles.y = angles.y;
+      bot.pev->angles.z = 0.0f;
+      const uint16_t buttons = static_cast<uint16_t>(
+         (movement.jump ? IN_JUMP : 0) | (movement.duck ? IN_DUCK : 0));
+      bot.pev->button = buttons;
+      bot.pev->impulse = 0;
+      engfuncs.pfnRunPlayerMove(bot.ent(), angles, movement.forwardSpeed,
+         movement.strafeSpeed, 0.0f, buttons, 0, static_cast<uint8_t>(planned.milliseconds));
+      if (!scenarioScheduler.commitFrame(planned, scenarioTimeMs())) {
+         scenarioScheduler.cancel();
+         scenarioEnd(&bot, "frame commit failed");
+      }
+      else if (!scenarioScheduler.running()) {
+         scenarioEnd(&bot, "finished");
+      }
+      return true;
    }
 
    if (session.botIndex != bot.index()) {
