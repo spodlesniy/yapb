@@ -759,3 +759,11 @@ Manual HLDS executor testing stays deferred until the requested menu integration
 After D264, a fully admissible `aipb_scenario_run <name>` launches the scheduler and controls the selected bot using `pfnRunPlayerMove` in the AiPB hook.
 `aipb_scenario_status` reports live progress and `aipb_scenario_stop` cancels the run.
 This is not yet an accepted HLDS execution feature: validate the automated CI first, complete the T261-05 lifecycle work, then implement the user-specified YaPB menu before manual HLDS testing.
+
+## D266 — Menu model before YaPB integration
+
+The independent `engine_bridge_scenario_menu.h` defines a sorted scenario/folder browser with five entries per page, safe relative identifiers, previous/next/back navigation and enabled/disabled start/stop state.
+The overlay labels are exactly `Сценарий не запущен` and `Сценарий <имя> выполняется`.
+This is an engine-neutral tested contract, not an installed game menu.
+Original YaPB menu dispatch lives in `src/control.cpp` / `inc/control.h` and does not expose a registration extension point.
+To complete the requested T261-06 menu, obtain explicit permission for narrow original-file integration and then implement safe filesystem enumeration, live status overlay and menu event dispatch.

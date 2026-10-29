@@ -3366,3 +3366,10 @@ A run must not start once a round is over, and stops on round-over state or chan
 The round ID ensures that a new round cannot accidentally inherit an active scenario even when its round-over boolean has cleared.
 Cancel and completion clear button and old-button state before returning to normal bot AI.
 No original YaPB files change, and user-run acceptance remains gated by the requested menu task.
+
+## D266 — Isolated Scenario Menu model; original YaPB integration blocked
+
+The user specified a root menu with a toggleable Russian execution-status overlay, disabled Run while active, disabled Stop while idle, nested scenario folders and a sorted five-entry paginated browser with Back and conditional Previous/Next.
+The current YaPB BotControl owns its menu registry privately and accepts only member-function callbacks in `src/control.cpp` and `inc/control.h`.
+Under the standing no-original-file-change restriction, D266 implements and tests the independent browser/view model only and does not alter original YaPB files.
+Further implementation requires explicit permission for minimal integration edits to those files, followed by controlled directory scanning, selection-to-run wiring, overlay drawing and the planned manual HLDS acceptance.

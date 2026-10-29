@@ -646,3 +646,8 @@ D264 automatic Build and Explorer CI passed at eed2946.
 D265 implements T261-05 runtime lifecycle guards, including end-of-round cancellation via gameState.isRoundOver(), new-round detection via telemetry round ID, and validation of map, selected bot identity, team, life, speed and Explorer conflicts.
 The runner rejects starting after a round ends, clears held and old button state when stopping, and aborts on a failed lifecycle check before submitting another frame.
 D265 CI pending; T261-06 menu integration and user-run HLDS acceptance still remain outstanding.
+D265 automatic Build and Explorer CI passed at 11efc01.
+D266 adds a standalone, tested Scenario Menu model with a five-entry page browser, directory traversal, Back, previous/next state, overlay label text and start/stop availability.
+The requested integration into YaPB's existing main menu cannot be implemented through the private `BotControl::m_menus`, `createMenus`, and menu dispatch interfaces without touching original `src/control.cpp` and `inc/control.h`.
+Those files remain unchanged under the user's no-original-YaPB-edit restriction; D266 does not claim live menu integration, overlay rendering, scenario directory enumeration or run selection in HLDS.
+T261-06 remains blocked pending explicit permission for those narrow original-file changes; T261-07 HLDS acceptance remains blocked.
