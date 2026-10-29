@@ -635,3 +635,11 @@ Server input is planned under `addons/yapb/data/explorer/scenarios/`, with data 
 Each run will use a local date/time prefix `YYYYMMDD_HHMMSS` plus a collision-safe suffix with exclusive creation so reruns never overwrite previous data.
 All action controls in one `[action]` run concurrently, while actions themselves execute in file order.
 Current D253 only parses and validates the descriptor; inventory application, runtime command scheduling and artifacts require separate implementation and HLDS checks.
+
+## D254 — Validate a scenario on HLDS
+
+Place `ground_forward_01.scenario` inside the YaPB data/explorer/scenarios directory.
+Run `yb explore scenario validate ground_forward_01` on de_dust2.
+A valid file and matching live CT bot index 1 should produce a validated summary; missing/dead/wrong-team bots produce a nonexecuting preflight status.
+Try `yb explore scenario validate missing_scenario` to confirm the missing-file diagnostic.
+No scenario is executed and no output artifact is written by D254.

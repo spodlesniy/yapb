@@ -143,3 +143,11 @@ Action sections are sequential; controls within a section are simultaneous.
 Scenario and action deadlines are declared independently.
 The file does not itself authorize bot relocation, weapon grants, or test execution.
 Further atomic steps must load scenarios from a dedicated directory by safe name, verify the real GoldSrc bot and equipment state, execute with engine limits, write a timestamp-prefixed snapshot/trace/events/result with exclusive file creation, and validate user-run HLDS repetition before accepting Stage A.
+
+## D254 — Scenario loading and preflight
+
+D254 introduces read-only file validation with `yb explore scenario validate <name>`.
+Only safe basenames beneath the YaPB data/explorer/scenarios directory are eligible.
+The loader rejects oversized, missing, unreadable and malformed descriptors and validates the embedded scenario name.
+Runtime preflight checks map, selected bot presence, alive state and team.
+The command does not reposition bots, modify equipment, execute actions or write telemetry.

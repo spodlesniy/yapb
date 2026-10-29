@@ -566,3 +566,9 @@ D253 begins Scenario Runner as a subtask of Movement Discovery Stage A.
 D253 provides the versioned scenario-file schema, bounded parser and test cases plus a sample scenario, but no runtime `yb explore scenario run` command.
 Next Scenario Runner slices must establish a safe GoldSrc bot-state/inventory preflight, a bounded concurrent-input action executor, and durable collision-safe timestamped telemetry/results in `explorer/results/<scenario>/`.
 Stage A remains pending actual user-run HLDS acceptance, real result provenance and repeatability.
+
+D253 Explorer CI passed at da739af.
+D254 adds bounded read-only loading from explorer/scenarios/<name>.scenario and the administrator `yb explore scenario validate <name>` command, including map and bot presence/alive/team preflight.
+It neither initializes the bot nor executes a scenario.
+D254 requires automatic CI and user-run Windows x86/HLDS validation before acceptance.
+Scenario Runner execution, state preflight and timestamped non-overwriting outputs remain pending.

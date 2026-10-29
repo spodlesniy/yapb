@@ -39,6 +39,7 @@
 #include <aipb/explorer/engine_bridge_fine_refinement.h>
 #include <aipb/explorer/engine_bridge_fine_trial_gaps.h>
 #include <aipb/explorer/engine_bridge_fine_trial_plans.h>
+#include <aipb/explorer/engine_bridge_scenario_loader.h>
 
 #include <ctime>
 #include <cmath>
@@ -1445,6 +1446,38 @@ int BotControl::cmdExplore () {
    enum args { root = 0, name, botIndex, forward, strafe, jump, duck, yaw, frames, unit };
    // Named traces are sandboxed to the explorer directory under YaPB data.
    const auto operation = arg <StringRef>(botIndex);
+   if (operation == "scenario") {
+      if (arg <StringRef>(forward) != "validate" || !hasArg(strafe)
+         || hasArg(jump)) {
+         return BotCommandResult::BadFormat;
+      }
+      const auto name = arg <StringRef>(strafe);
+      const auto directory = strings.joinPath(bstor.getRunningPath(), folders.data, "explorer");
+      aipb::explorer::scenario::Scenario scenario {};
+      std::string detail {};
+      const auto status = aipb::explorer::scenario::loadScenario(
+         directory.chars(), name.chars(), scenario, detail);
+      if (status != aipb::explorer::scenario::LoadStatus::Ok) {
+         msg("AiPB scenario: '%s' validation failed (%s): %s.", name,
+            aipb::explorer::scenario::loadStatusName(status), detail.c_str());
+         return BotCommandResult::Handled;
+      }
+      auto *bot = bots.findBotByIndex(scenario.botIndex);
+      const auto preflight = aipb::explorer::scenario::checkScenarioPreflight(
+         scenario, game.getMapName(), bot != nullptr,
+         bot != nullptr && game.isAliveEntity(bot->ent()),
+         bot != nullptr ? (bot->m_team == Team::CT ? 2 : 1) : 0);
+      if (preflight != aipb::explorer::scenario::PreflightStatus::Ok) {
+         msg("AiPB scenario: '%s' valid file; preflight=%s.", name,
+            aipb::explorer::scenario::preflightStatusName(preflight));
+      }
+      else {
+         msg("AiPB scenario: '%s' validated: map=%s bot=%d actions=%d timeout_ms=%d; no actions executed.",
+            name, scenario.map.c_str(), scenario.botIndex,
+            static_cast<int>(scenario.actions.size()), scenario.timeoutMs);
+      }
+      return BotCommandResult::Handled;
+   }
    if (operation == "report") {
       if (hasArg(forward)) {
          return BotCommandResult::BadFormat;
@@ -4356,7 +4389,7 @@ BotControl::BotControl () {
       },
       {
          "explore",
-         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save <name> | list | init <name> <bot> | replay <name> <bot> | append <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | queue <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | run <save_name> | queueclear | report | progress | classify | observe <name> | merge <first> <second> <output> | index <source> <output> | near <index> <x> <y> <z> <radius> | areas <index> <output> | area <name> <x> <y> <z> | directions <index> <output> | direction <name> <x> <y> <z> <heading> | audit <index> <x> <y> <z> | assess <index> <x> <y> <z> <heading> | trials <first> <second> <output> | corroborate <trials> <x> <y> <z> <heading> | consensus <trials> <x> <y> <z> <heading> | localize <trials> <x> <y> <z> <heading> | region <trials> <x> <y> <z> <heading> | span <trials> <x> <y> <z> <heading> | crossings <trials> <x> <y> <z> <heading> | discover-crossings <trials> <x> <y> <z> <heading> | crossing-directions <trials> <x> <y> <z> <heading> | crossing-consensus <trials> <x> <y> <z> <heading> | crossing-sectors <trials> <x> <y> <z> | fine-crossings <trials> <x> <y> <z> <heading> | fine-consensus <trials> <x> <y> <z> <heading> | fine-sectors <trials> <x> <y> <z> | fine-sequences <trials> <x> <y> <z> <heading> | fine-pairs <trials> <x> <y> <z> <heading> | fine-pair-sectors <trials> <x> <y> <z> | fine-triplets <trials> <x> <y> <z> | fine-coverage <trials> <x> <y> <z> | fine-zero-reasons <trials> <x> <y> <z> | fine-targets <trials> <x> <y> <z> | fine-refinement <trials> <x> <y> <z> | fine-trial-gaps <trials> <x> <y> <z> | fine-trial-plans <trials> <x> <y> <z> | clear | stop",
+         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save <name> | list | init <name> <bot> | replay <name> <bot> | append <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | queue <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | run <save_name> | queueclear | report | progress | classify | observe <name> | merge <first> <second> <output> | index <source> <output> | near <index> <x> <y> <z> <radius> | areas <index> <output> | area <name> <x> <y> <z> | directions <index> <output> | direction <name> <x> <y> <z> <heading> | audit <index> <x> <y> <z> | assess <index> <x> <y> <z> <heading> | trials <first> <second> <output> | corroborate <trials> <x> <y> <z> <heading> | consensus <trials> <x> <y> <z> <heading> | localize <trials> <x> <y> <z> <heading> | region <trials> <x> <y> <z> <heading> | span <trials> <x> <y> <z> <heading> | crossings <trials> <x> <y> <z> <heading> | discover-crossings <trials> <x> <y> <z> <heading> | crossing-directions <trials> <x> <y> <z> <heading> | crossing-consensus <trials> <x> <y> <z> <heading> | crossing-sectors <trials> <x> <y> <z> | fine-crossings <trials> <x> <y> <z> <heading> | fine-consensus <trials> <x> <y> <z> <heading> | fine-sectors <trials> <x> <y> <z> | fine-sequences <trials> <x> <y> <z> <heading> | fine-pairs <trials> <x> <y> <z> <heading> | fine-pair-sectors <trials> <x> <y> <z> | fine-triplets <trials> <x> <y> <z> | fine-coverage <trials> <x> <y> <z> | fine-zero-reasons <trials> <x> <y> <z> | fine-targets <trials> <x> <y> <z> | fine-refinement <trials> <x> <y> <z> | fine-trial-gaps <trials> <x> <y> <z> | fine-trial-plans <trials> <x> <y> <z> | scenario validate <name> | clear | stop",
          "Runs an admin-only bounded GoldSrc movement probe.",
          &BotControl::cmdExplore
       },

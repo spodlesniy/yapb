@@ -3218,3 +3218,12 @@ The scenario and every action have bounded timeouts; parser errors, unknown fiel
 The engine-neutral parser cannot spawn, arm, teleport or move bots.
 Subsequent steps must implement safe authorized GoldSrc preflight, runtime execution, exact inventory setup or explicit rejection, telemetry and exclusive timestamp-prefixed artifacts under one scenario-specific directory.
 `projects/aipb-explorer/scenarios/ground_forward_01.scenario` supplies a versioned sample.
+
+## D254 — Read-only scenario loading and server preflight
+
+D254 loads the D253 versioned scenario only from the dedicated explorer/scenarios directory using a safe scenario basename.
+The loader bounds input to 65536 bytes and rejects missing files, unreadable files, oversized data, parser violations and mismatched internal names without changing the caller's scenario.
+The administrator command `yb explore scenario validate <name>` performs no movement, equipment grants, bot state changes or output writes.
+After file validation, preflight compares the running map and the selected bot's presence, alive state and CT/T team.
+A valid scenario file is reported separately from a successful preflight; future D255 must verify position, equipment and actual GoldSrc safety before authorizing a live scenario.
+D254 adds loader/preflight CTest regressions and leaves Stage A runtime execution pending.
