@@ -13,19 +13,13 @@ namespace aipb::explorer::scenario {
 
 inline constexpr std::size_t kScenarioMenuPageSize = 5;
 inline constexpr std::size_t kScenarioMenuMaxEntries = 256;
-inline constexpr std::size_t kScenarioMenuMaxDepth = 8;
-
-struct ScenarioMenuEntry {
-  std::string name {};
-  bool folder {};
-};
 
 struct ScenarioMenuPage {
   std::size_t current { 1 };
   std::size_t total { 1 };
   bool previous {};
   bool next {};
-  std::vector<ScenarioMenuEntry> entries {};
+  std::vector<std::string> entries {};
 };
 
 struct ScenarioMenuAvailability {
@@ -49,42 +43,25 @@ inline std::string scenarioMenuOverlayText(
   return "Сценарий " + std::string { scenarioName } + " выполняется";
 }
 
-// Every path component must remain a bounded YaPB scenario identifier.
-// Listing and filesystem access are separate responsibilities of the adapter.
+// Flat, deterministic browser. Only .scenario file basenames are accepted.
+// Enumeration, authorization and selection validation belong to the adapter.
 class ScenarioMenuBrowser {
 public:
-  const std::string &directory() const {
-    return directory_;
-  }
-
-  std::size_t page() const {
-    return page_;
-  }
-
-  bool setEntries(std::vector<ScenarioMenuEntry> entries) {
+  bool setEntries(std::vector<std::string> entries) {
     if (entries.size() > kScenarioMenuMaxEntries) {
       return false;
     }
 
-    for (const auto &entry : entries) {
-      if (!safeIdentifier(entry.name)) {
+    for (const auto &name : entries) {
+      if (!safeIdentifier(name)) {
         return false;
       }
     }
 
-    std::sort(entries.begin(), entries.end(), [](const auto &a, const auto &b) {
-      if (a.folder != b.folder) {
-        return a.folder;
-      }
+    std::sort(entries.begin(), entries.end());
 
-      return a.name < b.name;
-    });
-
-    for (std::size_t i = 1; i < entries.size(); ++i) {
-      if (entries[i - 1].folder == entries[i].folder
-        && entries[i - 1].name == entries[i].name) {
-        return false;
-      }
+    if (std::adjacent_find(entries.begin(), entries.end()) != entries.end()) {
+      return false;
     }
 
     entries_ = std::move(entries);
@@ -99,10 +76,10 @@ public:
     result.previous = page_ > 0;
     result.next = page_ + 1 < result.total;
 
-    const std::size_t begin = page_ * kScenarioMenuPageSize;
-    const std::size_t end = std::min(begin + kScenarioMenuPageSize, entries_.size());
+    const std::size_t first = page_ * kScenarioMenuPageSize;
+    const std::size_t last = std::min(first + kScenarioMenuPageSize, entries_.size());
 
-    for (std::size_t i = begin; i < end; ++i) {
+    for (std::size_t i = first; i < last; ++i) {
       result.entries.push_back(entries_[i]);
     }
 
@@ -127,58 +104,13 @@ public:
     return true;
   }
 
-  bool enterFolder(std::size_t visibleIndex) {
-    const auto *entry = visibleEntry(visibleIndex);
-
-    if (!entry || !entry->folder || depth_ >= kScenarioMenuMaxDepth) {
-      return false;
-    }
-
-    const std::string next = directory_.empty()
-      ? entry->name : directory_ + "/" + entry->name;
-
-    if (next.size() > 255) {
-      return false;
-    }
-
-    directory_ = next;
-    ++depth_;
-    page_ = 0;
-    entries_.clear();
-    return true;
-  }
-
-  // Return a validated relative identifier. The runtime must separately
-  // verify the selected file before calling the scenario loader.
   std::string selectedScenario(std::size_t visibleIndex) const {
-    const auto *entry = visibleEntry(visibleIndex);
-
-    if (!entry || entry->folder) {
+    if (visibleIndex >= kScenarioMenuPageSize) {
       return {};
     }
 
-    return directory_.empty()
-      ? entry->name : directory_ + "/" + entry->name;
-  }
-
-  bool back() {
-    if (depth_ == 0) {
-      return false;
-    }
-
-    const auto last = directory_.rfind('/');
-
-    if (last == std::string::npos) {
-      directory_.clear();
-    }
-    else {
-      directory_.erase(last);
-    }
-
-    --depth_;
-    page_ = 0;
-    entries_.clear();
-    return true;
+    const std::size_t absoluteIndex = page_ * kScenarioMenuPageSize + visibleIndex;
+    return absoluteIndex < entries_.size() ? entries_[absoluteIndex] : std::string {};
   }
 
 private:
@@ -187,19 +119,8 @@ private:
       1, (entries_.size() + kScenarioMenuPageSize - 1) / kScenarioMenuPageSize);
   }
 
-  const ScenarioMenuEntry *visibleEntry(std::size_t index) const {
-    if (index >= kScenarioMenuPageSize) {
-      return nullptr;
-    }
-
-    const std::size_t offset = page_ * kScenarioMenuPageSize + index;
-    return offset < entries_.size() ? &entries_[offset] : nullptr;
-  }
-
-  std::string directory_ {};
-  std::vector<ScenarioMenuEntry> entries_ {};
+  std::vector<std::string> entries_ {};
   std::size_t page_ {};
-  std::size_t depth_ {};
 };
 
 } // namespace aipb::explorer::scenario

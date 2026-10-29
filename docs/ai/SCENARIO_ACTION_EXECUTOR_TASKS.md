@@ -21,7 +21,7 @@ If menu integration cannot avoid changes to original YaPB files, stop and reques
 | T261-03 — Sequential scheduler | Own one scenario and action index; track per-action commanded milliseconds and wall-clock deadlines, global timeout and maximum frame count; advance actions in file order without idle frame insertion | T261-02 | Deterministic tests for one/multiple actions, deadline expiration, zero progress, completion and limits | D263 completed; Explorer CI passed |
 | T261-04 — GoldSrc movement adapter | Feed normalized `forward/strafe`, held `jump/duck`, and distributed total `yaw_delta/pitch_delta` into `pfnRunPlayerMove` through existing AiPB frame hook; preserve body/view angle conventions | T261-03 | Mock translation/angle tests; real physics remains engine-owned and command completion is not movement success | D264 completed; Build and Explorer CI passed |
 | T261-05 — Lifecycle and conflicts | Add cancellation, idle/running/completed/failed/aborted statuses, cleanup of buttons and session ownership, no concurrent Explorer probe/queue/replay, stop on bot/map/team/death/disconnect/unsafe timing, **round completion/restart** | T261-04 | Unit tests for abort/restart, resource cleanup, simultaneous commands and failure reasons | D265 completed; Build and Explorer CI passed |
-| T261-06 — YaPB menu integration | Add a root menu entry, overlay toggle, disabled start/stop states, folder-aware scenario browser with five entries per page, Previous/Next and Back; select a scenario to run | T261-05 and user details | Model tested; live YaPB menu integration requires authorization for minimal changes in original `inc/control.h` and `src/control.cpp` | Model added by D266; integration blocked |
+| T261-06 — YaPB menu integration | Add a separate `aipb menu`, `aipb scenario overlay on|off`, disabled start/stop states, a flat scenario-file browser with five entries per page, Previous/Next and Back; `aipb scenario run` prepares supported initial state, strictly verifies and runs | T261-05 and user details | Model tested; live YaPB menu integration requires authorization for minimal changes in original `inc/control.h` and `src/control.cpp` | D267 flat browser model staged; game integration and automatic start preparation still pending |
 | T261-07 — Acceptance on de_dust2 | Provide a two-action fixture with no optional inventory dependencies, exercise `init-pose`, `init-equipment`, preflight, menu start/stop/status, completion and safe cancellation; inspect actual GoldSrc observations | T261-06 | CI passed plus user-run Windows x86/HLDS positive and negative tests with no stuck inputs, race or unexpected bot control | Pending |
 
 ## Explicitly deferred
@@ -35,3 +35,13 @@ Any changes to task order, especially menu scope, must be recorded here and in t
 
 D260 and D260.1 HLDS checks established that explicit `init-pose` followed by `init-equipment` and `preflight` can produce `ready=1, mismatches=0, unverified=0` for `equipment_health_01`.
 This is preparation evidence, not authorization to execute actions.
+
+## User revision after D266
+
+Only scenario files directly under `explorer/scenarios/` appear in the menu; directories are not selectable.
+The console namespace is `aipb` with `aipb menu`, `aipb scenario run <name>`, `aipb scenario stop`, `aipb scenario status`, and `aipb scenario overlay on|off`.
+Remove legacy `aipb_scenario_*` commands rather than retaining aliases when console routing is implemented.
+No equipment item appears in the menu, and `run` must safely prepare all supported explicit start constraints before performing a fresh full preflight.
+Fail closed when explicit equipment constraints cannot be satisfied and never claim initialization of unsupported equipment.
+The user authorized a narrow client-command bridge in original `src/linkage.cpp`, but not edits to original `src/control.cpp` or `inc/control.h`.
+D267 addresses only the independent flat menu contract and its tests; live menu routing, safe start preparation and runtime overlay remain outstanding.

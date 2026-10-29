@@ -651,3 +651,7 @@ D266 adds a standalone, tested Scenario Menu model with a five-entry page browse
 The requested integration into YaPB's existing main menu cannot be implemented through the private `BotControl::m_menus`, `createMenus`, and menu dispatch interfaces without touching original `src/control.cpp` and `inc/control.h`.
 Those files remain unchanged under the user's no-original-YaPB-edit restriction; D266 does not claim live menu integration, overlay rendering, scenario directory enumeration or run selection in HLDS.
 T261-06 remains blocked pending explicit permission for those narrow original-file changes; T261-07 HLDS acceptance remains blocked.
+D267 updates the independent Scenario Menu browser to list only scenario basenames directly in the scenario directory, with five entries per page and no folder navigation.
+The user specified a standalone `aipb` command tree and automatic supported start-state preparation followed by strict preflight; these runtime changes are not yet implemented by D267.
+A minimal `src/linkage.cpp` client bridge is authorized, while original `src/control.cpp` and `inc/control.h` remain unchanged.
+Menu activation and live HLDS acceptance remain pending.

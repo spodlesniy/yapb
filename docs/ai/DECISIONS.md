@@ -3373,3 +3373,10 @@ The user specified a root menu with a toggleable Russian execution-status overla
 The current YaPB BotControl owns its menu registry privately and accepts only member-function callbacks in `src/control.cpp` and `inc/control.h`.
 Under the standing no-original-file-change restriction, D266 implements and tests the independent browser/view model only and does not alter original YaPB files.
 Further implementation requires explicit permission for minimal integration edits to those files, followed by controlled directory scanning, selection-to-run wiring, overlay drawing and the planned manual HLDS acceptance.
+
+## D267 — Flat scenario menu contract after user revision
+
+The user removed folder navigation from the requested menu and specified a single `aipb` command root, `aipb scenario overlay on|off`, and automatic preparation in the run operation.
+D267 narrows the independent menu model to a sorted, validated flat set of scenario basenames with five entries per page and Previous/Next navigation.
+Its tests cover empty, multi-page and invalid-name cases.
+The step does not yet wire the client hook, display the menu or overlay, rename engine commands, or apply initial state; those require a separate runtime implementation with CI and HLDS acceptance.

@@ -26,37 +26,23 @@ int main() {
     ScenarioMenuBrowser browser {};
     auto empty = browser.currentPage();
     check(empty.current == 1 && empty.total == 1);
-    check(!empty.next && !empty.previous);
+    check(!empty.next && !empty.previous && empty.entries.empty());
     check(!browser.previousPage() && !browser.nextPage());
-    check(!browser.back());
     check(browser.selectedScenario(0).empty());
 
-    std::vector<ScenarioMenuEntry> entries {
-      { "zeta", false },
-      { "alpha", false },
-      { "folder_b", true },
-      { "charlie", false },
-      { "folder_a", true },
-      { "echo", false },
-      { "delta", false },
-      { "bravo", false },
-      { "foxtrot", false },
-      { "golf", false },
-      { "hotel", false }
-    };
-    check(browser.setEntries(entries));
+    check(browser.setEntries({
+      "zeta", "alpha", "charlie", "echo", "delta",
+      "bravo", "foxtrot", "golf", "hotel", "india", "juliet"
+    }));
     auto page = browser.currentPage();
     check(page.current == 1 && page.total == 3);
     check(page.next && !page.previous && page.entries.size() == 5);
-    check(page.entries[0].folder && page.entries[0].name == "folder_a");
-    check(page.entries[1].folder && page.entries[1].name == "folder_b");
-    check(browser.selectedScenario(0).empty());
-    check(browser.selectedScenario(2) == "alpha");
-
+    check(page.entries[0] == "alpha" && browser.selectedScenario(4) == "echo");
     check(browser.nextPage());
     page = browser.currentPage();
     check(page.current == 2 && page.total == 3);
     check(page.previous && page.next && page.entries.size() == 5);
+    check(page.entries[0] == "foxtrot");
     check(browser.nextPage());
     page = browser.currentPage();
     check(page.current == 3 && page.total == 3);
@@ -64,34 +50,18 @@ int main() {
     check(!browser.nextPage());
     check(browser.selectedScenario(0) == "zeta");
     check(browser.selectedScenario(1).empty());
-    check(browser.previousPage());
-    check(browser.previousPage());
+    check(browser.previousPage() && browser.previousPage());
     check(!browser.previousPage());
 
-    check(browser.enterFolder(0));
-    check(browser.directory() == "folder_a");
-    check(browser.setEntries({ { "example", false }, { "nested", true } }));
-    check(browser.selectedScenario(0).empty());
-    check(browser.selectedScenario(1) == "folder_a/example");
-    check(browser.enterFolder(0));
-    check(browser.directory() == "folder_a/nested");
-    check(browser.setEntries({ { "deep", false } }));
-    check(browser.selectedScenario(0) == "folder_a/nested/deep");
-    check(browser.back() && browser.directory() == "folder_a");
-    check(browser.back() && browser.directory().empty());
-    check(!browser.back());
-
-    check(browser.setEntries({ { "valid", false } }));
-    check(!browser.setEntries({ { "../invalid", true } }));
+    check(browser.setEntries({ "valid" }));
+    check(!browser.setEntries({ "../invalid" }));
+    check(!browser.setEntries({ "x/y" }));
+    check(!browser.setEntries({ "duplicate", "duplicate" }));
+    check(!browser.setEntries(std::vector<std::string>(
+      kScenarioMenuMaxEntries + 1, "x")));
     check(browser.selectedScenario(0) == "valid");
-    check(!browser.setEntries({ { "duplicate", false }, { "duplicate", false } }));
-    check(!browser.setEntries({ { "x/y", false } }));
-    check(!browser.setEntries(std::vector<ScenarioMenuEntry>(
-      kScenarioMenuMaxEntries + 1, { "x", false })));
-    check(browser.selectedScenario(0) == "valid");
-
-    check(browser.setEntries({ { "one", false }, { "one", true } }));
-    check(browser.currentPage().entries.size() == 2);
+    check(browser.setEntries({}));
+    check(browser.currentPage().total == 1);
 
     return 0;
   }
