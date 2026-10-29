@@ -549,3 +549,11 @@ The known bin-1 pair from source index 2 should remain `Insufficient` with one P
 All-sector pair counts must not be assumed from bin-1 alone.
 The exact pair identity includes both fine faces, their ordering and actual travel signs; a trial source changing yaw cannot provide independent corroboration.
 No pair or sequence from interpolated endpoints is a validated GoldSrc passage or a navigation edge.
+
+## D244 — Ordered fine-face triplets
+
+Run on de_dust2:
+`yb explore fine-triplets d228_trials_02 256 2512 -92`
+In the D243 trial set only two-face chains have been reported, so the expected result is `triplets=0` and `windows=0` unless another source record has a chain of at least three strict fine-face crossings.
+The command also reports total chains, unique sources, classification statuses, yaw-bin masks and cross-sector conflicts for any triplets.
+A triplet is a three-crossing subsequence from a single recorded segment's straight interpolation; it does not represent a validated GoldSrc traversal or a navigation route.

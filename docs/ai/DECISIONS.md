@@ -3116,3 +3116,13 @@ Apply the existing D229 quality gate and distinguish Insufficient, ProgressEvide
 Report progress and restriction heading-bin masks per pair, counts of pairs observed in multiple bins and conflicts with opposed outcomes across sectors.
 Reuse D241 strict record-local sequence extraction and ambiguous edge/corner rejection, retaining a bounded 3x3x3 coarse-cell query and 24-pair console output.
 The result is diagnostic interpolation of recorded endpoints, not a collision check, a route, or authorization to move; no CSV, earlier commands or bot control is changed.
+
+## D244 — Source consensus for ordered strict fine-face triplets
+
+D243 assesses ordered pairs across recorded yaw sectors, but does not identify whether three consecutive strict crossings occurred within one recorded segment.
+Add read-only `yb explore fine-triplets <trials> <x> <y> <z>` for consecutive directed three-face subsequences within the D241 bounded 32-unit query window.
+An exact triplet key includes all three signed fine faces and their order; never join separate recorded segments, reverse signs, or adjacent but different sequences.
+Aggregate all eight recorded yaw sectors without inflating independent source counts, and reuse D229 quality rules for Progress, BlockedCandidate, DeflectedCandidate, Conflicted and Insufficient observations.
+Report progress/restriction sector masks, multi-sector triplets and cross-sector opposition; cap console detail to 24 triplets while retaining complete counts.
+Continue excluding ambiguous edge/corner intersections through D241; even corroborated triplets remain recorded-endpoint interpolations rather than GoldSrc collision-checked routes or navigation permission.
+CSV formats, existing diagnostics and bot movement remain unchanged.

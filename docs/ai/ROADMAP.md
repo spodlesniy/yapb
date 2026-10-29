@@ -511,3 +511,8 @@ D242 automatic Build and Explorer CI passed at fdb7ceb; HLDS confirmed exactly o
 D242 is accepted.
 D243 extends read-only ordered directed fine-face pair consensus across all eight yaw sectors with source-deduplicated votes, sector masks and cross-sector opposition, retaining the D241 record boundary and geometry restrictions.
 Automatic CI and Windows x86 gameplay acceptance remain pending for D243; no result establishes passability or routing.
+
+D243 automatic Build and Explorer CI passed at 9c68eb2; HLDS confirmed two separate ordered pairs from bins 1 and 0, each supported by one weak source and classified Insufficient, with zero cross-sector conflicts.
+D243 is accepted.
+D244 adds read-only source-quality consensus for exact ordered three-face crossing sequences across all yaw bins, with no cross-record joining or inference of passability.
+Automatic CI and Windows x86 gameplay verification for D244 are pending.

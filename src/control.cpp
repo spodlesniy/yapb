@@ -32,6 +32,7 @@
 #include <aipb/explorer/engine_bridge_fine_crossing_sequences.h>
 #include <aipb/explorer/engine_bridge_fine_sequence_pairs.h>
 #include <aipb/explorer/engine_bridge_fine_pair_sectors.h>
+#include <aipb/explorer/engine_bridge_fine_triplet_sectors.h>
 
 #include <ctime>
 #include <cmath>
@@ -1462,6 +1463,66 @@ int BotControl::cmdExplore () {
       }
       if (!ai::explore::classify()) {
          msg("AiPB explorer: classify requires a completed, valid trace; use init to load a recording.");
+      }
+      return BotCommandResult::Handled;
+   }
+   if (operation == "fine-triplets") {
+      if (!hasArg(forward) || !hasArg(strafe) || !hasArg(jump)
+         || !hasArg(duck) || hasArg(yaw)) {
+         return BotCommandResult::BadFormat;
+      }
+      const auto name = arg <StringRef>(forward);
+      if (!aipb::explorer::bridge::safeName(name.chars())) {
+         return BotCommandResult::BadFormat;
+      }
+      const auto parse = [this](int position, double &value) {
+         const auto input = arg <StringRef>(position).chars();
+         char *end {};
+         value = std::strtod(input, &end);
+         return end != input && *end == '\0' && std::isfinite(value);
+      };
+      double x {}, y {}, z {};
+      if (!parse(strafe, x) || !parse(jump, y) || !parse(duck, z)) {
+         return BotCommandResult::BadFormat;
+      }
+      const auto directory = strings.joinPath(bstor.getRunningPath(), folders.data, "explorer");
+      const auto path = strings.joinPath(directory, strings.format("%s.trials.csv", name));
+      aipb::explorer::bridge::EvidenceTrialSet trials {};
+      aipb::explorer::bridge::FineTripletAudit report {};
+      if (!aipb::explorer::bridge::readEvidenceTrialSet(path.chars(), game.getMapName(), trials)
+         || !aipb::explorer::bridge::auditFineTripletSectors(trials, x, y, z, report)) {
+         msg("AiPB explorer: cannot audit fine triplets.");
+      }
+      else {
+         msg("AiPB explorer: fine-triplets '%s': coarse=(%d,%d,%d) chains=%d windows=%d triplets=%d sources=%d multi_sector_triplets=%d cross_sector_conflicts=%d progress=%d restriction=%d conflicted=%d insufficient=%d.",
+            name, report.queryCoarse.x, report.queryCoarse.y, report.queryCoarse.z,
+            report.chains, report.tripletWindows, report.distinctTriplets,
+            report.observedSources, report.multipleSectorTriplets,
+            report.crossSectorConflictTriplets, report.progressEvidenceTriplets,
+            report.restrictionEvidenceTriplets, report.conflictedTriplets,
+            report.insufficientTriplets);
+         const auto limit = static_cast<int>(report.details.size()) < aipb::explorer::bridge::kMaxFineTripletPrinted
+            ? static_cast<int>(report.details.size()) : aipb::explorer::bridge::kMaxFineTripletPrinted;
+         for (int i = 0; i < limit; ++i) {
+            const auto &entry = report.details[i];
+            const auto &a = entry.triplet.first;
+            const auto &b = entry.triplet.second;
+            const auto &c = entry.triplet.third;
+            msg("AiPB explorer: fine triplet first axis=%d lower=(%d,%d,%d) sign=%c second axis=%d lower=(%d,%d,%d) sign=%c third axis=%d lower=(%d,%d,%d) sign=%c status=%s progress_bins=0x%02x restriction_bins=0x%02x observed=%d weak=%d strong_progress=%d strong_restriction=%d mixed=%d progress_windows=%d restriction_windows=%d.",
+               a.axis, a.lowerCell.x, a.lowerCell.y, a.lowerCell.z, a.positive ? '+' : '-',
+               b.axis, b.lowerCell.x, b.lowerCell.y, b.lowerCell.z, b.positive ? '+' : '-',
+               c.axis, c.lowerCell.x, c.lowerCell.y, c.lowerCell.z, c.positive ? '+' : '-',
+               aipb::explorer::bridge::directionAssessmentName(entry.outcome.evidence.status),
+               entry.outcome.progressBins, entry.outcome.restrictionBins,
+               entry.outcome.evidence.observedSources, entry.outcome.evidence.weakSources,
+               entry.outcome.evidence.strongProgressSources,
+               entry.outcome.evidence.strongRestrictionSources,
+               entry.outcome.evidence.mixedSources, entry.outcome.evidence.progressWindows,
+               entry.outcome.evidence.restrictionWindows);
+         }
+         if (report.distinctTriplets > limit) {
+            msg("AiPB explorer: fine-triplets omitted %d triplets.", report.distinctTriplets - limit);
+         }
       }
       return BotCommandResult::Handled;
    }
@@ -3960,7 +4021,7 @@ BotControl::BotControl () {
       },
       {
          "explore",
-         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save <name> | list | init <name> <bot> | replay <name> <bot> | append <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | queue <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | run <save_name> | queueclear | report | progress | classify | observe <name> | merge <first> <second> <output> | index <source> <output> | near <index> <x> <y> <z> <radius> | areas <index> <output> | area <name> <x> <y> <z> | directions <index> <output> | direction <name> <x> <y> <z> <heading> | audit <index> <x> <y> <z> | assess <index> <x> <y> <z> <heading> | trials <first> <second> <output> | corroborate <trials> <x> <y> <z> <heading> | consensus <trials> <x> <y> <z> <heading> | localize <trials> <x> <y> <z> <heading> | region <trials> <x> <y> <z> <heading> | span <trials> <x> <y> <z> <heading> | crossings <trials> <x> <y> <z> <heading> | discover-crossings <trials> <x> <y> <z> <heading> | crossing-directions <trials> <x> <y> <z> <heading> | crossing-consensus <trials> <x> <y> <z> <heading> | crossing-sectors <trials> <x> <y> <z> | fine-crossings <trials> <x> <y> <z> <heading> | fine-consensus <trials> <x> <y> <z> <heading> | fine-sectors <trials> <x> <y> <z> | fine-sequences <trials> <x> <y> <z> <heading> | fine-pairs <trials> <x> <y> <z> <heading> | fine-pair-sectors <trials> <x> <y> <z> | clear | stop",
+         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save <name> | list | init <name> <bot> | replay <name> <bot> | append <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | queue <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | run <save_name> | queueclear | report | progress | classify | observe <name> | merge <first> <second> <output> | index <source> <output> | near <index> <x> <y> <z> <radius> | areas <index> <output> | area <name> <x> <y> <z> | directions <index> <output> | direction <name> <x> <y> <z> <heading> | audit <index> <x> <y> <z> | assess <index> <x> <y> <z> <heading> | trials <first> <second> <output> | corroborate <trials> <x> <y> <z> <heading> | consensus <trials> <x> <y> <z> <heading> | localize <trials> <x> <y> <z> <heading> | region <trials> <x> <y> <z> <heading> | span <trials> <x> <y> <z> <heading> | crossings <trials> <x> <y> <z> <heading> | discover-crossings <trials> <x> <y> <z> <heading> | crossing-directions <trials> <x> <y> <z> <heading> | crossing-consensus <trials> <x> <y> <z> <heading> | crossing-sectors <trials> <x> <y> <z> | fine-crossings <trials> <x> <y> <z> <heading> | fine-consensus <trials> <x> <y> <z> <heading> | fine-sectors <trials> <x> <y> <z> | fine-sequences <trials> <x> <y> <z> <heading> | fine-pairs <trials> <x> <y> <z> <heading> | fine-pair-sectors <trials> <x> <y> <z> | fine-triplets <trials> <x> <y> <z> | clear | stop",
          "Runs an admin-only bounded GoldSrc movement probe.",
          &BotControl::cmdExplore
       },
