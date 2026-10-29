@@ -3311,3 +3311,10 @@ The bot health cache is synchronized with the `pev` health write.
 A post-write check restores both numeric values on failure.
 Other fields, including weapons, ammunition, grenades, money, defuse kit, helmet and selection, are read-only preconditions and may reject the entire command.
 It never relocates the bot or executes scenario actions; equipment adapter behavior must be verified with a user-run Windows x86/HLDS build.
+
+## D260.1 — Correct duplicate scenario directory in the Explorer test fixture
+
+D260 successfully initialized scenario health in user HLDS and rejected an unsatisfied equipment constraint without mutation.
+Its new Explorer fixture test nonetheless failed on all three CI compilers because the CMake fixture root included `/scenarios` while `loadScenario` itself appends `scenarios/<name>.scenario`.
+D260.1 changes the test definition to the project root, matching the already passing scenario-loader tests, and improves the fixture failure diagnostic.
+Production runtime code and all original YaPB files stay unchanged.

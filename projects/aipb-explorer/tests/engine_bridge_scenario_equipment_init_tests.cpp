@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <stdexcept>
+#include <string>
 
 #include <aipb/explorer/engine_bridge_scenario_equipment_init.h>
 #include <aipb/explorer/engine_bridge_scenario_loader.h>
@@ -104,7 +105,10 @@ int main() {
     std::string detail {};
     const auto status = loadScenario(
       AIPB_EXPLORER_SCENARIO_FIXTURE_DIR, "equipment_health_01", fixture, detail);
-    check(status == LoadStatus::Ok);
+    if (status != LoadStatus::Ok) {
+      throw std::runtime_error(std::string { "fixture load: " }
+        + loadStatusName(status) + ": " + detail);
+    }
     check(fixture.equipment.has("health") && fixture.equipment.health == 75);
     check(!fixture.equipment.has("armor") && !fixture.equipment.has("helmet"));
     check(!fixture.equipment.has("primary") && !fixture.equipment.has("money"));

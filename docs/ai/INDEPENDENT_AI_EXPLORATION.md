@@ -722,3 +722,10 @@ Run `aipb_scenario_init_equipment optional_explicit_01` to exercise rejection du
 Run `aipb_scenario_init_equipment optional_omitted_01` to check that a matching USP with omitted equipment produces no writes.
 Changing armor from present to absent (or the reverse) is deliberately rejected, because the CS armor type is not determined by a numeric `pev->armorvalue` change alone.
 No scenario movement, weapon grants or action execution is performed.
+
+## D260.1 — Corrected test fixture root
+
+D260 user HLDS acceptance confirmed that `aipb_scenario_init_equipment equipment_health_01` applies health without changing other equipment, while `optional_explicit_01` rejects missing money constraints.
+The two remaining preflight findings concerned the bot's starting y position and yaw, not health.
+The first automatic Explorer CI for D260 failed because the new test mistakenly read from `scenarios/scenarios`; D260.1 fixes only that test path.
+To verify the fully prepared start, run `yb explore scenario init-pose equipment_health_01` followed promptly by `yb explore scenario preflight equipment_health_01` while the bot remains alive and stable.

@@ -612,5 +612,8 @@ D259 Explorer CI passed at 39756d4; no runtime implementation was introduced in 
 D260 connects the existing safe equipment planner to a separate HLDS server-console command via the existing AiPB explorer frame hook, without editing original YaPB source.
 The command can apply explicit health and compatible existing-vest numeric armor amounts after loading a named scenario and checking every other explicitly constrained equipment field.
 It rejects invalid maps, missing/dead/wrong-team bots, active Explorer sessions, unknown equipment, and vest-presence changes without mutation; scenario actions are not executed.
-D260 automatic CI and user-run Windows x86/HLDS acceptance are pending.
-Stage A execution, durable results and reproducibility remain incomplete.
+D260 automatic Build succeeded at 1ac5663, but Explorer CI failed one fixture-loader test on MSVC, GCC and Clang because the test root included an extra /scenarios component.
+User HLDS confirmed health initialization from equipment_health_01, rejection of optional_explicit_01 on money with no mutation, and no health mismatch on subsequent preflight; position/yaw mismatches remain independent of equipment.
+D260.1 corrects only the independent test fixture root to match loadScenario's appended scenarios directory and reports the actual loader error on failure.
+No runtime command behavior, original YaPB files or gameplay DLL sources change in D260.1.
+D260.1 automatic CI is pending; Stage A execution, durable results and reproducibility remain incomplete.
