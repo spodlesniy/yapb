@@ -643,3 +643,9 @@ Run `yb explore scenario validate ground_forward_01` on de_dust2.
 A valid file and matching live CT bot index 1 should produce a validated summary; missing/dead/wrong-team bots produce a nonexecuting preflight status.
 Try `yb explore scenario validate missing_scenario` to confirm the missing-file diagnostic.
 No scenario is executed and no output artifact is written by D254.
+
+## D255 — Start-state preflight check
+
+Run `yb explore scenario preflight ground_forward_01` on de_dust2 with live CT bot index 1.
+The report lists mismatched and unverified start fields and should not modify the bot.
+A successful file validation is not equivalent to a fully established scenario start state.

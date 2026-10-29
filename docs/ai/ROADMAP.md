@@ -575,3 +575,9 @@ Scenario Runner execution, state preflight and timestamped non-overwriting outpu
 
 D254.1 fixes the MSVC /WX C4996 failure in the scenario loader by reusing the existing cross-platform bridge::openTraceFile helper rather than calling fopen directly.
 D254 remains pending user-run Windows x86 and HLDS validation; the corrective step changes no scenario behavior.
+
+D254.1 Explorer CI passed at 4e1db09; HLDS validation returned BotMissing without the bot and success with the intended living CT bot.
+D254 and D254.1 are accepted.
+D255 introduces read-only live start-state mismatch and unverified-field diagnostics through `yb explore scenario preflight <name>`.
+This step does not initialize equipment or position; accurate unsupported fields remain unverified and runtime execution is blocked.
+D255 requires CI and HLDS verification.

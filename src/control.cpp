@@ -40,6 +40,7 @@
 #include <aipb/explorer/engine_bridge_fine_trial_gaps.h>
 #include <aipb/explorer/engine_bridge_fine_trial_plans.h>
 #include <aipb/explorer/engine_bridge_scenario_loader.h>
+#include <aipb/explorer/engine_bridge_scenario_start.h>
 
 #include <ctime>
 #include <cmath>
@@ -1447,7 +1448,7 @@ int BotControl::cmdExplore () {
    // Named traces are sandboxed to the explorer directory under YaPB data.
    const auto operation = arg <StringRef>(botIndex);
    if (operation == "scenario") {
-      if (arg <StringRef>(forward) != "validate" || !hasArg(strafe)
+      if ((arg <StringRef>(forward) != "validate" && arg <StringRef>(forward) != "preflight") || !hasArg(strafe)
          || hasArg(jump)) {
          return BotCommandResult::BadFormat;
       }
@@ -1470,6 +1471,58 @@ int BotControl::cmdExplore () {
       if (preflight != aipb::explorer::scenario::PreflightStatus::Ok) {
          msg("AiPB scenario: '%s' valid file; preflight=%s.", name,
             aipb::explorer::scenario::preflightStatusName(preflight));
+      }
+      else if (arg <StringRef>(forward) == "preflight") {
+         aipb::explorer::scenario::ScenarioStartObservation actual {};
+         actual.position[0] = bot->pev->origin.x;
+         actual.position[1] = bot->pev->origin.y;
+         actual.position[2] = bot->pev->origin.z;
+         actual.velocity[0] = bot->pev->velocity.x;
+         actual.velocity[1] = bot->pev->velocity.y;
+         actual.velocity[2] = bot->pev->velocity.z;
+         actual.yaw = bot->pev->v_angle.y;
+         actual.pitch = bot->pev->v_angle.x;
+         actual.onGround = !!(bot->pev->flags & FL_ONGROUND);
+         actual.crouching = !!(bot->pev->flags & FL_DUCKING);
+         actual.health = bot->pev->health;
+         actual.armor = bot->pev->armorvalue;
+         actual.maxSpeed = bot->pev->maxspeed;
+         actual.money = bot->m_moneyAmount;
+         actual.defuseKit = bot->m_hasDefuser;
+         const auto getId = [](const std::string &alias) {
+            return alias == "none" ? 0 : util.weaponAliasToId(alias.c_str());
+         };
+         const int primary = getId(scenario.equipment.primary.type);
+         const int secondary = getId(scenario.equipment.secondary.type);
+         const int selected = scenario.equipment.selected == "knife" ? Weapon::Knife
+            : scenario.equipment.selected == "primary" ? primary
+            : scenario.equipment.selected == "secondary" ? secondary : -1;
+         actual.primaryId = bot->hasPrimaryWeapon() ? -1 : 0;
+         actual.secondaryId = bot->hasSecondaryWeapon() ? -1 : 0;
+         if (primary > 0 && (bot->pev->weapons & cr::bit(primary))) {
+            actual.primaryId = primary;
+            actual.primaryClip = bot->m_ammoInClip[primary];
+            actual.primaryReserve = bot->getAmmo(primary);
+         }
+         if (secondary > 0 && (bot->pev->weapons & cr::bit(secondary))) {
+            actual.secondaryId = secondary;
+            actual.secondaryClip = bot->m_ammoInClip[secondary];
+            actual.secondaryReserve = bot->getAmmo(secondary);
+         }
+         actual.selectedId = bot->m_currentWeapon;
+         const auto &grenades = scenario.equipment;
+         actual.he = grenades.he == 0 && !(bot->pev->weapons & cr::bit(Weapon::Explosive)) ? 0 : -1;
+         actual.flash = grenades.flash == 0 && !(bot->pev->weapons & cr::bit(Weapon::Flashbang)) ? 0 : -1;
+         actual.smoke = grenades.smoke == 0 && !(bot->pev->weapons & cr::bit(Weapon::Smoke)) ? 0 : -1;
+         const auto assessment = aipb::explorer::scenario::assessScenarioStart(
+            scenario, actual, primary, secondary, selected);
+         msg("AiPB scenario: '%s' start preflight: ready=%d mismatches=%d unverified=%d; no actions executed.",
+            name, assessment.ready() ? 1 : 0, assessment.mismatches, assessment.unverified);
+         for (const auto &finding : assessment.findings) {
+            msg("AiPB scenario: %s %s expected=%.2f observed=%.2f.",
+               finding.unverified ? "unverified" : "mismatch",
+               finding.field.c_str(), finding.expected, finding.observed);
+         }
       }
       else {
          msg("AiPB scenario: '%s' validated: map=%s bot=%d actions=%d timeout_ms=%d; no actions executed.",
@@ -4389,7 +4442,7 @@ BotControl::BotControl () {
       },
       {
          "explore",
-         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save <name> | list | init <name> <bot> | replay <name> <bot> | append <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | queue <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | run <save_name> | queueclear | report | progress | classify | observe <name> | merge <first> <second> <output> | index <source> <output> | near <index> <x> <y> <z> <radius> | areas <index> <output> | area <name> <x> <y> <z> | directions <index> <output> | direction <name> <x> <y> <z> <heading> | audit <index> <x> <y> <z> | assess <index> <x> <y> <z> <heading> | trials <first> <second> <output> | corroborate <trials> <x> <y> <z> <heading> | consensus <trials> <x> <y> <z> <heading> | localize <trials> <x> <y> <z> <heading> | region <trials> <x> <y> <z> <heading> | span <trials> <x> <y> <z> <heading> | crossings <trials> <x> <y> <z> <heading> | discover-crossings <trials> <x> <y> <z> <heading> | crossing-directions <trials> <x> <y> <z> <heading> | crossing-consensus <trials> <x> <y> <z> <heading> | crossing-sectors <trials> <x> <y> <z> | fine-crossings <trials> <x> <y> <z> <heading> | fine-consensus <trials> <x> <y> <z> <heading> | fine-sectors <trials> <x> <y> <z> | fine-sequences <trials> <x> <y> <z> <heading> | fine-pairs <trials> <x> <y> <z> <heading> | fine-pair-sectors <trials> <x> <y> <z> | fine-triplets <trials> <x> <y> <z> | fine-coverage <trials> <x> <y> <z> | fine-zero-reasons <trials> <x> <y> <z> | fine-targets <trials> <x> <y> <z> | fine-refinement <trials> <x> <y> <z> | fine-trial-gaps <trials> <x> <y> <z> | fine-trial-plans <trials> <x> <y> <z> | scenario validate <name> | clear | stop",
+         "explore <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | save <name> | list | init <name> <bot> | replay <name> <bot> | append <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | queue <bot> <forward> <strafe> <jump> <duck> <yaw> <frames|ms> | run <save_name> | queueclear | report | progress | classify | observe <name> | merge <first> <second> <output> | index <source> <output> | near <index> <x> <y> <z> <radius> | areas <index> <output> | area <name> <x> <y> <z> | directions <index> <output> | direction <name> <x> <y> <z> <heading> | audit <index> <x> <y> <z> | assess <index> <x> <y> <z> <heading> | trials <first> <second> <output> | corroborate <trials> <x> <y> <z> <heading> | consensus <trials> <x> <y> <z> <heading> | localize <trials> <x> <y> <z> <heading> | region <trials> <x> <y> <z> <heading> | span <trials> <x> <y> <z> <heading> | crossings <trials> <x> <y> <z> <heading> | discover-crossings <trials> <x> <y> <z> <heading> | crossing-directions <trials> <x> <y> <z> <heading> | crossing-consensus <trials> <x> <y> <z> <heading> | crossing-sectors <trials> <x> <y> <z> | fine-crossings <trials> <x> <y> <z> <heading> | fine-consensus <trials> <x> <y> <z> <heading> | fine-sectors <trials> <x> <y> <z> | fine-sequences <trials> <x> <y> <z> <heading> | fine-pairs <trials> <x> <y> <z> <heading> | fine-pair-sectors <trials> <x> <y> <z> | fine-triplets <trials> <x> <y> <z> | fine-coverage <trials> <x> <y> <z> | fine-zero-reasons <trials> <x> <y> <z> | fine-targets <trials> <x> <y> <z> | fine-refinement <trials> <x> <y> <z> | fine-trial-gaps <trials> <x> <y> <z> | fine-trial-plans <trials> <x> <y> <z> | scenario validate <name> | scenario preflight <name> | clear | stop",
          "Runs an admin-only bounded GoldSrc movement probe.",
          &BotControl::cmdExplore
       },

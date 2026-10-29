@@ -3233,3 +3233,11 @@ D254 adds loader/preflight CTest regressions and leaves Stage A runtime executio
 The D254 scenario loader directly called fopen and failed both MSVC x64 Explorer CI and the user's MSVC x86 DLL build with warning C4996 treated as error.
 Use existing bridge::openTraceFile, which already selects fopen_s for MSVC and fopen elsewhere.
 Keep bounded reads, transactional parsing, error semantics, and read-only validation unchanged.
+
+## D255 — Read-only scenario start-state verification
+
+D254 and D254.1 are accepted after Explorer CI and user HLDS file/preflight checks.
+D255 adds a read-only `yb explore scenario preflight <name>` command to compare the declared start pose, velocity, grounded stance, health, armor, money, defuse kit, weapon ids and known ammunition against current GoldSrc observations.
+It returns mismatch and unverified counts; unknown grenade quantities and unavailable helmet state cannot be treated as a successful setup.
+It does not teleport, issue weapon grants, set ammunition or execute actions.
+Further implementation must provide explicit controlled initialization and accurate grenade and helmet reads before a start state can be accepted as ready.

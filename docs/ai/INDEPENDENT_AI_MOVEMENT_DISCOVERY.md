@@ -151,3 +151,9 @@ Only safe basenames beneath the YaPB data/explorer/scenarios directory are eligi
 The loader rejects oversized, missing, unreadable and malformed descriptors and validates the embedded scenario name.
 Runtime preflight checks map, selected bot presence, alive state and team.
 The command does not reposition bots, modify equipment, execute actions or write telemetry.
+
+## D255 — Read-only start-state assessment
+
+The read-only `yb explore scenario preflight <name>` command compares recorded live GoldSrc start data to the scenario.
+Missing or unreliable equipment information is marked unverified rather than silently accepted.
+The bot is not teleported, equipped or commanded.
