@@ -542,3 +542,10 @@ D248 automatic Build and Explorer CI passed at 672552f; HLDS confirmed 27 record
 D248 is accepted.
 D249 assesses independent source-quality gaps only for actual moving observations in D248 groups, with stationary-control windows excluded from moving votes.
 It reports missing strong moving sources for targeted supervised experiments; CI and HLDS validation remain pending and no navigation permission is granted.
+
+D249 automatic Build and Explorer CI passed at e1ae5fb; HLDS confirmed 27 records, 20 zero-face windows, eleven insufficient moving groups, one eight-window stationary control, zero conflicts and three moving sources.
+Ten moving groups have no strong sources and one group has a single strong Progress source; none has sufficient corroboration.
+D249 is accepted.
+D250 adds a read-only supervised repeat-trial plan listing missing strong sources, weak-source completion windows and remaining independent new-source requirements for exact observed moving groups.
+Stationary controls and already confirmed groups are excluded from plans, while conflicting evidence requires review rather than numeric corroboration instructions.
+D250 automatic CI and HLDS acceptance remain pending; plans do not execute movement.

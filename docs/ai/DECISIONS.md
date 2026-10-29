@@ -3173,3 +3173,15 @@ Assess Progress and restriction candidates per independently identified source w
 Report missing strong source counts for homogeneous insufficient moving groups, conflicting groups and separate stationary-control source counts.
 Preserve coordinates as historical observation examples, not validated safe positions, automatic replay instructions or proof of clearance.
 Retain bounded output, unchanged CSV, unchanged prior diagnostics and unchanged runtime bot movement.
+
+## D250 — Read-only plans for independently corroborated movement trials
+
+D249 found eleven moving groups with insufficient independent evidence and one stationary-only control.
+Add read-only `yb explore fine-trial-plans <trials> <x> <y> <z>` to identify the evidence required before source consensus can become strong.
+Preserve D248 group identity (8-unit observed start subcell, recorded yaw and actual travel bin), with separate Progress, Restriction and Conflicted review plans.
+For homogeneous insufficient groups report strong sources missing now, weak existing sources eligible for additional windows, the per-source window shortfall, and new sources still required after those existing traces become strong.
+Do not count repeated windows of one trial as independent corroboration, and do not convert a stationary-control record into a restriction vote or a movement plan.
+Conflict reviews carry no numeric confirmation plan because outcomes disagree; confirmed source-quality groups are omitted from candidate plans and counted separately.
+Prioritize conflicts, then restriction reviews, then progress corroboration, retaining deterministic keys and at most sixteen console plans while reporting full totals.
+Reported observed starts and deltas are evidence references, not safe bot placement, automatic trial execution, collision proof or authorization to navigate.
+Existing CSV formats, old commands, source quality rules and gameplay behavior remain unchanged.

@@ -600,3 +600,13 @@ On de_dust2 run:
 Expect `records=27`, `zero=20`, `groups=12`, `moving=11`, `stationary=1`, `conflicted=0`, `progress=0`, `restriction=0` and `insufficient=11` for the existing snapshot.
 The eight stationary restriction windows are reported as one StationaryControl group with one source and are not treated as support for any moving restriction.
 A single homogeneous weak moving observation will require two strong independent sources under D229; the report does not assert that any observed start is safe to replay.
+
+## D250 — Independent follow-up trial plans
+
+Run on de_dust2:
+`yb explore fine-trial-plans d228_trials_02 256 2512 -92`
+Expect `records=27`, `zero=20`, `groups=12`, `candidates=11`, `progress=7`, `restriction=4`, `conflicts=0`, `completed=0` and `stationary=1`.
+The seven weak Progress groups and four weak restriction groups retain original recorded starts, requested yaw bins and observed travel directions.
+One Progress group already has one strong source and needs one more strong independent source; all ten other moving groups have zero strong sources.
+Under the D229 threshold a one-window source needs one additional same-outcome window to become strong, but remains the same source; an entirely new independent source needs at least two qualifying windows.
+Plans are diagnostic suggestions for supervised trial design, not executable commands or validated safe spawn and navigation instructions.
