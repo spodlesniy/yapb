@@ -572,3 +572,6 @@ D254 adds bounded read-only loading from explorer/scenarios/<name>.scenario and 
 It neither initializes the bot nor executes a scenario.
 D254 requires automatic CI and user-run Windows x86/HLDS validation before acceptance.
 Scenario Runner execution, state preflight and timestamped non-overwriting outputs remain pending.
+
+D254.1 fixes the MSVC /WX C4996 failure in the scenario loader by reusing the existing cross-platform bridge::openTraceFile helper rather than calling fopen directly.
+D254 remains pending user-run Windows x86 and HLDS validation; the corrective step changes no scenario behavior.

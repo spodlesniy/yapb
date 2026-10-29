@@ -3227,3 +3227,9 @@ The administrator command `yb explore scenario validate <name>` performs no move
 After file validation, preflight compares the running map and the selected bot's presence, alive state and CT/T team.
 A valid scenario file is reported separately from a successful preflight; future D255 must verify position, equipment and actual GoldSrc safety before authorizing a live scenario.
 D254 adds loader/preflight CTest regressions and leaves Stage A runtime execution pending.
+
+## D254.1 — Reuse existing cross-platform file opening
+
+The D254 scenario loader directly called fopen and failed both MSVC x64 Explorer CI and the user's MSVC x86 DLL build with warning C4996 treated as error.
+Use existing bridge::openTraceFile, which already selects fopen_s for MSVC and fopen elsewhere.
+Keep bounded reads, transactional parsing, error semantics, and read-only validation unchanged.

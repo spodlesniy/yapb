@@ -6,6 +6,7 @@
 #include <utility>
 
 #include <aipb/explorer/engine_bridge_scenario.h>
+#include <aipb/explorer/engine_bridge_trace_io.h>
 
 namespace aipb::explorer::scenario {
 
@@ -70,7 +71,7 @@ inline LoadStatus loadScenario(
     return LoadStatus::InvalidName;
   }
 
-  std::FILE *file = std::fopen(path.c_str(), "rb");
+  std::FILE *file = aipb::explorer::bridge::openTraceFile(path.c_str(), "rb");
 
   if (!file) {
     detail = "scenario file missing or unreadable";
