@@ -63,6 +63,7 @@ struct FineZeroAudit {
   FineZeroCounts total {};
   FineZeroCounts bins[kDirectionBins] {};
   std::vector<FineZeroExample> examples {};
+  std::vector<FineZeroExample> records {};
 };
 
 // Inclusive segment-box clipping distinguishes out-of-window records from
@@ -277,19 +278,21 @@ inline bool auditFineZeroReasons(
       addFineZeroReason(next.total, reason);
       addFineZeroReason(next.bins[bin], reason);
 
+      FineZeroExample example {};
+      example.source = static_cast<int>(source);
+      example.firstStep = record.firstStep;
+      example.headingBin = bin;
+      example.classification = record.classification;
+      example.reason = reason;
+
+      for (int axis = 0; axis < 3; ++axis) {
+        example.start[axis] = record.start[axis];
+        example.end[axis] = record.end[axis];
+      }
+
+      next.records.push_back(example);
+
       if (next.examples.size() < static_cast<std::size_t>(kMaxFineZeroExamples)) {
-        FineZeroExample example {};
-        example.source = static_cast<int>(source);
-        example.firstStep = record.firstStep;
-        example.headingBin = bin;
-        example.classification = record.classification;
-        example.reason = reason;
-
-        for (int axis = 0; axis < 3; ++axis) {
-          example.start[axis] = record.start[axis];
-          example.end[axis] = record.end[axis];
-        }
-
         next.examples.push_back(example);
       }
     }

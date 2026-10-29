@@ -526,3 +526,8 @@ D245 automatic Build and Explorer CI passed at 572c49c; HLDS recorded 27 observa
 D245 is accepted.
 D246 introduces read-only reason classification for D245 zero-face observations, with all-sector reconciliation, bounded provenance examples and no interpretation of zero-face as an obstacle.
 D246 CI and HLDS acceptance remain pending.
+
+D246 automatic Build and Explorer CI passed at bf39e33; HLDS reconciled 27 records and 20 zero-face records: 0 OutsideWindow, 8 Stationary, 2 BoundaryContact, 10 SameFineCell and 0 Other; the bin-0/bin-1 totals were 15 and 5 respectively.
+D246 is accepted.
+D247 groups all zero-face observations by actual starting 32-unit cell and yaw sector, showing raw repetitions separately from distinct sources and prioritizing under-observed locations for future trials.
+The diagnostic remains read-only with no inferred passability, automated replay or CSV changes; D247 CI and HLDS acceptance remain pending.

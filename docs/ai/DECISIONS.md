@@ -3145,3 +3145,13 @@ Keep D241's ambiguous and discontinuous records separate; reconcile total and pe
 Report up to twelve source-preserving examples with first step, classification, heading and endpoint coordinates to guide future collection.
 An endpoint touching a fine grid plane is not a strict passage; zero-face reasons do not imply walls, movement failures, passability or a route.
 No changes to bot movement, earlier commands or CSV formats.
+
+## D247 — Group insufficient fine-grid observations for targeted trials
+
+D246 showed 20 zero-face records, including eight Stationary windows at one observed position, ten SameFineCell windows and two BoundaryContact windows.
+Add read-only `yb explore fine-targets <trials> <x> <y> <z>` to group every D246 zero-face record by observed starting 32-unit cell and recorded 45-degree yaw sector.
+Retain all zero-face records for aggregation rather than sampling only the twelve D246 console examples.
+Report raw windows, distinct trace sources, classification and reason counts, plus the first recorded source/step and actual starting position for each group.
+Deterministically rank groups with fewer independent sources first, then restriction evidence, repeated windows, fine-cell coordinates and heading sector; cap console output at sixteen groups without truncating aggregate counts.
+A recorded starting position is a reference for a potential human-supervised experiment, not a validated safe spawn, automated movement request, or proof of a wall.
+Do not change the D246 zero-reason classification, old CSV schemas, source-quality thresholds or bot control.

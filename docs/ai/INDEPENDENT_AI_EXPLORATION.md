@@ -575,3 +575,12 @@ Expect `records=27`, `zero=20`, `ambiguous=0`, `discontinuous=0`; the reason cou
 The five mutually exclusive reasons are OutsideWindow, Stationary, BoundaryContact, SameFineCell and Other in priority order.
 Only a bounded set of twelve example records is printed, retaining source and first-step provenance.
 These classifications describe recorded endpoint geometry, not GoldSrc hull clearance or blocked navigation.
+
+## D247 — Candidate locations for additional evidence
+
+On de_dust2 run:
+`yb explore fine-targets d228_trials_02 256 2512 -92`
+Expect `records=27`, `zero=20`, `grouped_windows=20` and at most three distinct sources.
+Each group is keyed by a recorded start fine cell and yaw bin, and shows raw windows, unique sources, movement class and D246 zero-reason counts.
+Multiple stationary windows at (496,2464,-91.97) should remain one source, not eight independent corroborations.
+Example start coordinates are observations for planning supervised trials, not validated safe bot placement or collision-checked navigation.
