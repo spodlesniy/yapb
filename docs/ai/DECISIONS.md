@@ -3164,3 +3164,12 @@ Represent zero displacement separately, use eight horizontal movement bins for o
 Report progress and restriction counts, D246 reason counts, unique source identities, first observed coordinates and actual deltas; mixed outcomes indicate a review candidate, not a collision or traversability conflict.
 Reconcile all records against D247 totals and per-sector D245 zero-face counts, retaining bounded output and deterministic ordering.
 No new automatic movement, safe-start assertion, CSV mutation or changes to previous diagnostics are permitted.
+
+## D249 — Independent moving-trial evidence gaps
+
+D248 isolated twelve 8-unit/start/yaw/actual-travel groups with no mixed outcomes and no multi-source groups; eight stationary restriction windows all belong to one source and one stationary control.
+Add read-only `yb explore fine-trial-gaps <trials> <x> <y> <z>` using exactly the D248 group keys.
+Assess Progress and restriction candidates per independently identified source with D229 thresholds, but do not let stationary observations vote for any moving displacement.
+Report missing strong source counts for homogeneous insufficient moving groups, conflicting groups and separate stationary-control source counts.
+Preserve coordinates as historical observation examples, not validated safe positions, automatic replay instructions or proof of clearance.
+Retain bounded output, unchanged CSV, unchanged prior diagnostics and unchanged runtime bot movement.

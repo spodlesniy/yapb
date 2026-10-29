@@ -537,3 +537,8 @@ The dense group cell=(15,77,-3), bin 0 includes twelve windows from two sources 
 D247 is accepted.
 D248 adds 8-unit localization and observed travel-direction separation to zero-face records, with source-preserving mixed-outcome diagnostics and bounded console output.
 D248 automatic CI and HLDS acceptance remain pending; no movement authorization follows from the diagnostic.
+
+D248 automatic Build and Explorer CI passed at 672552f; HLDS confirmed 27 records, 20 zero-face windows, twelve 8-unit/yaw/travel groups, no mixed or multi-source groups, and a separate eight-window stationary group from one source.
+D248 is accepted.
+D249 assesses independent source-quality gaps only for actual moving observations in D248 groups, with stationary-control windows excluded from moving votes.
+It reports missing strong moving sources for targeted supervised experiments; CI and HLDS validation remain pending and no navigation permission is granted.

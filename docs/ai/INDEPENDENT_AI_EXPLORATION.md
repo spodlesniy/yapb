@@ -592,3 +592,11 @@ On de_dust2 run:
 Expect `records=27`, `zero=20`, `windows=20`, and `sources=3`, with grouping finer than D247's seven 32-unit/yaw groups.
 Each group is keyed by an 8-unit starting subcell, recorded yaw bin, and actual endpoint displacement direction (`travel_bin=-1` stationary, `0..7` horizontal, `8` upward and `9` downward).
 Review mixed Progress/Restriction groups without interpreting them as a confirmed wall or navigation edge; all coordinates are observed starts, not autonomous reposition commands.
+
+## D249 — Independent moving evidence gaps
+
+On de_dust2 run:
+`yb explore fine-trial-gaps d228_trials_02 256 2512 -92`
+Expect `records=27`, `zero=20`, `groups=12`, `moving=11`, `stationary=1`, `conflicted=0`, `progress=0`, `restriction=0` and `insufficient=11` for the existing snapshot.
+The eight stationary restriction windows are reported as one StationaryControl group with one source and are not treated as support for any moving restriction.
+A single homogeneous weak moving observation will require two strong independent sources under D229; the report does not assert that any observed start is safe to replay.
