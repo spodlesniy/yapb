@@ -40,7 +40,7 @@ static GroundExperiment makeExperiment() {
 
 static TraceMetadata metadata(const GroundExperiment &e) {
   TraceMetadata info {};
-  std::strcpy(info.map, e.map.c_str());
+  std::snprintf(info.map, sizeof(info.map), "%s", e.map.c_str());
   info.initial = e.start;
   info.viewZ = 17.0f;
   return info;
@@ -155,7 +155,7 @@ int main() {
     check(result.reason == ExperimentReason::Incomplete);
 
     TraceMetadata otherMap = info;
-    std::strcpy(otherMap.map, "de_inferno");
+    std::snprintf(otherMap.map, sizeof(otherMap.map), "%s", "de_inferno");
     check(evaluateGroundExperiment(original, otherMap, success, result));
     check(result.outcome == ExperimentOutcome::Diverged);
     check(result.reason == ExperimentReason::MapMismatch);

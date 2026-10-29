@@ -559,3 +559,4 @@ Movement Discovery acceptance still requires controlled GoldSrc trials and measu
 D252 begins Movement Discovery Stage A (Experiment Framework) with an engine-neutral v1 ground experiment descriptor, bounded command sequence, mock/parser tests, deterministic evaluation of an existing GoldSrc trace, and versioned result formatting.
 D252 does not enable automatic or supervised execution in HLDS yet; the engine adapter, real trace/result persistence and a verified replay or explicit divergence remain outstanding.
 Stage A is in progress and cannot be accepted from code publication or mock CI alone.
+D252.1 corrects the MSVC /WX C4996 failure in D252 mock tests by replacing two unsafe CRT string copies with bounded formatting; no experiment contract or runtime behavior changes.
