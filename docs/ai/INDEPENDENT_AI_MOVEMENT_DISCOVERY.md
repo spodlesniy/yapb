@@ -177,3 +177,11 @@ D258 distinguishes reliable GoldSrc grenade ownership bits from the less certain
 HE and smoke are reported as 0 or 1, and flashbang as a validated 0..2 count or unknown-positive state.
 Explicit zero constraints reject known-positive flash ownership even when the exact count is unavailable; omitted equipment remains unconstrained.
 This is a diagnostic prerequisite to safe initialization, not execution or completion of Movement Discovery Stage A.
+
+## D259 — Independent equipment-initialization plan
+
+D259 provides an engine-neutral, all-or-nothing equipment plan as a preparation step for later scenario execution.
+With the explicit no-original-YaPB-edit rule, its implementation is confined to independent Explorer sources, tests and documentation.
+It may propose health and an existing vest's numerical armor value; other explicitly specified equipment must already match.
+It never supplies weapons, ammunition, grenades, defuse kit, money, helmet, or weapon selection, and does not create a live HLDS command.
+The Stage A exit gate remains pending a safely integrated runtime adapter, actual experiment execution, results and repeatability.

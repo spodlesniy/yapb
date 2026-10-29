@@ -225,6 +225,11 @@ if(BUILD_TESTING)
     target_compile_features(aipb_explorer_scenario_start_tests PRIVATE cxx_std_17)
     target_include_directories(aipb_explorer_scenario_start_tests PRIVATE include)
 
+    add_executable(aipb_explorer_scenario_equipment_init_tests tests/engine_bridge_scenario_equipment_init_tests.cpp)
+    add_test(NAME aipb_explorer_scenario_equipment_init COMMAND aipb_explorer_scenario_equipment_init_tests)
+    target_compile_features(aipb_explorer_scenario_equipment_init_tests PRIVATE cxx_std_17)
+    target_include_directories(aipb_explorer_scenario_equipment_init_tests PRIVATE include)
+
     add_executable(aipb_explorer_bridge_math_tests tests/engine_bridge_math_tests.cpp)
     add_test(NAME aipb_explorer_bridge_math COMMAND aipb_explorer_bridge_math_tests)
     target_compile_features(aipb_explorer_bridge_math_tests PRIVATE cxx_std_17)

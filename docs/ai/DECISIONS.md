@@ -3289,3 +3289,14 @@ For flashbang, the absence bit proves count zero, and a present bit with a bound
 If flash is owned but its ammo reading is invalid or unavailable, the count stays unknown (-2); explicit `flash=0` still yields the definite `flash_present` mismatch, while positive exact-count requirements remain unverified.
 Only explicitly present scenario fields are inspected; nothing mutates bot inventory or starts actions.
 The engine-neutral observer and assessment logic are covered by regression cases; HLDS needs to confirm the engine ownership and flash ammo behavior.
+
+## D259 — Fail-closed equipment preparation plan without original YaPB changes
+
+The administrator requested equipment initialization with no edits to original YaPB files.
+Existing `src/control.cpp` contains the `yb explore scenario` command dispatcher, so adding `init-equipment` there would violate that constraint.
+D259 therefore introduces an engine-neutral plan contract in the independent Explorer project, not a new live command.
+It permits direct health adjustment, and numeric armor adjustment only when the current vest-present state does not change.
+Changes to vest presence, helmet, money, weapons, ammunition, grenades, defuse kit and selected weapon are not performed by this planner; their explicitly supplied constraints must already match observed values.
+An omitted equipment field is untouched and is not a precondition.
+All constraints and safety preconditions are checked before emitting any mutations, and failures return an empty plan.
+Activation in HLDS requires a separately authorized integration point and runtime validation; no existing YaPB file is modified in D259.

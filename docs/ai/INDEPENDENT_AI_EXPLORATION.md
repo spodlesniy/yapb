@@ -701,3 +701,11 @@ Unowned grenades read as zero regardless of stale ammo.
 `optional_omitted_01` still does not assess any grenade because none is explicitly constrained.
 If pose mismatches obscure the report, first run `yb explore scenario init-pose optional_explicit_01` then immediately repeat preflight; it does not modify equipment.
 Do not conclude that inventory initialization or scenario action execution exists.
+
+## D259 — Equipment preparation boundaries
+
+The stand-alone contract `planScenarioEquipment` decides whether an equipment initialization request can safely proceed.
+Only explicit `health` and a compatible existing-vest `armor` value can produce proposed writes.
+Unspecified fields produce no changes, and any unsatisfied explicit requirement (such as `secondary=usp` when another pistol is owned), uncertain `helmet`, or vest-presence transition rejects the entire plan.
+No `yb explore scenario init-equipment` command exists yet: adding it to the current command dispatcher would modify original `src/control.cpp`, which this step deliberately avoids.
+The current D259 contract is mock-tested in independent Explorer CI, not installed as a playable HLDS operation.

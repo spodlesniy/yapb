@@ -604,3 +604,8 @@ D257 single-weapon observation is confirmed for this live case; absent and multi
 D258 makes explicit grenade-count constraints presence-aware: HE/smoke presence bits yield exact 0/1, while flash uses the owned bit plus its bounded observed ammo count.
 A present flash with unavailable count is still a certain mismatch for flash=0 but unverified for a positive exact count.
 D258 CI and HLDS acceptance remain pending; scenario equipment mutation and action execution remain disabled.
+D258 automatic Build and Explorer CI passed at 3c891ff; live HLDS grenade verification has not yet been reported.
+D259 implements an engine-neutral, fail-closed equipment-initialization planner for the properties safely writable via the existing runtime: health, and the numeric armor amount without changing vest presence.
+Every other explicitly constrained equipment property must already match preflight; unsupported or unknown fields prohibit partial mutation.
+D259 does not register a new HLDS command or modify original YaPB source files; a separately authorized runtime adapter is required to apply its plan.
+D259 CI and HLDS integration are pending; Stage A remains in progress.
