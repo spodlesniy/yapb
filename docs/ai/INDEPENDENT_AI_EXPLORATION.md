@@ -709,3 +709,16 @@ Only explicit `health` and a compatible existing-vest `armor` value can produce 
 Unspecified fields produce no changes, and any unsatisfied explicit requirement (such as `secondary=usp` when another pistol is owned), uncertain `helmet`, or vest-presence transition rejects the entire plan.
 No `yb explore scenario init-equipment` command exists yet: adding it to the current command dispatcher would modify original `src/control.cpp`, which this step deliberately avoids.
 The current D259 contract is mock-tested in independent Explorer CI, not installed as a playable HLDS operation.
+
+## D260 — Server-console equipment initialization
+
+Build the D260 DLL with the user-run Windows x86 workflow and install it on HLDS.
+The command `aipb_scenario_init_equipment <name>` is registered from the first bot frame, rather than from the legacy `yb` command dispatcher; create a bot and allow a game frame before using it.
+Copy `projects/aipb-explorer/scenarios/equipment_health_01.scenario` into `addons/yapb/data/explorer/scenarios/`.
+On `de_dust2` with living grounded CT bot index 1, run `aipb_scenario_init_equipment equipment_health_01`.
+Expect a message applying health and leaving armor and all other equipment unchanged.
+Then run `yb explore scenario preflight equipment_health_01`; the health comparison should pass while old pose mismatches may remain.
+Run `aipb_scenario_init_equipment optional_explicit_01` to exercise rejection due to money, ammo or unknown helmet; this command must not modify health or armor on rejection.
+Run `aipb_scenario_init_equipment optional_omitted_01` to check that a matching USP with omitted equipment produces no writes.
+Changing armor from present to absent (or the reverse) is deliberately rejected, because the CS armor type is not determined by a numeric `pev->armorvalue` change alone.
+No scenario movement, weapon grants or action execution is performed.

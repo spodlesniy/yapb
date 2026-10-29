@@ -229,6 +229,8 @@ if(BUILD_TESTING)
     add_test(NAME aipb_explorer_scenario_equipment_init COMMAND aipb_explorer_scenario_equipment_init_tests)
     target_compile_features(aipb_explorer_scenario_equipment_init_tests PRIVATE cxx_std_17)
     target_include_directories(aipb_explorer_scenario_equipment_init_tests PRIVATE include)
+    target_compile_definitions(aipb_explorer_scenario_equipment_init_tests PRIVATE
+        "AIPB_EXPLORER_SCENARIO_FIXTURE_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/scenarios\"")
 
     add_executable(aipb_explorer_bridge_math_tests tests/engine_bridge_math_tests.cpp)
     add_test(NAME aipb_explorer_bridge_math COMMAND aipb_explorer_bridge_math_tests)

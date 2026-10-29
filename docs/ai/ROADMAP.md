@@ -608,4 +608,9 @@ D258 automatic Build and Explorer CI passed at 3c891ff; live HLDS grenade verifi
 D259 implements an engine-neutral, fail-closed equipment-initialization planner for the properties safely writable via the existing runtime: health, and the numeric armor amount without changing vest presence.
 Every other explicitly constrained equipment property must already match preflight; unsupported or unknown fields prohibit partial mutation.
 D259 does not register a new HLDS command or modify original YaPB source files; a separately authorized runtime adapter is required to apply its plan.
-D259 CI and HLDS integration are pending; Stage A remains in progress.
+D259 Explorer CI passed at 39756d4; no runtime implementation was introduced in that step.
+D260 connects the existing safe equipment planner to a separate HLDS server-console command via the existing AiPB explorer frame hook, without editing original YaPB source.
+The command can apply explicit health and compatible existing-vest numeric armor amounts after loading a named scenario and checking every other explicitly constrained equipment field.
+It rejects invalid maps, missing/dead/wrong-team bots, active Explorer sessions, unknown equipment, and vest-presence changes without mutation; scenario actions are not executed.
+D260 automatic CI and user-run Windows x86/HLDS acceptance are pending.
+Stage A execution, durable results and reproducibility remain incomplete.

@@ -3300,3 +3300,14 @@ Changes to vest presence, helmet, money, weapons, ammunition, grenades, defuse k
 An omitted equipment field is untouched and is not a precondition.
 All constraints and safety preconditions are checked before emitting any mutations, and failures return an empty plan.
 Activation in HLDS requires a separately authorized integration point and runtime validation; no existing YaPB file is modified in D259.
+
+## D260 — Standalone HLDS equipment command via existing AiPB frame hook
+
+D259 created a pure fail-closed equipment plan but did not expose a live command.
+D260 registers the server-console command `aipb_scenario_init_equipment <name>` exactly once from the existing AiPB bot-frame extension point.
+The command is available after a bot has entered its first frame, which is when the existing game engine is initialized; no legacy YaPB command dispatcher or original file changes are made.
+It loads a bounded named scenario using the established loader, checks map, live bot, team, Explorer activity, grounded state and equipment constraints before mutation, and applies only explicit health and compatible existing-vest armor amounts.
+The bot health cache is synchronized with the `pev` health write.
+A post-write check restores both numeric values on failure.
+Other fields, including weapons, ammunition, grenades, money, defuse kit, helmet and selection, are read-only preconditions and may reject the entire command.
+It never relocates the bot or executes scenario actions; equipment adapter behavior must be verified with a user-run Windows x86/HLDS build.

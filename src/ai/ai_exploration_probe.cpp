@@ -1,6 +1,8 @@
 #include <yapb.h>
 #include <ai/ai_exploration_probe.h>
 #include <aipb/explorer/engine_bridge_math.h>
+#include <aipb/explorer/engine_bridge_scenario_equipment_init.h>
+#include <aipb/explorer/engine_bridge_scenario_loader.h>
 #include <aipb/explorer/engine_bridge_queue.h>
 #include <aipb/explorer/engine_bridge_trace.h>
 #include <aipb/explorer/engine_bridge_trace_classification.h>
@@ -39,6 +41,140 @@ static char queueSavePath[512] {};
 static aipb::explorer::bridge::TraceMetadata metadata {};
 
 Session session {};
+
+// This server-console-only command is registered from the existing AiPB bot
+// frame hook, so legacy YaPB control and message handlers are not modified.
+void initScenarioEquipmentCommand() {
+   if (engfuncs.pfnCmd_Argc() != 2) {
+      game.print("Usage: aipb_scenario_init_equipment <scenario_name>");
+      return;
+   }
+
+   const char *name = engfuncs.pfnCmd_Argv(1);
+   if (!name || !aipb::explorer::scenario::safeIdentifier(name)) {
+      game.print("AiPB scenario equipment: invalid scenario name.");
+      return;
+   }
+
+   const auto directory = strings.joinPath(bstor.getRunningPath(), folders.data, "explorer");
+   aipb::explorer::scenario::Scenario scenario {};
+   std::string detail {};
+   const auto load = aipb::explorer::scenario::loadScenario(
+      directory.chars(), name, scenario, detail);
+
+   if (load != aipb::explorer::scenario::LoadStatus::Ok) {
+      game.print("AiPB scenario equipment: '%s' load failed (%s): %s.", name,
+         aipb::explorer::scenario::loadStatusName(load), detail.c_str());
+      return;
+   }
+
+   auto *bot = bots.findBotByIndex(scenario.botIndex);
+   const int team = !bot ? 0 : bot->m_team == Team::CT ? 2
+      : bot->m_team == Team::Terrorist ? 1 : 0;
+   const auto preflight = aipb::explorer::scenario::checkScenarioPreflight(
+      scenario, game.getMapName(), bot != nullptr,
+      bot != nullptr && game.isAliveEntity(bot->ent()), team);
+
+   if (preflight != aipb::explorer::scenario::PreflightStatus::Ok) {
+      game.print("AiPB scenario equipment: '%s' rejected (%s); no changes.", name,
+         aipb::explorer::scenario::preflightStatusName(preflight));
+      return;
+   }
+
+   if (active() || queue.running) {
+      game.print("AiPB scenario equipment: '%s' rejected (ExplorerBusy); no changes.", name);
+      return;
+   }
+
+   const auto &e = scenario.equipment;
+   const auto weaponId = [](const std::string &alias) {
+      return alias == "none" ? 0 : util.weaponAliasToId(alias.c_str());
+   };
+
+   const int primary = weaponId(e.primary.type);
+   const int secondary = weaponId(e.secondary.type);
+   const int selected = e.selected == "knife" ? Weapon::Knife
+      : e.selected == "primary" ? primary
+      : e.selected == "secondary" ? secondary
+      : e.selected == "he" ? Weapon::Explosive
+      : e.selected == "flash" ? Weapon::Flashbang
+      : e.selected == "smoke" ? Weapon::Smoke : -1;
+
+   aipb::explorer::scenario::ScenarioStartObservation actual {};
+   actual.position[0] = bot->pev->origin.x;
+   actual.position[1] = bot->pev->origin.y;
+   actual.position[2] = bot->pev->origin.z;
+   actual.yaw = bot->pev->v_angle.y;
+   actual.pitch = bot->pev->v_angle.x;
+   actual.onGround = !!(bot->pev->flags & FL_ONGROUND);
+   actual.crouching = !!(bot->pev->flags & FL_DUCKING);
+   actual.health = bot->pev->health;
+   actual.armor = bot->pev->armorvalue;
+   actual.maxSpeed = bot->pev->maxspeed;
+   actual.money = bot->m_moneyAmount;
+   actual.defuseKit = bot->m_hasDefuser;
+   actual.selectedId = bot->m_currentWeapon;
+   const auto weapons = static_cast<std::uint32_t>(bot->pev->weapons);
+   actual.primaryId = aipb::explorer::scenario::observedScenarioWeaponId(
+      weapons, static_cast<std::uint32_t>(kPrimaryWeaponMask));
+   actual.secondaryId = aipb::explorer::scenario::observedScenarioWeaponId(
+      weapons, static_cast<std::uint32_t>(kSecondaryWeaponMask));
+
+   if (primary > 0 && actual.primaryId == primary) {
+      actual.primaryClip = bot->m_ammoInClip[primary];
+      actual.primaryReserve = bot->getAmmo(primary);
+   }
+   if (secondary > 0 && actual.secondaryId == secondary) {
+      actual.secondaryClip = bot->m_ammoInClip[secondary];
+      actual.secondaryReserve = bot->getAmmo(secondary);
+   }
+
+   actual.he = aipb::explorer::scenario::observedScenarioGrenadeCount(
+      !!(weapons & cr::bit(Weapon::Explosive)), 0, 1);
+   actual.flash = aipb::explorer::scenario::observedScenarioGrenadeCount(
+      !!(weapons & cr::bit(Weapon::Flashbang)),
+      bot->getAmmo(Weapon::Flashbang), 2);
+   actual.smoke = aipb::explorer::scenario::observedScenarioGrenadeCount(
+      !!(weapons & cr::bit(Weapon::Smoke)), 0, 1);
+   // No trustworthy helmet observation is currently supplied by YaPB.
+   const auto decision = aipb::explorer::scenario::planScenarioEquipment(
+      scenario, actual, false, primary, secondary, selected);
+
+   if (!decision.ready()) {
+      game.print("AiPB scenario equipment: '%s' rejected (%s, field=%s); no changes.",
+         name, aipb::explorer::scenario::equipmentInitStatusName(decision.status),
+         decision.detail.c_str());
+      return;
+   }
+
+   const float oldHealth = bot->pev->health;
+   const float oldHealthValue = bot->m_healthValue;
+   const float oldArmor = bot->pev->armorvalue;
+
+   if (decision.plan.setArmor) {
+      bot->pev->armorvalue = decision.plan.armor;
+   }
+   if (decision.plan.setHealth) {
+      bot->pev->health = decision.plan.health;
+      bot->m_healthValue = decision.plan.health;
+   }
+
+   const bool applied = (!decision.plan.setHealth
+      || bot->pev->health == decision.plan.health)
+      && (!decision.plan.setArmor || bot->pev->armorvalue == decision.plan.armor);
+
+   if (!applied) {
+      bot->pev->health = oldHealth;
+      bot->m_healthValue = oldHealthValue;
+      bot->pev->armorvalue = oldArmor;
+      game.print("AiPB scenario equipment: '%s' rejected (post-write check); restored values.", name);
+      return;
+   }
+
+   game.print("AiPB scenario equipment: '%s' applied: bot=%d health=%s armor=%s; other equipment unchanged; no actions executed.",
+      name, scenario.botIndex, decision.plan.setHealth ? "set" : "unchanged",
+      decision.plan.setArmor ? "set" : "unchanged");
+}
 
 AipbExplorerBridgeState observe(const Bot &bot) {
    const auto &v = *bot.pev;
@@ -431,6 +567,16 @@ void cancelBot(int botIndex) {
 }
 
 bool frame(Bot &bot) {
+   // The first bot frame is the earliest existing AiPB hook with a ready engine.
+   // GoldSrc server commands persist across map changes.
+   static bool equipmentCommandRegistered {};
+   if (!equipmentCommandRegistered) {
+      game.registerEngineCommand("aipb_scenario_init_equipment", [] () {
+         initScenarioEquipmentCommand();
+      });
+      equipmentCommandRegistered = true;
+   }
+
    if (session.botIndex != bot.index()) {
       return false;
    }

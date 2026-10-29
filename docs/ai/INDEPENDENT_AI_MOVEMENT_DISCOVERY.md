@@ -185,3 +185,10 @@ With the explicit no-original-YaPB-edit rule, its implementation is confined to 
 It may propose health and an existing vest's numerical armor value; other explicitly specified equipment must already match.
 It never supplies weapons, ammunition, grenades, defuse kit, money, helmet, or weapon selection, and does not create a live HLDS command.
 The Stage A exit gate remains pending a safely integrated runtime adapter, actual experiment execution, results and repeatability.
+
+## D260 — Live constrained equipment adapter
+
+D260 registers `aipb_scenario_init_equipment <name>` through the existing AiPB explorer frame hook rather than modifying the legacy YaPB command dispatcher.
+It applies only the D259 health and compatible numeric armor plans under fail-closed live preflight, after the first frame of a bot.
+No weapon or inventory creation, game DLL armor-type change, scenario action execution or result recording is included.
+The user-run Windows x86/HLDS acceptance gate remains mandatory.

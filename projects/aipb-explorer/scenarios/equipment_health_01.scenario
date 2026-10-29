@@ -1,0 +1,22 @@
+# Stand-alone HLDS equipment adapter smoke test.
+# Only health is constrained; all other inventory fields stay unchanged.
+[scenario]
+version=aipb-scenario-v1
+name=equipment_health_01
+map=de_dust2
+timeout_ms=1000
+
+[bot]
+index=1
+team=2
+x=448
+y=2368
+z=-92
+yaw=-105
+pitch=0
+
+[equipment]
+health=75
+
+[action]
+duration_ms=100
