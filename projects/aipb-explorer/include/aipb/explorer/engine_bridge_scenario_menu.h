@@ -14,6 +14,26 @@ namespace aipb::explorer::scenario {
 inline constexpr std::size_t kScenarioMenuPageSize = 5;
 inline constexpr std::size_t kScenarioMenuMaxEntries = 256;
 
+enum class ScenarioMenuScreen { Closed, Root, Browser };
+
+// Ownership ends when another menu becomes active.
+class ScenarioMenuSession {
+public:
+  void showRoot() { screen_ = ScenarioMenuScreen::Root; }
+  void showBrowser() { screen_ = ScenarioMenuScreen::Browser; }
+  void release() { screen_ = ScenarioMenuScreen::Closed; }
+  ScenarioMenuScreen screen() const { return screen_; }
+  bool ownsSelection(bool otherMenuActive) {
+    if (otherMenuActive) {
+      release();
+    }
+    return screen_ != ScenarioMenuScreen::Closed;
+  }
+
+private:
+  ScenarioMenuScreen screen_ { ScenarioMenuScreen::Closed };
+};
+
 struct ScenarioMenuPage {
   std::size_t current { 1 };
   std::size_t total { 1 };

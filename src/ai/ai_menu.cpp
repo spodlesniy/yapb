@@ -15,12 +15,18 @@ namespace {
 constexpr int kPlayers = 32;
 constexpr int kMenuChunk = 140;
 struct PlayerMenu {
-   int screen {};
+   aipb::explorer::scenario::ScenarioMenuSession session {};
    aipb::explorer::scenario::ScenarioMenuBrowser browser {};
 };
 PlayerMenu players[kPlayers] {};
 bool overlayEnabled {};
 float nextOverlay {};
+bool sendingOwnMenu {};
+
+struct OwnMenuTransmission {
+   OwnMenuTransmission() { sendingOwnMenu = true; }
+   ~OwnMenuTransmission() { sendingOwnMenu = false; }
+};
 
 bool allowed(edict_t *ent) {
    if (!game.isPlayerEntity(ent) || game.isFakeClientEntity(ent)) {
@@ -33,6 +39,7 @@ bool allowed(edict_t *ent) {
 }
 
 void send(edict_t *ent, int keys, const String &text) {
+   const OwnMenuTransmission ownMessage {};
    const auto chunks = text.split(kMenuChunk);
    for (size_t i = 0; i < chunks.length(); ++i) {
       MessageWriter(MSG_ONE, msgs.id(NetMsg::ShowMenu), nullptr, ent)
@@ -48,7 +55,8 @@ void close(edict_t *ent) {
    if (index < 0 || index >= kPlayers) {
       return;
    }
-   players[index].screen = 0;
+   players[index].session.release();
+   const OwnMenuTransmission ownMessage {};
    MessageWriter(MSG_ONE, msgs.id(NetMsg::ShowMenu), nullptr, ent)
       .writeShort(0).writeChar(0).writeByte(0).writeString("");
    util.getClient(index).menu = Menu::None;
@@ -89,7 +97,7 @@ bool loadList(aipb::explorer::scenario::ScenarioMenuBrowser &browser) {
 void root(edict_t *ent) {
    const int index = game.indexOfPlayer(ent);
    auto &state = players[index];
-   state.screen = 1;
+   state.session.showRoot();
    const bool running = ai::explore::scenarioRunning();
    String text {};
    text.assignf("\\yAiPB Scenarios\\w\n\n1. Overlay: %s\n",
@@ -114,7 +122,7 @@ void browse(edict_t *ent, bool reload) {
       root(ent);
       return;
    }
-   state.screen = 2;
+   state.session.showBrowser();
    const auto page = state.browser.currentPage();
    String text {};
    text.assignf("\\yAiPB Scenarios (%d/%d)\\w\n\n",
@@ -141,13 +149,13 @@ void onSelect(edict_t *ent, int selected) {
       return;
    }
    auto &state = players[game.indexOfPlayer(ent)];
-   const int screen = state.screen;
+   const auto screen = state.session.screen();
    if (selected == 10 || selected == 0) {
       close(ent);
       return;
    }
 
-   if (screen == 1) {
+   if (screen == aipb::explorer::scenario::ScenarioMenuScreen::Root) {
       if (selected == 1) {
          overlayEnabled = !overlayEnabled;
          root(ent);
@@ -162,7 +170,7 @@ void onSelect(edict_t *ent, int selected) {
       return;
    }
 
-   if (screen != 2) {
+   if (screen != aipb::explorer::scenario::ScenarioMenuScreen::Browser) {
       return;
    }
    if (selected >= 1 && selected <= 5) {
@@ -244,8 +252,12 @@ bool handleClient(edict_t *ent) {
    if (std::strcmp(command, "aipb") == 0) {
       return handleCommand(ent, false);
    }
-   if (std::strcmp(command, "menuselect") == 0
-      && players[game.indexOfPlayer(ent)].screen != 0) {
+   const int index = game.indexOfPlayer(ent);
+   auto &session = players[index].session;
+   if (std::strcmp(command, "menuselect") == 0) {
+      if (!session.ownsSelection(util.getClient(index).menu != Menu::None)) {
+         return false;
+      }
       if (engfuncs.pfnCmd_Argc() == 2) {
          const char *arg = engfuncs.pfnCmd_Argv(1);
          if (arg && arg[0] >= '0' && arg[0] <= '9' && arg[1] == '\0') {
@@ -254,7 +266,46 @@ bool handleClient(edict_t *ent) {
       }
       return true;
    }
+   // Another client command may replace the displayed menu.
+   session.release();
    return false;
+}
+
+void resetPlayer(edict_t *ent) {
+   if (!ent) {
+      return;
+   }
+   const int index = game.indexOfPlayer(ent);
+   if (index >= 0 && index < kPlayers) {
+      players[index] = PlayerMenu {};
+   }
+}
+
+void resetAll() {
+   for (auto &player : players) {
+      player = PlayerMenu {};
+   }
+   nextOverlay = 0.0f;
+}
+
+void onExternalMenu(edict_t *ent) {
+   if (sendingOwnMenu) {
+      return;
+   }
+   if (ent) {
+      if (!game.isPlayerEntity(ent)) {
+         return;
+      }
+      const int index = game.indexOfPlayer(ent);
+      if (index >= 0 && index < kPlayers) {
+         players[index].session.release();
+      }
+   }
+   else {
+      for (auto &player : players) {
+         player.session.release();
+      }
+   }
 }
 
 void handleServer() {

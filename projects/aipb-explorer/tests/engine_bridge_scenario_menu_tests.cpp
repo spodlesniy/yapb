@@ -23,6 +23,23 @@ int main() {
     check(scenarioMenuOverlayText(true, "ground_forward_01")
       == "Сценарий ground_forward_01 выполняется");
 
+    ScenarioMenuSession session {};
+    check(!session.ownsSelection(false));
+    session.showRoot();
+    check(session.screen() == ScenarioMenuScreen::Root);
+    check(session.ownsSelection(false));
+    session.showBrowser();
+    check(session.screen() == ScenarioMenuScreen::Browser);
+    check(!session.ownsSelection(true));
+    check(session.screen() == ScenarioMenuScreen::Closed);
+    session.showRoot();
+    session.release();
+    check(!session.ownsSelection(false));
+    ScenarioMenuSession other {};
+    other.showBrowser();
+    check(!session.ownsSelection(false));
+    check(other.ownsSelection(false));
+
     ScenarioMenuBrowser browser {};
     auto empty = browser.currentPage();
     check(empty.current == 1 && empty.total == 1);

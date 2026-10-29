@@ -665,3 +665,5 @@ D269 user-run MSVC x86 compile advanced past the menu source but failed at `src/
 D270 passes `message` directly to formatted client/server printing and extends the source-contract regression test.
 The D269 Linux Build workflow was red due to a failed Training tools dependency-install step; its AI unit tests passed, and Windows x86 was skipped.
 D270 automatic CI and user-run MSVC x86 validation are pending; T261-06/T261-07 remain unaccepted.
+D271 pinned the training-tools job to CPython 3.13 and passed automatic CI.
+D272 corrects AiPB menu ownership after user HLDS checks showed interference with YaPB/CS menus, and moves overlay updates to server StartFrame; T261-06 still requires user-run Windows x86/HLDS acceptance.

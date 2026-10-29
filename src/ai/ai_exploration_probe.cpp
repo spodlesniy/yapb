@@ -716,7 +716,6 @@ bool frame(Bot &bot) {
       });
       aipbCommandRegistered = true;
    }
-   ai::menu::frame();
 
    if (scenarioScheduler.running() && scenarioScheduler.botIndex() == bot.index()) {
       const auto currentTeam = bot.m_team == Team::CT ? 2

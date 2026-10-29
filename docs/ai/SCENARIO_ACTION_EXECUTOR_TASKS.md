@@ -67,3 +67,10 @@ D269 removes the aliases, corrects the format calls, and adds a regression test;
 The Windows x86 build reached the scenario status printer and reported C2228 because a raw pointer from `strings.format` was used like a String with `.chars()`.
 D270 removes those two member calls, retaining explicit format strings, and extends the regression guard.
 Game and menu acceptance are still blocked on successful Windows x86 compilation and HLDS checks.
+
+## D272 menu ownership and overlay lifecycle correction
+
+User HLDS testing after D271 found that YaPB and CS team menu selections could be intercepted by a stale AiPB menu session.
+D272 releases per-client menu ownership on other client commands, foreign ShowMenu/VGUIMenu messages, active YaPB menus and client/map lifecycle events.
+The overlay refresh moves to StartFrame so it does not require a bot frame.
+Independent menu-session and integration regression tests are added; Windows x86 and real-client display/selection acceptance remain pending.

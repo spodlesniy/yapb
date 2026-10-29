@@ -209,6 +209,7 @@ CR_EXPORT int GetEntityAPI (gamefuncs_t *table, int interfaceVersion) {
 
       // Avoid leaking the previous occupant's viewer settings to a new client.
       ai::navvis::resetPlayer (ent);
+      ai::menu::resetPlayer (ent);
 
       // refresh clients immediately
       util.updateClients ();
@@ -241,6 +242,7 @@ CR_EXPORT int GetEntityAPI (gamefuncs_t *table, int interfaceVersion) {
 
       // Avoid leaking the previous occupant's viewer settings to a new client.
       ai::navvis::resetPlayer (ent);
+      ai::menu::resetPlayer (ent);
 
       // refresh clients immediately
       util.updateClients ();
@@ -370,6 +372,7 @@ CR_EXPORT int GetEntityAPI (gamefuncs_t *table, int interfaceVersion) {
       // the loading of new bots and the new BSP data parsing there.
 
       ai::explore::reset();
+      ai::menu::resetAll();
 
       // notify level shutdown
       game.levelShutdown ();
@@ -394,6 +397,7 @@ CR_EXPORT int GetEntityAPI (gamefuncs_t *table, int interfaceVersion) {
 
       // update some stats for clients
       util.updateClients ();
+      ai::menu::frame();
 
       // The viewer is independent of the editable YaPB waypoint graph.
       for (const auto &client : util.getClients ()) {
@@ -692,6 +696,10 @@ CR_C_LINKAGE int GetEngineFunctions (enginefuncs_t *table, int *) {
 
    table->pfnMessageBegin = [] (int msgDest, int msgType, const float *origin, edict_t *ed) CR_FORCE_STACK_ALIGN {
       // this function called each time a message is about to sent.
+      if (msgType > 0 && (msgType == msgs.id (NetMsg::ShowMenu)
+         || msgType == msgs.id (NetMsg::VGUIMenu))) {
+         ai::menu::onExternalMenu (ed);
+      }
       msgs.start (ed, msgType);
 
       if (game.is (GameFlags::Metamod)) {

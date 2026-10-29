@@ -3411,3 +3411,11 @@ The D270 push workflow failed before Python tests because `setup-python` resolve
 Pin the Training tools tests job to CPython 3.13, which has compatible Linux x64 wheels for the pinned PyTorch CPU, ONNX, ONNX Script, and ONNX Runtime dependencies.
 Treat `.github/workflows/build.yml` edits as training-tools changes so the corrected job executes during automatic push CI rather than being skipped.
 Keep other Python setup jobs and dependency pins unchanged.
+
+## D272 — Yield menu selections to YaPB and the game
+
+A stale per-client AiPB screen previously captured any menuselect, including selections from YaPB and CS team menus.
+AiPB now owns selections only while its display remains active; foreign client commands, ShowMenu/VGUIMenu messages, YaPB menu ownership and client/map lifecycle events relinquish that ownership.
+Outgoing AiPB menus are distinguished from foreign menus so its own display does not clear the session.
+The scenario-status HUD refresh moves from the bot-specific probe frame to the server StartFrame, independently of bot population.
+Automated unit and source-contract checks accompany this correction; runtime menu and Cyrillic HUD acceptance still require user-run Windows x86/HLDS verification.

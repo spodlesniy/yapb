@@ -129,6 +129,20 @@ class YapbFirstIncludeTests(unittest.TestCase):
         self.assertIn('game.print("%s", message);', probe)
         self.assertNotIn("message.chars()", probe)
 
+    def test_aipb_menu_ownership_and_overlay_lifecycle(self) -> None:
+        linkage = (ROOT / "src" / "linkage.cpp").read_text(encoding="utf-8")
+        menu = (ROOT / "src" / "ai" / "ai_menu.cpp").read_text(encoding="utf-8")
+        probe = (ROOT / "src" / "ai" / "ai_exploration_probe.cpp").read_text(encoding="utf-8")
+        self.assertIn("ai::menu::onExternalMenu (ed);", linkage)
+        self.assertIn("msgType == msgs.id (NetMsg::ShowMenu)", linkage)
+        self.assertIn("msgType == msgs.id (NetMsg::VGUIMenu)", linkage)
+        self.assertEqual(linkage.count("ai::menu::resetPlayer (ent);"), 2)
+        self.assertIn("ai::menu::resetAll();", linkage)
+        self.assertIn("ai::menu::frame();", linkage)
+        self.assertNotIn("ai::menu::frame();", probe)
+        self.assertIn("session.ownsSelection(util.getClient(index).menu != Menu::None)", menu)
+        self.assertIn("game.sendHudMessage(player, parameters, label.c_str());", menu)
+
     def test_catches_standard_and_local_headers_before_yapb(self) -> None:
         self.assertTrue(misplaced_yapb_include('#include <cstring>\n#include <yapb.h>\n'))
         self.assertTrue(misplaced_yapb_include('#include <ai/ai_perception_guard.h>\n#include <yapb.h>\n'))
