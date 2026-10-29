@@ -233,3 +233,10 @@ Acceptance still requires user-run Windows x86/HLDS evidence; the remaining T261
 Future result files belong to `explorer/scenarios/results/<scenario>/`.
 The earlier `explorer/results/<scenario>/` outputs are not moved automatically.
 This path-only change does not alter scenario execution, schema, or Stage A acceptance requirements.
+
+## D281 — Engine-applied frame trace
+
+The Scenario Runner records each actual `pfnRunPlayerMove` invocation into a bounded in-memory trace and persists it on completion, cancellation or failure.
+Each attempt lives under `explorer/scenarios/results/<scenario>/YYYYMMDD_HHMMSS_NNN/`, with `trace.csv` written before `result.csv`.
+The trace stores ordered action/frame identifiers, msec, command and button values, maximum speed, and real before/after pose and velocity observations.
+No inferred physical success is reported, and the T261-07 remaining checks stay deferred.

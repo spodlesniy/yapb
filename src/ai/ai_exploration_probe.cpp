@@ -11,6 +11,7 @@
 #include <aipb/explorer/engine_bridge_scenario_movement.h>
 #include <aipb/explorer/engine_bridge_scenario_lifecycle.h>
 #include <aipb/explorer/engine_bridge_scenario_result.h>
+#include <aipb/explorer/engine_bridge_scenario_trace.h>
 #include <aipb/explorer/engine_bridge_queue.h>
 #include <aipb/explorer/engine_bridge_trace.h>
 #include <aipb/explorer/engine_bridge_trace_classification.h>
@@ -65,6 +66,7 @@ aipb::explorer::scenario::ScenarioResult scenarioResult {};
 aipb::explorer::scenario::ScenarioResultPose scenarioLastCommitted {};
 bool scenarioResultActive {};
 bool scenarioHaveLastCommitted {};
+aipb::explorer::scenario::ScenarioTrace scenarioFrameTrace {};
 
 aipb::explorer::scenario::ScenarioResultPose scenarioPose(const Bot &bot) {
    aipb::explorer::scenario::ScenarioResultPose pose {};
@@ -83,18 +85,9 @@ aipb::explorer::scenario::ScenarioResultPose scenarioPose(const Bot &bot) {
 
 bool saveScenarioResult(const aipb::explorer::scenario::ScenarioResult &result) {
    namespace fs = std::filesystem;
-   char record[2048] {};
-   if (!aipb::explorer::scenario::formatScenarioResult(record, sizeof(record), result)) {
-      return false;
-   }
    const auto explorer = strings.joinPath(bstor.getRunningPath(), folders.data, "explorer");
    const fs::path directory = fs::path(explorer.chars())
       / "scenarios" / "results" / result.name;
-   std::error_code error {};
-   fs::create_directories(directory, error);
-   if (error) {
-      return false;
-   }
    const std::time_t epoch = std::time(nullptr);
    std::tm calendar {};
 #if defined(_MSC_VER)
@@ -110,24 +103,9 @@ bool saveScenarioResult(const aipb::explorer::scenario::ScenarioResult &result) 
    if (std::strftime(prefix, sizeof(prefix), "%Y%m%d_%H%M%S", &calendar) == 0) {
       return false;
    }
-   for (int suffix = 0; suffix < 1000; ++suffix) {
-      char name[64] {};
-      std::snprintf(name, sizeof(name), "%s_%03d.result.csv", prefix, suffix);
-      const fs::path target = directory / name;
-      std::FILE *file = aipb::explorer::bridge::openTraceFile(target.string().c_str(), "wx");
-      if (!file) {
-         continue;
-      }
-      bool ok = std::fputs(record, file) >= 0;
-      if (std::fclose(file) != 0) {
-         ok = false;
-      }
-      if (!ok) {
-         std::remove(target.string().c_str());
-      }
-      return ok;
-   }
-   return false;
+   std::string saved {};
+   return aipb::explorer::scenario::saveScenarioRunBundle(
+      directory, prefix, result, scenarioFrameTrace, saved);
 }
 
 int64_t scenarioTimeMs() {
@@ -374,6 +352,7 @@ bool runScenarioInternal(const char *name) {
    scenarioResult.startGameMs = clock;
    scenarioResult.start = scenarioPose(*bot);
    scenarioHaveLastCommitted = false;
+   scenarioFrameTrace.clear();
    scenarioResultActive = true;
    game.print("AiPB scenario: '%s' started; bot=%d actions=%d.", name,
       scenario.botIndex, static_cast<int>(scenario.actions.size()));
@@ -872,9 +851,24 @@ bool frame(Bot &bot) {
          (movement.jump ? IN_JUMP : 0) | (movement.duck ? IN_DUCK : 0));
       bot.pev->button = buttons;
       bot.pev->impulse = 0;
+      const auto beforeMove = scenarioPose(bot);
+      const int oldButtons = bot.pev->oldbuttons;
+      const float maxSpeed = bot.pev->maxspeed;
       engfuncs.pfnRunPlayerMove(bot.ent(), angles, movement.forwardSpeed,
          movement.strafeSpeed, 0.0f, buttons, 0, static_cast<uint8_t>(planned.milliseconds));
-      scenarioLastCommitted = scenarioPose(bot);
+      const auto afterMove = scenarioPose(bot);
+      const aipb::explorer::scenario::ScenarioTraceFrame observed {
+         planned.frameIndex, planned.actionIndex, planned.milliseconds,
+         movement.forwardSpeed, movement.strafeSpeed, maxSpeed,
+         static_cast<unsigned>(buttons), oldButtons, movement.yaw, movement.pitch,
+         beforeMove, afterMove
+      };
+      if (!scenarioFrameTrace.append(observed)) {
+         scenarioScheduler.cancel();
+         scenarioEnd(&bot, "trace invalid");
+         return true;
+      }
+      scenarioLastCommitted = afterMove;
       scenarioHaveLastCommitted = true;
       if (!scenarioScheduler.commitFrame(planned, scenarioTimeMs())) {
          scenarioScheduler.cancel();

@@ -184,8 +184,10 @@ class YapbFirstIncludeTests(unittest.TestCase):
             r'const fs::path directory\s*=\s*fs::path\(explorer\.chars\(\)\)'
             r'\s*/\s*"scenarios"\s*/\s*"results"\s*/\s*result\.name;'
         )
-        self.assertIn('fs::create_directories(directory, error);', probe)
-        self.assertIn('openTraceFile(target.string().c_str(), "wx")', probe)
+        self.assertIn('saveScenarioRunBundle(', probe)
+        self.assertIn('saveScenarioRunBundle(', probe)
+        self.assertIn('scenarioFrameTrace.append(observed)', probe)
+        self.assertIn('scenarioFrameTrace.clear();', probe)
         self.assertIn('if (!it->is_regular_file(statusError) || statusError)', menu)
         self.assertIn('if (path.extension() != ".scenario")', menu)
 

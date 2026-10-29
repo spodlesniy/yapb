@@ -683,3 +683,6 @@ D279 moves only future result files from `explorer/results/<scenario>/` into `ex
 Stage A and the postponed T261-07 negative checks remain open.
 D279 automatic Build CI failed only the new Training tools source-contract test: its Python assertion expected a literal `\\n` while the C++ source contains a real line break; AI unit tests passed.
 D280 corrects the test to match the nested result path across whitespace, without changing game DLL code or output layout; CI verification is required.
+D280 automatic Build CI passed at dc1e13b7.
+D281 adds bounded scenario frame evidence (up to 4096 applied engine frames) and groups `trace.csv` with `result.csv` in a unique per-run results folder.
+Standalone trace contract tests cover ordering, persistence, collision suffixes, validation and file contents; Windows x86/HLDS acceptance and deferred lifecycle checks remain open.

@@ -3476,3 +3476,11 @@ The menu only lists direct `.scenario` files and ignores nested results.
 The D279 output path is correct, but the new Python source-contract assertion embedded a literal backslash-n rather than a line break.
 Assert the result directory structure using a whitespace-tolerant regular expression while preserving all other checks.
 No runtime or storage behavior changes; D279 acceptance requires the corrected automatic CI to succeed.
+
+## D281 — Bounded scenario action traces
+
+Each admitted run stores up to 4096 engine-applied movement frames including action/frame indices, command milliseconds, applied motion speed and angles, button state, maximum speed and observed before/after state.
+Save each attempt under a unique `explorer/scenarios/results/<scenario>/YYYYMMDD_HHMMSS_NNN/` directory with `trace.csv` and `result.csv`, and create the terminal summary last.
+Use exclusive creation and never reuse prior attempts; preserve the terminal scheduler outcome without interpreting physics success.
+The older single `*.result.csv` output remains readable but is not migrated.
+Failed recording must not leave a running scenario or held input; HLDS validation is still pending.
