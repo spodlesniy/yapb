@@ -631,7 +631,7 @@ The subsequent Stage A runtime adapter must enforce authorization and preflight 
 
 Sample: `projects/aipb-explorer/scenarios/ground_forward_01.scenario`.
 The future administrator command is `yb explore scenario run ground_forward_01`, not yet implemented.
-Server input is planned under `addons/yapb/data/explorer/scenarios/`, with data outputs under `addons/yapb/data/explorer/results/<scenario>/`.
+Server input is planned under `addons/yapb/data/explorer/scenarios/`, with data outputs under `addons/yapb/data/explorer/scenarios/results/<scenario>/` (updated in D279).
 Each run will use a local date/time prefix `YYYYMMDD_HHMMSS` plus a collision-safe suffix with exclusive creation so reruns never overwrite previous data.
 All action controls in one `[action]` run concurrently, while actions themselves execute in file order.
 Current D253 only parses and validates the descriptor; inventory application, runtime command scheduling and artifacts require separate implementation and HLDS checks.

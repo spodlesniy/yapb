@@ -227,3 +227,9 @@ The record includes scenario/map/bot/team/round identity, scheduler status/reaso
 The result is not a movement success claim; no frame-by-frame trace, replay or target classifier is included.
 Failed saves are reported to the server console and must never prevent button cleanup.
 Acceptance still requires user-run Windows x86/HLDS evidence; the remaining T261-07 negatives are postponed, not passed.
+
+## D279 — Scenario result storage layout
+
+Future result files belong to `explorer/scenarios/results/<scenario>/`.
+The earlier `explorer/results/<scenario>/` outputs are not moved automatically.
+This path-only change does not alter scenario execution, schema, or Stage A acceptance requirements.

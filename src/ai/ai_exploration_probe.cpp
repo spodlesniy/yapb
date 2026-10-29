@@ -88,7 +88,8 @@ bool saveScenarioResult(const aipb::explorer::scenario::ScenarioResult &result) 
       return false;
    }
    const auto explorer = strings.joinPath(bstor.getRunningPath(), folders.data, "explorer");
-   const fs::path directory = fs::path(explorer.chars()) / "results" / result.name;
+   const fs::path directory = fs::path(explorer.chars())
+      / "scenarios" / "results" / result.name;
    std::error_code error {};
    fs::create_directories(directory, error);
    if (error) {

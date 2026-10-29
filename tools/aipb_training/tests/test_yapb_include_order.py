@@ -176,6 +176,15 @@ class YapbFirstIncludeTests(unittest.TestCase):
         self.assertIn("close(ent);", menu)
         self.assertIn("screen != ScenarioMenuScreen::Closed", model)
 
+    def test_aipb_scenario_results_nested_under_scenarios(self) -> None:
+        probe = (ROOT / "src" / "ai" / "ai_exploration_probe.cpp").read_text(encoding="utf-8")
+        menu = (ROOT / "src" / "ai" / "ai_menu.cpp").read_text(encoding="utf-8")
+        self.assertIn('fs::path(explorer.chars())\\n      / "scenarios" / "results" / result.name;', probe)
+        self.assertIn('fs::create_directories(directory, error);', probe)
+        self.assertIn('openTraceFile(target.string().c_str(), "wx")', probe)
+        self.assertIn('if (!it->is_regular_file(statusError) || statusError)', menu)
+        self.assertIn('if (path.extension() != ".scenario")', menu)
+
     def test_catches_standard_and_local_headers_before_yapb(self) -> None:
         self.assertTrue(misplaced_yapb_include('#include <cstring>\n#include <yapb.h>\n'))
         self.assertTrue(misplaced_yapb_include('#include <ai/ai_perception_guard.h>\n#include <yapb.h>\n'))

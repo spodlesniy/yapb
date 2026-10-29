@@ -678,3 +678,6 @@ T261-06/T261-07 are not declared fully accepted until the remaining negative-pat
 D277 Explorer CI passed at a7ea9f73; user-run HLDS confirmed command completion, cancellation, and ExplorerBusy but intentionally postponed the remaining acceptance matrix.
 D278 adds the first versioned terminal result CSV for each admitted scenario run, recording the initial and terminal observed pose, command counters, run identity, and final reason, with unique exclusive creation in `explorer/results/<scenario>/`.
 Stage A remains incomplete: results lack a per-frame trace, replay comparison and physical success assessment, and outstanding T261-07 safety checks remain deferred rather than accepted.
+D278 automatic Build and Explorer CI passed at 232979a1; a user-run result CSV confirmed Completed with 394 frames, 750 commanded ms and distinct observed start/end positions.
+D279 moves only future result files from `explorer/results/<scenario>/` into `explorer/scenarios/results/<scenario>/`; no existing files are migrated or overwritten.
+Stage A and the postponed T261-07 negative checks remain open.

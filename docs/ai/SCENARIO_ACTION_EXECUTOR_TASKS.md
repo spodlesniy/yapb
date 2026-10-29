@@ -28,7 +28,7 @@ If menu integration cannot avoid changes to original YaPB files, stop and reques
 
 The initial movement executor does not support combat `attack/attack2`, interaction `use`, or weapon `select`.
 Reject scenarios containing these non-default controls rather than silently ignoring them.
-Persistence under `explorer/results/<scenario>/`, replay comparison and physical success/failure inference are separate Stage A work after T261-07.
+Persistence under `explorer/scenarios/results/<scenario>/`, replay comparison and physical success/failure inference are separate Stage A work after T261-07.
 Any changes to task order, especially menu scope, must be recorded here and in the roadmap.
 
 ## Current acceptance evidence
@@ -121,3 +121,8 @@ The user confirmed basic scenario execution, repeatable commanded duration, manu
 The user explicitly deferred the remaining T261-07 negative and lifecycle checks until relevant later development.
 T261-07 remains partially verified and open; these checks are not considered passed or waived.
 D278 begins Stage A persistence with a minimal terminal record without changing movement control or inferring physical success.
+
+## D279 — Result subdirectory
+
+Move the output location for future scenario terminal records to `explorer/scenarios/results/<scenario>/`.
+Keep existing output files unchanged; the scenario menu ignores these nested folders.

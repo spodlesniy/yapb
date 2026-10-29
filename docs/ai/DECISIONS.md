@@ -3464,3 +3464,9 @@ Mark the source of terminal state so missing or disconnected bots are not misrep
 Keep result I/O outside movement authorization and cleanup; failure to save cannot leave control buttons pressed.
 Do not call `Completed` a physical success and defer traces, replay comparison and physical outcome classification to later Stage A steps.
 User-run HLDS positive evidence exists, but the remaining T261-07 negative acceptance matrix is explicitly deferred and stays open.
+
+## D279 — Keep results inside the scenario directory
+
+Save new terminal CSV files under `explorer/scenarios/results/<scenario>/`, rather than beside `scenarios/`.
+Preserve timestamped exclusive creation, result schema and movement behavior; do not migrate existing files.
+The menu only lists direct `.scenario` files and ignores nested results.
