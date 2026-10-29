@@ -1499,15 +1499,16 @@ int BotControl::cmdExplore () {
          const int selected = scenario.equipment.selected == "knife" ? Weapon::Knife
             : scenario.equipment.selected == "primary" ? primary
             : scenario.equipment.selected == "secondary" ? secondary : -1;
-         actual.primaryId = bot->hasPrimaryWeapon() ? -1 : 0;
-         actual.secondaryId = bot->hasSecondaryWeapon() ? -1 : 0;
-         if (primary > 0 && (bot->pev->weapons & cr::bit(primary))) {
-            actual.primaryId = primary;
+         const auto ownedWeapons = static_cast<std::uint32_t>(bot->pev->weapons);
+         actual.primaryId = aipb::explorer::scenario::observedScenarioWeaponId(
+            ownedWeapons, static_cast<std::uint32_t>(kPrimaryWeaponMask));
+         actual.secondaryId = aipb::explorer::scenario::observedScenarioWeaponId(
+            ownedWeapons, static_cast<std::uint32_t>(kSecondaryWeaponMask));
+         if (primary > 0 && actual.primaryId == primary) {
             actual.primaryClip = bot->m_ammoInClip[primary];
             actual.primaryReserve = bot->getAmmo(primary);
          }
-         if (secondary > 0 && (bot->pev->weapons & cr::bit(secondary))) {
-            actual.secondaryId = secondary;
+         if (secondary > 0 && actual.secondaryId == secondary) {
             actual.secondaryClip = bot->m_ammoInClip[secondary];
             actual.secondaryReserve = bot->getAmmo(secondary);
          }

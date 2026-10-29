@@ -679,3 +679,14 @@ The command does not grant or remove items, alter health/money/armor, or run sce
 Immediately follow with `yb explore scenario preflight optional_omitted_01`; when the bot has not moved after placement, no pose mismatches should remain.
 For `optional_explicit_01`, the same command may set its requested zero velocity while leaving money, loaded USP magazine and unknown helmet untouched; inspect these remaining findings using `yb explore scenario preflight optional_explicit_01`.
 Only the administrator starts the manual Windows x86 game build; ordinary Explorer CI cannot validate the game DLL or collision traces.
+
+## D257 — Exact primary and secondary ownership diagnostics
+
+D256 HLDS set both scenario poses successfully.
+After that, `optional_omitted_01` returned no pose mismatches but marked the expected USP as unverified because the existing code masked a different equipped secondary weapon.
+D257 reads the actual one-weapon slot ID rather than treating every nonmatching owned weapon as unknown.
+On the same HLDS bot, run `yb explore scenario preflight optional_omitted_01`.
+If the bot owns Deagle (GoldSrc id 26) instead of USP (id 16), expect a `secondary_id` mismatch with observed 26, not an unverified result.
+If the bot has no pistol, expect observed 0; when there are multiple weapons in the slot, the reading stays unverified.
+For `optional_explicit_01`, run the same preflight and verify that money, selected weapon and helmet diagnostics remain independent.
+Nothing in this step equips or moves the bot; scenario actions remain disabled.

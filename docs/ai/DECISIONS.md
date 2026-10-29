@@ -3269,3 +3269,13 @@ It changes only required position/view angles and explicitly specified velocity 
 A requested crouch change is rejected until safe stance initialization is implemented separately.
 It leaves weapons, ammunition, other equipment and gameplay actions unchanged; it is never implied by validate or preflight.
 The planner remains engine-independent and unit-tested; runtime geometry and actual pose stability require Windows x86/HLDS acceptance.
+
+## D257 — Observe owned weapon slots independently of scenario expectations
+
+D256 HLDS confirmed successful pose initialization but a required USP still returned an unverified secondary slot when the bot had a different pistol.
+The earlier observation code reported the requested weapon id only when that weapon was owned, otherwise returned unknown for any occupied slot.
+D257 extracts the actual unique weapon id from the GoldSrc inventory mask using the existing primary/secondary weapon masks.
+No owned weapon in the slot is id 0; one known owned weapon is its concrete id; simultaneous weapons in one slot are ambiguous (-2).
+Only a required constraint triggers comparison; unknown or ambiguous observations remain unverified.
+Clip and reserve counts are still read only if the observed unique weapon matches the declared weapon.
+The command remains read-only, with no inventory grants or removals.

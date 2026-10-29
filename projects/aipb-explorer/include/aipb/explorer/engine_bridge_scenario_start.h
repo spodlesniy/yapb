@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include <cstdint>
 #include <string>
 #include <utility>
 #include <vector>
@@ -57,6 +58,35 @@ struct ScenarioStartAssessment {
 
 inline double wrappedScenarioAngle(double expected, double observed) {
   return std::remainder(expected - observed, 360.0);
+}
+
+// The caller supplies the established CS primary or secondary weapon mask.
+// Report one concrete GoldSrc weapon id; multiple owned weapons are ambiguous.
+inline int observedScenarioWeaponId(
+  std::uint32_t inventory,
+  std::uint32_t slotMask
+) {
+  if (slotMask == 0) {
+    return -1;
+  }
+
+  const std::uint32_t owned = inventory & slotMask;
+
+  if (owned == 0) {
+    return 0;
+  }
+
+  if ((owned & (owned - 1)) != 0) {
+    return -2;
+  }
+
+  for (int id = 1; id < 32; ++id) {
+    if ((owned & (std::uint32_t { 1 } << id)) != 0) {
+      return id;
+    }
+  }
+
+  return -1;
 }
 
 // Compare the declared state to real observed data, not to a desired setup.

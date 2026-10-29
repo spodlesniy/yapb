@@ -593,4 +593,9 @@ User HLDS validated both paired descriptors and confirmed four shared pose misma
 D255.1 optional semantics and D255.2 paired preflight fixtures are accepted for the tested scope; successful scenario starts and the Stage A exit gate remain pending.
 D256 introduces explicit administrator-only `yb explore scenario init-pose <name>` initialization of verified target position/view and only specified velocities.
 It rejects unsafe starting state, active Explorer sessions, incompatible stance and obstructed/unsupported target hull; equipment and scenario actions remain untouched.
-D256 automatic CI and user-run Windows x86/HLDS validation are pending.
+D256 automatic Build and Explorer CI passed at 8a37fa5.
+User HLDS confirmed that both scenarios accepted init-pose at (448,2368,-92) with yaw -105 and subsequently had no pose mismatches.
+This validates the positive pose-initialization path; rejected unsafe destinations and stance cases still need live negative-path checks.
+D257 corrects the read-only weapon-slot observation so the actual unique owned primary/secondary id is reported independently of the requested weapon.
+A different known pistol is a mismatch, no pistol is id 0, and multiple owned weapons in one slot remain unverified instead of being guessed.
+D257 automatic CI and HLDS acceptance remain pending; scenario equipment mutation is not enabled.

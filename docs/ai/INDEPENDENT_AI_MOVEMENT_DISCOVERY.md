@@ -164,3 +164,9 @@ D256 adds a guarded explicit pose-initialization command to the Scenario Runner 
 It reuses the established GoldSrc hull trace and position/view setup pattern, adds a downward ground-support probe, and preserves omitted velocity/stance fields.
 The pure pose planner has mock tests; a user-run Windows x86/HLDS start and immediate post-initialization preflight are still required.
 This does not finish Stage A: equipment setup, bounded multi-action execution, non-overwriting saved results and repeatability are outstanding.
+
+## D257 — Inventory observation accuracy
+
+D257 replaces expected-weapon-biased preflight observation with actual unique primary/secondary slot identification from the engine inventory masks.
+This is prerequisite evidence for future constrained equipment initialization; it never mutates bot inventory and does not advance Stage A to scenario execution.
+User-run HLDS validation remains necessary to confirm single-weapon, empty-slot and ambiguous-slot observations in the game.
