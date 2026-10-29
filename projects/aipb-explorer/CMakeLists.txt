@@ -217,6 +217,8 @@ if(BUILD_TESTING)
     add_test(NAME aipb_explorer_scenario_loader COMMAND aipb_explorer_scenario_loader_tests)
     target_compile_features(aipb_explorer_scenario_loader_tests PRIVATE cxx_std_17)
     target_include_directories(aipb_explorer_scenario_loader_tests PRIVATE include)
+    target_compile_definitions(aipb_explorer_scenario_loader_tests PRIVATE
+        "AIPB_EXPLORER_SCENARIO_FIXTURE_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}\"")
 
     add_executable(aipb_explorer_scenario_start_tests tests/engine_bridge_scenario_start_tests.cpp)
     add_test(NAME aipb_explorer_scenario_start COMMAND aipb_explorer_scenario_start_tests)

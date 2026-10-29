@@ -586,4 +586,6 @@ D255 automatic Build and Explorer CI succeeded at 1dc9002.
 User HLDS preflight returned TeamMismatch for the current bot, indicating the live bot team differs from the scenario CT requirement; this is a valid preflight rejection.
 D255.1 changes omission semantics: absent equipment and optional bot fields are unconstrained, while explicitly supplied none/zero remain assertions.
 The next runtime initialization step must preserve this distinction when applying and verifying scenario state.
-D255.1 CI and HLDS verification remain pending.
+D255.1 Explorer CI succeeded at ed0236f; HLDS acceptance remains pending.
+D255.2 adds two read-only HLDS scenario fixtures for omitted versus explicit constraints and a loader/start-assessment regression test.
+They do not initialize a bot or execute actions; D255.2 automatic CI and user HLDS verification remain pending.

@@ -1,0 +1,22 @@
+# Copy to addons/yapb/data/explorer/scenarios/.
+# Read-only check: optional bot fields, other equipment and USP ammunition are unconstrained.
+[scenario]
+version=aipb-scenario-v1
+name=optional_omitted_01
+map=de_dust2
+timeout_ms=1000
+
+[bot]
+index=1
+team=2
+x=448
+y=2368
+z=-92
+yaw=-105
+pitch=0
+
+[equipment]
+secondary=usp
+
+[action]
+duration_ms=100

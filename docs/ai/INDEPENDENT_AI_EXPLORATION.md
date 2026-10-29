@@ -656,3 +656,15 @@ Scenario fields omitted from equipment or optional bot fields no longer imply de
 For example, omit `defuse_kit` to accept either state, use `defuse_kit=0` to require no kit, and `defuse_kit=1` to require a kit.
 Similarly omit `secondary_clip` to ignore clip size, use `secondary_clip=0` to require an empty clip, and explicitly specify `secondary=usp` when constraining its ammo.
 Keep `team=2` for CT; TeamMismatch when the actual bot belongs to T is intentional.
+
+## D255.2 — Paired optional-preflight checks on HLDS
+
+Copy `projects/aipb-explorer/scenarios/optional_omitted_01.scenario` and `optional_explicit_01.scenario` into `addons/yapb/data/explorer/scenarios/` on the HLDS installation.
+Use de_dust2 with a living CT bot index 1 near `(448, 2368, -92)`, yaw `-105`, pitch `0`, grounded, and a valid movement speed.
+The bot's position and view direction are strict prerequisites; neither command teleports or equips it.
+Validate both files with `yb explore scenario validate optional_omitted_01` and `yb explore scenario validate optional_explicit_01`.
+Then use `yb explore scenario preflight optional_omitted_01` and `yb explore scenario preflight optional_explicit_01`.
+The omitted case requires USP in the secondary slot but does not inspect clip/reserve ammo, grenades, kit, money, health, armor, helmet, selected weapon, velocity or crouch state.
+The explicit case intentionally checks zero and nonzero requirements, including an empty USP clip, but not USP reserve ammo.
+A normally loaded USP or nonzero money produces mismatches; an unavailable helmet observation produces unverified, never silent success.
+Even a valid file and successful preflight do not execute any action or write a result artifact.

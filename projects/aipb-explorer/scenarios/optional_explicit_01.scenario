@@ -1,0 +1,38 @@
+# Copy to addons/yapb/data/explorer/scenarios/.
+# Read-only strict check: explicit zero is a constraint; unspecified reserve ammo is not.
+# An unknown helmet state must be reported as unverified.
+[scenario]
+version=aipb-scenario-v1
+name=optional_explicit_01
+map=de_dust2
+timeout_ms=1000
+
+[bot]
+index=1
+team=2
+x=448
+y=2368
+z=-92
+yaw=-105
+pitch=0
+vx=0
+vy=0
+vz=0
+crouching=0
+
+[equipment]
+primary=none
+secondary=usp
+secondary_clip=0
+he=0
+flash=0
+smoke=0
+defuse_kit=0
+money=0
+health=100
+armor=0
+helmet=0
+selected=secondary
+
+[action]
+duration_ms=100

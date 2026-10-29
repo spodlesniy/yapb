@@ -3250,3 +3250,12 @@ An omitted field means no constraint, an explicit zero or none means a required 
 Primary or secondary clip/reserve constraints require an explicit corresponding weapon type.
 Only explicitly required properties contribute to preflight mismatch or unavailable-observation counts; grounded state and valid speed remain safety preconditions.
 Keep scenario identity, map, bot index, team, starting position and view angles mandatory; keep launch and inventory mutation disabled.
+
+## D255.2 — Paired optional-constraint preflight fixtures
+
+Add `optional_omitted_01` and `optional_explicit_01` under the independent Explorer scenarios directory as read-only HLDS test descriptors.
+Both require the same de_dust2 CT bot index and strict start pose.
+The omitted case constrains only the USP type and deliberately leaves ammunition and other optional start properties unconstrained.
+The explicit case requires absent primary weapon, empty USP clip, zero grenades/kit/money/armor, full health, no helmet, selected USP, zero velocity and standing stance.
+A requested but unreadable helmet remains unverified; a missing reserve-ammo constraint is never assessed.
+The fixtures are covered by a file-loader and start-assessment test and are not a runtime execution or game-state initialization feature.
