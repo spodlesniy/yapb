@@ -1,7 +1,5 @@
 #pragma once
 
-class edict_s;
-using edict_t = edict_s;
 
 namespace ai::menu {
 

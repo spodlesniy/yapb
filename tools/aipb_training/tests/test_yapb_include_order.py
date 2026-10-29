@@ -113,6 +113,19 @@ class YapbFirstIncludeTests(unittest.TestCase):
             combat_source, r"\bauto\s+currentEnemyParts\s*=\s*m_enemyParts\s*;"
         )
 
+    def test_aipb_scenario_headers_do_not_redeclare_edict_t(self) -> None:
+        for name in ("ai_menu.h", "ai_exploration_probe.h"):
+            source = (ROOT / "inc" / "ai" / name).read_text(encoding="utf-8")
+            self.assertNotRegex(source, r"\bclass\s+edict_s\s*;")
+            self.assertNotRegex(source, r"\busing\s+edict_t\s*=")
+
+    def test_aipb_menu_print_uses_format_string(self) -> None:
+        menu = (ROOT / "src" / "ai" / "ai_menu.cpp").read_text(encoding="utf-8")
+        probe = (ROOT / "src" / "ai" / "ai_exploration_probe.cpp").read_text(encoding="utf-8")
+        self.assertNotIn("game.clientPrint(ent, started ?", menu)
+        self.assertNotIn("game.clientPrint(client, message)", probe)
+        self.assertNotIn("game.print(message)", probe)
+
     def test_catches_standard_and_local_headers_before_yapb(self) -> None:
         self.assertTrue(misplaced_yapb_include('#include <cstring>\n#include <yapb.h>\n'))
         self.assertTrue(misplaced_yapb_include('#include <ai/ai_perception_guard.h>\n#include <yapb.h>\n'))

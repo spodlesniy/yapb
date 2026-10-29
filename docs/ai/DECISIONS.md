@@ -3389,3 +3389,10 @@ The commands are renamed under `aipb scenario` without retaining the legacy `aip
 The run operation now stages a supported pose/equipment plan, validates target support and preconditions, applies engine state, performs a fresh full preflight, and restores earlier state upon refusal.
 Unsupported equipment constraints remain fail-closed, not silently initialized.
 Automated CI and user-run HLDS acceptance are gates before this behavior is marked production-ready.
+
+## D269 — MSVC x86 AiPB menu compilation correction
+
+Remove incompatible edict_t aliases from AiPB headers; the original GoldSrc SDK provides this type before the AiPB headers through the first-included yapb.h.
+Use const char* print format arguments in AiPB menu and probe, including dynamic status messages.
+Add a source-level regression guard for both errors.
+Do not modify original YaPB implementation files.

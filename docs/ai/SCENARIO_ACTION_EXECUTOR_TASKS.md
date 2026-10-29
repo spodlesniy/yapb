@@ -56,3 +56,8 @@ Run checks scenario and bot safety, plans supported pose/equipment before writin
 Equipment that cannot safely be provided is rejected by the existing fail-closed planner.
 A running scenario is cancelled when the round ends by the existing lifecycle guard.
 Automatic build and real HLDS acceptance remain required before marking T261-06 completed.
+
+## D269 compilation correction
+
+D268 failed the user-run MSVC x86 build with shadow edict_t aliases and incorrectly typed print calls.
+D269 removes the aliases, corrects the format calls, and adds a regression test; automatic CI and user-run x86 verification are pending.

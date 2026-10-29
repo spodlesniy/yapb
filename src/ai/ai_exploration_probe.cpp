@@ -294,10 +294,10 @@ void statusScenarioInternal(edict_t *client) {
       static_cast<int>(scenarioScheduler.actionIndex()) + 1,
       scenarioScheduler.frames(), scenarioScheduler.totalMilliseconds());
    if (client) {
-      game.clientPrint(client, message);
+      game.clientPrint(client, "%s", message.chars());
    }
    else {
-      game.print(message);
+      game.print("%s", message.chars());
    }
 }
 

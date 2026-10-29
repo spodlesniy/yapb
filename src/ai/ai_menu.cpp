@@ -110,7 +110,7 @@ void browse(edict_t *ent, bool reload) {
       return;
    }
    if (reload && !loadList(state.browser)) {
-      game.clientPrint(ent, "AiPB: cannot enumerate scenario files.");
+      game.clientPrint(ent, "%s", "AiPB: cannot enumerate scenario files.");
       root(ent);
       return;
    }
@@ -169,7 +169,7 @@ void onSelect(edict_t *ent, int selected) {
       const auto name = state.browser.selectedScenario(static_cast<size_t>(selected - 1));
       if (!name.empty()) {
          const bool started = ai::explore::runScenario(name.c_str());
-         game.clientPrint(ent, started ? "AiPB: scenario started." :
+         game.clientPrint(ent, "%s", started ? "AiPB: scenario started." :
             "AiPB: scenario rejected; see server console.");
          root(ent);
       }
@@ -206,7 +206,7 @@ bool handleCommand(edict_t *ent, bool server) {
    if (std::strcmp(action, "run") == 0 && argc == 4) {
       const bool started = ai::explore::runScenario(engfuncs.pfnCmd_Argv(3));
       if (!server && ent) {
-         game.clientPrint(ent, started ? "AiPB: scenario started." :
+         game.clientPrint(ent, "%s", started ? "AiPB: scenario started." :
             "AiPB: scenario rejected; see server console.");
       }
    }

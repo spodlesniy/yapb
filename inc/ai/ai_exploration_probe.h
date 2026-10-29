@@ -3,8 +3,6 @@
 #include <aipb/explorer/engine_bridge.h>
 
 class Bot;
-class edict_s;
-using edict_t = edict_s;
 
 namespace ai::explore {
 

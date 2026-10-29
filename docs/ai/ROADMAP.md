@@ -659,3 +659,5 @@ D268 integrates a separate in-DLL AiPB menu using the explicitly authorized clie
 New `aipb` commands supersede legacy `aipb_scenario_*` registrations with no aliases, and a flat five-file scenario browser and overlay are wired through the new AiPB menu module.
 The run command automatically prepares supported pose, health and armor after bounded validation, then re-reads the bot for strict start admission; unsupported explicit equipment fails closed.
 D268 automatic game build and Explorer CI are pending and HLDS acceptance is required before declaring T261-06 complete.
+D268 Linux Build CI succeeded, but user MSVC x86 build reported C4099/C2371 on shadow edict_t aliases and C2672 on Game::clientPrint format arguments.
+D269 corrects only the AiPB headers/printing uses, retains yapb.h first include, and adds regression checks; CI and user-run Windows x86 are pending.
