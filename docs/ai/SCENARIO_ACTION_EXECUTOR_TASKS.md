@@ -91,3 +91,10 @@ The server StartFrame compares the currently displayed scenario-running state ag
 If a scenario starts while the file browser is open, the browser returns to the root menu.
 The refresh is independent of the HUD overlay toggle and does not reopen a closed or externally replaced menu.
 Automated regression tests accompany the correction; Windows x86/HLDS acceptance remains pending.
+
+## D275 default action timeout and optional team
+
+Omitted action `timeout_ms` now uses `duration_ms + ceil(duration_ms / 10)`, while explicitly specified `timeout_ms` must remain at least the requested duration. The parser permits action deadlines up to 11000 ms to accommodate a 10000-ms action and its default margin.
+An omitted `[bot] team` accepts either active team, while an explicit `team=1|2` is strictly enforced. Game lifecycle checks continue to protect against changes from the admitted team.
+The new `ground_forward_any_team_01.scenario` retains the original forward/turn actions and primary/secondary weapon constraints without requiring a specific team or unrelated equipment.
+Automated scenario parsing/loader/preflight tests cover these contracts; real HLDS validation remains pending.

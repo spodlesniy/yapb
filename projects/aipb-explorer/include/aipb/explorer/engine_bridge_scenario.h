@@ -17,6 +17,7 @@ inline constexpr std::string_view kVersion = "aipb-scenario-v1";
 inline constexpr int kMaxActions = 32;
 inline constexpr int kMaxScenarioMs = 60000;
 inline constexpr int kMaxActionMs = 10000;
+inline constexpr int kMaxActionTimeoutMs = kMaxActionMs + (kMaxActionMs + 9) / 10;
 inline constexpr std::size_t kMaxFileBytes = 65536;
 
 struct Weapon {
@@ -133,7 +134,7 @@ inline bool validAction(const Action &action) {
 
   return action.durationMs > 0 && action.durationMs <= kMaxActionMs
     && action.timeoutMs >= action.durationMs
-    && action.timeoutMs <= kMaxActionMs
+    && action.timeoutMs <= kMaxActionTimeoutMs
     && normalized(action.forward) && normalized(action.strafe)
     && std::isfinite(action.yawDelta) && action.yawDelta >= -180.0f
     && action.yawDelta <= 180.0f
@@ -150,7 +151,7 @@ inline bool validScenario(const Scenario &scenario) {
 
   if (!safeIdentifier(scenario.name) || !safeIdentifier(scenario.map)
     || scenario.botIndex < 0 || scenario.botIndex > 31
-    || (scenario.team != 1 && scenario.team != 2)
+    || (scenario.team != 0 && scenario.team != 1 && scenario.team != 2)
     || scenario.timeoutMs < 1 || scenario.timeoutMs > kMaxScenarioMs
     || !std::isfinite(scenario.yaw) || scenario.yaw < -180.0f
     || scenario.yaw >= 180.0f || !std::isfinite(scenario.pitch)
@@ -431,7 +432,7 @@ inline bool parseScenario(
       Action &a = next.actions.back();
 
       if (key == "duration_ms") { ok = integer(1, kMaxActionMs, a.durationMs); }
-      else if (key == "timeout_ms") { ok = integer(1, kMaxActionMs, a.timeoutMs); }
+      else if (key == "timeout_ms") { ok = integer(1, kMaxActionTimeoutMs, a.timeoutMs); }
       else if (key == "forward") { ok = narrow(-1, 1, a.forward); }
       else if (key == "strafe") { ok = narrow(-1, 1, a.strafe); }
       else if (key == "yaw_delta") { ok = narrow(-180, 180, a.yawDelta); }
@@ -460,7 +461,7 @@ inline bool parseScenario(
     || !seen.count("scenario.name")
     || !seen.count("scenario.map")
     || !seen.count("scenario.timeout_ms")
-    || !seen.count("bot.index") || !seen.count("bot.team")
+    || !seen.count("bot.index")
     || !seen.count("bot.x") || !seen.count("bot.y")
     || !seen.count("bot.z") || !seen.count("bot.yaw")
     || !seen.count("bot.pitch")) {
@@ -473,7 +474,9 @@ inline bool parseScenario(
     }
 
     if (next.actions[i].timeoutMs == 0) {
-      next.actions[i].timeoutMs = next.actions[i].durationMs;
+      // Round the default 10-percent wall-clock margin up to the next millisecond.
+      next.actions[i].timeoutMs = next.actions[i].durationMs
+        + (next.actions[i].durationMs + 9) / 10;
     }
   }
 

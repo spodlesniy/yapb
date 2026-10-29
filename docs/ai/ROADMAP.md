@@ -670,3 +670,4 @@ D272 corrects AiPB menu ownership after user HLDS checks showed interference wit
 D273 standardizes the AiPB scenario menu and HUD overlay to English and makes Run/Stop availability consistent across display, key masks and handlers; Windows x86/HLDS acceptance remains pending.
 D273 passed automatic Build/Explorer CI, but HLDS testing identified stale Run/Stop presentation after automatic scenario completion.
 D274 refreshes only the currently owned AiPB menu when the scenario-running state changes, removes literal disabled suffixes while keeping color/key-mask guards and requires Windows x86/HLDS acceptance before T261-06 can close.
+D275 adds a 10-percent rounded-up default per-action wall-clock timeout margin, preserves strict explicit timeouts, and permits an omitted team requirement while still requiring T/CT eligibility. A new ground-forward test fixture keeps only weapon-related equipment constraints; Windows x86/HLDS acceptance remains pending.

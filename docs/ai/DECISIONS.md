@@ -3434,3 +3434,10 @@ Track the running state used for each player's displayed root menu and refresh t
 Keep menu refresh in server StartFrame before the overlay-enabled early exit, and relinquish control when another menu owns the client.
 Remove literal `(disabled)` suffixes while retaining disabled colors, key masks and guarded selections.
 Use engine-neutral refresh transition tests and a production source-contract guard; do not claim in-game acceptance before a user-run Windows x86/HLDS check.
+
+## D275 — Default action timeout margin and team-optional forward fixture
+
+An omitted action `timeout_ms` defaults to `duration_ms + ceil(duration_ms / 10)` (10-percent margin). Explicit action timeouts remain unchanged, must satisfy `timeout_ms >= duration_ms`, and cannot exceed the supported 11000-ms action-timeout bound. The action execution duration remains unchanged.
+Allow omission of `bot.team` as a wildcard for either active CS team (T or CT). If a team is explicit, enforce it as before. Unassigned/spectator teams remain ineligible; the runner still captures the actual admitted team and aborts if the bot changes team during execution.
+Add `ground_forward_any_team_01.scenario`, derived from `ground_forward_01.scenario`, preserving only primary/secondary weapon, ammunition and selected-weapon equipment constraints, and removing the explicit team constraint. The original fixture is unchanged.
+The real-game timing behavior remains subject to user-run HLDS verification.

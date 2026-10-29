@@ -165,7 +165,8 @@ inline PreflightStatus checkScenarioPreflight(
     return PreflightStatus::BotDead;
   }
 
-  if (currentTeam != scenario.team) {
+  if ((currentTeam != 1 && currentTeam != 2)
+    || (scenario.team != 0 && currentTeam != scenario.team)) {
     return PreflightStatus::TeamMismatch;
   }
 

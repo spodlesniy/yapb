@@ -183,8 +183,35 @@ duration_ms=250
     check(!result.equipment.has("primary") && !result.equipment.has("defuse_kit"));
     check(!result.equipment.has("secondary_clip") && !result.equipment.has("health"));
     check(result.equipment.selected == "knife");
-    check(result.actions[0].timeoutMs == 250);
+    check(result.actions[0].timeoutMs == 275);
     check(result.actions[0].forward == 0 && result.actions[0].strafe == 0);
+    check(rejected(replaceOnce(basic, "duration_ms=250",
+      "duration_ms=250\ntimeout_ms=249")));
+    check(parseScenario(replaceOnce(basic, "duration_ms=250",
+      "duration_ms=250\ntimeout_ms=250"), "wait", result, error));
+    check(result.actions[0].timeoutMs == 250);
+
+    // Omitted team allows either playing team, but never unassigned players.
+    const auto eitherTeam = replaceOnce(basic, "team=1\n", "");
+    check(parseScenario(eitherTeam, "wait", result, error));
+    check(result.team == 0 && !result.hasBot("team"));
+    check(rejected(replaceOnce(basic, "team=1", "team=0")));
+    check(rejected(replaceOnce(basic, "team=1", "team=3")));
+
+    // The implicit 10-percent margin is rounded up and handles the upper duration.
+    check(parseScenario(replaceOnce(basic, "duration_ms=250",
+      "duration_ms=101"), "wait", result, error));
+    check(result.actions[0].timeoutMs == 112);
+    check(parseScenario(replaceOnce(basic, "duration_ms=250",
+      "duration_ms=1"), "wait", result, error));
+    check(result.actions[0].timeoutMs == 2);
+    const auto longAction = replaceOnce(replaceOnce(basic,
+      "timeout_ms=500", "timeout_ms=15000"), "duration_ms=250", "duration_ms=10000");
+    check(parseScenario(longAction, "wait", result, error));
+    check(result.actions[0].timeoutMs == 11000);
+    check(parseScenario(longAction + "timeout_ms=11000\n", "wait", result, error));
+    check(result.actions[0].timeoutMs == 11000);
+    check(rejected(longAction + "timeout_ms=11001\n", "wait"));
 
     // A new parser call cannot retain earlier action values.
     check(parseScenario(valid, "ground_forward_01", result, error));
