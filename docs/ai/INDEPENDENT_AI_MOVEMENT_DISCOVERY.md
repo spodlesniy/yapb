@@ -157,3 +157,10 @@ The command does not reposition bots, modify equipment, execute actions or write
 The read-only `yb explore scenario preflight <name>` command compares recorded live GoldSrc start data to the scenario.
 Missing or unreliable equipment information is marked unverified rather than silently accepted.
 The bot is not teleported, equipped or commanded.
+
+## D256 — Controlled start-pose slice
+
+D256 adds a guarded explicit pose-initialization command to the Scenario Runner without equipment mutation or action execution.
+It reuses the established GoldSrc hull trace and position/view setup pattern, adds a downward ground-support probe, and preserves omitted velocity/stance fields.
+The pure pose planner has mock tests; a user-run Windows x86/HLDS start and immediate post-initialization preflight are still required.
+This does not finish Stage A: equipment setup, bounded multi-action execution, non-overwriting saved results and repeatability are outstanding.

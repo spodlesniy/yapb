@@ -588,4 +588,9 @@ D255.1 changes omission semantics: absent equipment and optional bot fields are 
 The next runtime initialization step must preserve this distinction when applying and verifying scenario state.
 D255.1 Explorer CI succeeded at ed0236f; HLDS acceptance remains pending.
 D255.2 adds two read-only HLDS scenario fixtures for omitted versus explicit constraints and a loader/start-assessment regression test.
-They do not initialize a bot or execute actions; D255.2 automatic CI and user HLDS verification remain pending.
+They do not initialize a bot or execute actions; D255.2 automatic Explorer CI passed at 75bdaa4 (MSVC, GCC, Clang).
+User HLDS validated both paired descriptors and confirmed four shared pose mismatches, plus exactly two explicit inventory mismatches (money and USP clip) and one unverified helmet reading.
+D255.1 optional semantics and D255.2 paired preflight fixtures are accepted for the tested scope; successful scenario starts and the Stage A exit gate remain pending.
+D256 introduces explicit administrator-only `yb explore scenario init-pose <name>` initialization of verified target position/view and only specified velocities.
+It rejects unsafe starting state, active Explorer sessions, incompatible stance and obstructed/unsupported target hull; equipment and scenario actions remain untouched.
+D256 automatic CI and user-run Windows x86/HLDS validation are pending.

@@ -3259,3 +3259,13 @@ The omitted case constrains only the USP type and deliberately leaves ammunition
 The explicit case requires absent primary weapon, empty USP clip, zero grenades/kit/money/armor, full health, no helmet, selected USP, zero velocity and standing stance.
 A requested but unreadable helmet remains unverified; a missing reserve-ammo constraint is never assessed.
 The fixtures are covered by a file-loader and start-assessment test and are not a runtime execution or game-state initialization feature.
+
+## D256 — Guarded scenario pose initialization before execution
+
+D255.2 HLDS evidence showed that optional equipment constraints were assessed correctly but strict position and yaw did not match the live bot.
+D256 provides a separate administrator-triggered `yb explore scenario init-pose <name>` command.
+It requires valid scenario, matching map, present/alive bot and correct team, a grounded bot with usable speed, no active Explorer session, compatible current stance, unoccupied destination hull and downward floor support with a walkable normal.
+It changes only required position/view angles and explicitly specified velocity components, preserving omitted velocities and the existing stance.
+A requested crouch change is rejected until safe stance initialization is implemented separately.
+It leaves weapons, ammunition, other equipment and gameplay actions unchanged; it is never implied by validate or preflight.
+The planner remains engine-independent and unit-tested; runtime geometry and actual pose stability require Windows x86/HLDS acceptance.

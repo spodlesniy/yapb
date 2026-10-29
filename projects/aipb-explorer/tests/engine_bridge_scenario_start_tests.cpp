@@ -1,7 +1,8 @@
 #include <cstdio>
 #include <stdexcept>
+#include <limits>
 
-#include <aipb/explorer/engine_bridge_scenario_start.h>
+#include <aipb/explorer/engine_bridge_scenario_pose.h>
 
 using namespace aipb::explorer::scenario;
 
@@ -67,6 +68,41 @@ int main() {
     check(assessScenarioStart(s, a, 0, 0, 29).mismatches == 1);
     s.equipment.defuseKit = true;
     check(assessScenarioStart(s, a, 0, 0, 29).ready());
+
+    PoseInitPlan plan {};
+    a.velocity[0] = 35.0f;
+    a.velocity[1] = -10.0f;
+    a.velocity[2] = 0.0f;
+    check(planScenarioPose(s, a, false, plan) == PoseInitStatus::Ready);
+    check(plan.velocity[0] == 35.0f && plan.velocity[1] == -10.0f);
+    check(plan.position[0] == 0.0f && plan.yaw == -1.0f);
+    check(!plan.crouching);
+
+    s.specifiedBot.insert("vx");
+    s.velocity[0] = 0.0f;
+    check(planScenarioPose(s, a, false, plan) == PoseInitStatus::Ready);
+    check(plan.velocity[0] == 0.0f && plan.velocity[1] == -10.0f);
+    s.specifiedBot.insert("crouching");
+    s.crouching = true;
+    check(planScenarioPose(s, a, false, plan) == PoseInitStatus::StanceMismatch);
+    check(plan.velocity[0] == 0.0f);
+    s.crouching = false;
+
+    check(planScenarioPose(s, a, true, plan) == PoseInitStatus::Busy);
+    a.onGround = false;
+    check(planScenarioPose(s, a, false, plan) == PoseInitStatus::BotNotGrounded);
+    a.onGround = true;
+    a.maxSpeed = 0.0f;
+    check(planScenarioPose(s, a, false, plan) == PoseInitStatus::SpeedUnavailable);
+    a.maxSpeed = 250.0f;
+
+    s.specifiedBot.erase("vx");
+    a.velocity[0] = std::numeric_limits<float>::quiet_NaN();
+    check(planScenarioPose(s, a, false, plan) == PoseInitStatus::InvalidVelocity);
+    s.specifiedBot.insert("vx");
+    check(planScenarioPose(s, a, false, plan) == PoseInitStatus::Ready);
+    s.equipment.selected = "invalid";
+    check(planScenarioPose(s, a, false, plan) == PoseInitStatus::InvalidScenario);
     return 0;
   }
   catch (const std::exception &e) {

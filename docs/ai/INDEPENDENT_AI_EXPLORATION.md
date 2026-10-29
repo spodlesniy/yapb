@@ -668,3 +668,14 @@ The omitted case requires USP in the secondary slot but does not inspect clip/re
 The explicit case intentionally checks zero and nonzero requirements, including an empty USP clip, but not USP reserve ammo.
 A normally loaded USP or nonzero money produces mismatches; an unavailable helmet observation produces unverified, never silent success.
 Even a valid file and successful preflight do not execute any action or write a result artifact.
+
+## D256 — Safe scenario pose initialization
+
+Run `yb explore scenario init-pose optional_omitted_01` on de_dust2 with living grounded CT bot index 1.
+This is an explicit state-changing administrator command: it moves the bot to the scenario start position and sets yaw/pitch only after collision and nearby ground checks.
+If the destination is blocked, unsupported, the Explorer is busy, the bot is airborne, or the explicitly required crouch state differs, the command rejects with no changes.
+Omitted velocity components are retained; explicitly supplied components are set.
+The command does not grant or remove items, alter health/money/armor, or run scenario actions.
+Immediately follow with `yb explore scenario preflight optional_omitted_01`; when the bot has not moved after placement, no pose mismatches should remain.
+For `optional_explicit_01`, the same command may set its requested zero velocity while leaving money, loaded USP magazine and unknown helmet untouched; inspect these remaining findings using `yb explore scenario preflight optional_explicit_01`.
+Only the administrator starts the manual Windows x86 game build; ordinary Explorer CI cannot validate the game DLL or collision traces.
