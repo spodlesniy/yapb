@@ -598,4 +598,9 @@ User HLDS confirmed that both scenarios accepted init-pose at (448,2368,-92) wit
 This validates the positive pose-initialization path; rejected unsafe destinations and stance cases still need live negative-path checks.
 D257 corrects the read-only weapon-slot observation so the actual unique owned primary/secondary id is reported independently of the requested weapon.
 A different known pistol is a mismatch, no pistol is id 0, and multiple owned weapons in one slot remain unverified instead of being guessed.
-D257 automatic CI and HLDS acceptance remain pending; scenario equipment mutation is not enabled.
+D257 automatic Build and Explorer CI passed at 7457ddd.
+User HLDS preflight no longer reported an unknown secondary weapon for the inspected USP; actual position/yaw had changed since the previous initialization, so D257 did not fail pose checks.
+D257 single-weapon observation is confirmed for this live case; absent and multiple-weapon cases remain untested in HLDS.
+D258 makes explicit grenade-count constraints presence-aware: HE/smoke presence bits yield exact 0/1, while flash uses the owned bit plus its bounded observed ammo count.
+A present flash with unavailable count is still a certain mismatch for flash=0 but unverified for a positive exact count.
+D258 CI and HLDS acceptance remain pending; scenario equipment mutation and action execution remain disabled.

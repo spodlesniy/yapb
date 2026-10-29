@@ -690,3 +690,14 @@ If the bot owns Deagle (GoldSrc id 26) instead of USP (id 16), expect a `seconda
 If the bot has no pistol, expect observed 0; when there are multiple weapons in the slot, the reading stays unverified.
 For `optional_explicit_01`, run the same preflight and verify that money, selected weapon and helmet diagnostics remain independent.
 Nothing in this step equips or moves the bot; scenario actions remain disabled.
+
+## D258 — Grenade quantity preflight
+
+On `de_dust2`, run `yb explore scenario preflight optional_explicit_01` with a living CT bot index 1.
+A held HE with scenario `he=0` now gives a concrete `he` mismatch with observed 1 rather than `unverified`.
+A held smoke with `smoke=0` behaves the same.
+For a held flash with `flash=0`, a reported ammo count of 1 or 2 produces a concrete `flash` mismatch; if the ammo reading is unavailable but the ownership bit is set, `flash_present` is a definite mismatch instead.
+Unowned grenades read as zero regardless of stale ammo.
+`optional_omitted_01` still does not assess any grenade because none is explicitly constrained.
+If pose mismatches obscure the report, first run `yb explore scenario init-pose optional_explicit_01` then immediately repeat preflight; it does not modify equipment.
+Do not conclude that inventory initialization or scenario action execution exists.

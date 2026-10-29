@@ -170,3 +170,10 @@ This does not finish Stage A: equipment setup, bounded multi-action execution, n
 D257 replaces expected-weapon-biased preflight observation with actual unique primary/secondary slot identification from the engine inventory masks.
 This is prerequisite evidence for future constrained equipment initialization; it never mutates bot inventory and does not advance Stage A to scenario execution.
 User-run HLDS validation remains necessary to confirm single-weapon, empty-slot and ambiguous-slot observations in the game.
+
+## D258 — Reliable grenade observations for Scenario Runner
+
+D258 distinguishes reliable GoldSrc grenade ownership bits from the less certain flashbang ammo count in read-only preflight.
+HE and smoke are reported as 0 or 1, and flashbang as a validated 0..2 count or unknown-positive state.
+Explicit zero constraints reject known-positive flash ownership even when the exact count is unavailable; omitted equipment remains unconstrained.
+This is a diagnostic prerequisite to safe initialization, not execution or completion of Movement Discovery Stage A.

@@ -89,6 +89,28 @@ inline int observedScenarioWeaponId(
   return -1;
 }
 
+// The inventory bit is authoritative for absence. HE and smoke have a maximum
+// count of one. Flash ammo can be stale; -2 means owned with unknown count.
+inline int observedScenarioGrenadeCount(
+  bool owned,
+  int ammo,
+  int maximum
+) {
+  if (!owned) {
+    return 0;
+  }
+
+  if (maximum == 1) {
+    return 1;
+  }
+
+  if (ammo >= 1 && ammo <= maximum) {
+    return ammo;
+  }
+
+  return -2;
+}
+
 // Compare the declared state to real observed data, not to a desired setup.
 // Unreadable equipment is reported, never silently assumed to be present.
 inline ScenarioStartAssessment assessScenarioStart(
@@ -115,6 +137,16 @@ inline ScenarioStartAssessment assessScenarioStart(
     }
     else {
       compare(field, expected, observed);
+    }
+  };
+  const auto compareGrenade = [&](const char *field, int expected, int observed) {
+    if (observed == -2 && expected == 0) {
+      // Presence is proven even when the exact positive flash count is unknown.
+      ++assessment.mismatches;
+      assessment.findings.push_back({std::string { field } + "_present", 0.0, 1.0, false});
+    }
+    else {
+      compareAmmo(field, expected, observed);
     }
   };
 
@@ -183,13 +215,13 @@ inline ScenarioStartAssessment assessScenarioStart(
   }
 
   if (scenario.equipment.has("he")) {
-    compareAmmo("he", scenario.equipment.he, actual.he);
+    compareGrenade("he", scenario.equipment.he, actual.he);
   }
   if (scenario.equipment.has("flash")) {
-    compareAmmo("flash", scenario.equipment.flash, actual.flash);
+    compareGrenade("flash", scenario.equipment.flash, actual.flash);
   }
   if (scenario.equipment.has("smoke")) {
-    compareAmmo("smoke", scenario.equipment.smoke, actual.smoke);
+    compareGrenade("smoke", scenario.equipment.smoke, actual.smoke);
   }
 
   if (scenario.equipment.has("helmet") && !actual.helmetKnown) {

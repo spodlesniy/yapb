@@ -146,6 +146,42 @@ int main() {
     check(assessScenarioStart(s, a, 0, 16, 29).mismatches == 1);
     s.equipment.specified.erase("secondary_clip");
     check(assessScenarioStart(s, a, 0, 16, 29).ready());
+
+    check(observedScenarioGrenadeCount(false, 2, 2) == 0);
+    check(observedScenarioGrenadeCount(true, -1, 1) == 1);
+    check(observedScenarioGrenadeCount(true, 0, 1) == 1);
+    check(observedScenarioGrenadeCount(true, 1, 2) == 1);
+    check(observedScenarioGrenadeCount(true, 2, 2) == 2);
+    check(observedScenarioGrenadeCount(true, 0, 2) == -2);
+    check(observedScenarioGrenadeCount(true, 3, 2) == -2);
+
+    // A known grenade presence must fail an explicit zero constraint.
+    s.equipment.specified.insert("he");
+    s.equipment.he = 0;
+    a.he = observedScenarioGrenadeCount(true, -1, 1);
+    auto grenadeReport = assessScenarioStart(s, a, 0, 16, 29);
+    check(grenadeReport.mismatches == 1 && grenadeReport.unverified == 0);
+    check(grenadeReport.findings.size() == 1
+      && grenadeReport.findings[0].field == "he");
+
+    s.equipment.specified.erase("he");
+    s.equipment.specified.insert("flash");
+    s.equipment.flash = 0;
+    a.flash = observedScenarioGrenadeCount(true, 0, 2);
+    grenadeReport = assessScenarioStart(s, a, 0, 16, 29);
+    check(grenadeReport.mismatches == 1 && grenadeReport.unverified == 0);
+    check(grenadeReport.findings[0].field == "flash_present");
+
+    s.equipment.flash = 1;
+    grenadeReport = assessScenarioStart(s, a, 0, 16, 29);
+    check(grenadeReport.mismatches == 0 && grenadeReport.unverified == 1);
+    a.flash = observedScenarioGrenadeCount(true, 2, 2);
+    grenadeReport = assessScenarioStart(s, a, 0, 16, 29);
+    check(grenadeReport.mismatches == 1 && grenadeReport.unverified == 0);
+    s.equipment.flash = 2;
+    check(assessScenarioStart(s, a, 0, 16, 29).ready());
+    s.equipment.specified.erase("flash");
+    check(assessScenarioStart(s, a, 0, 16, 29).ready());
     return 0;
   }
   catch (const std::exception &e) {

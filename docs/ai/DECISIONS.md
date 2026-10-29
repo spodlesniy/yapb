@@ -3279,3 +3279,13 @@ No owned weapon in the slot is id 0; one known owned weapon is its concrete id; 
 Only a required constraint triggers comparison; unknown or ambiguous observations remain unverified.
 Clip and reserve counts are still read only if the observed unique weapon matches the declared weapon.
 The command remains read-only, with no inventory grants or removals.
+
+## D258 — Presence-aware scenario grenade diagnostics
+
+D257 live preflight confirmed one requested USP without secondary-slot uncertainty, while newly observed grenade holdings remained unverified even for explicit absence constraints.
+The previous runtime preflight mapped every present grenade to unknown, discarding reliable inventory-bit evidence.
+D258 reports exact 0/1 for HE and smoke using GoldSrc grenade ownership bits.
+For flashbang, the absence bit proves count zero, and a present bit with a bounded 1..2 ammo reading provides that exact count.
+If flash is owned but its ammo reading is invalid or unavailable, the count stays unknown (-2); explicit `flash=0` still yields the definite `flash_present` mismatch, while positive exact-count requirements remain unverified.
+Only explicitly present scenario fields are inspected; nothing mutates bot inventory or starts actions.
+The engine-neutral observer and assessment logic are covered by regression cases; HLDS needs to confirm the engine ownership and flash ammo behavior.

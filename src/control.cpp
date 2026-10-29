@@ -1513,10 +1513,13 @@ int BotControl::cmdExplore () {
             actual.secondaryReserve = bot->getAmmo(secondary);
          }
          actual.selectedId = bot->m_currentWeapon;
-         const auto &grenades = scenario.equipment;
-         actual.he = grenades.he == 0 && !(bot->pev->weapons & cr::bit(Weapon::Explosive)) ? 0 : -1;
-         actual.flash = grenades.flash == 0 && !(bot->pev->weapons & cr::bit(Weapon::Flashbang)) ? 0 : -1;
-         actual.smoke = grenades.smoke == 0 && !(bot->pev->weapons & cr::bit(Weapon::Smoke)) ? 0 : -1;
+         actual.he = aipb::explorer::scenario::observedScenarioGrenadeCount(
+            !!(bot->pev->weapons & cr::bit(Weapon::Explosive)), 0, 1);
+         actual.flash = aipb::explorer::scenario::observedScenarioGrenadeCount(
+            !!(bot->pev->weapons & cr::bit(Weapon::Flashbang)),
+            bot->getAmmo(Weapon::Flashbang), 2);
+         actual.smoke = aipb::explorer::scenario::observedScenarioGrenadeCount(
+            !!(bot->pev->weapons & cr::bit(Weapon::Smoke)), 0, 1);
          const auto assessment = aipb::explorer::scenario::assessScenarioStart(
             scenario, actual, primary, secondary, selected);
          msg("AiPB scenario: '%s' start preflight: ready=%d mismatches=%d unverified=%d; no actions executed.",
