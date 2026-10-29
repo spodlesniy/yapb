@@ -3396,3 +3396,11 @@ Remove incompatible edict_t aliases from AiPB headers; the original GoldSrc SDK 
 Use const char* print format arguments in AiPB menu and probe, including dynamic status messages.
 Add a source-level regression guard for both errors.
 Do not modify original YaPB implementation files.
+
+## D270 — Correct formatted status pointer usage for MSVC x86
+
+D269 fixed the SDK type redeclaration, but the next user-run Windows x86 build found C2228 in the AiPB scenario status printer.
+The `strings.format` return was incorrectly treated as a String object and dereferenced with `.chars()`; the API supplies an already formatted character pointer.
+D270 passes that pointer directly to `Game::clientPrint` and `Game::print`, retaining explicit `%s` format strings and including regression assertions against `message.chars()`.
+The original YaPB implementation and published history are unchanged.
+The preceding D269 Linux build workflow failure arose in the Training tools dependency installation; AI unit tests succeeded and the Windows job was skipped.

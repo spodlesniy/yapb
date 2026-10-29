@@ -661,3 +661,7 @@ The run command automatically prepares supported pose, health and armor after bo
 D268 automatic game build and Explorer CI are pending and HLDS acceptance is required before declaring T261-06 complete.
 D268 Linux Build CI succeeded, but user MSVC x86 build reported C4099/C2371 on shadow edict_t aliases and C2672 on Game::clientPrint format arguments.
 D269 corrects only the AiPB headers/printing uses, retains yapb.h first include, and adds regression checks; CI and user-run Windows x86 are pending.
+D269 user-run MSVC x86 compile advanced past the menu source but failed at `src/ai/ai_exploration_probe.cpp:297`: `strings.format` returns a `const char*` buffer, not a `String`, so `message.chars()` caused C2228.
+D270 passes `message` directly to formatted client/server printing and extends the source-contract regression test.
+The D269 Linux Build workflow was red due to a failed Training tools dependency-install step; its AI unit tests passed, and Windows x86 was skipped.
+D270 automatic CI and user-run MSVC x86 validation are pending; T261-06/T261-07 remain unaccepted.

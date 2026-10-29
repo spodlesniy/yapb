@@ -61,3 +61,9 @@ Automatic build and real HLDS acceptance remain required before marking T261-06 
 
 D268 failed the user-run MSVC x86 build with shadow edict_t aliases and incorrectly typed print calls.
 D269 removes the aliases, corrects the format calls, and adds a regression test; automatic CI and user-run x86 verification are pending.
+
+## D270 status-format correction
+
+The Windows x86 build reached the scenario status printer and reported C2228 because a raw pointer from `strings.format` was used like a String with `.chars()`.
+D270 removes those two member calls, retaining explicit format strings, and extends the regression guard.
+Game and menu acceptance are still blocked on successful Windows x86 compilation and HLDS checks.

@@ -125,6 +125,9 @@ class YapbFirstIncludeTests(unittest.TestCase):
         self.assertNotIn("game.clientPrint(ent, started ?", menu)
         self.assertNotIn("game.clientPrint(client, message)", probe)
         self.assertNotIn("game.print(message)", probe)
+        self.assertIn('game.clientPrint(client, "%s", message);', probe)
+        self.assertIn('game.print("%s", message);', probe)
+        self.assertNotIn("message.chars()", probe)
 
     def test_catches_standard_and_local_headers_before_yapb(self) -> None:
         self.assertTrue(misplaced_yapb_include('#include <cstring>\n#include <yapb.h>\n'))
