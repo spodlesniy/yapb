@@ -206,3 +206,9 @@ The Stage A experiment result format and reproducibility remain later tasks.
 The independent gate introduced by D262 verifies freshly observed scenario start properties and rejects unsupported movement-slice controls before an executor can acquire control.
 This gate does not run actions or consume their durations.
 It is followed by T261-03 action scheduling, T261-04 GoldSrc movement, T261-05 safe lifecycle, and then the user-specified menu and HLDS acceptance.
+
+## D263 — Engine-neutral sequential scheduler
+
+The two-phase ActionScheduler introduced by D263 holds an admitted scenario and issues bounded frame commands in file order.
+It tracks action and global durations in commanded milliseconds, independent monotonic wall-clock deadlines, a 4096-frame safety cap, terminal reasons and cancellation.
+It does not run GoldSrc, move bots, record physics or prove success; T261-04 must integrate its output through the existing AiPB frame hook.

@@ -631,3 +631,9 @@ The independent gate rejects unsupported action `attack`, `attack2`, `use`, or `
 The runtime shares one observation adapter between equipment setup and the run gate to avoid differences in slot/ammo/grenade reading, including actual bot velocity.
 All successful checks still end in `ExecutorUnavailable`; no player movement, scenario action, or result artifact is produced.
 D262 automatic Build/Explorer CI pending; Stage A remains incomplete and the menu task remains before user-run HLDS executor testing.
+D262 automatic Build and Explorer CI passed at 9511b26.
+D263 implements T261-03 as a pure, engine-independent sequential action scheduler with explicit frame preparation and one-time frame commitment.
+The scheduler bounds GoldSrc frame milliseconds to 1..255, tracks action and scenario commanded time, checks monotonic wall-clock action/scenario deadlines, and caps runs at 4096 committed frames.
+Consecutive actions start with the next prepared frame, without inserted idle frames; abort and pending-frame validation never fabricate execution.
+It is not wired into HLDS, cannot acquire a bot, cannot perform `pfnRunPlayerMove`, and does not write result artifacts.
+D263 Explorer CI pending; T261-04 is the next integration task, and the user-specified menu remains a gate before live executor acceptance.

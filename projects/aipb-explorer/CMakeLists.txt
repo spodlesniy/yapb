@@ -237,8 +237,13 @@ if(BUILD_TESTING)
     target_compile_features(aipb_explorer_scenario_run_entry_tests PRIVATE cxx_std_17)
     target_include_directories(aipb_explorer_scenario_run_entry_tests PRIVATE include)
 
+    add_executable(aipb_explorer_scenario_action_scheduler_tests tests/engine_bridge_scenario_action_scheduler_tests.cpp)
+    add_test(NAME aipb_explorer_scenario_action_scheduler COMMAND aipb_explorer_scenario_action_scheduler_tests)
+    target_compile_features(aipb_explorer_scenario_action_scheduler_tests PRIVATE cxx_std_17)
+    target_include_directories(aipb_explorer_scenario_action_scheduler_tests PRIVATE include)
+
     add_executable(aipb_explorer_scenario_run_gate_tests tests/engine_bridge_scenario_run_gate_tests.cpp)
-    add_test(NAME aipb_explorer_scenario_run_gate COMMAND aipb_explorer_scenario_run_gate_tests)
+    add_test(NAME aipb_explorer_scenario_run_gate COMMAND aipb_explorer_scenario_run_gate_tests aipb_explorer_scenario_action_scheduler_tests)
     target_compile_features(aipb_explorer_scenario_run_gate_tests PRIVATE cxx_std_17)
     target_include_directories(aipb_explorer_scenario_run_gate_tests PRIVATE include)
 

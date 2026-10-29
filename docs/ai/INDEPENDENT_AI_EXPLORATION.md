@@ -745,3 +745,11 @@ If the scenario includes `attack=1`, `attack2=1`, `use=1` or `select` other than
 If actual start values differ it reports `StartMismatch` with the existing field findings; unknown explicitly constrained values return `StartUnverified`.
 A fully ready start still returns `ExecutorUnavailable` and cannot move the bot, because the action scheduler is not active.
 No manual HLDS executor acceptance is scheduled until the YaPB menu task T261-06 has been implemented to user requirements.
+
+## D263 — ActionScheduler available for adapter integration
+
+D263 adds the independent ActionScheduler with `begin`, `prepareFrame`, `commitFrame`, status and cancellation contracts.
+Each prepared frame is a proposal with one ticket and bounded msec; only exactly matching confirmation advances action and scenario time.
+Timeouts, frame limits, invalid clocks and cancel produce terminal states without applying commands.
+There is no live command change in D263: `aipb_scenario_run` still reports `ExecutorUnavailable` after successful preflight.
+Manual HLDS executor testing stays deferred until the requested menu integration task.

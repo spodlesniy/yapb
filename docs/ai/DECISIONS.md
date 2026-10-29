@@ -3339,3 +3339,13 @@ A mismatch and an unverified reading both reject entry, with explicit field diag
 Any non-default combat, use, or weapon-selection command in any action rejects the entire scenario before execution.
 The runtime observation is refactored into one AiPB-only helper shared by equipment initialization and run admission; no original YaPB files change.
 Even a fully ready start continues to return `ExecutorUnavailable` until the scheduler and movement adapter are implemented.
+
+## D263 — Pure two-phase sequential Scenario Action Scheduler (T261-03)
+
+D262 passed automatic Build and Explorer CI.
+Implement a standalone scheduler that is constructed from an admitted, valid movement-only scenario, with one active scenario and explicit action index.
+The adapter prepares a bounded frame before engine execution and commits exactly that frame after execution; duplicate, altered, rejected or cancelled acknowledgments do not advance state.
+Track simulated command time separately from monotonic wall-clock time so action/scenario deadlines detect stalls without assuming stable server FPS.
+Terminate with explicit Completed, Cancelled, ActionTimeout, ScenarioTimeout, FrameLimit, InvalidClock or InvalidScenario statuses.
+A next action is scheduled on the next actual engine frame without a synthetic gap, and command completion is not a claim that movement succeeded.
+D263 does not register another command, mutate bot state, or edit original YaPB files; actual runtime adapter and cleanup follow in T261-04/T261-05.
