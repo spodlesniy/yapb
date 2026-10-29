@@ -626,3 +626,12 @@ It accepts a versioned descriptor with map/run/source identity, a declared verif
 A successful projected displacement is not proof of hull clearance or a route.
 D252 is a library/test milestone: it does not introduce a `yb explore` command or execute an experiment.
 The subsequent Stage A runtime adapter must enforce authorization and preflight against real GoldSrc state before any live trial, with user-run HLDS replay acceptance.
+
+## D253 — Scenario file format (no live runner yet)
+
+Sample: `projects/aipb-explorer/scenarios/ground_forward_01.scenario`.
+The future administrator command is `yb explore scenario run ground_forward_01`, not yet implemented.
+Server input is planned under `addons/yapb/data/explorer/scenarios/`, with data outputs under `addons/yapb/data/explorer/results/<scenario>/`.
+Each run will use a local date/time prefix `YYYYMMDD_HHMMSS` plus a collision-safe suffix with exclusive creation so reruns never overwrite previous data.
+All action controls in one `[action]` run concurrently, while actions themselves execute in file order.
+Current D253 only parses and validates the descriptor; inventory application, runtime command scheduling and artifacts require separate implementation and HLDS checks.

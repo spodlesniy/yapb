@@ -3208,3 +3208,13 @@ The evaluator makes no assertion about collision contact or navigable passage fr
 Reuse existing engine-neutral bridge trace/state/speed contracts and register focused CTest mock and parser regressions with strict GCC/Clang/MSVC warnings.
 Do not add automatic experiment execution, new gameplay commands, changes to old traces, or bypass the current GoldSrc probe/replay safety checks.
 The Stage A execution/recording adapter, persistence of results from real HLDS runs, supervised repetition, and acceptance gate remain pending.
+
+## D253 — Scenario Runner v1 file contract
+
+Scenario Runner is implemented in small atomic steps beginning with an engine-neutral file contract.
+D253 introduces a strict INI-like `.scenario` format with version `aipb-scenario-v1`, scenario/map identity, bot team and initial pose/velocity/stance, explicit weapons and ammunition, grenade quantities, CT defuse kit, money, health and armor.
+Repeated `[action]` sections are sequential; within each action movement, yaw/pitch deltas, jump/duck, attack/use and selection act concurrently for `duration_ms`.
+The scenario and every action have bounded timeouts; parser errors, unknown fields, duplicate keys, invalid names, impossible inventory combinations and unsupported weapon aliases are rejected transactionally.
+The engine-neutral parser cannot spawn, arm, teleport or move bots.
+Subsequent steps must implement safe authorized GoldSrc preflight, runtime execution, exact inventory setup or explicit rejection, telemetry and exclusive timestamp-prefixed artifacts under one scenario-specific directory.
+`projects/aipb-explorer/scenarios/ground_forward_01.scenario` supplies a versioned sample.

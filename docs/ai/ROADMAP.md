@@ -560,3 +560,9 @@ D252 begins Movement Discovery Stage A (Experiment Framework) with an engine-neu
 D252 does not enable automatic or supervised execution in HLDS yet; the engine adapter, real trace/result persistence and a verified replay or explicit divergence remain outstanding.
 Stage A is in progress and cannot be accepted from code publication or mock CI alone.
 D252.1 corrects the MSVC /WX C4996 failure in D252 mock tests by replacing two unsafe CRT string copies with bounded formatting; no experiment contract or runtime behavior changes.
+
+D252.1 automatic Explorer CI passed after replacing two MSVC-unsafe strcpy calls in test fixtures.
+D253 begins Scenario Runner as a subtask of Movement Discovery Stage A.
+D253 provides the versioned scenario-file schema, bounded parser and test cases plus a sample scenario, but no runtime `yb explore scenario run` command.
+Next Scenario Runner slices must establish a safe GoldSrc bot-state/inventory preflight, a bounded concurrent-input action executor, and durable collision-safe timestamped telemetry/results in `explorer/results/<scenario>/`.
+Stage A remains pending actual user-run HLDS acceptance, real result provenance and repeatability.

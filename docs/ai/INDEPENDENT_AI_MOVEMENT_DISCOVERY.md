@@ -135,3 +135,11 @@ It reuses the existing engine bridge state/command/trace structures and is cover
 The caller-supplied verified-start marker is not a security or geometry proof; actual GoldSrc authorization and safe initialization still require runtime preflight.
 The next Stage A slice must connect a predeclared descriptor to administrator-authorized GoldSrc probe/replay, save actual engine pre/post observations and result provenance, and verify repetition or divergence on de_dust2.
 Do not mark Stage A complete until the user-run HLDS exit gate has passed.
+
+## Scenario Runner implementation
+
+D253 provides the first Scenario Runner slice: a versioned, bounded and strictly parsed `.scenario` file contract with example and GCC/Clang/MSVC tests.
+Action sections are sequential; controls within a section are simultaneous.
+Scenario and action deadlines are declared independently.
+The file does not itself authorize bot relocation, weapon grants, or test execution.
+Further atomic steps must load scenarios from a dedicated directory by safe name, verify the real GoldSrc bot and equipment state, execute with engine limits, write a timestamp-prefixed snapshot/trace/events/result with exclusive file creation, and validate user-run HLDS repetition before accepting Stage A.

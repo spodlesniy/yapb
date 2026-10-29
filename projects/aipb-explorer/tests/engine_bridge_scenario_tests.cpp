@@ -1,0 +1,198 @@
+#include <cstdio>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+
+#include <aipb/explorer/engine_bridge_scenario.h>
+
+using namespace aipb::explorer::scenario;
+
+static void check(bool condition) {
+  if (!condition) {
+    throw std::runtime_error("scenario contract regression");
+  }
+}
+
+static std::string sample() {
+  return R"(# Scenario controls are applied together during each action.
+[scenario]
+version=aipb-scenario-v1
+name=ground_forward_01
+map=de_dust2
+timeout_ms=5000
+
+[bot]
+index=1
+team=2
+x=448
+y=2368
+z=-92
+yaw=-105
+pitch=0
+vx=0
+vy=0
+vz=0
+crouching=0
+
+[equipment]
+primary=none
+primary_clip=0
+primary_reserve=0
+secondary=usp
+secondary_clip=12
+secondary_reserve=24
+he=1
+flash=2
+smoke=1
+defuse_kit=1
+money=800
+health=100
+armor=50
+helmet=1
+selected=secondary
+
+[action]
+duration_ms=500
+timeout_ms=700
+forward=1
+strafe=0.5
+yaw_delta=45
+pitch_delta=-5
+jump=1
+duck=1
+attack=1
+attack2=0
+use=0
+select=secondary
+
+[action]
+duration_ms=250
+timeout_ms=500
+forward=0
+strafe=0
+yaw_delta=0
+)";
+}
+
+static bool rejected(
+  const std::string &source,
+  const std::string &name = "ground_forward_01"
+) {
+  Scenario result {};
+  result.name = "previous";
+  std::string error {};
+
+  if (parseScenario(source, name, result, error)) {
+    return false;
+  }
+
+  return result.name == "previous" && !error.empty();
+}
+
+static std::string replaceOnce(
+  std::string source,
+  std::string_view oldValue,
+  std::string_view newValue
+) {
+  const auto at = source.find(oldValue);
+  check(at != std::string::npos);
+  source.replace(at, oldValue.size(), newValue);
+
+  return source;
+}
+
+int main() {
+  try {
+    const std::string valid = sample();
+    Scenario result {};
+    std::string error {};
+    check(parseScenario(valid, "ground_forward_01", result, error));
+    check(error.empty());
+    check(result.name == "ground_forward_01" && result.map == "de_dust2");
+    check(result.position[0] == 448 && result.position[2] == -92);
+    check(result.botIndex == 1 && result.team == 2 && !result.crouching);
+    check(result.equipment.secondary.type == "usp");
+    check(result.equipment.secondary.clip == 12 && result.equipment.secondary.reserve == 24);
+    check(result.equipment.he == 1 && result.equipment.flash == 2);
+    check(result.equipment.smoke == 1 && result.equipment.defuseKit);
+    check(result.equipment.helmet && result.equipment.armor == 50);
+    check(result.actions.size() == 2 && result.actions[0].durationMs == 500);
+    check(result.actions[0].timeoutMs == 700 && result.actions[1].timeoutMs == 500);
+    check(result.actions[0].forward == 1.0f && result.actions[0].strafe == 0.5f);
+    check(result.actions[0].yawDelta == 45.0f && result.actions[0].pitchDelta == -5.0f);
+    check(result.actions[0].jump && result.actions[0].duck && result.actions[0].attack);
+    check(validScenario(result));
+
+    check(rejected(valid, "other_name"));
+    check(rejected(replaceOnce(valid, "aipb-scenario-v1", "aipb-scenario-v0")));
+    check(rejected(replaceOnce(valid, "name=ground_forward_01", "name=../escape")));
+    check(rejected(replaceOnce(valid, "map=de_dust2", "map=../../../de_dust2")));
+    check(rejected(replaceOnce(valid, "timeout_ms=5000", "timeout_ms=0")));
+    check(rejected(replaceOnce(valid, "timeout_ms=5000", "timeout_ms=1000")));
+    check(rejected(replaceOnce(valid, "timeout_ms=700", "timeout_ms=200")));
+    check(rejected(replaceOnce(valid, "timeout_ms=700", "timeout_ms=700000")));
+    check(rejected(replaceOnce(valid, "forward=1", "forward=1.01")));
+    check(rejected(replaceOnce(valid, "strafe=0.5", "strafe=nan")));
+    check(rejected(replaceOnce(valid, "x=448", "x=inf")));
+    check(rejected(replaceOnce(valid, "yaw=-105", "yaw=181")));
+    check(rejected(replaceOnce(valid, "pitch=0", "pitch=-90")));
+    check(rejected(replaceOnce(valid, "team=2", "team=1")));
+    check(rejected(replaceOnce(valid, "flash=2", "flash=3")));
+    check(rejected(replaceOnce(valid, "primary=none", "primary=unknown")));
+    check(rejected(replaceOnce(valid, "selected=secondary", "selected=primary")));
+    check(rejected(replaceOnce(valid, "duration_ms=500", "duration_ms=0")));
+    check(rejected(replaceOnce(valid, "duration_ms=500", "duration_ms=0.5")));
+    check(rejected(replaceOnce(valid, "health=100", "health=-1")));
+    check(rejected(replaceOnce(valid, "money=800", "money=16001")));
+    check(rejected(replaceOnce(valid, "duck=1", "duck=2")));
+    check(rejected(replaceOnce(valid, "forward=1", "unsupported=1")));
+    check(rejected(replaceOnce(valid, "[equipment]", "[mystery]")));
+    check(rejected(replaceOnce(valid, "version=aipb-scenario-v1",
+      "version=aipb-scenario-v1\nversion=aipb-scenario-v1")));
+    check(rejected(replaceOnce(valid, "duration_ms=500",
+      "duration_ms=500\nduration_ms=500")));
+    check(rejected(replaceOnce(valid, "duration_ms=250", "unused=250")));
+    check(rejected(replaceOnce(valid, "name=ground_forward_01", "")));
+    check(rejected(replaceOnce(valid, "x=448", "")));
+    check(rejected(valid + "\n[action]\nforward=1\n"));
+    check(rejected(std::string(65537, 'a')));
+    check(rejected(replaceOnce(valid, "secondary=usp", "secondary=none")));
+    check(rejected(replaceOnce(valid, "armor=50", "armor=0")));
+
+    // An absent equipment section uses valid defaults and an idle action is legal.
+    const std::string basic = R"([scenario]
+version=aipb-scenario-v1
+name=wait
+map=de_dust2
+timeout_ms=500
+[bot]
+index=0
+team=1
+x=-16
+y=0
+z=0
+yaw=0
+pitch=0
+[action]
+duration_ms=250
+)";
+    check(parseScenario(basic, "wait", result, error));
+    check(result.equipment.primary.type == "none");
+    check(result.equipment.selected == "knife");
+    check(result.actions[0].timeoutMs == 250);
+    check(result.actions[0].forward == 0 && result.actions[0].strafe == 0);
+
+    // A new parser call cannot retain earlier action values.
+    check(parseScenario(valid, "ground_forward_01", result, error));
+    check(result.actions.size() == 2);
+    check(!safeIdentifier("../escape"));
+    check(!safeIdentifier("bad/name"));
+    check(safeIdentifier("de_dust2"));
+    check(!knownWeapon("defuser", true));
+    return 0;
+  }
+  catch (const std::exception &e) {
+    std::fprintf(stderr, "scenario contract: %s\n", e.what());
+    return 1;
+  }
+}
