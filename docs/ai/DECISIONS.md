@@ -3455,3 +3455,12 @@ The short `ground_forward_02.scenario` validates repeatable two-action movement;
 The current run command includes supported pose/equipment preparation and a fresh strict preflight; acceptance must not depend on removed `aipb_scenario_*` entrypoints.
 No production DLL behavior changes in this step.
 CI success and a user report of basic functionality alone do not satisfy the full T261-07 exit gate, and persistent experiment results and movement-success inference remain Stage A follow-up work.
+
+## D278 — Persist scenario terminal facts without declaring movement success
+
+After successful scenario admission, write one versioned terminal CSV for every completed or cancelled session with measured starting and ending engine state and scheduler counters.
+Create files exclusively under a scenario-specific results directory with timestamp and bounded collision suffix; do not overwrite or re-use a previous trial.
+Mark the source of terminal state so missing or disconnected bots are not misrepresented as live observations.
+Keep result I/O outside movement authorization and cleanup; failure to save cannot leave control buttons pressed.
+Do not call `Completed` a physical success and defer traces, replay comparison and physical outcome classification to later Stage A steps.
+User-run HLDS positive evidence exists, but the remaining T261-07 negative acceptance matrix is explicitly deferred and stays open.

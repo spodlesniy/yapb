@@ -675,3 +675,6 @@ D276 replaces the team-neutral forward fixture with equipment-free `ground_forwa
 D276 automatic Build and Explorer CI passed at 0a361d14; the user reported that the menu and scenario flow work in HLDS, including new-round menu closure.
 D277 prepares a supervised T261-07 HLDS acceptance matrix and a long idle scenario fixture for stop and lifecycle checks, with automatic loader coverage.
 T261-06/T261-07 are not declared fully accepted until the remaining negative-path matrix and user-run Windows x86 evidence are reviewed; Stage A result persistence remains deferred.
+D277 Explorer CI passed at a7ea9f73; user-run HLDS confirmed command completion, cancellation, and ExplorerBusy but intentionally postponed the remaining acceptance matrix.
+D278 adds the first versioned terminal result CSV for each admitted scenario run, recording the initial and terminal observed pose, command counters, run identity, and final reason, with unique exclusive creation in `explorer/results/<scenario>/`.
+Stage A remains incomplete: results lack a per-frame trace, replay comparison and physical success assessment, and outstanding T261-07 safety checks remain deferred rather than accepted.

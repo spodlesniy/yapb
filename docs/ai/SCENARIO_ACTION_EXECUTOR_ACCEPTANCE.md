@@ -51,3 +51,10 @@ No `explorer/results/` file is expected at T261-07; durable experiment results a
 Require D277 automatic Explorer CI success, a successful user-run Windows x86 game build for the tested SHA, and user-run HLDS evidence for A01–A11.
 A user report that basic menus and movement work is valuable preliminary evidence but is not a substitute for the remaining negative-path checks.
 Only after the full matrix is accepted may T261-06 and T261-07 be marked complete and the remaining Stage A result-recording work begin.
+
+## Deferred validation decision after D277
+
+The user chose to continue Stage A development before completing A01–A11.
+Existing positive HLDS reports cover commanded-duration completion, a repeated completion, manual cancellation and ExplorerBusy rejection.
+The remaining cases remain unverified and will be revisited when directly relevant to future work.
+The exit gate is not closed by this deferral.

@@ -10,6 +10,7 @@
 #include <aipb/explorer/engine_bridge_scenario_action_scheduler.h>
 #include <aipb/explorer/engine_bridge_scenario_movement.h>
 #include <aipb/explorer/engine_bridge_scenario_lifecycle.h>
+#include <aipb/explorer/engine_bridge_scenario_result.h>
 #include <aipb/explorer/engine_bridge_queue.h>
 #include <aipb/explorer/engine_bridge_trace.h>
 #include <aipb/explorer/engine_bridge_trace_classification.h>
@@ -23,6 +24,8 @@
 
 #include <cmath>
 #include <cstdint>
+#include <ctime>
+#include <filesystem>
 #include <utility>
 
 namespace ai::explore {
@@ -58,6 +61,73 @@ int scenarioActionIndex { -1 };
 uint32_t scenarioRoundId {};
 int scenarioTeam {};
 Bot *scenarioBot {};
+aipb::explorer::scenario::ScenarioResult scenarioResult {};
+aipb::explorer::scenario::ScenarioResultPose scenarioLastCommitted {};
+bool scenarioResultActive {};
+bool scenarioHaveLastCommitted {};
+
+aipb::explorer::scenario::ScenarioResultPose scenarioPose(const Bot &bot) {
+   aipb::explorer::scenario::ScenarioResultPose pose {};
+   pose.position[0] = bot.pev->origin.x;
+   pose.position[1] = bot.pev->origin.y;
+   pose.position[2] = bot.pev->origin.z;
+   pose.velocity[0] = bot.pev->velocity.x;
+   pose.velocity[1] = bot.pev->velocity.y;
+   pose.velocity[2] = bot.pev->velocity.z;
+   pose.yaw = bot.pev->v_angle.y;
+   pose.pitch = bot.pev->v_angle.x;
+   pose.onGround = !!(bot.pev->flags & FL_ONGROUND);
+   pose.crouching = !!(bot.pev->flags & FL_DUCKING);
+   return pose;
+}
+
+bool saveScenarioResult(const aipb::explorer::scenario::ScenarioResult &result) {
+   namespace fs = std::filesystem;
+   char record[2048] {};
+   if (!aipb::explorer::scenario::formatScenarioResult(record, sizeof(record), result)) {
+      return false;
+   }
+   const auto explorer = strings.joinPath(bstor.getRunningPath(), folders.data, "explorer");
+   const fs::path directory = fs::path(explorer.chars()) / "results" / result.name;
+   std::error_code error {};
+   fs::create_directories(directory, error);
+   if (error) {
+      return false;
+   }
+   const std::time_t epoch = std::time(nullptr);
+   std::tm calendar {};
+#if defined(_MSC_VER)
+   if (localtime_s(&calendar, &epoch) != 0) {
+      return false;
+   }
+#else
+   if (!localtime_r(&epoch, &calendar)) {
+      return false;
+   }
+#endif
+   char prefix[32] {};
+   if (std::strftime(prefix, sizeof(prefix), "%Y%m%d_%H%M%S", &calendar) == 0) {
+      return false;
+   }
+   for (int suffix = 0; suffix < 1000; ++suffix) {
+      char name[64] {};
+      std::snprintf(name, sizeof(name), "%s_%03d.result.csv", prefix, suffix);
+      const fs::path target = directory / name;
+      std::FILE *file = aipb::explorer::bridge::openTraceFile(target.string().c_str(), "wx");
+      if (!file) {
+         continue;
+      }
+      bool ok = std::fputs(record, file) >= 0;
+      if (std::fclose(file) != 0) {
+         ok = false;
+      }
+      if (!ok) {
+         std::remove(target.string().c_str());
+      }
+      return ok;
+   }
+   return false;
+}
 
 int64_t scenarioTimeMs() {
    const float now = game.time();
@@ -66,6 +136,28 @@ int64_t scenarioTimeMs() {
 }
 
 void scenarioEnd(Bot *bot, const char *reason) {
+   if (scenarioResultActive) {
+      scenarioResultActive = false;
+      scenarioResult.status = scenarioScheduler.status();
+      scenarioResult.reason = reason;
+      scenarioResult.frames = scenarioScheduler.frames();
+      scenarioResult.commandMs = scenarioScheduler.totalMilliseconds();
+      scenarioResult.endGameMs = scenarioTimeMs();
+      if (bot && bot->pev) {
+         scenarioResult.end = scenarioPose(*bot);
+         scenarioResult.endSource = aipb::explorer::scenario::ScenarioEndSource::Live;
+      }
+      else if (scenarioHaveLastCommitted) {
+         scenarioResult.end = scenarioLastCommitted;
+         scenarioResult.endSource = aipb::explorer::scenario::ScenarioEndSource::LastCommitted;
+      }
+      else {
+         scenarioResult.endSource = aipb::explorer::scenario::ScenarioEndSource::Missing;
+      }
+      if (!saveScenarioResult(scenarioResult)) {
+         game.print("AiPB scenario: '%s' result could not be saved.", scenarioName);
+      }
+   }
    if (bot && bot->pev) {
       bot->pev->button = 0;
       bot->pev->oldbuttons = 0;
@@ -272,6 +364,16 @@ bool runScenarioInternal(const char *name) {
    scenarioRoundId = gameState.getTelemetryRoundId();
    scenarioTeam = team;
    scenarioBot = bot;
+   scenarioResult = {};
+   scenarioResult.name = name;
+   scenarioResult.map = scenarioMap;
+   scenarioResult.botIndex = scenario.botIndex;
+   scenarioResult.team = team;
+   scenarioResult.roundId = scenarioRoundId;
+   scenarioResult.startGameMs = clock;
+   scenarioResult.start = scenarioPose(*bot);
+   scenarioHaveLastCommitted = false;
+   scenarioResultActive = true;
    game.print("AiPB scenario: '%s' started; bot=%d actions=%d.", name,
       scenario.botIndex, static_cast<int>(scenario.actions.size()));
    return true;
@@ -771,6 +873,8 @@ bool frame(Bot &bot) {
       bot.pev->impulse = 0;
       engfuncs.pfnRunPlayerMove(bot.ent(), angles, movement.forwardSpeed,
          movement.strafeSpeed, 0.0f, buttons, 0, static_cast<uint8_t>(planned.milliseconds));
+      scenarioLastCommitted = scenarioPose(bot);
+      scenarioHaveLastCommitted = true;
       if (!scenarioScheduler.commitFrame(planned, scenarioTimeMs())) {
          scenarioScheduler.cancel();
          scenarioEnd(&bot, "frame commit failed");

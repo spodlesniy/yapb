@@ -114,3 +114,10 @@ D277 adds `scenario_lifecycle_01.scenario` with one long idle action for safe su
 The exact manual acceptance steps and evidence requirements are in [SCENARIO_ACTION_EXECUTOR_ACCEPTANCE.md](SCENARIO_ACTION_EXECUTOR_ACCEPTANCE.md).
 Current `aipb scenario run` performs equipment preparation automatically; the old `aipb_scenario_init_equipment` entrypoint is not part of the supported CLI.
 T261-07 remains open until user-run Windows x86/HLDS positive and negative cases are recorded and accepted.
+
+## D278 — Deferred remaining acceptance checks
+
+The user confirmed basic scenario execution, repeatable commanded duration, manual cancellation, and ExplorerBusy protection through live HLDS logs.
+The user explicitly deferred the remaining T261-07 negative and lifecycle checks until relevant later development.
+T261-07 remains partially verified and open; these checks are not considered passed or waived.
+D278 begins Stage A persistence with a minimal terminal record without changing movement control or inferring physical success.

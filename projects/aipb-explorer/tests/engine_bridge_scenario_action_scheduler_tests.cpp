@@ -1,8 +1,12 @@
 #include <cstdio>
+#include <cstring>
+#include <limits>
+#include <string>
 #include <stdexcept>
 #include <string_view>
 
 #include <aipb/explorer/engine_bridge_scenario_action_scheduler.h>
+#include <aipb/explorer/engine_bridge_scenario_result.h>
 
 using namespace aipb::explorer::scenario;
 
@@ -154,6 +158,49 @@ int main() {
     check(scheduler.frames() == ActionScheduler::kMaxFrames, "frame counter");
     check(scheduler.prepareFrame(0, 1).milliseconds == 0, "maximum frame reached");
     check(scheduler.status() == ActionScheduleStatus::FrameLimit, "frame limit reason");
+
+    // Terminal summaries never equate scheduler completion with physical success.
+    ScenarioResult result {};
+    result.name = "ground_forward_02";
+    result.map = "de_dust2";
+    result.botIndex = 1;
+    result.team = 2;
+    result.roundId = 4;
+    result.status = ActionScheduleStatus::Completed;
+    result.reason = "finished";
+    result.frames = 380;
+    result.commandMs = 750;
+    result.startGameMs = 1000;
+    result.endGameMs = 1750;
+    result.endSource = ScenarioEndSource::Live;
+    result.start.position[0] = 448.0;
+    result.start.position[1] = 2368.0;
+    result.start.position[2] = -92.0;
+    result.start.onGround = true;
+    result.end = result.start;
+    result.end.position[0] += 40.0;
+    char record[1024] {};
+    check(formatScenarioResult(record, sizeof(record), result), "format summary");
+    check(std::strstr(record, "aipb-scenario-result-v1,ground_forward_02,de_dust2,1,2,4,Completed,finished,380,750,1000,1750,live,") == record,
+      "result provenance");
+    check(std::strstr(record, ",488,2368,-92,") != nullptr, "actual ending coordinates");
+    check(!formatScenarioResult(record, 16, result), "truncation rejected");
+    result.status = ActionScheduleStatus::Running;
+    check(!formatScenarioResult(record, sizeof(record), result), "running not terminal");
+    result.status = ActionScheduleStatus::Cancelled;
+    result.reason = "bot disconnected";
+    result.endSource = ScenarioEndSource::LastCommitted;
+    check(formatScenarioResult(record, sizeof(record), result), "disconnected last observation");
+    check(std::strstr(record, ",Cancelled,bot disconnected,") != nullptr, "cancellation reason");
+    result.endSource = ScenarioEndSource::Missing;
+    result.end.position[0] = std::numeric_limits<double>::quiet_NaN();
+    check(formatScenarioResult(record, sizeof(record), result), "unavailable endpoint marked");
+    check(std::strstr(record, ",missing,") != nullptr, "missing source");
+    result.endSource = ScenarioEndSource::Live;
+    check(!formatScenarioResult(record, sizeof(record), result), "invalid live endpoint rejected");
+    result.end = result.start;
+    result.reason = "comma,invalid";
+    check(!formatScenarioResult(record, sizeof(record), result), "unsafe CSV reason rejected");
 
     // Malformed or unsupported plans never schedule actions.
     auto invalid = makeScenario();

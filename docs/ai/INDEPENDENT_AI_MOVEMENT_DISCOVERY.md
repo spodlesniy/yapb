@@ -219,3 +219,11 @@ D264 wires the bounded scheduler to RunPlayerMove through the existing AiPB fram
 All action movement comes from real engine frames; the independently tested translation computes normalized forward/strafe speeds, held jump/duck and cumulative bounded view rotations.
 Status and stop now observe/cancel the scenario session, while full cancellation and mutual-exclusion hardening are planned for T261-05.
 Menu integration is still required before manual HLDS acceptance.
+
+## D278 — Minimal scenario terminal record
+
+Each admitted scenario run attempts one `aipb-scenario-result-v1` CSV under `explorer/results/<scenario>/` upon terminal transition, using a local timestamp and collision suffix with exclusive file creation.
+The record includes scenario/map/bot/team/round identity, scheduler status/reason, command milliseconds, frame count, game-clock start/end times, actual start and last available terminal pose, velocity, angles, ground/stance flags, and endpoint provenance (`live`, `last_committed`, or `missing`).
+The result is not a movement success claim; no frame-by-frame trace, replay or target classifier is included.
+Failed saves are reported to the server console and must never prevent button cleanup.
+Acceptance still requires user-run Windows x86/HLDS evidence; the remaining T261-07 negatives are postponed, not passed.
