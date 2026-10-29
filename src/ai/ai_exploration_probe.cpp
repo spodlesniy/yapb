@@ -7,6 +7,7 @@
 #include <aipb/explorer/engine_bridge_scenario_run_gate.h>
 #include <aipb/explorer/engine_bridge_scenario_action_scheduler.h>
 #include <aipb/explorer/engine_bridge_scenario_movement.h>
+#include <aipb/explorer/engine_bridge_scenario_lifecycle.h>
 #include <aipb/explorer/engine_bridge_queue.h>
 #include <aipb/explorer/engine_bridge_trace.h>
 #include <aipb/explorer/engine_bridge_trace_classification.h>
@@ -52,6 +53,9 @@ float scenarioLastTime {};
 float scenarioActionYaw {};
 float scenarioActionPitch {};
 int scenarioActionIndex { -1 };
+uint32_t scenarioRoundId {};
+int scenarioTeam {};
+Bot *scenarioBot {};
 
 int64_t scenarioTimeMs() {
    const float now = game.time();
@@ -62,6 +66,7 @@ int64_t scenarioTimeMs() {
 void scenarioEnd(Bot *bot, const char *reason) {
    if (bot && bot->pev) {
       bot->pev->button = 0;
+      bot->pev->oldbuttons = 0;
       bot->pev->impulse = 0;
    }
    game.print("AiPB scenario: '%s' %s, status=%s, frames=%d, command_ms=%d.",
@@ -285,6 +290,10 @@ void runScenarioEntryCommand() {
       return;
    }
 
+   if (gameState.isRoundOver()) {
+      game.print("AiPB scenario run: '%s' rejected (RoundOver).", name);
+      return;
+   }
    const int64_t clock = scenarioTimeMs();
    if (clock < 0 || !scenarioScheduler.begin(scenario, gate, clock)) {
       game.print("AiPB scenario run: '%s' rejected (SchedulerUnavailable); no actions executed.", name);
@@ -294,6 +303,9 @@ void runScenarioEntryCommand() {
    std::snprintf(scenarioMap, sizeof(scenarioMap), "%s", game.getMapName());
    scenarioLastTime = game.time();
    scenarioActionIndex = -1;
+   scenarioRoundId = gameState.getTelemetryRoundId();
+   scenarioTeam = team;
+   scenarioBot = bot;
    game.print("AiPB scenario run: '%s' started; bot=%d actions=%d.", name,
       scenario.botIndex, static_cast<int>(scenario.actions.size()));
 }
@@ -310,7 +322,7 @@ void stopScenarioEntryCommand() {
    }
    auto *bot = bots.findBotByIndex(scenarioScheduler.botIndex());
    scenarioScheduler.cancel();
-   scenarioEnd(bot, "stopped");
+   scenarioEnd(bot == scenarioBot ? bot : nullptr, "stopped");
 }
 
 void statusScenarioEntryCommand() {
@@ -710,7 +722,7 @@ void reset() {
    if (scenarioScheduler.running()) {
       auto *bot = bots.findBotByIndex(scenarioScheduler.botIndex());
       scenarioScheduler.cancel();
-      scenarioEnd(bot, "cancelled");
+      scenarioEnd(bot == scenarioBot ? bot : nullptr, "cancelled");
    }
    stop("cancelled");
 }
@@ -746,11 +758,20 @@ bool frame(Bot &bot) {
    }
 
    if (scenarioScheduler.running() && scenarioScheduler.botIndex() == bot.index()) {
-      if (!game.isAliveEntity(bot.ent())
-         || std::strcmp(scenarioMap, game.getMapName()) != 0
-         || !std::isfinite(bot.pev->maxspeed) || bot.pev->maxspeed < 10.0f) {
+      const auto currentTeam = bot.m_team == Team::CT ? 2
+         : bot.m_team == Team::Terrorist ? 1 : 0;
+      const aipb::explorer::scenario::RunLifecycleObservation life {
+         gameState.isRoundOver(), gameState.getTelemetryRoundId(), game.getMapName(),
+         true, &bot == scenarioBot, game.isAliveEntity(bot.ent()), currentTeam,
+         std::isfinite(bot.pev->maxspeed) && bot.pev->maxspeed >= 10.0f,
+         session.botIndex >= 0 || queue.running
+      };
+      const auto failure = aipb::explorer::scenario::checkRunLifecycle(
+         life, scenarioMap, scenarioRoundId, scenarioTeam);
+      if (failure != aipb::explorer::scenario::RunLifecycleFailure::None) {
          scenarioScheduler.cancel();
-         scenarioEnd(&bot, "bot or map unavailable");
+         scenarioEnd(&bot == scenarioBot ? &bot : nullptr,
+            aipb::explorer::scenario::runLifecycleFailureName(failure));
          return true;
       }
       const float now = game.time();

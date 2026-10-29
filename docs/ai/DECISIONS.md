@@ -3357,3 +3357,12 @@ The command starts a scenario only after fresh full preflight, and each issued f
 Yaw and pitch deltas are cumulative action totals, movement axes are normalized, and held jump/duck buttons are submitted with the command.
 The adapter has basic explicit stop, bot/map invalidation and cleanup to prevent leaving a live movement session behind, but comprehensive lifecycle conflict tests are reserved for T261-05.
 No original YaPB files were changed and no result artifact or physics success claim is produced.
+
+## D265 — Round-aware Scenario Runner lifecycle (T261-05)
+
+D264 Build and Explorer CI passed.
+D265 adds a pure lifecycle decision contract and checks it in the selected bot's AiPB frame before movement.
+A run must not start once a round is over, and stops on round-over state or changed telemetry round ID, as well as map, bot identity, team, life, speed and conflicting Explorer sessions.
+The round ID ensures that a new round cannot accidentally inherit an active scenario even when its round-over boolean has cleared.
+Cancel and completion clear button and old-button state before returning to normal bot AI.
+No original YaPB files change, and user-run acceptance remains gated by the requested menu task.

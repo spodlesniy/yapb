@@ -642,3 +642,7 @@ D264 connects the existing ActionScheduler to the AiPB frame hook and GoldSrc pf
 An accepted run now acquires one bot and executes bounded movement actions; stop and status are connected to the scheduler.
 Basic disconnect/map/death cancellation and button release are included as safety prerequisites, while full lifecycle arbitration and regression hardening remain T261-05.
 D264 CI and user-run Windows x86 acceptance are pending; menu integration still precedes manual HLDS execution acceptance.
+D264 automatic Build and Explorer CI passed at eed2946.
+D265 implements T261-05 runtime lifecycle guards, including end-of-round cancellation via gameState.isRoundOver(), new-round detection via telemetry round ID, and validation of map, selected bot identity, team, life, speed and Explorer conflicts.
+The runner rejects starting after a round ends, clears held and old button state when stopping, and aborts on a failed lifecycle check before submitting another frame.
+D265 CI pending; T261-06 menu integration and user-run HLDS acceptance still remain outstanding.
