@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -15,6 +16,15 @@ inline constexpr std::size_t kScenarioMenuPageSize = 5;
 inline constexpr std::size_t kScenarioMenuMaxEntries = 256;
 
 enum class ScenarioMenuScreen { Closed, Root, Browser };
+
+// An AiPB menu must not survive into the next game round.
+inline bool scenarioMenuRoundExpired(
+  ScenarioMenuScreen screen,
+  std::uint32_t displayedRoundId,
+  std::uint32_t currentRoundId
+) {
+  return screen != ScenarioMenuScreen::Closed && displayedRoundId != currentRoundId;
+}
 
 // Refresh an owned menu only when its action availability has changed.
 inline bool scenarioMenuNeedsRefresh(

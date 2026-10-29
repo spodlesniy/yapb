@@ -8,6 +8,7 @@
 #include <vector>
 #include <string>
 #include <cstring>
+#include <cstdint>
 
 namespace ai::menu {
 namespace {
@@ -18,6 +19,7 @@ struct PlayerMenu {
    aipb::explorer::scenario::ScenarioMenuSession session {};
    aipb::explorer::scenario::ScenarioMenuBrowser browser {};
    bool renderedRunning {};
+   std::uint32_t displayRoundId {};
 };
 PlayerMenu players[kPlayers] {};
 bool overlayEnabled {};
@@ -99,6 +101,7 @@ void root(edict_t *ent) {
    const int index = game.indexOfPlayer(ent);
    auto &state = players[index];
    state.session.showRoot();
+   state.displayRoundId = gameState.getTelemetryRoundId();
    const bool running = ai::explore::scenarioRunning();
    state.renderedRunning = running;
    const auto availability = aipb::explorer::scenario::scenarioMenuAvailability(running);
@@ -125,6 +128,7 @@ void browse(edict_t *ent, bool reload) {
       return;
    }
    state.session.showBrowser();
+   state.displayRoundId = gameState.getTelemetryRoundId();
    const auto page = state.browser.currentPage();
    String text {};
    text.assignf("\\yAiPB Scenarios (%d/%d)\\w\n\n",
@@ -262,6 +266,11 @@ bool handleClient(edict_t *ent) {
       if (!session.ownsSelection(util.getClient(index).menu != Menu::None)) {
          return false;
       }
+      if (aipb::explorer::scenario::scenarioMenuRoundExpired(
+         session.screen(), players[index].displayRoundId, gameState.getTelemetryRoundId())) {
+         close(ent);
+         return true;
+      }
       if (engfuncs.pfnCmd_Argc() == 2) {
          const char *arg = engfuncs.pfnCmd_Argv(1);
          if (arg && arg[0] >= '0' && arg[0] <= '9' && arg[1] == '\0') {
@@ -326,6 +335,11 @@ void frame() {
       auto *player = game.playerOfIndex(i);
       if (!allowed(player) || !state.session.ownsSelection(util.getClient(i).menu != Menu::None)) {
          state.session.release();
+         continue;
+      }
+      if (aipb::explorer::scenario::scenarioMenuRoundExpired(
+         state.session.screen(), state.displayRoundId, gameState.getTelemetryRoundId())) {
+         close(player);
          continue;
       }
       if (aipb::explorer::scenario::scenarioMenuNeedsRefresh(

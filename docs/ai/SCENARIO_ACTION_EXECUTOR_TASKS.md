@@ -98,3 +98,9 @@ Omitted action `timeout_ms` now uses `duration_ms + ceil(duration_ms / 10)`, whi
 An omitted `[bot] team` accepts either active team, while an explicit `team=1|2` is strictly enforced. Game lifecycle checks continue to protect against changes from the admitted team.
 The new `ground_forward_any_team_01.scenario` retains the original forward/turn actions and primary/secondary weapon constraints without requiring a specific team or unrelated equipment.
 Automated scenario parsing/loader/preflight tests cover these contracts; real HLDS validation remains pending.
+
+## D276 round-scoped menu and scenario rename
+
+Replace `ground_forward_any_team_01.scenario` with `ground_forward_02.scenario`, containing no `[equipment]` section, with the same two movement actions and omitted team requirement.
+On a new telemetry round ID, close each still-owned AiPB root/browser menu and clear its session. Check on every server frame and before processing menu selection to avoid stale controls. Do not close foreign menus or reset the overlay configuration.
+Automated scenario-loader, menu-state, and source-contract tests are added. HLDS confirmation is pending.

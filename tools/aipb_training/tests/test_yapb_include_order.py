@@ -165,6 +165,17 @@ class YapbFirstIncludeTests(unittest.TestCase):
         self.assertIn('"No scenario running"', model)
         self.assertIn('" is running"', model)
 
+    def test_aipb_round_transition_closes_only_owned_menu(self) -> None:
+        menu = (ROOT / "src" / "ai" / "ai_menu.cpp").read_text(encoding="utf-8")
+        model = (ROOT / "projects" / "aipb-explorer" / "include" /
+                 "aipb" / "explorer" / "engine_bridge_scenario_menu.h").read_text(encoding="utf-8")
+        self.assertIn("state.displayRoundId = gameState.getTelemetryRoundId();", menu)
+        self.assertIn("scenarioMenuRoundExpired(", menu)
+        self.assertEqual(menu.count("scenarioMenuRoundExpired("), 2)
+        self.assertIn("close(player);", menu)
+        self.assertIn("close(ent);", menu)
+        self.assertIn("screen != ScenarioMenuScreen::Closed", model)
+
     def test_catches_standard_and_local_headers_before_yapb(self) -> None:
         self.assertTrue(misplaced_yapb_include('#include <cstring>\n#include <yapb.h>\n'))
         self.assertTrue(misplaced_yapb_include('#include <ai/ai_perception_guard.h>\n#include <yapb.h>\n'))

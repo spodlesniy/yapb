@@ -36,6 +36,14 @@ int main() {
     check(!scenarioMenuNeedsRefresh(ScenarioMenuScreen::Browser, false, false));
     check(scenarioMenuNeedsRefresh(ScenarioMenuScreen::Browser, false, true));
 
+    check(!scenarioMenuRoundExpired(ScenarioMenuScreen::Closed, 4, 5));
+    check(!scenarioMenuRoundExpired(ScenarioMenuScreen::Root, 4, 4));
+    check(!scenarioMenuRoundExpired(ScenarioMenuScreen::Browser, 4, 4));
+    check(scenarioMenuRoundExpired(ScenarioMenuScreen::Root, 4, 5));
+    check(scenarioMenuRoundExpired(ScenarioMenuScreen::Browser, 4, 5));
+    check(scenarioMenuRoundExpired(ScenarioMenuScreen::Root, 0, 1));
+    check(scenarioMenuRoundExpired(ScenarioMenuScreen::Root, UINT32_MAX, 1));
+
     ScenarioMenuSession session {};
     check(!session.ownsSelection(false));
     session.showRoot();

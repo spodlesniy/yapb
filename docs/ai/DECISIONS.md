@@ -3441,3 +3441,9 @@ An omitted action `timeout_ms` defaults to `duration_ms + ceil(duration_ms / 10)
 Allow omission of `bot.team` as a wildcard for either active CS team (T or CT). If a team is explicit, enforce it as before. Unassigned/spectator teams remain ineligible; the runner still captures the actual admitted team and aborts if the bot changes team during execution.
 Add `ground_forward_any_team_01.scenario`, derived from `ground_forward_01.scenario`, preserving only primary/secondary weapon, ammunition and selected-weapon equipment constraints, and removing the explicit team constraint. The original fixture is unchanged.
 The real-game timing behavior remains subject to user-run HLDS verification.
+
+## D276 — Round-scoped AiPB menus and equipment-free forward fixture
+
+AiPB menus now record the telemetry round ID when shown and close on a change, including an early menuselect before StartFrame refresh. Only a currently owned AiPB menu is closed; a foreign ShowMenu/VGUIMenu has already released ownership. New-round closure does not modify the persistent overlay setting or scenario scheduler.
+Replace the D275 `ground_forward_any_team_01.scenario` fixture with `ground_forward_02.scenario`, preserving both movement actions and the team wildcard while entirely removing the equipment section and its requirements. Existing `ground_forward_01.scenario` stays unchanged.
+The full game UI behavior must be verified in a user-run HLDS session.

@@ -61,23 +61,21 @@ duration_ms=100
     check(loadScenario(fixtureRoot, "optional_omitted_01", omitted, detail) == LoadStatus::Ok);
     check(loadScenario(fixtureRoot, "optional_explicit_01", explicitValues, detail) == LoadStatus::Ok);
     Scenario eitherTeam {};
-    check(loadScenario(fixtureRoot, "ground_forward_any_team_01", eitherTeam, detail)
+    check(loadScenario(fixtureRoot, "ground_forward_02", eitherTeam, detail)
       == LoadStatus::Ok);
     check(eitherTeam.team == 0 && !eitherTeam.hasBot("team"));
     check(checkScenarioPreflight(eitherTeam, "de_dust2", true, true, 1) == PreflightStatus::Ok);
     check(checkScenarioPreflight(eitherTeam, "de_dust2", true, true, 2) == PreflightStatus::Ok);
     check(checkScenarioPreflight(eitherTeam, "de_dust2", true, true, 0)
       == PreflightStatus::TeamMismatch);
-    check(eitherTeam.equipment.has("primary") && eitherTeam.equipment.has("secondary"));
-    check(eitherTeam.equipment.has("primary_clip")
-      && eitherTeam.equipment.has("primary_reserve"));
-    check(eitherTeam.equipment.has("secondary_clip")
-      && eitherTeam.equipment.has("secondary_reserve"));
-    check(eitherTeam.equipment.has("selected"));
-    check(!eitherTeam.equipment.has("health") && !eitherTeam.equipment.has("armor"));
-    check(!eitherTeam.equipment.has("defuse_kit") && !eitherTeam.equipment.has("money"));
-    check(!eitherTeam.equipment.has("helmet") && !eitherTeam.equipment.has("he"));
-    check(!eitherTeam.equipment.has("flash") && !eitherTeam.equipment.has("smoke"));
+    check(eitherTeam.equipment.specified.empty());
+    check(eitherTeam.equipment.primary.type == "none");
+    check(eitherTeam.equipment.secondary.type == "none");
+    check(eitherTeam.actions.size() == 2);
+    check(eitherTeam.actions[0].durationMs == 500
+      && eitherTeam.actions[0].forward == 1.0f);
+    check(eitherTeam.actions[1].durationMs == 250
+      && eitherTeam.actions[1].yawDelta == 45.0f);
     check(!omitted.hasBot("vx") && !omitted.hasBot("crouching"));
     check(omitted.equipment.has("secondary") && !omitted.equipment.has("secondary_clip"));
     check(!omitted.equipment.has("secondary_reserve") && !omitted.equipment.has("health"));
