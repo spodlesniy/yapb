@@ -143,6 +143,20 @@ class YapbFirstIncludeTests(unittest.TestCase):
         self.assertIn("session.ownsSelection(util.getClient(index).menu != Menu::None)", menu)
         self.assertIn("game.sendHudMessage(player, parameters, label.c_str());", menu)
 
+    def test_aipb_menu_english_labels_and_disabled_stop(self) -> None:
+        menu = (ROOT / "src" / "ai" / "ai_menu.cpp").read_text(encoding="utf-8")
+        model = (ROOT / "projects" / "aipb-explorer" / "include" /
+                 "aipb" / "explorer" / "engine_bridge_scenario_menu.h").read_text(encoding="utf-8")
+        self.assertTrue(menu.isascii())
+        self.assertTrue(model.isascii())
+        self.assertIn('3. Stop Scenario%s', menu)
+        self.assertIn('availability.stop ? "" : " (disabled)"', menu)
+        self.assertIn('availability.stop ? "\\\\w" : "\\\\d"', menu)
+        self.assertIn("scenarioMenuRootKeyMask(running)", menu)
+        self.assertIn("selected == 3 && availability.stop", menu)
+        self.assertIn('"No scenario running"', model)
+        self.assertIn('" is running"', model)
+
     def test_catches_standard_and_local_headers_before_yapb(self) -> None:
         self.assertTrue(misplaced_yapb_include('#include <cstring>\n#include <yapb.h>\n'))
         self.assertTrue(misplaced_yapb_include('#include <ai/ai_perception_guard.h>\n#include <yapb.h>\n'))

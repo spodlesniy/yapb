@@ -74,3 +74,11 @@ User HLDS testing after D271 found that YaPB and CS team menu selections could b
 D272 releases per-client menu ownership on other client commands, foreign ShowMenu/VGUIMenu messages, active YaPB menus and client/map lifecycle events.
 The overlay refresh moves to StartFrame so it does not require a bot frame.
 Independent menu-session and integration regression tests are added; Windows x86 and real-client display/selection acceptance remain pending.
+
+## D273 English-only menu labels and disabled actions
+
+All AiPB scenario menu and status-overlay labels must be displayed in English.
+When no scenario is executing, Stop Scenario is visibly disabled, excluded from the GoldSrc key mask and rejected by the selection handler.
+Run Scenario is disabled with the same protections while executing.
+The state, key mask and handler use the shared scenario-menu availability contract.
+Windows x86 and user-run HLDS acceptance remain pending.

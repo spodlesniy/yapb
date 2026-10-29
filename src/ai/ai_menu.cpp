@@ -99,14 +99,17 @@ void root(edict_t *ent) {
    auto &state = players[index];
    state.session.showRoot();
    const bool running = ai::explore::scenarioRunning();
+   const auto availability = aipb::explorer::scenario::scenarioMenuAvailability(running);
    String text {};
    text.assignf("\\yAiPB Scenarios\\w\n\n1. Overlay: %s\n",
       overlayEnabled ? "ON" : "OFF");
-   text.appendf("%s2. Run scenario\n", running ? "\\d" : "\\w");
-   text.appendf("%s3. Stop scenario\n\n\\w0. Exit",
-      running ? "\\w" : "\\d");
-   const int keys = cr::bit(0) | cr::bit(9)
-      | (running ? cr::bit(2) : cr::bit(1));
+   text.appendf("%s2. Run Scenario%s\n",
+      availability.start ? "\\w" : "\\d",
+      availability.start ? "" : " (disabled)");
+   text.appendf("%s3. Stop Scenario%s\n\n\\w0. Exit",
+      availability.stop ? "\\w" : "\\d",
+      availability.stop ? "" : " (disabled)");
+   const int keys = static_cast<int>(aipb::explorer::scenario::scenarioMenuRootKeyMask(running));
    send(ent, keys, text);
 }
 
@@ -156,14 +159,16 @@ void onSelect(edict_t *ent, int selected) {
    }
 
    if (screen == aipb::explorer::scenario::ScenarioMenuScreen::Root) {
-      if (selected == 1) {
+      const auto availability = aipb::explorer::scenario::scenarioMenuAvailability(
+         ai::explore::scenarioRunning());
+      if (selected == 1 && availability.toggleOverlay) {
          overlayEnabled = !overlayEnabled;
          root(ent);
       }
-      else if (selected == 2 && !ai::explore::scenarioRunning()) {
+      else if (selected == 2 && availability.start) {
          browse(ent, true);
       }
-      else if (selected == 3 && ai::explore::scenarioRunning()) {
+      else if (selected == 3 && availability.stop) {
          ai::explore::stopScenario();
          root(ent);
       }

@@ -52,15 +52,23 @@ inline ScenarioMenuAvailability scenarioMenuAvailability(bool running) {
   return { true, !running, running };
 }
 
+inline unsigned int scenarioMenuRootKeyMask(bool running) {
+  const auto availability = scenarioMenuAvailability(running);
+
+  return (1u << 0) | (1u << 9)
+    | (availability.start ? (1u << 1) : 0u)
+    | (availability.stop ? (1u << 2) : 0u);
+}
+
 inline std::string scenarioMenuOverlayText(
   bool running,
   std::string_view scenarioName
 ) {
   if (!running) {
-    return "Сценарий не запущен";
+    return "No scenario running";
   }
 
-  return "Сценарий " + std::string { scenarioName } + " выполняется";
+  return "Scenario " + std::string { scenarioName } + " is running";
 }
 
 // Flat, deterministic browser. Only .scenario file basenames are accepted.

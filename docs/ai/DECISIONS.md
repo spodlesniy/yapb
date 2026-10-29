@@ -3419,3 +3419,10 @@ AiPB now owns selections only while its display remains active; foreign client c
 Outgoing AiPB menus are distinguished from foreign menus so its own display does not clear the session.
 The scenario-status HUD refresh moves from the bot-specific probe frame to the server StartFrame, independently of bot population.
 Automated unit and source-contract checks accompany this correction; runtime menu and Cyrillic HUD acceptance still require user-run Windows x86/HLDS verification.
+
+## D273 — English-only scenario UI and state-gated menu actions
+
+Use only English strings in the AiPB scenario menu and HUD overlay.
+Display unavailable Run Scenario and Stop Scenario actions in disabled styling with an explicit label; prevent invocation through both the menu key mask and selection dispatch.
+Drive the key mask and selection guards from the engine-neutral scenario-menu availability model, and add regression coverage for idle/running states.
+The T261-06 game acceptance gate remains open pending user-run Windows x86 and HLDS checks.

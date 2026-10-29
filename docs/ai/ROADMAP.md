@@ -667,3 +667,4 @@ The D269 Linux Build workflow was red due to a failed Training tools dependency-
 D270 automatic CI and user-run MSVC x86 validation are pending; T261-06/T261-07 remain unaccepted.
 D271 pinned the training-tools job to CPython 3.13 and passed automatic CI.
 D272 corrects AiPB menu ownership after user HLDS checks showed interference with YaPB/CS menus, and moves overlay updates to server StartFrame; T261-06 still requires user-run Windows x86/HLDS acceptance.
+D273 standardizes the AiPB scenario menu and HUD overlay to English and makes Run/Stop availability consistent across display, key masks and handlers; Windows x86/HLDS acceptance remains pending.

@@ -19,9 +19,13 @@ int main() {
     check(!scenarioMenuAvailability(false).stop);
     check(!scenarioMenuAvailability(true).start);
     check(scenarioMenuAvailability(true).stop);
-    check(scenarioMenuOverlayText(false, "abc") == "Сценарий не запущен");
+    check(scenarioMenuOverlayText(false, "abc") == "No scenario running");
     check(scenarioMenuOverlayText(true, "ground_forward_01")
-      == "Сценарий ground_forward_01 выполняется");
+      == "Scenario ground_forward_01 is running");
+    check(scenarioMenuRootKeyMask(false) == ((1u << 0) | (1u << 1) | (1u << 9)));
+    check(scenarioMenuRootKeyMask(true) == ((1u << 0) | (1u << 2) | (1u << 9)));
+    check((scenarioMenuRootKeyMask(false) & (1u << 2)) == 0u);
+    check((scenarioMenuRootKeyMask(true) & (1u << 1)) == 0u);
 
     ScenarioMenuSession session {};
     check(!session.ownsSelection(false));
