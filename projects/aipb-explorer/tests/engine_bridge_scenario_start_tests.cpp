@@ -20,6 +20,12 @@ int main() {
     s.team = 2;
     s.timeoutMs = 1000;
     s.equipment.selected = "knife";
+    for (const char *key : {"primary", "secondary", "selected", "he", "flash", "smoke", "helmet", "money", "health", "armor", "defuse_kit"}) {
+      s.equipment.specified.insert(key);
+    }
+    for (const char *key : {"vx", "vy", "vz", "crouching"}) {
+      s.specifiedBot.insert(key);
+    }
     s.actions.push_back({});
     s.actions[0].durationMs = 100;
     s.actions[0].timeoutMs = 100;
@@ -49,6 +55,18 @@ int main() {
     check(assessScenarioStart(s, a, 0, 0, 29).ready());
     a.primaryId = -1;
     check(assessScenarioStart(s, a, 0, 0, 29).unverified == 1);
+    s.equipment.specified.clear();
+    s.specifiedBot.clear();
+    a.flash = -1;
+    a.helmetKnown = false;
+    a.health = 13;
+    a.money = 15000;
+    a.defuseKit = true;
+    check(assessScenarioStart(s, a, 0, 0, 29).ready());
+    s.equipment.specified.insert("defuse_kit");
+    check(assessScenarioStart(s, a, 0, 0, 29).mismatches == 1);
+    s.equipment.defuseKit = true;
+    check(assessScenarioStart(s, a, 0, 0, 29).ready());
     return 0;
   }
   catch (const std::exception &e) {

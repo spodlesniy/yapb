@@ -3241,3 +3241,12 @@ D255 adds a read-only `yb explore scenario preflight <name>` command to compare 
 It returns mismatch and unverified counts; unknown grenade quantities and unavailable helmet state cannot be treated as a successful setup.
 It does not teleport, issue weapon grants, set ammunition or execute actions.
 Further implementation must provide explicit controlled initialization and accurate grenade and helmet reads before a start state can be accepted as ready.
+
+## D255.1 — Optional scenario constraints are not implicit zero requirements
+
+D253 and D255 previously treated omitted equipment values as explicit default constraints, causing unnecessary start-state mismatches.
+D255.1 records the presence of each named bot and equipment field during scenario parsing.
+An omitted field means no constraint, an explicit zero or none means a required absence, and an explicit nonzero value means an exact requirement.
+Primary or secondary clip/reserve constraints require an explicit corresponding weapon type.
+Only explicitly required properties contribute to preflight mismatch or unavailable-observation counts; grounded state and valid speed remain safety preconditions.
+Keep scenario identity, map, bot index, team, starting position and view angles mandatory; keep launch and inventory mutation disabled.

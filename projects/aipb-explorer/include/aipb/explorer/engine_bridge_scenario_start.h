@@ -93,49 +93,81 @@ inline ScenarioStartAssessment assessScenarioStart(
 
   for (int i = 0; i < 3; ++i) {
     compare(kPosition[i], scenario.position[i], actual.position[i], 1.0);
-    compare(kVelocity[i], scenario.velocity[i], actual.velocity[i], 1.0);
+    if (scenario.hasBot(kVelocity[i])) {
+      compare(kVelocity[i], scenario.velocity[i], actual.velocity[i], 1.0);
+    }
   }
 
   compare("yaw_delta", 0.0, wrappedScenarioAngle(scenario.yaw, actual.yaw), 1.0);
   compare("pitch", scenario.pitch, actual.pitch, 1.0);
   compare("grounded", 1.0, actual.onGround ? 1.0 : 0.0);
-  compare("crouching", scenario.crouching ? 1.0 : 0.0,
-    actual.crouching ? 1.0 : 0.0);
+  if (scenario.hasBot("crouching")) {
+    compare("crouching", scenario.crouching ? 1.0 : 0.0,
+      actual.crouching ? 1.0 : 0.0);
+  }
+  if (scenario.equipment.has("health")) {
   compare("health", scenario.equipment.health, actual.health, 0.5);
+  }
+  if (scenario.equipment.has("armor")) {
   compare("armor", scenario.equipment.armor, actual.armor, 0.5);
+  }
+  if (scenario.equipment.has("money")) {
   compare("money", scenario.equipment.money, actual.money);
-  compare("defuse_kit", scenario.equipment.defuseKit ? 1.0 : 0.0,
-    actual.defuseKit ? 1.0 : 0.0);
+  }
+  if (scenario.equipment.has("defuse_kit")) {
+    compare("defuse_kit", scenario.equipment.defuseKit ? 1.0 : 0.0,
+      actual.defuseKit ? 1.0 : 0.0);
+  }
   compare("speed_valid", 1.0,
     std::isfinite(actual.maxSpeed) && actual.maxSpeed >= 10.0f ? 1.0 : 0.0);
 
-  compareAmmo("primary_id", expectedPrimaryId, actual.primaryId);
-  compareAmmo("secondary_id", expectedSecondaryId, actual.secondaryId);
-  compareAmmo("selected_id", expectedSelectedId, actual.selectedId);
+  if (scenario.equipment.has("primary")) {
+    compareAmmo("primary_id", expectedPrimaryId, actual.primaryId);
+  }
+  if (scenario.equipment.has("secondary")) {
+    compareAmmo("secondary_id", expectedSecondaryId, actual.secondaryId);
+  }
+  if (scenario.equipment.has("selected")) {
+    compareAmmo("selected_id", expectedSelectedId, actual.selectedId);
+  }
 
   if (expectedPrimaryId > 0 && actual.primaryId == expectedPrimaryId) {
-    compareAmmo("primary_clip", scenario.equipment.primary.clip, actual.primaryClip);
-    compareAmmo("primary_reserve", scenario.equipment.primary.reserve,
+    if (scenario.equipment.has("primary_clip")) {
+      compareAmmo("primary_clip", scenario.equipment.primary.clip, actual.primaryClip);
+    }
+    if (scenario.equipment.has("primary_reserve")) {
+      compareAmmo("primary_reserve", scenario.equipment.primary.reserve,
       actual.primaryReserve);
+    }
   }
 
   if (expectedSecondaryId > 0 && actual.secondaryId == expectedSecondaryId) {
-    compareAmmo("secondary_clip", scenario.equipment.secondary.clip,
+    if (scenario.equipment.has("secondary_clip")) {
+      compareAmmo("secondary_clip", scenario.equipment.secondary.clip,
       actual.secondaryClip);
-    compareAmmo("secondary_reserve", scenario.equipment.secondary.reserve,
+    }
+    if (scenario.equipment.has("secondary_reserve")) {
+      compareAmmo("secondary_reserve", scenario.equipment.secondary.reserve,
       actual.secondaryReserve);
+    }
   }
 
-  compareAmmo("he", scenario.equipment.he, actual.he);
-  compareAmmo("flash", scenario.equipment.flash, actual.flash);
-  compareAmmo("smoke", scenario.equipment.smoke, actual.smoke);
+  if (scenario.equipment.has("he")) {
+    compareAmmo("he", scenario.equipment.he, actual.he);
+  }
+  if (scenario.equipment.has("flash")) {
+    compareAmmo("flash", scenario.equipment.flash, actual.flash);
+  }
+  if (scenario.equipment.has("smoke")) {
+    compareAmmo("smoke", scenario.equipment.smoke, actual.smoke);
+  }
 
-  if (!actual.helmetKnown) {
+  if (scenario.equipment.has("helmet") && !actual.helmetKnown) {
     ++assessment.unverified;
     assessment.findings.push_back({"helmet", scenario.equipment.helmet ? 1.0 : 0.0,
       -1.0, true});
   }
-  else {
+  else if (scenario.equipment.has("helmet")) {
     compare("helmet", scenario.equipment.helmet ? 1.0 : 0.0,
       actual.helmet ? 1.0 : 0.0);
   }

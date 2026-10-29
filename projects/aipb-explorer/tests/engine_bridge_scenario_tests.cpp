@@ -121,6 +121,7 @@ int main() {
     check(result.actions[0].forward == 1.0f && result.actions[0].strafe == 0.5f);
     check(result.actions[0].yawDelta == 45.0f && result.actions[0].pitchDelta == -5.0f);
     check(result.actions[0].jump && result.actions[0].duck && result.actions[0].attack);
+    check(result.equipment.has("defuse_kit") && result.equipment.has("secondary_clip"));
     check(validScenario(result));
 
     check(rejected(valid, "other_name"));
@@ -158,6 +159,7 @@ int main() {
     check(rejected(std::string(65537, 'a')));
     check(rejected(replaceOnce(valid, "secondary=usp", "secondary=none")));
     check(rejected(replaceOnce(valid, "armor=50", "armor=0")));
+    check(rejected(replaceOnce(valid, "secondary=usp", "")));
 
     // An absent equipment section uses valid defaults and an idle action is legal.
     const std::string basic = R"([scenario]
@@ -178,6 +180,8 @@ duration_ms=250
 )";
     check(parseScenario(basic, "wait", result, error));
     check(result.equipment.primary.type == "none");
+    check(!result.equipment.has("primary") && !result.equipment.has("defuse_kit"));
+    check(!result.equipment.has("secondary_clip") && !result.equipment.has("health"));
     check(result.equipment.selected == "knife");
     check(result.actions[0].timeoutMs == 250);
     check(result.actions[0].forward == 0 && result.actions[0].strafe == 0);

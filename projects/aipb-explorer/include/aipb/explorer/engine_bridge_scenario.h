@@ -37,6 +37,11 @@ struct Equipment {
   int armor {};
   bool helmet {};
   std::string selected { "knife" };
+  std::set<std::string> specified {};
+
+  bool has(std::string_view key) const {
+    return specified.count(std::string { key }) != 0;
+  }
 };
 
 struct Action {
@@ -65,6 +70,12 @@ struct Scenario {
   float pitch {};
   float velocity[3] {};
   bool crouching {};
+  std::set<std::string> specifiedBot {};
+
+  bool hasBot(std::string_view key) const {
+    return specifiedBot.count(std::string { key }) != 0;
+  }
+
   Equipment equipment {};
   std::vector<Action> actions {};
 };
@@ -156,7 +167,9 @@ inline bool validScenario(const Scenario &scenario) {
     || e.smoke < 0 || e.smoke > 1 || (e.defuseKit && scenario.team != 2)
     || e.money < 0 || e.money > 16000
     || e.health < 1 || e.health > 100 || e.armor < 0 || e.armor > 100
-    || (e.helmet && e.armor == 0)
+    || (e.has("helmet") && e.helmet && e.has("armor") && e.armor == 0)
+    || ((e.has("primary_clip") || e.has("primary_reserve")) && !e.has("primary"))
+    || ((e.has("secondary_clip") || e.has("secondary_reserve")) && !e.has("secondary"))
     || !(e.selected == "knife"
       || (e.selected == "primary" && e.primary.type != "none")
       || (e.selected == "secondary" && e.secondary.type != "none")
@@ -433,6 +446,13 @@ inline bool parseScenario(
 
     if (!ok) {
       return fail("unknown key or invalid value");
+    }
+
+    if (section == "equipment") {
+      next.equipment.specified.insert(key);
+    }
+    else if (section == "bot") {
+      next.specifiedBot.insert(key);
     }
   }
 

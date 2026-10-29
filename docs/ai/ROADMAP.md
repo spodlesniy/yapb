@@ -581,3 +581,9 @@ D254 and D254.1 are accepted.
 D255 introduces read-only live start-state mismatch and unverified-field diagnostics through `yb explore scenario preflight <name>`.
 This step does not initialize equipment or position; accurate unsupported fields remain unverified and runtime execution is blocked.
 D255 requires CI and HLDS verification.
+
+D255 automatic Build and Explorer CI succeeded at 1dc9002.
+User HLDS preflight returned TeamMismatch for the current bot, indicating the live bot team differs from the scenario CT requirement; this is a valid preflight rejection.
+D255.1 changes omission semantics: absent equipment and optional bot fields are unconstrained, while explicitly supplied none/zero remain assertions.
+The next runtime initialization step must preserve this distinction when applying and verifying scenario state.
+D255.1 CI and HLDS verification remain pending.

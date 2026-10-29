@@ -649,3 +649,10 @@ No scenario is executed and no output artifact is written by D254.
 Run `yb explore scenario preflight ground_forward_01` on de_dust2 with live CT bot index 1.
 The report lists mismatched and unverified start fields and should not modify the bot.
 A successful file validation is not equivalent to a fully established scenario start state.
+
+## D255.1 — Optional scenario assertions
+
+Scenario fields omitted from equipment or optional bot fields no longer imply default values during start-state preflight.
+For example, omit `defuse_kit` to accept either state, use `defuse_kit=0` to require no kit, and `defuse_kit=1` to require a kit.
+Similarly omit `secondary_clip` to ignore clip size, use `secondary_clip=0` to require an empty clip, and explicitly specify `secondary=usp` when constraining its ammo.
+Keep `team=2` for CT; TeamMismatch when the actual bot belongs to T is intentional.
