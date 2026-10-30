@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import bisect
 import csv
 import io
 import math
@@ -26,6 +27,7 @@ POSITION_TOLERANCE = 1.0  # GoldSrc units
 VELOCITY_TOLERANCE = 1.0  # units/second
 ANGLE_TOLERANCE = 1.0  # degrees
 COMMAND_TOLERANCE = 0.01  # units/second, or degrees
+MAX_INTERPOLATION_MS = 20  # reject coarse frame intervals when time aligning
 
 
 class InvalidBundle(ValueError):
@@ -90,6 +92,10 @@ class Comparison:
     frames_b: int
     command_ms_a: int
     command_ms_b: int
+    time_ms: int | None = None
+    max_position_delta: float = math.nan
+    max_velocity_delta: float = math.nan
+    max_angle_delta: float = math.nan
 
 
 # Parsing uses fixed field counts and bounded input, not assumptions about
@@ -235,11 +241,148 @@ def _end_distance(a: Pose, b: Pose) -> float:
     return math.dist((a.x, a.y, a.z), (b.x, b.y, b.z))
 
 
+
+def _trace_discontinuity(run: Bundle) -> str | None:
+    """Check recorded observations before interpolating any physics."""
+    if not run.trace:
+        return None
+    if (reason := _pose_mismatch(run.start, run.trace[0].before, "start")):
+        return reason
+    for previous, following in zip(run.trace, run.trace[1:]):
+        if (reason := _pose_mismatch(previous.after, following.before, "continuity")):
+            return f"frames {previous.index}/{following.index}: {reason}"
+    return _pose_mismatch(run.trace[-1].after, run.end, "end")
+
+
+def _time_boundaries(run: Bundle) -> list[int]:
+    boundaries = [0]
+    for frame in run.trace:
+        boundaries.append(boundaries[-1] + frame.msec)
+    return boundaries
+
+
+def _action_timeline(run: Bundle, boundaries: list[int]) -> tuple[tuple[int, int], ...]:
+    changes = []
+    for i, frame in enumerate(run.trace):
+        if i + 1 == len(run.trace) or run.trace[i + 1].action != frame.action:
+            changes.append((frame.action, boundaries[i + 1]))
+    return tuple(changes)
+
+
+def _frame_at(run: Bundle, boundaries: list[int], ms: int) -> tuple[int, Frame]:
+    index = min(bisect.bisect_right(boundaries, ms) - 1, len(run.trace) - 1)
+    return index, run.trace[index]
+
+
+def _interpolate_angle(start: float, end: float, fraction: float) -> float:
+    return start + ((end - start + 180.0) % 360.0 - 180.0) * fraction
+
+
+def _pose_at_time(run: Bundle, boundaries: list[int], ms: int) -> Pose | None:
+    if ms == 0:
+        return run.trace[0].before
+    index = bisect.bisect_left(boundaries, ms) - 1
+    frame = run.trace[index]
+    fraction = (ms - boundaries[index]) / frame.msec
+    before, after = frame.before, frame.after
+    if 0.0 < fraction < 1.0 and (before.ground != after.ground
+                                   or before.duck != after.duck):
+        return None
+    coords = [(getattr(before, field) * (1.0 - fraction)
+               + getattr(after, field) * fraction)
+              for field in ("x", "y", "z", "vx", "vy", "vz")]
+    yaw = _interpolate_angle(before.yaw, after.yaw, fraction)
+    pitch = _interpolate_angle(before.pitch, after.pitch, fraction)
+    discrete = after if fraction == 1.0 else before
+    return Pose(*coords, yaw, pitch, discrete.ground, discrete.duck)
+
+
+def _command_angle(run: Bundle, boundaries: list[int], ms: int, field: str) -> float:
+    index, frame = _frame_at(run, boundaries, ms)
+    previous = (getattr(run.trace[index - 1], field) if index
+                else getattr(run.trace[0].before, field))
+    fraction = min(1.0, (ms - boundaries[index]) / frame.msec)
+    return _interpolate_angle(previous, getattr(frame, field), fraction)
+
+
+def _time_aligned_comparison(
+    a: Bundle, b: Bundle, result
+) -> Comparison:
+    """Use shared commanded-time coordinates, not matching engine frame IDs.
+
+    Linear pose samples are estimates between observations. Do not claim
+    reproducibility if the trace is too sparse or a discrete state transition
+    occurred between the sampled endpoints.
+    """
+    ends_a, ends_b = _time_boundaries(a), _time_boundaries(b)
+    if (timeline_a := _action_timeline(a, ends_a)) != (timeline_b := _action_timeline(b, ends_b)):
+        return result("Diverged", "ActionTimingMismatch",
+                      f"action boundaries {timeline_a} vs {timeline_b}")
+
+    if any(frame.msec > MAX_INTERPOLATION_MS for frame in (*a.trace, *b.trace)):
+        return result("Inconclusive", "CoarseFrameSampling",
+                      f"frame exceeds {MAX_INTERPOLATION_MS} ms interpolation limit")
+
+    max_position = 0.0
+    max_velocity = 0.0
+    max_angle = 0.0
+    for ms in sorted(set(ends_a) | set(ends_b)):
+        # Commands are stepwise, with state at a boundary owned by the
+        # following action. Unlike a frame-index comparison, old_buttons
+        # cannot be matched across different frame partitions.
+        if ms < a.command_ms:
+            _, cmd_a = _frame_at(a, ends_a, ms)
+            _, cmd_b = _frame_at(b, ends_b, ms)
+            for field in ("forward", "strafe", "max_speed"):
+                left, right = getattr(cmd_a, field), getattr(cmd_b, field)
+                if abs(left - right) > COMMAND_TOLERANCE:
+                    return result("Diverged", "TimeAlignedCommandMismatch",
+                                  f"{field}: {left:.6g} vs {right:.6g}", time_ms=ms)
+            if cmd_a.buttons != cmd_b.buttons:
+                return result("Diverged", "TimeAlignedCommandMismatch",
+                              f"buttons: {cmd_a.buttons} vs {cmd_b.buttons}", time_ms=ms)
+        for field in ("yaw", "pitch"):
+            left = _command_angle(a, ends_a, ms, field)
+            right = _command_angle(b, ends_b, ms, field)
+            if _angle_difference(left, right) > ANGLE_TOLERANCE:
+                return result("Diverged", "TimeAlignedCommandMismatch",
+                              f"{field}: {left:.6g} vs {right:.6g}", time_ms=ms)
+
+        pose_a = _pose_at_time(a, ends_a, ms)
+        pose_b = _pose_at_time(b, ends_b, ms)
+        if pose_a is None or pose_b is None:
+            return result("Inconclusive", "DiscreteTransitionAmbiguity",
+                          "ground or crouch transition inside a frame", time_ms=ms)
+        if (difference := _pose_mismatch(pose_a, pose_b, "state")):
+            return result("Diverged", "TimeAlignedStateMismatch",
+                          difference, time_ms=ms)
+        max_position = max(max_position, _end_distance(pose_a, pose_b))
+        max_velocity = max(max_velocity, math.dist(
+            (pose_a.vx, pose_a.vy, pose_a.vz),
+            (pose_b.vx, pose_b.vy, pose_b.vz)))
+        max_angle = max(max_angle,
+                        _angle_difference(pose_a.yaw, pose_b.yaw),
+                        _angle_difference(pose_a.pitch, pose_b.pitch))
+
+    return result("Match", "TimeAlignedWithinTolerance",
+                  f"aligned {len(set(ends_a) | set(ends_b))} timestamps with "
+                  f"linear pose interpolation (max frame {MAX_INTERPOLATION_MS} ms)",
+                  max_position_delta=max_position,
+                  max_velocity_delta=max_velocity,
+                  max_angle_delta=max_angle)
+
+
 def compare_bundles(a: Bundle, b: Bundle) -> Comparison:
     distance = _end_distance(a.end, b.end) if a.source != "missing" and b.source != "missing" else math.nan
 
-    def result(outcome: str, reason: str, detail: str, frame: int | None = None) -> Comparison:
-        return Comparison(outcome, reason, detail, frame, distance, len(a.trace), len(b.trace), a.command_ms, b.command_ms)
+    def result(outcome: str, reason: str, detail: str,
+               frame: int | None = None, *, time_ms: int | None = None,
+               max_position_delta: float = math.nan,
+               max_velocity_delta: float = math.nan,
+               max_angle_delta: float = math.nan) -> Comparison:
+        return Comparison(outcome, reason, detail, frame, distance,
+                          len(a.trace), len(b.trace), a.command_ms, b.command_ms,
+                          time_ms, max_position_delta, max_velocity_delta, max_angle_delta)
 
     if (a.name, a.map, a.bot, a.team) != (b.name, b.map, b.bot, b.team):
         return result("Inconclusive", "ContextMismatch", "scenario/map/bot/team differ")
@@ -254,10 +397,16 @@ def compare_bundles(a: Bundle, b: Bundle) -> Comparison:
         return result("Diverged", "StartMismatch", mismatch)
     if a.command_ms != b.command_ms:
         return result("Diverged", "DurationMismatch", f"command_ms {a.command_ms} vs {b.command_ms}")
-    # Engine frame partition is not deterministic: do not compare frame N to
-    # frame N when the same command time was split into different frame sizes.
-    if len(a.trace) != len(b.trace) or any(x.msec != y.msec or x.action != y.action for x, y in zip(a.trace, b.trace)):
-        return result("Inconclusive", "FramePartitionMismatch", "same command duration, different frame/action partition")
+    for run in (a, b):
+        if (discontinuity := _trace_discontinuity(run)):
+            return result("Inconclusive", "TraceDiscontinuity", discontinuity)
+
+    # A different GoldSrc frame partition need not mean different physics.
+    # Align by accumulated command time, with conservative interpolation limits.
+    if len(a.trace) != len(b.trace) or any(
+        x.msec != y.msec or x.action != y.action for x, y in zip(a.trace, b.trace)
+    ):
+        return _time_aligned_comparison(a, b, result)
     for x, y in zip(a.trace, b.trace):
         for field in ("forward", "strafe", "max_speed", "yaw", "pitch"):
             left, right = getattr(x, field), getattr(y, field)
@@ -290,7 +439,12 @@ def main(argv: list[str] | None = None) -> int:
     print(f"{result.outcome}: {result.reason}: {result.detail}")
     print(f"frames={result.frames_a}/{result.frames_b} command_ms={result.command_ms_a}/{result.command_ms_b} "
           f"end_position_delta={result.end_distance:.6g}" +
-          (f" first_mismatch_frame={result.frame}" if result.frame is not None else ""))
+          (f" first_mismatch_frame={result.frame}" if result.frame is not None else "") +
+          (f" first_mismatch_time_ms={result.time_ms}" if result.time_ms is not None else ""))
+    if not math.isnan(result.max_position_delta):
+        print(f"time_aligned_max_position_delta={result.max_position_delta:.6g} "
+              f"max_velocity_delta={result.max_velocity_delta:.6g} "
+              f"max_angle_delta={result.max_angle_delta:.6g}")
     return {"Match": 0, "Diverged": 1, "Inconclusive": 3}[result.outcome]
 
 

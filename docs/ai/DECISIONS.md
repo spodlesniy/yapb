@@ -3509,3 +3509,14 @@ Offline evaluation uses the D281 observed before/after states and terminal resul
 A projected displacement is evidence of this specific experiment only, not proof of clear collision hulls, path reachability or other maps.
 The initial `ground_forward_02` goal specifies an exploratory 16-unit threshold along yaw -105 degrees for 750 commanded milliseconds; user-run HLDS observations have not yet calibrated or accepted that threshold.
 No runtime behavior or existing `.scenario` parser changes; T261-07 outstanding lifecycle checks remain deferred.
+
+## D286 — Time-aligned comparison for differing GoldSrc frame partitions
+
+The D283 same-frame-index path remains the strict comparison for equivalent frame partitions.
+When two complete traces have the same commanded milliseconds but different frame boundaries, first verify continuity and action transition times, then compare motion controls and ground-truth state on the union of accumulated-command-time boundaries.
+Interpolate position, velocity and wrapped view angles only over short intervals of at most 20 commanded milliseconds, treating interpolated states as estimates rather than exact engine observations.
+Use the existing position/velocity/angle tolerances, report the first different commanded millisecond and maximum time-aligned differences, and do not interpret frame-count differences alone as divergence.
+A changed action duration or command is divergence; inconsistent observations, coarse sampling and ambiguity in discrete ground/stance transitions are Inconclusive.
+Cross-partition comparisons do not equate `old_buttons` at different engine-frame indices, while still comparing applied button inputs.
+Two real D285 HLDS runs of `ground_forward_02` provide positive evidence: 386/382 frames over the same 750 commanded milliseconds, with a 0.0127 GoldSrc-unit endpoint separation.
+This offline analysis does not authorize movement or assert safe traversability; Stage A and outstanding T261-07 acceptance remain open.

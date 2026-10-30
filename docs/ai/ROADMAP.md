@@ -695,3 +695,8 @@ Physical Success/Failure/Inconclusive classification and user-run HLDS repeatabi
 D283 automatic Build CI passed at e83f7e7b, validating the offline trace-comparison tests.
 D284 introduces an explicit versioned ground-movement goal for `ground_forward_02` and a read-only evaluator that checks GoldSrc trace continuity, ground contact, terminal completeness and projected movement against an independently declared threshold.
 The outcome is Success, Failure or Inconclusive with a reason; D284 does not change the Scenario Runner, does not infer successful traversal from Completed, and does not close Stage A or the deferred T261-07 negative checks.
+D284 automatic Build and Explorer CI passed at 9be33103.
+The user supplied two real de_dust2 `ground_forward_02` HLDS traces (386 and 382 frames; 750 commanded ms each, with 125.1088 and 125.0962 GoldSrc units projected along -105 degrees); terminal separation is 0.0127 units, and both meet the provisional D284 threshold.
+D286 extends the read-only D283 comparison to align different GoldSrc frame partitions by cumulative committed milliseconds, checking action boundaries, input controls, interpolated before/after states and an explicit 20-ms maximum frame sampling interval.
+It reports the first differing commanded millisecond and maximum aligned pose/velocity/angle deltas; coarse or discontinuous traces remain Inconclusive, and the user-run Windows x86/HLDS repetition and deferred T261-07 checks remain open as separate evidence.
+Stage A is not marked complete until the D286 automatic checks and applicable acceptance gates are reviewed.

@@ -240,3 +240,19 @@ It is a test target, not an empirically established movement range.
 
 The evaluator is read-only, does not modify existing CSV files, does not control the game, and does not establish safe navigation/hull clearance.
 The result must still be validated on a user-run Windows x86/HLDS session before Stage A acceptance.
+
+## Compare repeat scenario runs with different frame counts (D286)
+
+```sh
+python -m tools.aipb_training.scenario_trace_compare \
+  "addons/yapb/data/explorer/scenarios/results/ground_forward_02/<first_attempt>" \
+  "addons/yapb/data/explorer/scenarios/results/ground_forward_02/<second_attempt>"
+```
+
+Runs with matching frame partitions retain D283's direct frame comparison.
+Runs with different frame counts or durations per frame are aligned on the union of their accumulated commanded-millisecond boundaries, provided the actions end at the same commanded times.
+Short recorded state intervals are linearly interpolated (including wrapped angles), and controls are compared at their applied times; engine `old_buttons` cannot be paired across different frame partitions.
+A time-aligned `Match: TimeAlignedWithinTolerance` reports the maximum position, velocity, and angle differences and is evidence of reproducibility within the stated tolerances, not identical physics frames or proof of traversability.
+A command or state mismatch reports its earliest `first_mismatch_time_ms` as `Diverged`.
+Samples with a frame longer than 20 ms, unreliable transitions, or inconsistent observations return `Inconclusive` rather than a false match.
+The supplied two real HLDS `ground_forward_02` runs contain 386 and 382 frames across the same 750 commanded milliseconds and serve as the initial time-alignment acceptance pair.

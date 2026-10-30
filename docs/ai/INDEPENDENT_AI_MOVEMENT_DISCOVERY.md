@@ -254,3 +254,11 @@ For the two-action `ground_forward_02` fixture the provisional goal is 750 comma
 Completed alone is insufficient: only a fully observed, continuously grounded, noncrouching run with compatible start/end observations and known maxspeed can be evaluated.
 A 1-unit boundary tolerance keeps near-threshold measurements Inconclusive; incomplete or discontinuous observations are also Inconclusive rather than counted as failures.
 The outcome does not assert safe geometry traversability, and user-run HLDS verification remains necessary before Stage A acceptance.
+
+## D286 — Command-time-aligned repeatability evidence
+
+D283 previously marked different frame partitions Inconclusive even when both runs completed the same 750 commanded milliseconds.
+D286 compares short-interval interpolated positions, velocities, wrapped angles, and applied commands at shared cumulative-command-time points while checking equal action boundaries.
+The comparison reports Match, Diverged or Inconclusive and explicit first-mismatch milliseconds, with a strict maximum 20-ms interpolation frame gap.
+The real HLDS `ground_forward_02` pair (386/382 frames) has aligned coordinate differences of at most about 0.043 units; measured endpoint separation is 0.0127 units.
+Physical success remains separately assessed against an explicit goal; the deferred T261-07 lifecycle cases are not considered passed.
