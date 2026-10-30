@@ -76,6 +76,19 @@ duration_ms=100
       && eitherTeam.actions[0].forward == 1.0f);
     check(eitherTeam.actions[1].durationMs == 250
       && eitherTeam.actions[1].yawDelta == 45.0f);
+    Scenario strafe {};
+    check(loadScenario(fixtureRoot, "ground_strafe_coast_01", strafe, detail)
+      == LoadStatus::Ok);
+    check(strafe.map == "de_dust2" && strafe.team == 0);
+    check(strafe.equipment.specified.empty());
+    check(checkScenarioPreflight(strafe, "de_dust2", true, true, 2)
+      == PreflightStatus::Ok);
+    check(strafe.actions.size() == 2);
+    check(strafe.actions[0].durationMs == 500 && strafe.actions[0].timeoutMs == 700
+      && strafe.actions[0].forward == 0.0f && strafe.actions[0].strafe == 1.0f
+      && strafe.actions[0].yawDelta == 0.0f);
+    check(strafe.actions[1].durationMs == 1000 && strafe.actions[1].timeoutMs == 1300
+      && strafe.actions[1].forward == 0.0f && strafe.actions[1].strafe == 0.0f);
     Scenario hold {};
     check(loadScenario(fixtureRoot, "scenario_lifecycle_01", hold, detail)
       == LoadStatus::Ok);

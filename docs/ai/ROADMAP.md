@@ -712,3 +712,6 @@ A continuously commanded 200-ms stationary interval triggers a single event with
 The reported 15–20 seconds remaining in the round weakens the unverified freeze-time hypothesis; D290 automatic Explorer/Build CI and user-run Windows x86/HLDS reproduction are still required before diagnosing the zero-motion cause.
 D290 automatic Build CI passed at 936cee3, but Explorer CI run 41068084299 failed only the new scenario diagnostics test on GCC, Clang and MSVC.
 D290.1 corrects its false stationary assumption (reused pose retained 200 units/s velocity), tests sustained nonzero velocity separately and adds line-numbered assertion diagnostics; runtime behavior is unchanged and Explorer CI requires re-verification.
+D290.1 Explorer CI passed across GCC, Clang, and MSVC at 8cc2d15; the user retried the scenarios without reproducing the former no-motion Completed anomaly, which remains unresolved but instrumented.
+D291 introduces a positive strafe/coast experiment using the D287 pose and time bounds, and extends the read-only profiler to project movement along the player-right axis without changing the default forward path.
+Automatic CI and user-run HLDS lateral traces are required; Stage B ground movement calibration and all deferred Stage A/T261-07 checks remain open.

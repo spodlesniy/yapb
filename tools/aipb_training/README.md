@@ -270,3 +270,18 @@ Measured output includes projected acceleration/coast distances, initial/release
 StopNotObserved indicates the bot has not stably fallen below that threshold during the 1000-ms coast, not a failed scenario.
 The independent evaluator returns Inconclusive for incomplete, discontinuous or invalid ground evidence.
 The scenario uses the previous grounded de_dust2 initial pose and does not modify the game DLL.
+
+## Lateral strafe and coast measurement (D291)
+
+Install `ground_strafe_coast_01.scenario` from `projects/aipb-explorer/scenarios/`, then start it with `aipb scenario run ground_strafe_coast_01` on `de_dust2`.
+The two actions hold positive sidemove for 500 commanded milliseconds, then release controls for 1000 milliseconds, from the same reset pose as the forward experiment.
+For a completed run, evaluate its `result.csv` and `trace.csv`:
+
+```sh
+python -m tools.aipb_training.ground_motion_profile "<run_directory>" --scenario ground_strafe_coast_01 --heading-deg -105 --axis strafe --accel-ms 500 --coast-ms 1000
+```
+
+The `--heading-deg` argument is the player's **view yaw**, not the travel heading; positive GoldSrc sidemove is projected along yaw minus 90 degrees.
+The default `--axis forward` retains the existing D287 command checks and output.
+Use repeated real HLDS runs to check direction, ground contact, obstacles, and reproducibility before treating these measurements as a lateral movement capability.
+

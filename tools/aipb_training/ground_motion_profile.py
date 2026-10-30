@@ -42,11 +42,15 @@ def measure_ground_motion(
     accel_ms: int,
     coast_ms: int,
     stop_speed: float = 5.0,
+    *,
+    axis: str = "forward",
 ) -> MotionProfile:
     """Measure one fully observed, two-action, grounded acceleration/coast trial."""
     def uncertain(reason: str) -> MotionProfile:
         return MotionProfile("Inconclusive", reason)
 
+    if axis not in ("forward", "strafe"):
+        return uncertain("InvalidAxis")
     if not math.isfinite(heading_deg) or not -180 <= heading_deg < 180:
         return uncertain("InvalidHeading")
     if not math.isfinite(stop_speed) or stop_speed <= 0:
@@ -86,9 +90,11 @@ def measure_ground_motion(
             return uncertain("LeftGroundOrStanceChanged")
         if frame.max_speed <= 0 or not math.isfinite(frame.max_speed):
             return uncertain("InvalidSpeedCap")
-        if (abs(frame.strafe) > COMMAND_TOLERANCE
-                or (frame.action == 0 and frame.forward <= COMMAND_TOLERANCE)
-                or (frame.action == 1 and abs(frame.forward) > COMMAND_TOLERANCE)
+        driven = frame.forward if axis == "forward" else frame.strafe
+        cross = frame.strafe if axis == "forward" else frame.forward
+        if (abs(cross) > COMMAND_TOLERANCE
+                or (frame.action == 0 and driven <= COMMAND_TOLERANCE)
+                or (frame.action == 1 and abs(driven) > COMMAND_TOLERANCE)
                 or _angle_difference(frame.yaw, heading_deg) > HEADING_TOLERANCE
                 or _angle_difference(frame.before.yaw, heading_deg) > HEADING_TOLERANCE
                 or _angle_difference(frame.after.yaw, heading_deg) > HEADING_TOLERANCE):
@@ -98,7 +104,9 @@ def measure_ground_motion(
     if release_index is None or duration != [accel_ms, coast_ms]:
         return uncertain("PhaseTimingMismatch")
 
-    radians = math.radians(heading_deg)
+    # GoldSrc's positive sidemove follows the right vector (yaw - 90 degrees).
+    movement_heading = heading_deg - 90.0 if axis == "strafe" else heading_deg
+    radians = math.radians(movement_heading)
     direction = (math.cos(radians), math.sin(radians))
 
     def speed(pose: Pose) -> float:
@@ -147,7 +155,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("run", type=Path, help="Saved result.csv and trace.csv directory")
     parser.add_argument("--scenario", default="ground_accel_coast_01")
     parser.add_argument("--map", dest="map_name", default="de_dust2")
-    parser.add_argument("--heading-deg", type=float, required=True)
+    parser.add_argument("--heading-deg", type=float, required=True,
+                        help="Player view yaw; the projected strafe axis is yaw - 90 degrees")
+    parser.add_argument("--axis", choices=("forward", "strafe"), default="forward")
     parser.add_argument("--accel-ms", type=int, required=True)
     parser.add_argument("--coast-ms", type=int, required=True)
     parser.add_argument("--stop-speed", type=float, default=5.0)
@@ -159,7 +169,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     profile = measure_ground_motion(
         run, args.scenario, args.map_name, args.heading_deg,
-        args.accel_ms, args.coast_ms, args.stop_speed
+        args.accel_ms, args.coast_ms, args.stop_speed, axis=args.axis
     )
     print(f"{profile.outcome}: {profile.reason}")
     if profile.outcome != "Measured":

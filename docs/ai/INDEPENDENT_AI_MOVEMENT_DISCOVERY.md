@@ -294,3 +294,13 @@ The probe captures physical player flags, movement type, solidity, death state, 
 Only when a stall is detected does it perform a read-only 32-unit forward hull probe; collision evidence alone cannot establish root cause.
 Detection is observational and does not cancel, extend or retry actions.
 User-run HLDS reproduction of scenario_lifecycle_01 followed by two ground_accel_coast_01 attempts is necessary for root-cause attribution.
+
+## D291 — Controlled lateral acceleration and coast
+
+D290.1 CI passed on GCC, Clang, and MSVC; repeated user-run scenarios have not reproduced the previous zero-displacement Completed result.
+Preserve the diagnostics and mark that earlier cause as unresolved, not disproven.
+The `ground_strafe_coast_01` fixture commands positive strafe for 500 ms and coasts with zero input for 1000 ms from the established de_dust2 pose and unchanged view yaw.
+The independent `ground_motion_profile` analyzer accepts `--axis strafe` and projects observed positions and velocities along GoldSrc's rightward direction at yaw minus 90 degrees.
+It validates the lateral commands, continuous grounded noncrouching observations and action timings, returning explicit Inconclusive reasons where evidence is inadequate.
+The default forward-axis behavior and Scenario Runner are unchanged.
+Windows x86/HLDS repeat runs and obstacle/collision observations are required before declaring a lateral movement capability; no Stage B exit gate closes here.

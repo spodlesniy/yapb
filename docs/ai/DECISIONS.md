@@ -3561,3 +3561,15 @@ The D290 Explorer CI run 41068084299 compiled successfully on GCC, Clang and MSV
 After verifying recovery, the test reused a pose with 200 units per second horizontal velocity for a supposedly stationary 200-ms interval, contradicting the detector's intentional velocity-aware progress check.
 Keep D290 runtime, output formats and movement unchanged; explicitly zero the fixture's velocity before the sustained no-motion interval, separately verify nonzero-velocity behavior and report assertion line numbers in future CI failures.
 Automatic Explorer CI and user-run Windows x86/HLDS acceptance remain pending.
+
+## D291 — Measure positive lateral strafe and subsequent coast
+
+After D290.1 passed Explorer CI on GCC, Clang, and MSVC, the user reported repeated scenario execution without recurrence of the earlier zero-motion anomaly.
+Keep that anomaly unresolved rather than attributing it to D289 or deleting the D290 diagnostics.
+Extend Stage B with the positive-strafe analogue of D287 at the same de_dust2 start pose, view yaw, 500-ms powered phase and 1000-ms unpowered coast.
+Reuse the existing scenario runner and version-one trace/result output; no engine runtime or scenario syntax change is needed.
+Extend the read-only ground-motion profiler with an explicit `forward` / `strafe` axis option; the default remains `forward`.
+For positive strafe, validate zero forward input, positive sideways input during acceleration, zero translation input during coast, and unchanged view yaw.
+Project observed displacement and velocity along GoldSrc's right vector at view yaw minus 90 degrees; report Inconclusive for mismatched commands, unreliable observations or incomplete runs.
+Add Python axis/CLI regressions and an independent C++ loader contract for the new scenario.
+A successful parse or Completed runner status is not evidence of lateral movement; require real user-run Windows x86/HLDS traces and offline analysis before claiming Stage B capability.
