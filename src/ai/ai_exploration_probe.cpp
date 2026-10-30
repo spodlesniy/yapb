@@ -12,6 +12,7 @@
 #include <aipb/explorer/engine_bridge_scenario_lifecycle.h>
 #include <aipb/explorer/engine_bridge_scenario_result.h>
 #include <aipb/explorer/engine_bridge_scenario_trace.h>
+#include <aipb/explorer/engine_bridge_scenario_diagnostics.h>
 #include <aipb/explorer/engine_bridge_queue.h>
 #include <aipb/explorer/engine_bridge_trace.h>
 #include <aipb/explorer/engine_bridge_trace_classification.h>
@@ -28,6 +29,8 @@
 #include <ctime>
 #include <filesystem>
 #include <utility>
+
+extern ConVar cv_freeze_bots;
 
 namespace ai::explore {
 namespace {
@@ -67,6 +70,8 @@ aipb::explorer::scenario::ScenarioResultPose scenarioLastCommitted {};
 bool scenarioResultActive {};
 bool scenarioHaveLastCommitted {};
 aipb::explorer::scenario::ScenarioTrace scenarioFrameTrace {};
+aipb::explorer::scenario::ScenarioDiagnostics scenarioDiagnostics {};
+aipb::explorer::scenario::ScenarioStallDetector scenarioStallDetector {};
 
 aipb::explorer::scenario::ScenarioResultPose scenarioPose(const Bot &bot) {
    aipb::explorer::scenario::ScenarioResultPose pose {};
@@ -81,6 +86,49 @@ aipb::explorer::scenario::ScenarioResultPose scenarioPose(const Bot &bot) {
    pose.onGround = !!(bot.pev->flags & FL_ONGROUND);
    pose.crouching = !!(bot.pev->flags & FL_DUCKING);
    return pose;
+}
+
+aipb::explorer::scenario::ScenarioDiagnosticSample scenarioDiagnosticSample(
+   Bot &bot, aipb::explorer::scenario::ScenarioDiagnosticKind kind,
+   int frame, int action, int commandMs, float forwardSpeed, float strafeSpeed,
+   bool probeObstacle
+) {
+   aipb::explorer::scenario::ScenarioDiagnosticSample sample {};
+   sample.kind = kind;
+   sample.frame = frame;
+   sample.action = action;
+   sample.commandMs = commandMs;
+   sample.gameTime = std::isfinite(game.time()) ? game.time() : -1.0;
+   sample.roundStartTime = std::isfinite(gameState.getRoundStartTime())
+      ? gameState.getRoundStartTime() : -1.0;
+   sample.roundId = gameState.getTelemetryRoundId();
+   sample.roundOver = gameState.isRoundOver();
+   sample.freezeTime = mp_freezetime.as<float>();
+   sample.freezeBots = !!cv_freeze_bots;
+   sample.flags = bot.pev->flags;
+   sample.moveType = bot.pev->movetype;
+   sample.solid = bot.pev->solid;
+   sample.deadFlag = bot.pev->deadflag;
+   sample.maxSpeed = bot.pev->maxspeed;
+   sample.friction = bot.pev->friction;
+   sample.baseVelocity[0] = bot.pev->basevelocity.x;
+   sample.baseVelocity[1] = bot.pev->basevelocity.y;
+   sample.baseVelocity[2] = bot.pev->basevelocity.z;
+   sample.forwardSpeed = forwardSpeed;
+   sample.strafeSpeed = strafeSpeed;
+   sample.pose = scenarioPose(bot);
+   if (probeObstacle) {
+      // A single read-only hull trace on stall, never per normal engine frame.
+      const float angle = bot.pev->v_angle.y * 0.017453292519943295f;
+      const Vector end = bot.pev->origin + Vector(std::cos(angle), std::sin(angle), 0.0f) * 32.0f;
+      TraceResult hit {};
+      game.testHull(bot.pev->origin, end, TraceIgnore::None,
+         (bot.pev->flags & FL_DUCKING) ? head_hull : human_hull, bot.ent(), &hit);
+      sample.obstacleFraction = hit.flFraction;
+      sample.obstacleStartSolid = !!hit.fStartSolid;
+      sample.obstacleAllSolid = !!hit.fAllSolid;
+   }
+   return sample;
 }
 
 bool saveScenarioResult(const aipb::explorer::scenario::ScenarioResult &result) {
@@ -105,7 +153,7 @@ bool saveScenarioResult(const aipb::explorer::scenario::ScenarioResult &result) 
    }
    std::string saved {};
    return aipb::explorer::scenario::saveScenarioRunBundle(
-      directory, prefix, result, scenarioFrameTrace, saved);
+      directory, prefix, result, scenarioFrameTrace, saved, &scenarioDiagnostics);
 }
 
 int64_t scenarioTimeMs() {
@@ -137,6 +185,12 @@ void scenarioEnd(Bot *bot, const char *reason) {
       }
       else {
          scenarioResult.endSource = aipb::explorer::scenario::ScenarioEndSource::Missing;
+      }
+      if (bot && bot->pev) {
+         scenarioDiagnostics.append(scenarioDiagnosticSample(*bot,
+            aipb::explorer::scenario::ScenarioDiagnosticKind::End,
+            scenarioScheduler.frames(), static_cast<int>(scenarioScheduler.actionIndex()),
+            scenarioScheduler.totalMilliseconds(), 0.0f, 0.0f, false));
       }
       if (!saveScenarioResult(scenarioResult)) {
          game.print("AiPB scenario: '%s' result could not be saved.", scenarioName);
@@ -365,6 +419,11 @@ bool runScenarioInternal(const char *name) {
    scenarioResult.start = scenarioPose(*bot);
    scenarioHaveLastCommitted = false;
    scenarioFrameTrace.clear();
+   scenarioDiagnostics.clear();
+   scenarioStallDetector.clear();
+   scenarioDiagnostics.append(scenarioDiagnosticSample(*bot,
+      aipb::explorer::scenario::ScenarioDiagnosticKind::Start,
+      -1, -1, 0, 0.0f, 0.0f, false));
    scenarioResultActive = true;
    game.print("AiPB scenario: '%s' started; bot=%d actions=%d.", name,
       scenario.botIndex, static_cast<int>(scenario.actions.size()));
@@ -893,6 +952,24 @@ bool frame(Bot &bot) {
          scenarioScheduler.cancel();
          scenarioEnd(&bot, "trace invalid");
          return true;
+      }
+      const auto progress = scenarioStallDetector.observe(planned.milliseconds,
+         movement.forwardSpeed, movement.strafeSpeed, beforeMove, afterMove);
+      if (planned.frameIndex < 10) {
+         scenarioDiagnostics.append(scenarioDiagnosticSample(bot,
+            aipb::explorer::scenario::ScenarioDiagnosticKind::Frame,
+            planned.frameIndex, static_cast<int>(planned.actionIndex),
+            scenarioScheduler.totalMilliseconds() + planned.milliseconds,
+            movement.forwardSpeed, movement.strafeSpeed, false));
+      }
+      if (progress != aipb::explorer::scenario::ScenarioProgressEvent::None) {
+         const bool stall = progress == aipb::explorer::scenario::ScenarioProgressEvent::Stall;
+         scenarioDiagnostics.append(scenarioDiagnosticSample(bot,
+            stall ? aipb::explorer::scenario::ScenarioDiagnosticKind::Stall
+                  : aipb::explorer::scenario::ScenarioDiagnosticKind::Recovered,
+            planned.frameIndex, static_cast<int>(planned.actionIndex),
+            scenarioScheduler.totalMilliseconds() + planned.milliseconds,
+            movement.forwardSpeed, movement.strafeSpeed, stall));
       }
       scenarioLastCommitted = afterMove;
       scenarioHaveLastCommitted = true;

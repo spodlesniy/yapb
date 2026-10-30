@@ -9,6 +9,7 @@
 #include <vector>
 
 #include <aipb/explorer/engine_bridge_scenario_result.h>
+#include <aipb/explorer/engine_bridge_scenario_diagnostics.h>
 #include <aipb/explorer/engine_bridge_trace_io.h>
 
 namespace aipb::explorer::scenario {
@@ -119,7 +120,8 @@ inline bool saveScenarioRunBundle(
   const std::string &timestamp,
   const ScenarioResult &result,
   const ScenarioTrace &trace,
-  std::string &savedDirectory
+  std::string &savedDirectory,
+  const ScenarioDiagnostics *diagnostics = nullptr
 ) {
   namespace fs = std::filesystem;
   savedDirectory.clear();
@@ -137,6 +139,13 @@ inline bool saveScenarioRunBundle(
   }
 
   char line[1024] {};
+  if (diagnostics) {
+    for (const auto &sample : diagnostics->samples()) {
+      if (!formatScenarioDiagnosticSample(line, sizeof(line), sample)) {
+        return false;
+      }
+    }
+  }
   for (const auto &frame : trace.frames()) {
     if (!formatScenarioTraceFrame(line, sizeof(line), frame)) {
       return false;
@@ -163,9 +172,11 @@ inline bool saveScenarioRunBundle(
     }
 
     const fs::path traceFile = runDirectory / "trace.csv";
+    const fs::path diagnosticsFile = runDirectory / "diagnostics.csv";
     const fs::path resultFile = runDirectory / "result.csv";
     const auto tracePath = traceFile.string();
     const auto resultPath = resultFile.string();
+    const auto diagnosticsPath = diagnosticsFile.string();
     std::FILE *file = bridge::openTraceFile(tracePath.c_str(), "wx");
     bool ok = file != nullptr;
     if (ok) {
@@ -183,6 +194,25 @@ inline bool saveScenarioRunBundle(
       }
     }
 
+    if (ok && diagnostics) {
+      file = bridge::openTraceFile(diagnosticsPath.c_str(), "wx");
+      ok = file != nullptr;
+      if (ok) {
+        ok = std::fprintf(file, "%s\n", kScenarioDiagnosticsVersion) >= 0
+          && std::fputs(kScenarioDiagnosticsColumns, file) >= 0;
+        for (const auto &sample : diagnostics->samples()) {
+          if (!ok) {
+            break;
+          }
+          ok = formatScenarioDiagnosticSample(line, sizeof(line), sample)
+            && std::fputs(line, file) >= 0;
+        }
+        if (std::fclose(file) != 0) {
+          ok = false;
+        }
+      }
+    }
+
     if (ok) {
       file = bridge::openTraceFile(resultPath.c_str(), "wx");
       ok = file != nullptr;
@@ -197,6 +227,7 @@ inline bool saveScenarioRunBundle(
     if (!ok) {
       std::error_code ignored {};
       fs::remove(resultFile, ignored);
+      fs::remove(diagnosticsFile, ignored);
       fs::remove(traceFile, ignored);
       fs::remove(runDirectory, ignored);
       return false;

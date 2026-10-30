@@ -284,3 +284,13 @@ A real user-run ground_accel_coast_01 trace reported Completed without physical 
 The server stores the end of mp_freezetime in gameState.getRoundStartTime; scenarios must not start or continue during that period.
 D289 adds admission and runtime checks with explicit RoundFreeze/round freeze reporting; it does not introduce physics success inference or change the scenario CSV format.
 The underlying freeze-phase cause remains to be confirmed by the user-run Windows x86/HLDS retest.
+
+## D290 — Read-only scenario movement stall diagnostics
+
+A Completed scenario means only that the commanded action durations were executed; it does not prove physical progress.
+Each new Scenario Runner result bundle contains a versioned diagnostics.csv alongside the unchanged trace.csv and result.csv.
+The bounded diagnostic snapshots include run start, the first ten applied frames, the first continuously commanded 200-ms no-response period, the first resumed movement and any available terminal state.
+The probe captures physical player flags, movement type, solidity, death state, friction, base velocity, configured speed and round/freeze state.
+Only when a stall is detected does it perform a read-only 32-unit forward hull probe; collision evidence alone cannot establish root cause.
+Detection is observational and does not cancel, extend or retry actions.
+User-run HLDS reproduction of scenario_lifecycle_01 followed by two ground_accel_coast_01 attempts is necessary for root-cause attribution.

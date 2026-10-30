@@ -3543,3 +3543,14 @@ The existing game state uses getRoundStartTime as the time when mp_freezetime en
 Reject new scenario admission before any engine pose/equipment changes while game.time() precedes the active-round start, and recheck immediately before starting the scheduler and before each engine frame.
 Cancel with the explicit "round freeze" reason on a phase change; keep completed command accounting separate from physical movement success and preserve T261-07 deferred checks.
 Engine freeze is the leading code-supported explanation, not proven the only source of zero movement. Validate with Windows x86/HLDS after CI.
+
+## D290 — Diagnose completed engine commands without physical movement
+
+The D288-era HLDS capture includes a 763-frame, 1500-command-ms Completed ground_accel_coast_01 run with zero observed displacement and velocity, followed by a 757-frame run that traveled 138.52 GoldSrc units.
+The user reports about 15–20 seconds remaining in the round, which makes a conventional round-start mp_freezetime explanation uncertain; D289 remains a guard rather than a confirmed fix.
+Preserve the existing scheduler and Completed semantics and leave result.csv and trace.csv version-one layouts unchanged.
+Save a separate versioned diagnostics.csv for each newly admitted scenario with a start observation, the first ten applied frames, one bounded stall event after at least 200 ms of continuously commanded translation without physical response, the first recovery observation, and the terminal observation when a bot is available.
+Record live round state and timings, freeze configuration, player flags, movement type, solidity, dead state, speed/friction, base velocity, commands and observed pose.
+On a stall only, run one forward 32-unit hull trace as read-only obstacle evidence; neither a clear trace nor a blocked trace proves the cause.
+Keep the diagnostic collection capped at 16 samples, with no engine-command changes, fail-open diagnostics collection, and the existing terminal result written last.
+Require automated C++ contract verification and a user-run Windows x86/HLDS repetition of scenario_lifecycle_01 followed by two ground_accel_coast_01 runs before attributing the zero-motion incident to an engine flag, geometry, or plugin.
