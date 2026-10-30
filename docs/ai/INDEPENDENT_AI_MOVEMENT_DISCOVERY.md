@@ -304,3 +304,14 @@ The independent `ground_motion_profile` analyzer accepts `--axis strafe` and pro
 It validates the lateral commands, continuous grounded noncrouching observations and action timings, returning explicit Inconclusive reasons where evidence is inadequate.
 The default forward-axis behavior and Scenario Runner are unchanged.
 Windows x86/HLDS repeat runs and obstacle/collision observations are required before declaring a lateral movement capability; no Stage B exit gate closes here.
+
+## D292 — Opposite-input braking experiment
+
+The next Stage B experiment uses the verified de_dust2 starting pose, constant yaw and two commanded phases: 500 ms forward acceleration and 500 ms with full opposite forward input.
+It differs from D287 forward coast only in the second phase command, and uses the same Scenario Runner observation bundles.
+The read-only `ground_active_braking_profile` reports signed brake-phase displacement, speed at command reversal, estimated time and projected distance to near-zero/zero-speed, and observed reverse velocity.
+Zero-crossing interpolation is limited to short GoldSrc frames and is explicitly an estimate, not a directly observed instant.
+Incomplete execution, speed cap changes, missing ground contact, unexpected commands, insufficient entry speed and coarse crossings yield Inconclusive.
+Real runs with `yb_freeze_bots 1` should start after normal buying has finished, since the freeze toggle suppresses ordinary movement logic but does not suppress purchase handling.
+Compare with D287 coast only under equivalent start/release conditions; geometry and collisions still require independent checks before attribution to braking forces.
+Stage B cannot be marked completed without repeated user-run HLDS traces and independently assessed positive and negative trials.

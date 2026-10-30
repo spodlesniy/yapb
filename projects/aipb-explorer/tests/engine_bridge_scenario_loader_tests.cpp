@@ -89,6 +89,22 @@ duration_ms=100
       && strafe.actions[0].yawDelta == 0.0f);
     check(strafe.actions[1].durationMs == 1000 && strafe.actions[1].timeoutMs == 1300
       && strafe.actions[1].forward == 0.0f && strafe.actions[1].strafe == 0.0f);
+    Scenario braking {};
+    check(loadScenario(fixtureRoot, "ground_active_brake_01", braking, detail)
+      == LoadStatus::Ok);
+    check(braking.name == "ground_active_brake_01" && braking.map == "de_dust2");
+    check(braking.team == 0 && braking.equipment.specified.empty());
+    check(braking.hasBot("vx") && braking.hasBot("vy") && braking.hasBot("vz"));
+    check(checkScenarioPreflight(braking, "de_dust2", true, true, 2)
+      == PreflightStatus::Ok);
+    check(braking.actions.size() == 2);
+    check(braking.actions[0].durationMs == 500
+      && braking.actions[0].timeoutMs == 700
+      && braking.actions[0].forward == 1.0f && braking.actions[0].strafe == 0.0f);
+    check(braking.actions[1].durationMs == 500
+      && braking.actions[1].timeoutMs == 700
+      && braking.actions[1].forward == -1.0f && braking.actions[1].strafe == 0.0f
+      && braking.actions[1].yawDelta == 0.0f);
     Scenario hold {};
     check(loadScenario(fixtureRoot, "scenario_lifecycle_01", hold, detail)
       == LoadStatus::Ok);

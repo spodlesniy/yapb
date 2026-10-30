@@ -285,3 +285,23 @@ The `--heading-deg` argument is the player's **view yaw**, not the travel headin
 The default `--axis forward` retains the existing D287 command checks and output.
 Use repeated real HLDS runs to check direction, ground contact, obstacles, and reproducibility before treating these measurements as a lateral movement capability.
 
+
+## Controlled active braking and reversal measurement (D292)
+
+Install `projects/aipb-explorer/scenarios/ground_active_brake_01.scenario` into the Explorer scenario directory.
+Use `yb_freeze_bots 1` to suppress ordinary navigation, wait until the normal purchase routine has finished, and invoke `aipb scenario run ground_active_brake_01` on `de_dust2`.
+The scenario starts at the D287 verified pose, applies full positive forward movement for 500 commanded ms and full negative forward movement for another 500 commanded ms at the same view yaw.
+It uses the original Scenario Runner and records unmodified result/trace/diagnostics bundles.
+
+Run the read-only profile tool for each completed attempt:
+
+```sh
+python -m tools.aipb_training.ground_active_braking_profile "<run_directory>" --heading-deg -105 --accel-ms 500 --brake-ms 500
+```
+
+The report provides projected acceleration distance, *signed* displacement during the reverse-input phase, speed when reversing controls, end speed, the first estimated zero-speed crossing (if any), forward distance after opposite input begins, and whether actual reverse velocity appeared.
+`InterpolatedZeroCrossing` is an estimate within an observed engine frame (only when frame msec is at most 20); `SustainedNearStop` requires near-zero speed throughout the remaining brake samples.
+`StopNotObserved` means no trustworthy stop indication within the 500-ms brake phase, not a failed run.
+`Inconclusive` is used for missing/invalid frames, contradictory commands, interrupted runs, lost ground contact, speed-cap changes or unreliable start state.
+Compare `stop_time_ms` and `stop_distance` against the earlier `ground_accel_coast_01` report (500ms acceleration followed by 1000ms with zero control).
+Compare only similar preflight states, max speed and release speed; a collision or environmental influence can produce apparent braking, and `Completed` alone never proves physical success.

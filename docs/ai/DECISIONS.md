@@ -3573,3 +3573,16 @@ For positive strafe, validate zero forward input, positive sideways input during
 Project observed displacement and velocity along GoldSrc's right vector at view yaw minus 90 degrees; report Inconclusive for mismatched commands, unreliable observations or incomplete runs.
 Add Python axis/CLI regressions and an independent C++ loader contract for the new scenario.
 A successful parse or Completed runner status is not evidence of lateral movement; require real user-run Windows x86/HLDS traces and offline analysis before claiming Stage B capability.
+
+## D292 — Controlled active braking with reverse input
+
+D291 supplied a bounded positive strafe/coast scenario and axis-aware analysis; the user reports repeated successful scenario starts while using `yb_freeze_bots 1`.
+Keep regular bot buying and post-buy behavior in mind: `yb_freeze_bots` disables ordinary think-driven movement, but buying and some housekeeping still execute.
+D292 tests one new Stage B variable at the already exercised de_dust2 start pose: after 500 commanded ms of full positive forward movement, command full negative forward movement for 500 ms with unchanged yaw and stance.
+This is an opposite-input braking trial, not a guaranteed stop/no-reversal scenario.
+Reuse the version-one scenario runner and trace/result formats without modifying GoldSrc runtime or player movement physics.
+A new independent Python profiler verifies full positive then negative speed-cap commands, stable heading, continuous grounded noncrouching observations and exact action durations.
+Report projected entry and terminal speeds, signed brake-phase displacement, the first zero-speed interpolation or sustained near-stop, and whether reverse velocity was observed.
+Interpolate only inside frames of at most 20 commanded ms; report Inconclusive on coarse crossings and untrusted observations, never treat scheduler Completed or a collision-induced stop as causal proof.
+Compare measured braking time/distance against existing D287 forward coast evidence only when start/release speed and other conditions are comparable.
+Add offline analyzer regressions, CLI/invalid bundle tests, and a C++ scenario-loader contract; require automatic CI and repeated user-run HLDS traces before claiming a measured physical braking capability.

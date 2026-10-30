@@ -715,3 +715,6 @@ D290.1 corrects its false stationary assumption (reused pose retained 200 units/
 D290.1 Explorer CI passed across GCC, Clang, and MSVC at 8cc2d15; the user retried the scenarios without reproducing the former no-motion Completed anomaly, which remains unresolved but instrumented.
 D291 introduces a positive strafe/coast experiment using the D287 pose and time bounds, and extends the read-only profiler to project movement along the player-right axis without changing the default forward path.
 Automatic CI and user-run HLDS lateral traces are required; Stage B ground movement calibration and all deferred Stage A/T261-07 checks remain open.
+D291 automatic Build and Explorer CI passed at c2fe110; the user reports two Completed strafe/coast trials (781/766 frames, each 1500 command ms) with reproducible lateral displacement, but Stage B is still open.
+D292 adds a controlled 500-ms forward acceleration followed by 500-ms full opposite-input braking scenario, read-only zero-speed crossing/reversal measurements and standalone offline/C++ fixture regressions.
+The earlier D287 500+1000-ms forward coast is the comparison baseline when engine speed caps and start states agree; automatic CI and user-run HLDS repetitions remain the acceptance gates, with no runtime physics change.
