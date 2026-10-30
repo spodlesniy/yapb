@@ -32,6 +32,13 @@ class MotionProfile:
     average_coast_deceleration: float = math.nan
     stop_time_ms: int | None = None
     stop_distance: float | None = None
+    accel_forward_distance: float = math.nan
+    accel_right_distance: float = math.nan
+    release_forward_speed: float = math.nan
+    release_right_speed: float = math.nan
+    release_horizontal_speed: float = math.nan
+    peak_horizontal_speed: float = math.nan
+    release_heading_error_deg: float = math.nan
 
 
 def measure_ground_motion(
@@ -49,7 +56,7 @@ def measure_ground_motion(
     def uncertain(reason: str) -> MotionProfile:
         return MotionProfile("Inconclusive", reason)
 
-    if axis not in ("forward", "strafe"):
+    if axis not in ("forward", "strafe", "diagonal"):
         return uncertain("InvalidAxis")
     if not math.isfinite(heading_deg) or not -180 <= heading_deg < 180:
         return uncertain("InvalidHeading")
@@ -90,11 +97,21 @@ def measure_ground_motion(
             return uncertain("LeftGroundOrStanceChanged")
         if frame.max_speed <= 0 or not math.isfinite(frame.max_speed):
             return uncertain("InvalidSpeedCap")
-        driven = frame.forward if axis == "forward" else frame.strafe
-        cross = frame.strafe if axis == "forward" else frame.forward
-        if (abs(cross) > COMMAND_TOLERANCE
-                or (frame.action == 0 and driven <= COMMAND_TOLERANCE)
-                or (frame.action == 1 and abs(driven) > COMMAND_TOLERANCE)
+        if axis == "diagonal":
+            if abs(frame.max_speed - run.trace[0].max_speed) > COMMAND_TOLERANCE:
+                return uncertain("SpeedCapChanged")
+            # The bridge normalizes simultaneous 1/1 input to unit magnitude.
+            expected = frame.max_speed / math.sqrt(2) if frame.action == 0 else 0.0
+            command_invalid = (abs(frame.forward - expected) > COMMAND_TOLERANCE
+                               or abs(frame.strafe - expected) > COMMAND_TOLERANCE)
+        else:
+            driven = frame.forward if axis == "forward" else frame.strafe
+            cross = frame.strafe if axis == "forward" else frame.forward
+            command_invalid = (abs(cross) > COMMAND_TOLERANCE
+                               or (frame.action == 0 and driven <= COMMAND_TOLERANCE)
+                               or (frame.action == 1 and abs(driven) > COMMAND_TOLERANCE))
+        if (command_invalid
+                or (axis == "diagonal" and frame.buttons != 0)
                 or _angle_difference(frame.yaw, heading_deg) > HEADING_TOLERANCE
                 or _angle_difference(frame.before.yaw, heading_deg) > HEADING_TOLERANCE
                 or _angle_difference(frame.after.yaw, heading_deg) > HEADING_TOLERANCE):
@@ -105,7 +122,8 @@ def measure_ground_motion(
         return uncertain("PhaseTimingMismatch")
 
     # GoldSrc's positive sidemove follows the right vector (yaw - 90 degrees).
-    movement_heading = heading_deg - 90.0 if axis == "strafe" else heading_deg
+    movement_heading = (heading_deg - 45.0 if axis == "diagonal" else
+                        heading_deg - 90.0 if axis == "strafe" else heading_deg)
     radians = math.radians(movement_heading)
     direction = (math.cos(radians), math.sin(radians))
 
@@ -122,6 +140,23 @@ def measure_ground_motion(
     initial_speed = speed(start)
     released_speed = speed(release)
     terminal_speed = speed(end)
+    yaw_radians = math.radians(heading_deg)
+    forward_axis = (math.cos(yaw_radians), math.sin(yaw_radians))
+    right_axis = (math.sin(yaw_radians), -math.cos(yaw_radians))
+
+    def dot_velocity(pose: Pose, basis: tuple[float, float]) -> float:
+        return pose.vx * basis[0] + pose.vy * basis[1]
+
+    def axis_travel(before: Pose, after: Pose, basis: tuple[float, float]) -> float:
+        return ((after.x - before.x) * basis[0]
+                + (after.y - before.y) * basis[1])
+
+    if axis == "diagonal":
+        if math.hypot(start.vx, start.vy) > stop_speed:
+            return uncertain("InitialSpeedMismatch")
+        if math.hypot(release.vx, release.vy) <= stop_speed or travel(start, release) <= 1.0:
+            return uncertain("InsufficientPhysicalProgress")
+
     elapsed_coast = 0
     stop_time = None
     stop_distance = None
@@ -147,6 +182,22 @@ def measure_ground_motion(
         average_coast_deceleration=(released_speed - terminal_speed) * 1000.0 / coast_ms,
         stop_time_ms=stop_time,
         stop_distance=stop_distance,
+        accel_forward_distance=(axis_travel(start, release, forward_axis)
+                                if axis == "diagonal" else math.nan),
+        accel_right_distance=(axis_travel(start, release, right_axis)
+                              if axis == "diagonal" else math.nan),
+        release_forward_speed=(dot_velocity(release, forward_axis)
+                               if axis == "diagonal" else math.nan),
+        release_right_speed=(dot_velocity(release, right_axis)
+                             if axis == "diagonal" else math.nan),
+        release_horizontal_speed=(math.hypot(release.vx, release.vy)
+                                  if axis == "diagonal" else math.nan),
+        peak_horizontal_speed=(max(math.hypot(f.after.vx, f.after.vy) for f in run.trace)
+                               if axis == "diagonal" else math.nan),
+        release_heading_error_deg=(math.degrees(math.atan2(
+            direction[0] * release.vy - direction[1] * release.vx,
+            direction[0] * release.vx + direction[1] * release.vy
+        )) if axis == "diagonal" else math.nan),
     )
 
 
@@ -157,7 +208,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--map", dest="map_name", default="de_dust2")
     parser.add_argument("--heading-deg", type=float, required=True,
                         help="Player view yaw; the projected strafe axis is yaw - 90 degrees")
-    parser.add_argument("--axis", choices=("forward", "strafe"), default="forward")
+    parser.add_argument("--axis", choices=("forward", "strafe", "diagonal"),
+                        default="forward")
     parser.add_argument("--accel-ms", type=int, required=True)
     parser.add_argument("--coast-ms", type=int, required=True)
     parser.add_argument("--stop-speed", type=float, default=5.0)
@@ -182,6 +234,14 @@ def main(argv: list[str] | None = None) -> int:
           f"average_coast_deceleration={profile.average_coast_deceleration:.6g} "
           f"stop_time_ms={profile.stop_time_ms if profile.stop_time_ms is not None else 'not_observed'} "
           f"stop_distance={f'{profile.stop_distance:.6g}' if profile.stop_distance is not None else 'not_observed'}")
+    if args.axis == "diagonal":
+        print(f"accel_forward_distance={profile.accel_forward_distance:.6g} "
+              f"accel_right_distance={profile.accel_right_distance:.6g} "
+              f"release_forward_speed={profile.release_forward_speed:.6g} "
+              f"release_right_speed={profile.release_right_speed:.6g}")
+        print(f"release_horizontal_speed={profile.release_horizontal_speed:.6g} "
+              f"peak_horizontal_speed={profile.peak_horizontal_speed:.6g} "
+              f"release_heading_error_deg={profile.release_heading_error_deg:.6g}")
     return 0
 
 

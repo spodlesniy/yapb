@@ -315,3 +315,13 @@ Incomplete execution, speed cap changes, missing ground contact, unexpected comm
 Real runs with `yb_freeze_bots 1` should start after normal buying has finished, since the freeze toggle suppresses ordinary movement logic but does not suppress purchase handling.
 Compare with D287 coast only under equivalent start/release conditions; geometry and collisions still require independent checks before attribution to braking forces.
 Stage B cannot be marked completed without repeated user-run HLDS traces and independently assessed positive and negative trials.
+
+## D293 — Normalized diagonal ground motion and coast
+
+Keep the exceptional D292 later-position anomaly unresolved and do not change its detection unless it recurs.
+The `ground_diagonal_coast_01` experiment applies forward=1 and strafe=1 simultaneously for 500 commanded ms, then releases both commands for 1000 ms at the established `de_dust2` pose and yaw.
+The bridge normalizes the combined command vector and the read-only profiler checks the resulting axis commands alongside observed velocity and displacement.
+The diagonal analysis measures forward and right components, release and peak horizontal speed, and angular deviation from the expected yaw-minus-45-degree direction.
+It rejects unreliable ground, speed cap, command, continuity, initial-speed or progress evidence as Inconclusive.
+No Scenario Runner, engine physics or D290 runtime change is included.
+Repeatable HLDS measurements and later Stage B speed, turn and obstacle experiments are still required.

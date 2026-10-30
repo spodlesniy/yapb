@@ -718,3 +718,7 @@ Automatic CI and user-run HLDS lateral traces are required; Stage B ground movem
 D291 automatic Build and Explorer CI passed at c2fe110; the user reports two Completed strafe/coast trials (781/766 frames, each 1500 command ms) with reproducible lateral displacement, but Stage B is still open.
 D292 adds a controlled 500-ms forward acceleration followed by 500-ms full opposite-input braking scenario, read-only zero-speed crossing/reversal measurements and standalone offline/C++ fixture regressions.
 The earlier D287 500+1000-ms forward coast is the comparison baseline when engine speed caps and start states agree; automatic CI and user-run HLDS repetitions remain the acceptance gates, with no runtime physics change.
+D292 automatic Build and Explorer CI passed at 3473b465; the user recorded four Completed 1000-ms active-braking trials with near-identical initial stop measurements (approximately 141 ms and 16.14 GoldSrc units).
+One later position stall was observed; at the user's request further investigation is deferred unless it recurs.
+D293 adds a normalized simultaneous forward/strafe acceleration and coast fixture, a read-only diagonal projection profile and Python/C++ fixture tests, leaving runtime and D290 diagnostics unchanged.
+Automatic CI and user-run HLDS measurements remain necessary; Stage B is not complete.

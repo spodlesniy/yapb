@@ -305,3 +305,19 @@ The report provides projected acceleration distance, *signed* displacement durin
 `Inconclusive` is used for missing/invalid frames, contradictory commands, interrupted runs, lost ground contact, speed-cap changes or unreliable start state.
 Compare `stop_time_ms` and `stop_distance` against the earlier `ground_accel_coast_01` report (500ms acceleration followed by 1000ms with zero control).
 Compare only similar preflight states, max speed and release speed; a collision or environmental influence can produce apparent braking, and `Completed` alone never proves physical success.
+
+## Diagonal ground acceleration and coast (D293)
+
+Install `ground_diagonal_coast_01.scenario` and run `aipb scenario run ground_diagonal_coast_01` on `de_dust2` with `yb_freeze_bots 1`, after normal buying.
+The experiment holds `forward=1` and `strafe=1` for 500 commanded ms, then coasts for 1000 ms from the D287 start pose.
+The bridge normalizes combined input: each applied command component is approximately `maxspeed / sqrt(2)`, not `maxspeed`.
+Physical movement remains independently measured.
+
+```sh
+python -m tools.aipb_training.ground_motion_profile "<run_directory>" --scenario ground_diagonal_coast_01 --heading-deg -105 --axis diagonal --accel-ms 500 --coast-ms 1000
+```
+
+Besides the earlier ground-motion metrics, diagonal mode reports forward/right displacement, release velocity components, horizontal release/peak speeds and release direction error relative to yaw minus 45 degrees.
+Invalid commands, changed speed cap, non-ground movement, nonzero initial speed and insufficient physical progress yield Inconclusive.
+Compare only equivalent starting pose, weapon speed cap and round conditions with D287 and D291.
+`Completed` does not establish success or collision-free traversability.

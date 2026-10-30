@@ -1,5 +1,6 @@
 """Ground acceleration/coast measurement regression tests."""
 import io
+import math
 import unittest
 from contextlib import redirect_stdout
 from dataclasses import replace
@@ -36,6 +37,20 @@ def strafe_trial(*, first_forward=0, first_strafe=100, coast_strafe=0):
     return Bundle("ground_strafe_coast_01", "de_dust2", 1, 2, 1,
                   "Completed", "finished", 2, 20, "live",
                   first.before, second.after, (first, second))
+
+
+def diagonal_trial():
+    # Yaw-zero diagonal input points toward +X/-Y at normalized speed.
+    component = 250 / math.sqrt(2)
+    start = Pose(0, 0, -92, 0, 0, 0, 0, 0, 1, 0)
+    release = Pose(6, -6, -92, component, -component, 0, 0, 0, 1, 0)
+    end = Pose(8, -8, -92, 0, 0, 0, 0, 0, 1, 0)
+    first = Frame(0, 0, 10, component, component, 250, 0, 0, 0, 0,
+                  start, release)
+    second = Frame(1, 1, 10, 0, 0, 250, 0, 0, 0, 0, release, end)
+    return Bundle("ground_diagonal_coast_01", "de_dust2", 1, 2, 1,
+                  "Completed", "finished", 2, 20, "live",
+                  start, end, (first, second))
 
 
 class GroundMotionTests(unittest.TestCase):
@@ -111,6 +126,82 @@ class GroundMotionTests(unittest.TestCase):
         self.assertIn("Measured: StopObserved", output.getvalue())
         self.assertIn("accel_distance=5", output.getvalue())
         self.assertEqual(self.measure(trial()).outcome, "Measured")
+
+    def test_diagonal_measures_components_and_normalization(self):
+        result = measure_ground_motion(
+            diagonal_trial(), "ground_diagonal_coast_01", "de_dust2",
+            0, 10, 10, axis="diagonal"
+        )
+        self.assertEqual((result.outcome, result.reason),
+                         ("Measured", "StopObserved"))
+        self.assertAlmostEqual(result.accel_distance, 6 * math.sqrt(2))
+        self.assertAlmostEqual(result.coast_distance, 2 * math.sqrt(2))
+        self.assertAlmostEqual(result.accel_forward_distance, 6)
+        self.assertAlmostEqual(result.accel_right_distance, 6)
+        self.assertAlmostEqual(result.release_forward_speed, 250 / math.sqrt(2))
+        self.assertAlmostEqual(result.release_right_speed, 250 / math.sqrt(2))
+        self.assertAlmostEqual(result.release_horizontal_speed, 250)
+        self.assertAlmostEqual(result.peak_horizontal_speed, 250)
+        self.assertAlmostEqual(result.release_heading_error_deg, 0)
+        self.assertEqual(result.stop_time_ms, 10)
+
+    def test_diagonal_rejects_invalid_commands_and_speed_cap(self):
+        run = diagonal_trial()
+        first, second = run.trace
+        cases = (
+            (replace(first, forward=250), second, "UnexpectedMovementCommand"),
+            (replace(first, strafe=250), second, "UnexpectedMovementCommand"),
+            (replace(first, strafe=0), second, "UnexpectedMovementCommand"),
+            (first, replace(second, strafe=40), "UnexpectedMovementCommand"),
+            (first, replace(second, max_speed=225), "SpeedCapChanged"),
+            (replace(first, buttons=2), second, "LeftGroundOrStanceChanged"),
+            (first, replace(second, yaw=10), "UnexpectedMovementCommand"),
+        )
+        for modified_first, modified_second, reason in cases:
+            with self.subTest(reason=reason):
+                modified = replace(run, trace=(modified_first, modified_second))
+                result = measure_ground_motion(
+                    modified, "ground_diagonal_coast_01", "de_dust2",
+                    0, 10, 10, axis="diagonal"
+                )
+                self.assertEqual(result.reason, reason)
+
+    def test_diagonal_requires_progress_and_zero_initial_speed(self):
+        run = diagonal_trial()
+        first, second = run.trace
+        parked = replace(first, after=first.before)
+        coast = replace(second, before=parked.after, after=parked.after)
+        stationary = replace(run, trace=(parked, coast), end=parked.after)
+        self.assertEqual(measure_ground_motion(
+            stationary, "ground_diagonal_coast_01", "de_dust2",
+            0, 10, 10, axis="diagonal"
+        ).reason, "InsufficientPhysicalProgress")
+        fast_start = replace(first.before, vx=20)
+        running = replace(run, trace=(replace(first, before=fast_start), second),
+                          start=fast_start)
+        self.assertEqual(measure_ground_motion(
+            running, "ground_diagonal_coast_01", "de_dust2",
+            0, 10, 10, axis="diagonal"
+        ).reason, "InitialSpeedMismatch")
+
+    def test_diagonal_cli_preserves_existing_axes(self):
+        with patch("tools.aipb_training.ground_motion_profile.load_bundle",
+                   return_value=diagonal_trial()):
+            with redirect_stdout(io.StringIO()) as output:
+                code = main([
+                    "unused", "--scenario", "ground_diagonal_coast_01",
+                    "--heading-deg", "0", "--accel-ms", "10",
+                    "--coast-ms", "10", "--axis", "diagonal",
+                ])
+        self.assertEqual(code, 0)
+        self.assertIn("Measured: StopObserved", output.getvalue())
+        self.assertIn("release_horizontal_speed=250", output.getvalue())
+        self.assertIn("release_heading_error_deg=0", output.getvalue())
+        self.assertEqual(self.measure(trial()).outcome, "Measured")
+        self.assertEqual(measure_ground_motion(
+            diagonal_trial(), "ground_diagonal_coast_01", "de_dust2",
+            0, 10, 10, axis="forward"
+        ).reason, "UnexpectedMovementCommand")
 
     def test_partial_or_inconsistent_evidence(self):
         self.assertEqual(self.measure(replace(trial(), status="Cancelled")).reason,

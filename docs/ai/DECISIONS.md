@@ -3586,3 +3586,15 @@ Report projected entry and terminal speeds, signed brake-phase displacement, the
 Interpolate only inside frames of at most 20 commanded ms; report Inconclusive on coarse crossings and untrusted observations, never treat scheduler Completed or a collision-induced stop as causal proof.
 Compare measured braking time/distance against existing D287 forward coast evidence only when start/release speed and other conditions are comparable.
 Add offline analyzer regressions, CLI/invalid bundle tests, and a C++ scenario-loader contract; require automatic CI and repeated user-run HLDS traces before claiming a measured physical braking capability.
+
+## D293 — Controlled diagonal motion and coast
+
+The user explicitly defers investigation of the isolated late D292 position stall unless it recurs.
+Do not change the D290 diagnostics or movement physics for this incident.
+The next Stage B variable is simultaneous positive forward and positive right strafe input for 500 ms, followed by 1000 ms without input, at the established `de_dust2` pose.
+The existing bridge normalizes both inputs to `maxspeed / sqrt(2)`; do not assume observed engine speed necessarily reaches the command cap.
+Extend the read-only `ground_motion_profile` with opt-in `--axis diagonal` without changing its existing forward and strafe behavior.
+Validate exact action timings, normalized commands, constant speed cap and yaw, grounded stance, trace continuity and physically meaningful movement.
+Report forward/right acceleration displacements, release velocity components, release/peak horizontal speed and release-direction error from yaw minus 45 degrees.
+Require C++ loader fixture and Python profile/CLI regression tests.
+Retain Stage B acceptance pending user-run repeated HLDS evidence and subsequent turning, speed and obstacle experiments.

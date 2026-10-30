@@ -89,6 +89,24 @@ duration_ms=100
       && strafe.actions[0].yawDelta == 0.0f);
     check(strafe.actions[1].durationMs == 1000 && strafe.actions[1].timeoutMs == 1300
       && strafe.actions[1].forward == 0.0f && strafe.actions[1].strafe == 0.0f);
+    Scenario diagonal {};
+    check(loadScenario(fixtureRoot, "ground_diagonal_coast_01", diagonal, detail)
+      == LoadStatus::Ok);
+    check(diagonal.name == "ground_diagonal_coast_01" && diagonal.map == "de_dust2");
+    check(diagonal.team == 0 && diagonal.equipment.specified.empty());
+    check(diagonal.hasBot("vx") && diagonal.hasBot("vy") && diagonal.hasBot("vz"));
+    check(checkScenarioPreflight(diagonal, "de_dust2", true, true, 2)
+      == PreflightStatus::Ok);
+    check(diagonal.actions.size() == 2);
+    check(diagonal.actions[0].durationMs == 500
+      && diagonal.actions[0].timeoutMs == 700
+      && diagonal.actions[0].forward == 1.0f
+      && diagonal.actions[0].strafe == 1.0f
+      && diagonal.actions[0].yawDelta == 0.0f);
+    check(diagonal.actions[1].durationMs == 1000
+      && diagonal.actions[1].timeoutMs == 1300
+      && diagonal.actions[1].forward == 0.0f
+      && diagonal.actions[1].strafe == 0.0f);
     Scenario braking {};
     check(loadScenario(fixtureRoot, "ground_active_brake_01", braking, detail)
       == LoadStatus::Ok);
