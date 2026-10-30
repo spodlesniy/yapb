@@ -256,3 +256,17 @@ A time-aligned `Match: TimeAlignedWithinTolerance` reports the maximum position,
 A command or state mismatch reports its earliest `first_mismatch_time_ms` as `Diverged`.
 Samples with a frame longer than 20 ms, unreliable transitions, or inconsistent observations return `Inconclusive` rather than a false match.
 The supplied two real HLDS `ground_forward_02` runs contain 386 and 382 frames across the same 750 commanded milliseconds and serve as the initial time-alignment acceptance pair.
+
+## Ground acceleration and coast measurement (D287)
+
+Install ground_accel_coast_01.scenario from projects/aipb-explorer/scenarios/ and run it with aipb scenario run ground_accel_coast_01 on de_dust2.
+Evaluate its completed result.csv and trace.csv with:
+
+```sh
+python -m tools.aipb_training.ground_motion_profile "<run_directory>" --heading-deg -105 --accel-ms 500 --coast-ms 1000
+```
+
+Measured output includes projected acceleration/coast distances, initial/release/end velocities along the selected heading, mean acceleration/deceleration and an observed near-stop time/distance at 5 units/sec.
+StopNotObserved indicates the bot has not stably fallen below that threshold during the 1000-ms coast, not a failed scenario.
+The independent evaluator returns Inconclusive for incomplete, discontinuous or invalid ground evidence.
+The scenario uses the previous grounded de_dust2 initial pose and does not modify the game DLL.

@@ -700,3 +700,6 @@ The user supplied two real de_dust2 `ground_forward_02` HLDS traces (386 and 382
 D286 extends the read-only D283 comparison to align different GoldSrc frame partitions by cumulative committed milliseconds, checking action boundaries, input controls, interpolated before/after states and an explicit 20-ms maximum frame sampling interval.
 It reports the first differing commanded millisecond and maximum aligned pose/velocity/angle deltas; coarse or discontinuous traces remain Inconclusive, and the user-run Windows x86/HLDS repetition and deferred T261-07 checks remain open as separate evidence.
 Stage A is not marked complete until the D286 automatic checks and applicable acceptance gates are reviewed.
+D286 automatic Build CI passed at c87c2808.
+The D285 user-provided HLDS evidence includes two Completed ground_forward_02 runs with 386/382 frames, 750 commanded ms, matching 500/750-ms action boundaries and 0.01269 GoldSrc-unit endpoint separation; the stage A reproducibility objective has positive evidence, but deferred T261-07 checks remain open.
+D287 begins Stage B with a bounded forward-acceleration (500 ms) and unpowered coast (1000 ms) scenario, plus an offline measured-speed/distance/deceleration profile. This adds no runtime movement implementation, and a first real acceleration/coast HLDS trial remains pending.

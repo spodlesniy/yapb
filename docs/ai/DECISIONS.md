@@ -3520,3 +3520,10 @@ A changed action duration or command is divergence; inconsistent observations, c
 Cross-partition comparisons do not equate `old_buttons` at different engine-frame indices, while still comparing applied button inputs.
 Two real D285 HLDS runs of `ground_forward_02` provide positive evidence: 386/382 frames over the same 750 commanded milliseconds, with a 0.0127 GoldSrc-unit endpoint separation.
 This offline analysis does not authorize movement or assert safe traversability; Stage A and outstanding T261-07 acceptance remain open.
+
+## D287 — Begin ground movement profiling with acceleration and coast
+
+Keep the supported Scenario Runner unchanged and add a deterministic two-action scenario: 500 ms forward, then 1000 ms without movement input or a turn, from the established de_dust2 grounded pose.
+Measure along the explicitly specified initial heading using the trace's actual pre/post poses and velocities, with separate acceleration/coast distances, average speed changes, and a stop observation threshold.
+Treat incomplete runs, discontinuous traces, off-ground/crouching changes, changed commands, and invalid speed evidence as Inconclusive; do not infer safe traversal from scheduler completion.
+Require the user to collect real HLDS data before claiming empirical acceleration or braking bounds or completing Stage B.

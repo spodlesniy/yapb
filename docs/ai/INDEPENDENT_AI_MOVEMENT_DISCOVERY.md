@@ -262,3 +262,11 @@ D286 compares short-interval interpolated positions, velocities, wrapped angles,
 The comparison reports Match, Diverged or Inconclusive and explicit first-mismatch milliseconds, with a strict maximum 20-ms interpolation frame gap.
 The real HLDS `ground_forward_02` pair (386/382 frames) has aligned coordinate differences of at most about 0.043 units; measured endpoint separation is 0.0127 units.
 Physical success remains separately assessed against an explicit goal; the deferred T261-07 lifecycle cases are not considered passed.
+
+## D287 — Stage B first bounded acceleration/coast experiment
+
+Two verified real runs of ground_forward_02 from D285 provide Stage A repeatability evidence: 750 ms each, 386/382 frames and 0.01269 units final separation.
+The remaining T261-07 cases stay deferred and Stage A's overall exit status is not silently promoted to full acceptance.
+The new ground_accel_coast_01 scenario holds forward for 500 ms, then releases all movement for 1000 ms at unchanged yaw, to measure acceleration, drift, deceleration, and whether near-stop occurs during the observed interval.
+A read-only Python CLI reads the existing result.csv and trace.csv and reports measurement facts or Inconclusive with an explicit reason.
+This is the beginning of Stage B, not evidence that all ground movement conditions or step/slope handling have been measured.
