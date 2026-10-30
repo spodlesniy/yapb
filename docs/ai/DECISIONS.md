@@ -3554,3 +3554,10 @@ Record live round state and timings, freeze configuration, player flags, movemen
 On a stall only, run one forward 32-unit hull trace as read-only obstacle evidence; neither a clear trace nor a blocked trace proves the cause.
 Keep the diagnostic collection capped at 16 samples, with no engine-command changes, fail-open diagnostics collection, and the existing terminal result written last.
 Require automated C++ contract verification and a user-run Windows x86/HLDS repetition of scenario_lifecycle_01 followed by two ground_accel_coast_01 runs before attributing the zero-motion incident to an engine flag, geometry, or plugin.
+
+## D290.1 — Correct the stationary fixture in scenario diagnostics tests
+
+The D290 Explorer CI run 41068084299 compiled successfully on GCC, Clang and MSVC but failed the new scenario diagnostics contract test.
+After verifying recovery, the test reused a pose with 200 units per second horizontal velocity for a supposedly stationary 200-ms interval, contradicting the detector's intentional velocity-aware progress check.
+Keep D290 runtime, output formats and movement unchanged; explicitly zero the fixture's velocity before the sustained no-motion interval, separately verify nonzero-velocity behavior and report assertion line numbers in future CI failures.
+Automatic Explorer CI and user-run Windows x86/HLDS acceptance remain pending.

@@ -710,3 +710,5 @@ D289 identifies unguarded Counter-Strike round freeze as a plausible cause: Game
 D290 adds bounded, versioned diagnostic snapshots to newly recorded Scenario Runner bundles, without changing movement, the scheduler, or the established result/trace formats.
 A continuously commanded 200-ms stationary interval triggers a single event with live engine-state fields and a read-only forward hull trace; start, the first ten frames, recovery and terminal state are also recorded.
 The reported 15–20 seconds remaining in the round weakens the unverified freeze-time hypothesis; D290 automatic Explorer/Build CI and user-run Windows x86/HLDS reproduction are still required before diagnosing the zero-motion cause.
+D290 automatic Build CI passed at 936cee3, but Explorer CI run 41068084299 failed only the new scenario diagnostics test on GCC, Clang and MSVC.
+D290.1 corrects its false stationary assumption (reused pose retained 200 units/s velocity), tests sustained nonzero velocity separately and adds line-numbered assertion diagnostics; runtime behavior is unchanged and Explorer CI requires re-verification.
