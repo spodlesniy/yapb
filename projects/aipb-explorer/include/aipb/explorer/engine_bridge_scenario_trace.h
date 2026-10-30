@@ -82,6 +82,9 @@ public:
     frames_.push_back(frame);
     return true;
   }
+
+private:
+  std::vector<ScenarioTraceFrame> frames_ {};
 };
 
 inline bool formatScenarioTraceFrame(
@@ -152,7 +155,8 @@ inline bool saveScenarioRunBundle(
     const fs::path runDirectory = resultsRoot / name;
     error.clear();
     if (!fs::create_directory(runDirectory, error)) {
-      if (error == std::errc::file_exists) {
+      // Existing directories are not errors for create_directory on every CRT.
+      if (!error || error == std::errc::file_exists) {
         continue;
       }
       return false;

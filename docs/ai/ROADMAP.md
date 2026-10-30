@@ -686,3 +686,6 @@ D280 corrects the test to match the nested result path across whitespace, withou
 D280 automatic Build CI passed at dc1e13b7.
 D281 adds bounded scenario frame evidence (up to 4096 applied engine frames) and groups `trace.csv` with `result.csv` in a unique per-run results folder.
 Standalone trace contract tests cover ordering, persistence, collision suffixes, validation and file contents; Windows x86/HLDS acceptance and deferred lifecycle checks remain open.
+D281 Explorer CI failed on GCC, Clang, and MSVC because `ScenarioTrace::frames_` was referenced but never declared; Build CI passed, but the Explorer failure blocks acceptance.
+D282 restores the private bounded trace vector, covers clear/reuse, and handles the standard no-error response when `create_directory` finds a pre-existing run directory so exclusive collision suffixes work.
+D282 requires fresh Explorer CI on all three toolchains; replay comparison remains a later separate step.

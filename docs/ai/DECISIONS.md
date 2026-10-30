@@ -3484,3 +3484,11 @@ Save each attempt under a unique `explorer/scenarios/results/<scenario>/YYYYMMDD
 Use exclusive creation and never reuse prior attempts; preserve the terminal scheduler outcome without interpreting physics success.
 The older single `*.result.csv` output remains readable but is not migrated.
 Failed recording must not leave a running scenario or held input; HLDS validation is still pending.
+
+## D282 — Correct ScenarioTrace compilation and collision handling
+
+D281 cannot pass Explorer CI because its new `ScenarioTrace` methods refer to a missing private `frames_` vector.
+Declare this backing vector explicitly and verify clearing/reuse through the existing standalone test target.
+When creating a per-attempt directory, treat an already existing directory as a suffix collision even if `std::filesystem::create_directory` reports no error, while preserving fail-closed behavior on real filesystem errors.
+Do not change runtime commands, data formats, result roots, or declared movement-success semantics.
+Run GCC, Clang, and MSVC Explorer CI before moving on to trace comparison.

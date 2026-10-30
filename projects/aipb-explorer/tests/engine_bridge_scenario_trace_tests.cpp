@@ -76,9 +76,16 @@ int main() {
     std::string second {};
     check(saveScenarioRunBundle(root, "20261029_232410", result, trace, second));
     check(location != second);
+    check(fs::path(second).filename() == "20261029_232410_001");
     check(!saveScenarioRunBundle(root, "../unsafe", result, trace, second));
     result.reason = "invalid,reason";
     check(!saveScenarioRunBundle(root, "20261029_232410", result, trace, second));
+    trace.clear();
+    check(trace.size() == 0 && trace.frames().empty());
+    frame.frameIndex = 0;
+    frame.actionIndex = 0;
+    check(trace.append(frame));
+    check(trace.size() == 1);
     fs::remove_all(root, ec);
     return 0;
   } catch (const std::exception &e) {
