@@ -3527,3 +3527,11 @@ Keep the supported Scenario Runner unchanged and add a deterministic two-action 
 Measure along the explicitly specified initial heading using the trace's actual pre/post poses and velocities, with separate acceleration/coast distances, average speed changes, and a stop observation threshold.
 Treat incomplete runs, discontinuous traces, off-ground/crouching changes, changed commands, and invalid speed evidence as Inconclusive; do not infer safe traversal from scheduler completion.
 Require the user to collect real HLDS data before claiming empirical acceleration or braking bounds or completing Stage B.
+
+## D288 — First-frame clock re-anchoring and terminal evidence preservation
+
+An admitted scenario may observe a slightly earlier engine game-time snapshot on its first bot-frame callback than on the preceding console command, producing InvalidClock before any frame.
+Only before its first applied frame, and only without a pending prepared frame, permit the scheduler to re-anchor to this earlier nonnegative clock; re-anchor the run record start time accordingly.
+Retain strict backwards-time rejection once any movement frame has been applied, and retain lifecycle round checks before any re-anchor.
+When terminal time is earlier than recorded start, mark end-game-time unknown with -1 rather than rejecting the otherwise valid terminal result CSV.
+The first ground_accel_coast_01 HLDS capture has 4 completed runs, 98/788/762/777 frames with 1500 command ms each; further game evidence is needed for the clock fix.

@@ -270,3 +270,10 @@ The remaining T261-07 cases stay deferred and Stage A's overall exit status is n
 The new ground_accel_coast_01 scenario holds forward for 500 ms, then releases all movement for 1000 ms at unchanged yaw, to measure acceleration, drift, deceleration, and whether near-stop occurs during the observed interval.
 A read-only Python CLI reads the existing result.csv and trace.csv and reports measurement facts or Inconclusive with an explicit reason.
 This is the beginning of Stage B, not evidence that all ground movement conditions or step/slope handling have been measured.
+
+## D288 — Runner clock-regression correction
+
+First-frame InvalidClock with zero frames was observed during repeated HLDS ground_accel_coast_01 runs, with terminal CSV failures when end game time preceded the start.
+D288 re-anchors the clock only before the first applied frame and preserves strict monotonic clock validation thereafter.
+The terminal result uses end_game_ms=-1 for an invalid or backwards end clock, keeping explicit uncertainty instead of silently discarding the result.
+Re-run HLDS trials after CI; neither error handling nor Stage B acceleration evidence is accepted until verified on the game server.

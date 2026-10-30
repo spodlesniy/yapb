@@ -177,6 +177,21 @@ public:
     return true;
   }
 
+  // Admission can occur between engine callbacks. Before the first applied
+  // frame, re-anchor a clock that moved backwards; subsequent regressions
+  // remain invalid. The adapter must independently check round ownership.
+  bool rebaseBeforeFirstFrame(std::int64_t nowMs) {
+    if (!running() || pending_ || frames_ != 0 || nowMs < 0
+      || nowMs >= lastSeenMs_) {
+      return false;
+    }
+
+    startedAtMs_ = nowMs;
+    actionStartedAtMs_ = nowMs;
+    lastSeenMs_ = nowMs;
+    return true;
+  }
+
   bool cancel() {
     if (!running()) {
       return false;

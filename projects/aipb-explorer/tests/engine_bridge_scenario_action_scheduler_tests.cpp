@@ -132,6 +132,21 @@ int main() {
     check(scheduler.prepareFrame(199, 10).milliseconds == 0, "clock backward");
     check(scheduler.status() == ActionScheduleStatus::InvalidClock, "clock regression reason");
 
+    // Console admission and the first bot callback may observe different
+    // engine clock snapshots. Only pre-execution re-anchoring is permitted.
+    check(scheduler.begin(makeScenario(), admitted(), 400), "rebase start");
+    check(!scheduler.rebaseBeforeFirstFrame(400), "equal clock needs no rebase");
+    check(scheduler.rebaseBeforeFirstFrame(350), "first frame clock rebase");
+    first = scheduler.prepareFrame(350, 10);
+    check(first.ticket != 0 && first.frameIndex == 0, "rebased frame prepared");
+    check(!scheduler.rebaseBeforeFirstFrame(340), "pending frame prevents rebase");
+    check(scheduler.commitFrame(first, 351), "rebased first frame committed");
+    check(scheduler.frames() == 1, "rebased run counted frame");
+    check(!scheduler.rebaseBeforeFirstFrame(340), "cannot rebase after execution");
+    check(scheduler.prepareFrame(350, 10).ticket == 0, "late clock rollback rejected");
+    check(scheduler.status() == ActionScheduleStatus::InvalidClock,
+      "strict clock semantics retained after first frame");
+
     check(scheduler.begin(makeScenario(), admitted(), 0), "pending clock start");
     first = scheduler.prepareFrame(10, 10);
     check(!scheduler.commitFrame(first, 9), "commit clock regression");

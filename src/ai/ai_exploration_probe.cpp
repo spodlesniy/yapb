@@ -122,6 +122,11 @@ void scenarioEnd(Bot *bot, const char *reason) {
       scenarioResult.frames = scenarioScheduler.frames();
       scenarioResult.commandMs = scenarioScheduler.totalMilliseconds();
       scenarioResult.endGameMs = scenarioTimeMs();
+      // A clock rollback must not prevent terminal evidence from being saved.
+      // -1 denotes an untrustworthy end-clock observation in result v1.
+      if (scenarioResult.endGameMs < scenarioResult.startGameMs) {
+         scenarioResult.endGameMs = -1;
+      }
       if (bot && bot->pev) {
          scenarioResult.end = scenarioPose(*bot);
          scenarioResult.endSource = aipb::explorer::scenario::ScenarioEndSource::Live;
@@ -822,6 +827,14 @@ bool frame(Bot &bot) {
       const int msec = std::isfinite(elapsed) && elapsed > 0.0f
          ? cr::clamp(static_cast<int>(elapsed * 1000.0f + 0.5f), 1, 255) : 1;
       const int64_t clock = scenarioTimeMs();
+      if (clock >= 0 && clock < scenarioResult.startGameMs
+         && scenarioScheduler.rebaseBeforeFirstFrame(clock)) {
+         game.print("AiPB scenario: '%s' first-frame clock reanchored (%lld -> %lld).",
+            scenarioName, static_cast<long long>(scenarioResult.startGameMs),
+            static_cast<long long>(clock));
+         scenarioResult.startGameMs = clock;
+         scenarioLastTime = now;
+      }
       const auto planned = scenarioScheduler.prepareFrame(clock, msec);
       if (!planned.ticket) {
          scenarioEnd(&bot, "scheduler stopped");
