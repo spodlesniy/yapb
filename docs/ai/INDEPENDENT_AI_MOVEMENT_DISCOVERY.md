@@ -240,3 +240,9 @@ The Scenario Runner records each actual `pfnRunPlayerMove` invocation into a bou
 Each attempt lives under `explorer/scenarios/results/<scenario>/YYYYMMDD_HHMMSS_NNN/`, with `trace.csv` written before `result.csv`.
 The trace stores ordered action/frame identifiers, msec, command and button values, maximum speed, and real before/after pose and velocity observations.
 No inferred physical success is reported, and the T261-07 remaining checks stay deferred.
+
+## D283 — Read-only repeat-run comparison
+
+The independent Python analyzer `tools/aipb_training/scenario_trace_compare.py` compares two run directories holding `trace.csv` and `result.csv`.
+It detects command or physics divergence at the earliest comparable frame; inconsistent input files fail validation, while incomplete runs and unequal frame partitions yield Inconclusive.
+This is offline evidence comparison, not live replay or a movement-success classifier; Stage A and deferred T261-07 checks remain open.

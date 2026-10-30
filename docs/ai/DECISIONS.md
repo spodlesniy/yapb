@@ -3492,3 +3492,11 @@ Declare this backing vector explicitly and verify clearing/reuse through the exi
 When creating a per-attempt directory, treat an already existing directory as a suffix collision even if `std::filesystem::create_directory` reports no error, while preserving fail-closed behavior on real filesystem errors.
 Do not change runtime commands, data formats, result roots, or declared movement-success semantics.
 Run GCC, Clang, and MSVC Explorer CI before moving on to trace comparison.
+
+## D283 — Offline comparison of scenario traces
+
+Compare two independently saved D281 result/trace bundles without modifying the game or replaying controls.
+Validate the versioned CSV contracts, bounded frame sequence and committed-command totals before comparing run identity, start state, command partition, commanded motion and observed before/after physics.
+Distinguish Match, Diverged and Inconclusive: a different GoldSrc frame partition is inconclusive even when commanded milliseconds match, and interrupted runs are not replay successes.
+Report the first differing frame and values with declared position, velocity, angle and control tolerances.
+Do not classify physical movement success or mark Stage A complete before real HLDS evidence.

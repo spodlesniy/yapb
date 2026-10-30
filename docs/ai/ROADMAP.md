@@ -689,3 +689,6 @@ Standalone trace contract tests cover ordering, persistence, collision suffixes,
 D281 Explorer CI failed on GCC, Clang, and MSVC because `ScenarioTrace::frames_` was referenced but never declared; Build CI passed, but the Explorer failure blocks acceptance.
 D282 restores the private bounded trace vector, covers clear/reuse, and handles the standard no-error response when `create_directory` finds a pre-existing run directory so exclusive collision suffixes work.
 D282 requires fresh Explorer CI on all three toolchains; replay comparison remains a later separate step.
+D282 Explorer CI passed across GCC, Clang and MSVC at ef13d7bc; the trace storage and collision fix is validated by automatic tests.
+D283 introduces an offline, read-only comparison command for paired scenario result/trace bundles, including bounded strict schema validation, per-frame divergence diagnostics and conservative Inconclusive outcomes for nonmatching frame partitions or incomplete runs.
+Physical Success/Failure/Inconclusive classification and user-run HLDS repeatability remain subsequent Stage A work; the remaining T261-07 checks stay deferred.
