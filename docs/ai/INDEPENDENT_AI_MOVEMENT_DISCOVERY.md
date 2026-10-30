@@ -246,3 +246,11 @@ No inferred physical success is reported, and the T261-07 remaining checks stay 
 The independent Python analyzer `tools/aipb_training/scenario_trace_compare.py` compares two run directories holding `trace.csv` and `result.csv`.
 It detects command or physics divergence at the earliest comparable frame; inconsistent input files fail validation, while incomplete runs and unequal frame partitions yield Inconclusive.
 This is offline evidence comparison, not live replay or a movement-success classifier; Stage A and deferred T261-07 checks remain open.
+
+## D284 — First physical movement outcome evaluator
+
+The read-only CLI `python -m tools.aipb_training.scenario_movement_outcome <run_dir> <goal.csv>` uses an explicit `aipb-scenario-ground-goal-v1` descriptor and validates the saved versioned result/trace bundle.
+For the two-action `ground_forward_02` fixture the provisional goal is 750 commanded ms, heading -105 degrees and at least 16 world units of projected forward travel.
+Completed alone is insufficient: only a fully observed, continuously grounded, noncrouching run with compatible start/end observations and known maxspeed can be evaluated.
+A 1-unit boundary tolerance keeps near-threshold measurements Inconclusive; incomplete or discontinuous observations are also Inconclusive rather than counted as failures.
+The outcome does not assert safe geometry traversability, and user-run HLDS verification remains necessary before Stage A acceptance.

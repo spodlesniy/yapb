@@ -3500,3 +3500,12 @@ Validate the versioned CSV contracts, bounded frame sequence and committed-comma
 Distinguish Match, Diverged and Inconclusive: a different GoldSrc frame partition is inconclusive even when commanded milliseconds match, and interrupted runs are not replay successes.
 Report the first differing frame and values with declared position, velocity, angle and control tolerances.
 Do not classify physical movement success or mark Stage A complete before real HLDS evidence.
+
+## D284 — Ground movement outcome requires an explicit goal
+
+Do not classify scheduler completion as physical success.
+Use a separate, versioned, bounded ground-goal descriptor specifying scenario, map, exact commanded duration, world-space heading and minimum projected displacement.
+Offline evaluation uses the D281 observed before/after states and terminal result, rejects missing or untrusted evidence, checks continuity, grounded stance, valid movement speed and a declared tolerance band before deciding Success, Failure or Inconclusive.
+A projected displacement is evidence of this specific experiment only, not proof of clear collision hulls, path reachability or other maps.
+The initial `ground_forward_02` goal specifies an exploratory 16-unit threshold along yaw -105 degrees for 750 commanded milliseconds; user-run HLDS observations have not yet calibrated or accepted that threshold.
+No runtime behavior or existing `.scenario` parser changes; T261-07 outstanding lifecycle checks remain deferred.

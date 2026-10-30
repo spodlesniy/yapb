@@ -692,3 +692,6 @@ D282 requires fresh Explorer CI on all three toolchains; replay comparison remai
 D282 Explorer CI passed across GCC, Clang and MSVC at ef13d7bc; the trace storage and collision fix is validated by automatic tests.
 D283 introduces an offline, read-only comparison command for paired scenario result/trace bundles, including bounded strict schema validation, per-frame divergence diagnostics and conservative Inconclusive outcomes for nonmatching frame partitions or incomplete runs.
 Physical Success/Failure/Inconclusive classification and user-run HLDS repeatability remain subsequent Stage A work; the remaining T261-07 checks stay deferred.
+D283 automatic Build CI passed at e83f7e7b, validating the offline trace-comparison tests.
+D284 introduces an explicit versioned ground-movement goal for `ground_forward_02` and a read-only evaluator that checks GoldSrc trace continuity, ground contact, terminal completeness and projected movement against an independently declared threshold.
+The outcome is Success, Failure or Inconclusive with a reason; D284 does not change the Scenario Runner, does not infer successful traversal from Completed, and does not close Stage A or the deferred T261-07 negative checks.

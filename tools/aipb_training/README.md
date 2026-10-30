@@ -218,3 +218,25 @@ The ONNX exporter uses the PyTorch dynamo exporter with explicit opset 18, saves
 Training may use batches with arbitrary N, but the deployed ONNX model must satisfy the runtime contract exactly: one input [1,252] float32 and one output [1,10] float32.
 
 A model with a dynamic or non-singleton runtime batch dimension is not compatible with the current C++ ONNX runner.
+
+## Offline scenario ground-movement assessment (D284)
+
+Run a finished `ground_forward_02` attempt with `result.csv` and `trace.csv` under the same directory, using an explicitly declared versioned ground goal:
+
+```sh
+python -m tools.aipb_training.scenario_movement_outcome \
+  "addons/yapb/data/explorer/scenarios/results/ground_forward_02/<attempt>" \
+  "projects/aipb-explorer/scenarios/ground_forward_02.goal"
+```
+
+The goal is one CSV record: `aipb-scenario-ground-goal-v1,<scenario>,<map>,<command_ms>,<heading_degrees>,<minimum_projected_goldsrc_units>`.
+The included goal uses 750 commanded milliseconds, heading -105 degrees and a provisional 16-unit travel requirement.
+It is a test target, not an empirically established movement range.
+
+`Success` (exit 0) means measured ground displacement exceeded the declared minimum plus a one-unit boundary margin, with continuous and trustworthy evidence.
+`Failure` (exit 1) means complete, trustworthy observations fell below the minimum minus that margin.
+`Inconclusive` (exit 3) includes missing frames, interrupted runs, ambiguous boundary values, airborne motion, trace discontinuity or mismatched command duration.
+`InvalidEvidence` (exit 2) means the saved bundle or goal descriptor is malformed, incomplete or unsupported.
+
+The evaluator is read-only, does not modify existing CSV files, does not control the game, and does not establish safe navigation/hull clearance.
+The result must still be validated on a user-run Windows x86/HLDS session before Stage A acceptance.
