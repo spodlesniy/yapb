@@ -277,3 +277,10 @@ First-frame InvalidClock with zero frames was observed during repeated HLDS grou
 D288 re-anchors the clock only before the first applied frame and preserves strict monotonic clock validation thereafter.
 The terminal result uses end_game_ms=-1 for an invalid or backwards end clock, keeping explicit uncertainty instead of silently discarding the result.
 Re-run HLDS trials after CI; neither error handling nor Stage B acceleration evidence is accepted until verified on the game server.
+
+## D289 — Round-freeze movement guard
+
+A real user-run ground_accel_coast_01 trace reported Completed without physical movement: 763 frames, 1500 commanded ms, zero displacement/speed; a subsequent 757-frame attempt moved 138.52 units.
+The server stores the end of mp_freezetime in gameState.getRoundStartTime; scenarios must not start or continue during that period.
+D289 adds admission and runtime checks with explicit RoundFreeze/round freeze reporting; it does not introduce physics success inference or change the scenario CSV format.
+The underlying freeze-phase cause remains to be confirmed by the user-run Windows x86/HLDS retest.

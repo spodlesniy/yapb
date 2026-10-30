@@ -3535,3 +3535,11 @@ Only before its first applied frame, and only without a pending prepared frame, 
 Retain strict backwards-time rejection once any movement frame has been applied, and retain lifecycle round checks before any re-anchor.
 When terminal time is earlier than recorded start, mark end-game-time unknown with -1 rather than rejecting the otherwise valid terminal result CSV.
 The first ground_accel_coast_01 HLDS capture has 4 completed runs, 98/788/762/777 frames with 1500 command ms each; further game evidence is needed for the clock fix.
+
+## D289 — Reject scenario execution during round freeze
+
+User HLDS evidence shows one ground_accel_coast_01 Completed run with 763 applied commands but no observed movement (zero velocity/displacement), followed by a 757-frame Completed run with 138.52 units of movement.
+The existing game state uses getRoundStartTime as the time when mp_freezetime ends, while scenario preflight only checks RoundOver; this admits commands during a movement-disabled phase.
+Reject new scenario admission before any engine pose/equipment changes while game.time() precedes the active-round start, and recheck immediately before starting the scheduler and before each engine frame.
+Cancel with the explicit "round freeze" reason on a phase change; keep completed command accounting separate from physical movement success and preserve T261-07 deferred checks.
+Engine freeze is the leading code-supported explanation, not proven the only source of zero movement. Validate with Windows x86/HLDS after CI.

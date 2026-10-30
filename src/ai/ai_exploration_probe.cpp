@@ -252,6 +252,11 @@ bool runScenarioInternal(const char *name) {
          aipb::explorer::scenario::runEntryStatusName(entry));
       return false;
    }
+   if (aipb::explorer::scenario::scenarioRoundIsFrozen(
+      game.time(), gameState.getRoundStartTime())) {
+      game.print("AiPB scenario: '%s' rejected (RoundFreeze).", name);
+      return false;
+   }
    // Reject unsupported actions before changing any engine-owned state.
    for (const auto &action : scenario.actions) {
       if (action.attack || action.attack2 || action.use || action.select != "none") {
@@ -335,6 +340,8 @@ bool runScenarioInternal(const char *name) {
       observation.secondary, observation.selected);
    const int64_t clock = scenarioTimeMs();
    if (!gate.ready() || clock < 0 || gameState.isRoundOver()
+      || aipb::explorer::scenario::scenarioRoundIsFrozen(
+         game.time(), gameState.getRoundStartTime())
       || !scenarioScheduler.begin(scenario, gate, clock)) {
       restore();
       game.print("AiPB scenario: '%s' start preflight failed (mismatches=%d, unverified=%d).",
@@ -819,6 +826,12 @@ bool frame(Bot &bot) {
          scenarioScheduler.cancel();
          scenarioEnd(&bot == scenarioBot ? &bot : nullptr,
             aipb::explorer::scenario::runLifecycleFailureName(failure));
+         return true;
+      }
+      if (aipb::explorer::scenario::scenarioRoundIsFrozen(
+         game.time(), gameState.getRoundStartTime())) {
+         scenarioScheduler.cancel();
+         scenarioEnd(&bot, "round freeze");
          return true;
       }
       const float now = game.time();

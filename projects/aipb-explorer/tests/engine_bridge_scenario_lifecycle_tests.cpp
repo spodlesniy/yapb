@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <limits>
 #include <stdexcept>
 
 #include <aipb/explorer/engine_bridge_scenario_lifecycle.h>
@@ -13,6 +14,14 @@ static void expect(bool value) {
 
 int main() {
   try {
+    // CS roundStartTime denotes the end of the engine freeze period.
+    expect(scenarioRoundIsFrozen(100.0f, 106.0f));
+    expect(scenarioRoundIsFrozen(105.999f, 106.0f));
+    expect(!scenarioRoundIsFrozen(106.0f, 106.0f));
+    expect(!scenarioRoundIsFrozen(107.0f, 106.0f));
+    expect(!scenarioRoundIsFrozen(100.0f, 0.0f));
+    expect(!scenarioRoundIsFrozen(-1.0f, 106.0f));
+    expect(!scenarioRoundIsFrozen(100.0f, std::numeric_limits<float>::infinity()));
     RunLifecycleObservation o {};
     o.roundId = 8;
     o.map = "de_dust2";

@@ -1,9 +1,18 @@
 #pragma once
 
+#include <cmath>
 #include <cstdint>
 #include <string_view>
 
 namespace aipb::explorer::scenario {
+
+// The recorded round start is the end of Counter-Strike mp_freezetime.
+// Reject experiments while game movement is disabled by the round phase.
+inline bool scenarioRoundIsFrozen(float gameTime, float activeRoundStart) {
+  return std::isfinite(gameTime) && std::isfinite(activeRoundStart)
+    && gameTime >= 0.0f && activeRoundStart > gameTime;
+}
+
 
 enum class RunLifecycleFailure {
   None,
