@@ -3800,3 +3800,10 @@ Separate NoTakeoff, GroundedControl and Inconclusive, including all ActionTimeou
 Never infer box/ledge/gap reachability from Landed or physical hull clearance from origin-height gain alone.
 Add deterministic synthetic tests and a versioned bundle CLI test; document the user archive's 21 runs (14 Completed, 7 ActionTimeout) without publishing the ZIP as fixtures.
 Keep the Stage A/T261-07 gates open, and treat automatic CI and user-run HLDS verification separately.
+
+## D306.1 — Align menu source-contract tests with D302 menu layout
+
+The D306 Build CI failed only the training-tools test that still required the old Run Scenario 2 and Stop Scenario 3 labels from before D302.
+Update the source-contract test to assert the actual Overlay 1, Move bot 2, Run Scenario 3 and Stop Scenario 4 labels, availability checks and selection branches.
+Do not alter the runtime menu, scenario fixture definitions or D306 jump-analysis behavior for this test-only correction.
+Treat fresh automatic Build CI on the corrective SHA as the validation gate, without manually triggering windows-x86 or full jobs.

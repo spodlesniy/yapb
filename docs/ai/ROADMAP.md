@@ -798,3 +798,5 @@ The change adds source-neutral precision regressions; manual Windows x86/HLDS va
 D306 provides offline read-only Stage C jump trajectory profiling for nine D304 fixtures, validating command timing, frame continuity, grounded start, takeoff, apex, and stable landing without changing engine behavior.
 Of 21 runs in the user's 31 October archive, 14 completed and 7 timed out (six immediately after 60-ms jump commands); interrupted evidence must remain Inconclusive.
 Landed indicates observed ground contact rather than proved box/ledge/gap clearance; automatic CI, follow-up HLDS and deferred T261-07 acceptance remain independent gates.
+D306.1 repairs the outdated AiPB menu source-contract assertions in training-tools tests after D302 inserted Move bot: the test now verifies Overlay 1, Move bot 2, Run Scenario 3 and Stop Scenario 4 and corresponding availability/selection guards.
+The D306 Python profiler and engine runtime remain unchanged; automatic Build CI for D306.1 is a required gate before Stage C jump-analysis results are accepted as a validated tool.
