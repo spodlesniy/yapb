@@ -747,3 +747,8 @@ In user-run evidence, two yaw-30 attempts ran into a wall without height gain; o
 Explorer CI run 41171877016 failed only `aipb_explorer_scenario_loader` on GCC, Clang and MSVC due to its old yaw=30 assertion.
 D295.2 fixes loader and Python fixtures, sets scenario-aware offline heading defaults, and updates documentation without changing runtime or physics.
 The Stage B slope gate remains open pending green CI and repeat successful yaw-0 HLDS ascents.
+D295.2 automatic Build and Explorer CI passed at 10eb957.
+Two further user-run `ground_slope_forward_02` uphill repetitions at yaw 0 completed after 2000 commanded ms, remained grounded and gained approximately 91.04 and 91.02 GoldSrc units, corroborating the first positive run.
+D296 adds the reverse `ground_slope_down_01` experiment with an independently initialized zero-velocity pose averaged from the two recent uphill endpoints (876.419, 2247.172, -0.968), yaw -180, and 2000 ms forward.
+D296 also enhances the existing AiPB menu-controlled HUD overlay with the current authorized recipient's own `origin` and `v_angle` yaw/pitch beneath scenario status, to allow manual start-pose selection for later step tests.
+Build/Explorer CI and user-run downhill traces remain pending; Stage B is not marked complete, and no autonomous movement or physics rules change.

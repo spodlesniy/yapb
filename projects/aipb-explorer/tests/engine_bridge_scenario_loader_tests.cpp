@@ -160,6 +160,28 @@ duration_ms=100
       && slopeDirect.actions[0].strafe == 0.0f
       && slopeDirect.actions[0].yawDelta == 0.0f
       && !slopeDirect.actions[0].jump && !slopeDirect.actions[0].duck);
+    Scenario descent {};
+    check(loadScenario(fixtureRoot, "ground_slope_down_01", descent, detail)
+      == LoadStatus::Ok);
+    check(descent.name == "ground_slope_down_01" && descent.map == "de_dust2");
+    check(descent.team == 0 && descent.equipment.specified.empty());
+    check(checkScenarioPreflight(descent, "de_dust2", true, true, 2)
+      == PreflightStatus::Ok);
+    check(descent.position[0] > 876.41 && descent.position[0] < 876.43);
+    check(descent.position[1] > 2247.17 && descent.position[1] < 2247.18);
+    check(descent.position[2] < -0.96 && descent.position[2] > -0.98);
+    check(descent.yaw == -180.0f && descent.pitch == 0.0f
+      && !descent.crouching);
+    check(descent.velocity[0] == 0.0f && descent.velocity[1] == 0.0f
+      && descent.velocity[2] == 0.0f);
+    check(descent.hasBot("vx") && descent.hasBot("vy") && descent.hasBot("vz"));
+    check(descent.actions.size() == 1);
+    check(descent.actions[0].durationMs == 2000
+      && descent.actions[0].timeoutMs == 2600
+      && descent.actions[0].forward == 1.0f
+      && descent.actions[0].strafe == 0.0f
+      && descent.actions[0].yawDelta == 0.0f
+      && !descent.actions[0].jump && !descent.actions[0].duck);
     Scenario braking {};
     check(loadScenario(fixtureRoot, "ground_active_brake_01", braking, detail)
       == LoadStatus::Ok);

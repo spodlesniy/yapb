@@ -3659,3 +3659,18 @@ The direct-slope loader assertion and Python synthetic trace now use the actual 
 The offline analyzer selects 0 degrees when the current direct scenario is requested without a heading override and retains the historical -105-degree default for the original four-action experiment.
 Do not rewrite the user's yaw correction, historical scenario, movement runtime or physics.
 CI plus repeat grounded yaw-0 attempts remain the acceptance gates.
+
+## D296 — Reverse slope trial and per-player pose overlay
+
+Use the independently measured end of the two repeated yaw-0 `ground_slope_forward_02` trials as the starting position for the next user-guided descent experiment.
+The end positions were (876.45923, 2247.17212, -0.95770) and (876.37799, 2247.17212, -0.97801), both with yaw 0 and terminal horizontal speed 250.
+Choose a rounded representative start (876.419, 2247.172, -0.968), yaw -180 degrees, zero velocity, grounded stance and one 2000-ms forward action.
+This is an independent initial pose and does not reuse the uphill terminal velocity or guarantee a collision-free descending route.
+Add `ground_slope_down_01` as a versioned scenario and C++ loader regression, preserving earlier fixtures.
+
+For manual discovery of future step/obstacle start poses, extend the existing opt-in AiPB menu HUD overlay to append the viewing player's current world-space `pev->origin` and `pev->v_angle` yaw/pitch beneath scenario status.
+Read these values for each authorized real recipient at each overlay refresh, not from the scenario bot or from another player.
+Do not change menu selection ownership or HUD broadcast authorization and do not expose another player's position.
+Use three decimals for world-space coordinates and two for view angles so recorded poses can be copied into future .scenario fixtures.
+Keep the existing status line, toggle and 0.5-second refresh cadence, and add engine-independent formatting regression tests including invalid floating-point values.
+The remaining Stage B slope and step limits require user-run HLDS recordings; automatic Build/Explorer CI is mandatory before this step is accepted.

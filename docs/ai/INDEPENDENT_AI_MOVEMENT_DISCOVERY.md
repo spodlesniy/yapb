@@ -360,3 +360,15 @@ On `de_dust2`, the user found that the direct incline trial `ground_slope_forwar
 Two 30-degree attempts made no upward progress due to a wall/corner, whereas one 0-degree attempt remained grounded and gained approximately 91.04 units of elevation.
 The D295.2 loader and offline regression fixtures follow yaw=0 and the profiler's scenario-based default reflects this, while historical `ground_slope_forward_01` interpretation is unchanged.
 One successful run is preliminary positive evidence; repeated yaw-0 runs and automatic CI are required before Stage B slope acceptance.
+
+## D296 — Reverse incline and manually readable player pose
+
+Following three reproducible grounded `ground_slope_forward_02` ascents, add a bounded reverse-direction descent experiment from their measured endpoint with zero initial velocity and yaw -180 degrees.
+The representative measured endpoint is (876.419, 2247.172, -0.968), based on two recent runs that ended slightly apart.
+The new `ground_slope_down_01` commands forward for 2000 ms; inspect real traces to distinguish continuous grounded descent, collision and airborne segments.
+The ability to descend is not inferred from ascent success.
+
+Extend the opt-in `aipb menu` overlay by retaining scenario status and placing the receiving human player's origin and yaw/pitch below it.
+The HUD is refreshed periodically using live client entity values rather than a stored bot or scenario pose.
+This supports the user's subsequent identification of controlled step and obstacle test start locations without guessing positions.
+Do not infer validated movement capability from HUD coordinates alone.

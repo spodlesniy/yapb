@@ -393,3 +393,16 @@ python -m tools.aipb_training.ground_slope_forward_profile "<run_directory>" --s
 The read-only profiler now defaults to heading 0 degrees for the direct scenario, while keeping -105 degrees for historical `ground_slope_forward_01` data.
 Use explicit `--heading-deg 30` only when analyzing historical yaw-30 attempts; a mismatch with a yaw-0 trace is Inconclusive.
 The grounded yaw-0 ascent is one positive result; repeat the test to confirm reproducibility before declaring the slope accepted.
+
+## D296 — Reverse slope experiment and live player pose HUD
+
+The user-guided downhill scenario `ground_slope_down_01` starts at the rounded midpoint of the two recent yaw-0 `ground_slope_forward_02` endpoints: `x=876.419, y=2247.172, z=-0.968`, facing back along the slope at `yaw=-180`, `pitch=0`, velocity zero.
+It uses one 2000-ms forward action with no jump/duck.
+The old upward scenario stays unchanged, and `Completed` only certifies command execution, not slope traversability.
+Use `aipb scenario run ground_slope_down_01` with `yb_freeze_bots 1` after normal buying and save its `result.csv`, `trace.csv`, and `diagnostics.csv`.
+
+The existing AiPB menu overlay can be enabled with menu option `Overlay: ON` or `aipb scenario overlay on`.
+It now shows, on separate lines for each authorized viewing player, the current scenario status, `Pos: (x, y, z)` and `View: yaw=... pitch=...`.
+The coordinates are raw engine `origin` (not eye position), displayed with three decimal places, and yaw/pitch come from `v_angle` with two decimals.
+These values update every half-second even with no active scenario; use them to report start points for later scenario fixtures.
+The overlay does not read another player's pose or change Scenario Runner movement physics.

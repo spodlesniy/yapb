@@ -1,7 +1,9 @@
 #pragma once
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
+#include <cstdio>
 #include <cstdint>
 #include <string>
 #include <string_view>
@@ -89,6 +91,33 @@ inline std::string scenarioMenuOverlayText(
   }
 
   return "Scenario " + std::string { scenarioName } + " is running";
+}
+
+// Produce a dedicated HUD payload per recipient; never display another player's pose.
+inline std::string scenarioMenuOverlayPoseText(
+  bool running,
+  std::string_view scenarioName,
+  double x,
+  double y,
+  double z,
+  double yaw,
+  double pitch
+) {
+  const std::string status = scenarioMenuOverlayText(running, scenarioName);
+  if (!std::isfinite(x) || !std::isfinite(y) || !std::isfinite(z)
+      || !std::isfinite(yaw) || !std::isfinite(pitch)) {
+    return status + "\nPos: unavailable\nView: unavailable";
+  }
+
+  char pose[160] {};
+  const int length = std::snprintf(pose, sizeof(pose),
+    "\nPos: (%.3f, %.3f, %.3f)\nView: yaw=%.2f pitch=%.2f",
+    x, y, z, yaw, pitch);
+  if (length < 0 || static_cast<std::size_t>(length) >= sizeof(pose)) {
+    return status + "\nPos: unavailable\nView: unavailable";
+  }
+
+  return status + pose;
 }
 
 // Flat, deterministic browser. Only .scenario file basenames are accepted.

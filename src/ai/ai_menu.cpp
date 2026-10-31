@@ -363,13 +363,17 @@ void frame() {
    parameters.fadeinTime = 0.0f;
    parameters.fadeoutTime = 0.0f;
    parameters.holdTime = 0.7f;
-   const auto label = aipb::explorer::scenario::scenarioMenuOverlayText(
-      ai::explore::scenarioRunning(), ai::explore::currentScenarioName());
+   const auto scenarioName = ai::explore::currentScenarioName();
    for (int i = 0; i < kPlayers; ++i) {
       auto *player = game.playerOfIndex(i);
-      if (allowed(player)) {
-         game.sendHudMessage(player, parameters, label.c_str());
+      if (!allowed(player) || !player->pev) {
+         continue;
       }
+      const auto &origin = player->pev->origin;
+      const auto &view = player->pev->v_angle;
+      const auto label = aipb::explorer::scenario::scenarioMenuOverlayPoseText(
+         running, scenarioName, origin.x, origin.y, origin.z, view.y, view.x);
+      game.sendHudMessage(player, parameters, label.c_str());
    }
 }
 

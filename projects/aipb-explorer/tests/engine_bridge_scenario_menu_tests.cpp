@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -22,6 +23,24 @@ int main() {
     check(scenarioMenuOverlayText(false, "abc") == "No scenario running");
     check(scenarioMenuOverlayText(true, "ground_forward_01")
       == "Scenario ground_forward_01 is running");
+    check(scenarioMenuOverlayPoseText(false, "ignored",
+      448.0, 2368.0, -92.0, -105.0, 0.0)
+      == "No scenario running\nPos: (448.000, 2368.000, -92.000)"
+         "\nView: yaw=-105.00 pitch=0.00");
+    check(scenarioMenuOverlayPoseText(true, "ground_slope_down_01",
+      876.4186, 2247.1721, -0.96786, -180.0, -7.5)
+      == "Scenario ground_slope_down_01 is running"
+         "\nPos: (876.419, 2247.172, -0.968)"
+         "\nView: yaw=-180.00 pitch=-7.50");
+    check(scenarioMenuOverlayPoseText(false, "",
+      1.0, 2.0, 3.0, 0.0, 0.0)
+      != scenarioMenuOverlayPoseText(false, "",
+      2.0, 2.0, 3.0, 0.0, 0.0));
+    check(scenarioMenuOverlayPoseText(false, "",
+      0.0, 0.0, 0.0, 0.0, 0.0).find("Pos:") != std::string::npos);
+    check(scenarioMenuOverlayPoseText(false, "",
+      std::numeric_limits<double>::quiet_NaN(), 0, 0, 0, 0)
+      == "No scenario running\nPos: unavailable\nView: unavailable");
     check(scenarioMenuRootKeyMask(false) == ((1u << 0) | (1u << 1) | (1u << 9)));
     check(scenarioMenuRootKeyMask(true) == ((1u << 0) | (1u << 2) | (1u << 9)));
     check((scenarioMenuRootKeyMask(false) & (1u << 2)) == 0u);

@@ -1,0 +1,32 @@
+# Place in addons/yapb/data/explorer/scenarios/ground_slope_down_01.scenario
+# D296: descend from the measured end of ground_slope_forward_02, facing backward.
+[scenario]
+version=aipb-scenario-v1
+name=ground_slope_down_01
+map=de_dust2
+timeout_ms=4000
+
+[bot]
+index=1
+x=876.419
+y=2247.172
+z=-0.968
+yaw=-180
+pitch=0
+vx=0
+vy=0
+vz=0
+crouching=0
+
+[action]
+duration_ms=2000
+timeout_ms=2600
+forward=1
+strafe=0
+yaw_delta=0
+pitch_delta=0
+jump=0
+duck=0
+attack=0
+attack2=0
+use=0
