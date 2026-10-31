@@ -1,0 +1,7 @@
+aipb-jump-observations-v1,results__4.zip,f0f4755f800e63e7b076235fb37ae5bf3adc4378eddb62944c8ee6311323b75d
+scenario,run_id,map,target_id,manual_outcome
+jump_box_plain_01,20261031_210005_000,de_dust2,box_top,MissedLanding
+jump_box_crouch_01,20261031_210009_000,de_dust2,box_top,TargetReached
+jump_runup_short_01,20261031_210141_000,de_dust2,ledge_top,TargetReached
+jump_runup_long_01,20261031_210147_000,de_dust2,ledge_top,Overshot
+jump_gap_runup_01,20261031_210211_000,de_dust2,gap_far_side,Unlabeled

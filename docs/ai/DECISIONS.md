@@ -3851,3 +3851,12 @@ D309 Build CI failed two newly added Python tests, not the production target cla
 The ambiguity fixture placed the landing four units beyond the footprint edge rather than within the one-unit uncertainty band, and the invalid-inset fixture specified an inset that still left sufficient interior support.
 Set the first boundary to the synthetic landing X and the second inset to one that actually invalidates the support width; keep target parsing and classification code unchanged.
 Require successful automatic Build CI before promoting D309 as validated and preserve the deferred Stage A/T261-07 gate.
+
+## D310 — Preserve manual jump outcomes without inferring target geometry
+
+Bind the four user-observed success/failure labels and one explicitly Unlabeled gap trial to immutable 2026-10-31 results__4.zip run IDs and its SHA-256.
+Keep the annotation manifest under docs/ai/evidence/ and verify archive identity, file bounds, trace integrity, recorded jump physics and optional independently measured target CSVs before comparing automation to human labels.
+Return PendingGeometry when a labeled run lacks measured target bounds, Agree or Disagree only after the D309 classifier has conclusive geometry, and Inconclusive for deficient trace or spatial evidence.
+Never use the user's outcome label to fabricate a target rectangle, BSP obstacle height or physically confirmed success in the automated path.
+Add deterministic parser, agreement, disagreement, absence-of-geometry, archive integrity and CLI regressions without modifying GoldSrc runtime, scenario execution or D309 classification.
+Stage C and deferred T261-07 safety acceptance remain open.

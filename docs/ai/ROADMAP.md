@@ -812,3 +812,7 @@ No target geometry is invented from D309's five uploaded traces; the independent
 The engine, scenarios, base jump profiler and original YaPB remain unchanged; repeated positive/negative measured geometry trials and deferred Stage A/T261-07 checks remain open.
 D309.1 corrects two synthetic fixture expectations in D309's source-neutral jump-target tests: the landing-edge ambiguity case now uses the actual sampled landing X, and the invalid-inset case uses an inset larger than the allowed target support width.
 No change to target classification, runtime, schema or the physical Stage C acceptance gate; rerun automatic Build CI on the corrective SHA.
+D309.1 Build CI passed at 917c139 (run 41209598638).
+D310 adds user-observed per-run jump outcomes tied to the exact SHA-256 of results__4.zip and a read-only consistency audit requiring independently measured landing footprints before claiming automatic agreement.
+The four user labels are box plain MissedLanding, box crouch TargetReached, short ledge jump TargetReached and long ledge jump Overshot; the gap trial remains Unlabeled.
+Automatic comparison is PendingGeometry until target extents and supported origin heights are supplied; Stage C and deferred T261-07 acceptance remain open.

@@ -135,3 +135,19 @@ An outcome does not prove no collision or a safe full-body path through BSP geom
 Exit codes: 0 = `TargetReached`, 1 = `Overshot` or `MissedLanding`, 2 = invalid target/bundle, 3 = `Inconclusive`.
 The older `scenario_jump_profile` CLI and its `Landed` classification remain unchanged.
 The supplied D309 capture `results__4.zip` has five trials, but without externally measured target rectangles and grounded origin heights the new tool cannot assign grounded target outcomes to those trials.
+
+## D310 — Human-annotated target outcomes
+
+The user observed `jump_box_plain_01` missing a box that required crouch, `jump_box_crouch_01` reaching its top, `jump_runup_short_01` reaching a raised ledge, and `jump_runup_long_01` passing over the ledge and falling onto a lower floor.
+The `jump_gap_runup_01` record is intentionally `Unlabeled` until independently confirmed.
+The exact archive checksum and run identities are preserved in `docs/ai/evidence/stage_c_results_4_observations.csv`.
+To inspect these annotations without inventing geometry, run:
+
+```sh
+python -m tools.aipb_training.scenario_jump_label_audit results__4.zip docs/ai/evidence/stage_c_results_4_observations.csv
+```
+
+For measured target support rectangles, create one D309 target file per `(target_id, scenario)` under `targets/<target_id>/<scenario>.csv` and supply `--targets-dir targets`.
+These must be independently determined from actual supported surfaces, not derived from the manually assigned outcome or the observed landing coordinate.
+Without those measurements, labeled trials return `PendingGeometry`; incomplete physical traces return `Inconclusive` and the unobserved gap remains `Unlabeled`.
+`Agree` and `Disagree` are only issued when the geometry-based classifier returns a conclusive result.
