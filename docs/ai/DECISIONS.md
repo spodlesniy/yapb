@@ -3695,3 +3695,14 @@ Set an explicit bounded action timeout of 1300 ms and scenario timeout of 2000 m
 Keep the fixture separate from prior slope experiments and do not modify Scenario Runner or physics.
 Add a scenario-loader regression checking the complete initial pose, velocity and command semantics.
 A `Completed` status only indicates scheduled command completion; step height, ground contact, obstacles, actual progress and any airborne segments must be verified from user-run HLDS traces before drawing a traversal conclusion.
+
+## D298 — Reverse four-step experiment from measured ascent endpoint
+
+Inspect the two user-supplied D297 HLDS `ground_step_forward_01` traces rather than inferring success from scheduler status.
+Both runs completed at 1000 commanded ms, stayed on the ground for all 512/514 frames without jump/duck input, and climbed four separate steps with observed Z levels 36, 52.03125, 68.03125, 84.03125 and 100.03125.
+Their final X coordinates were 1666.843994140625 and 1666.8365478515625, with the same Y=893 and Z=100.03125; the endpoint separation is approximately 0.00745 units.
+Use their rounded mean (1666.8403, 893, 100.03125) as the standalone initial pose for `ground_step_down_01.scenario`, face yaw -180 degrees (the 180-degree reverse of the ascent's zero-degree heading), pitch zero and explicitly reset velocity to zero.
+Run one 1000-ms forward movement with no strafe, yaw/pitch change, jump, duck, attack or use, preserving the existing bounded timeouts.
+This is a new descending experiment, not a continuation of the earlier bot velocity, and may not return exactly to the ascent start after 1000 ms because of acceleration and collision geometry.
+Add a fixture loader regression and documentation only; do not change runtime physics, Scenario Runner, HUD overlay or the original step-up fixture.
+Wait for HLDS reverse-direction traces to establish ground continuity and actual descent rather than assuming symmetry.

@@ -761,3 +761,9 @@ Two user-run `ground_slope_down_01` trials completed for 2000 ms with full groun
 D297 adds a user-directed `ground_step_forward_01` fixture on `de_dust2`, starting at (1456, 893, 36), yaw=0 and pitch=0 with explicitly zero velocity, and commands one 1000-ms forward movement without jump or duck.
 A C++ loader regression guards the exact initial pose and action contract; runtime, HUD overlay, movement physics and existing scenarios remain untouched.
 Automatic Explorer CI and user-run HLDS trace evidence are pending; step traversal capability is not yet established, and Stage B remains open.
+D297 automatic Explorer CI passed at 8d8fd3f; two user-run `ground_step_forward_01` traces Completed at 1000 ms with 512/514 frames, all frames on ground and without jump or duck.
+Both ascent traces show four discrete step-ups at around 413, 541/542, 670 and 797/798 commanded ms: 36 -> 52.03125 -> 68.03125 -> 84.03125 -> 100.03125 GoldSrc Z.
+The final ascent positions were (1666.843994, 893, 100.03125) and (1666.836548, 893, 100.03125), only 0.00745 units apart; total height gain is 64.03125 and horizontal displacement is approximately 210.84.
+D298 adds `ground_step_down_01` with a new stationary start at the rounded mean endpoint (1666.8403, 893, 100.03125), yaw -180, pitch 0 and 1000 ms forward.
+A C++ scenario-loader fixture test covers this reverse path; runtime, other scenarios, overlay and physics remain unchanged.
+Four-step upward traversal has repeatable positive evidence; downward traversal, step limits, negative cases and automatic D298 CI remain pending before closing Stage B.

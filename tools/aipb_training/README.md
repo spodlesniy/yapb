@@ -419,3 +419,18 @@ aipb scenario run ground_step_forward_01
 
 Collect `result.csv`, `trace.csv` and `diagnostics.csv` for repeated HLDS trials to determine actual step traversal.
 The runner's `Completed` message alone does not establish that the step was climbed.
+
+## D298 — Four-step reverse motion from ascent endpoint
+
+`ground_step_down_01.scenario` is the reverse of the measured `ground_step_forward_01` uphill fixture on `de_dust2`.
+The two original 1000-ms ascents finished at X=1666.843994 and X=1666.836548, both with Y=893 and Z=100.03125, after four grounded step-ups.
+The reverse fixture starts at their rounded mean `(1666.8403, 893, 100.03125)`, yaw `-180`, pitch `0`, and zero initial velocity, using one 1000-ms forward action with no jump or crouch.
+Run it in HLDS after deployment:
+
+```text
+aipb scenario run ground_step_down_01
+```
+
+Save `result.csv`, `trace.csv` and `diagnostics.csv` for two or more repeats.
+Compare observed downward Z transitions, ground/airborne flags and horizontal movement with the positive ascent evidence.
+`Completed` only reports command execution and does not prove a successful descending traversal.

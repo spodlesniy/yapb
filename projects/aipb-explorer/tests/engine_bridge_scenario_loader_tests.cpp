@@ -205,6 +205,30 @@ duration_ms=100
       && !step.actions[0].jump && !step.actions[0].duck
       && !step.actions[0].attack && !step.actions[0].attack2
       && !step.actions[0].use);
+    Scenario stepDown {};
+    check(loadScenario(fixtureRoot, "ground_step_down_01", stepDown, detail)
+      == LoadStatus::Ok);
+    check(stepDown.name == "ground_step_down_01" && stepDown.map == "de_dust2");
+    check(stepDown.team == 0 && stepDown.equipment.specified.empty());
+    check(checkScenarioPreflight(stepDown, "de_dust2", true, true, 2)
+      == PreflightStatus::Ok);
+    check(stepDown.position[0] > 1666.84 && stepDown.position[0] < 1666.85);
+    check(stepDown.position[1] == 893.0 && stepDown.position[2] == 100.03125);
+    check(stepDown.yaw == -180.0f && stepDown.pitch == 0.0f
+      && !stepDown.crouching);
+    check(stepDown.velocity[0] == 0.0f && stepDown.velocity[1] == 0.0f
+      && stepDown.velocity[2] == 0.0f);
+    check(stepDown.hasBot("vx") && stepDown.hasBot("vy") && stepDown.hasBot("vz"));
+    check(stepDown.actions.size() == 1);
+    check(stepDown.actions[0].durationMs == 1000
+      && stepDown.actions[0].timeoutMs == 1300
+      && stepDown.actions[0].forward == 1.0f
+      && stepDown.actions[0].strafe == 0.0f
+      && stepDown.actions[0].yawDelta == 0.0f
+      && stepDown.actions[0].pitchDelta == 0.0f
+      && !stepDown.actions[0].jump && !stepDown.actions[0].duck
+      && !stepDown.actions[0].attack && !stepDown.actions[0].attack2
+      && !stepDown.actions[0].use);
     Scenario braking {};
     check(loadScenario(fixtureRoot, "ground_active_brake_01", braking, detail)
       == LoadStatus::Ok);

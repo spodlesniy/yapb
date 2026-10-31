@@ -387,3 +387,11 @@ It contains exactly one grounded-intent `forward=1` action lasting 1000 ms, with
 The experimental outcome must be classified from physical observations rather than inferred from a `Completed` scheduler state.
 Use repeated real traces to measure approach distance, any elevation rise/drop, grounded continuity and collision or stopping behavior.
 This is a scenario preparation step, not acceptance of step-up capability.
+
+## D298 — Four-step descent from verified ascent endpoint
+
+Two `ground_step_forward_01` trials demonstrated repeatable grounded ascents through four observed Z levels at 16-unit increments (first increment 16.03125), with total +64.03125 height gain and endpoints less than 0.008 units apart.
+The `ground_step_down_01` experiment initializes a new zero-velocity bot at the rounded mean endpoint (1666.8403, 893, 100.03125), yaw -180, pitch zero, and commands 1000 ms of forward motion.
+The opposite yaw is applied in the initial pose rather than as an action, so only the physical descending movement is measured.
+Success requires a real trace showing which steps were descended, whether continuous ground contact was preserved, and whether any collision or airborne motion occurred.
+Retain the ascent trials as positive bounded step-up evidence and do not mark Stage B complete without descent and negative-case measurements.
