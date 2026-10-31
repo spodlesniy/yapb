@@ -395,3 +395,14 @@ The `ground_step_down_01` experiment initializes a new zero-velocity bot at the 
 The opposite yaw is applied in the initial pose rather than as an action, so only the physical descending movement is measured.
 Success requires a real trace showing which steps were descended, whether continuous ground contact was preserved, and whether any collision or airborne motion occurred.
 Retain the ascent trials as positive bounded step-up evidence and do not mark Stage B complete without descent and negative-case measurements.
+
+## D299 — Local obstacle evidence instead of universal step height limits
+
+Stage B now focuses on local directed traversability under measured initial conditions, rather than requiring a standalone maximal step-height experiment on an unavailable controlled map.
+The user provided four `de_dust2` obstacle test poses for a common 1000-ms forward command: box (-117, 2117.3, -92) yaw -90, wall (231, 2408, -92) yaw 90, oblique wall (231, 2408, -92) yaw 45, and corner (418, 2434.5, -92) yaw 45, all pitch zero.
+Each new scenario starts standing with zero velocity and does not command jumping or strafing.
+The pair of wall cases shares a start position but has different headings, enabling a direct comparison of blockage and lateral deflection.
+Interpret observed progress, blockage, deflection and uncertainty from repeated traces rather than a scenario filename or scheduler `Completed` outcome.
+A physical drop with airborne frames remains distinct from continuous grounded traversal, as shown in the preceding step-down experiment.
+Future tests of locally impassable raised edges or steps belong to the obstacle/blocked-movement evidence set when suitable geometry is available; a universal numerical step-height limit is not a Stage B exit requirement.
+Continue to require repeatable positive and negative outcomes, independent start/end observation and actual movement diagnostics before closing Stage B.

@@ -3706,3 +3706,15 @@ Run one 1000-ms forward movement with no strafe, yaw/pitch change, jump, duck, a
 This is a new descending experiment, not a continuation of the earlier bot velocity, and may not return exactly to the ascent start after 1000 ms because of acceleration and collision geometry.
 Add a fixture loader regression and documentation only; do not change runtime physics, Scenario Runner, HUD overlay or the original step-up fixture.
 Wait for HLDS reverse-direction traces to establish ground continuity and actual descent rather than assuming symmetry.
+
+## D299 — Prepare controlled obstacle-blocking and wall-deflection trials
+
+The user selected four distinct `de_dust2` initial poses and directed each trial to drive forward for 1000 ms.
+Create `ground_block_box_01` from (-117, 2117.3, -92), yaw -90; `ground_block_wall_01` from (231, 2408, -92), yaw 90; `ground_deflect_wall_01` from (231, 2408, -92), yaw 45; and `ground_block_corner_01` from (418, 2434.5, -92), yaw 45.
+All four use pitch zero, initial velocity zero, standing posture, omitted team and equipment constraints, and one `forward=1` 1000-ms action with no strafe, yaw/pitch change, jump, duck, attack or use.
+Retain the Scenario Runner's existing bounded timeout conventions: 1300 ms for the action and 2000 ms for the scenario.
+Keep the two same-position wall scenarios separate so their observed deviation can be attributed to input heading rather than a different start pose.
+The scenario names express test intent only; do not assert blockage, wall sliding or corner collision without independent real-engine traces.
+For acceptance, examine per-frame commanded direction, longitudinal displacement, lateral drift, speed, ground/airborne state and actual collision/probe diagnostics across repeated trials.
+Treat a stopped or deflected movement as a local directed observation, not a universal geometry threshold or guarantee of impassability from all headings.
+Do not change runtime movement, collision rules or the evidence interpretation system in this scenario-preparation step.

@@ -229,6 +229,51 @@ duration_ms=100
       && !stepDown.actions[0].jump && !stepDown.actions[0].duck
       && !stepDown.actions[0].attack && !stepDown.actions[0].attack2
       && !stepDown.actions[0].use);
+    // The four D299 trials must differ only by their start pose and yaw.
+    struct BlockingTrial {
+      const char *name;
+      float x;
+      float y;
+      float z;
+      float yaw;
+    };
+    const BlockingTrial blockingTrials[] {
+      { "ground_block_box_01", -117.0f, 2117.3f, -92.0f, -90.0f },
+      { "ground_block_wall_01", 231.0f, 2408.0f, -92.0f, 90.0f },
+      { "ground_deflect_wall_01", 231.0f, 2408.0f, -92.0f, 45.0f },
+      { "ground_block_corner_01", 418.0f, 2434.5f, -92.0f, 45.0f }
+    };
+    for (const auto &trial : blockingTrials) {
+      Scenario obstacle {};
+      check(loadScenario(fixtureRoot, trial.name, obstacle, detail)
+        == LoadStatus::Ok);
+      check(obstacle.name == trial.name && obstacle.map == "de_dust2");
+      check(obstacle.team == 0 && !obstacle.hasBot("team"));
+      check(obstacle.equipment.specified.empty());
+      check(checkScenarioPreflight(obstacle, "de_dust2", true, true, 2)
+        == PreflightStatus::Ok);
+      check(obstacle.position[0] > trial.x - 0.01f
+        && obstacle.position[0] < trial.x + 0.01f);
+      check(obstacle.position[1] > trial.y - 0.01f
+        && obstacle.position[1] < trial.y + 0.01f);
+      check(obstacle.position[2] == trial.z);
+      check(obstacle.yaw == trial.yaw && obstacle.pitch == 0.0f
+        && !obstacle.crouching);
+      check(obstacle.hasBot("vx") && obstacle.hasBot("vy")
+        && obstacle.hasBot("vz"));
+      check(obstacle.velocity[0] == 0.0f && obstacle.velocity[1] == 0.0f
+        && obstacle.velocity[2] == 0.0f);
+      check(obstacle.timeoutMs == 2000 && obstacle.actions.size() == 1);
+      check(obstacle.actions[0].durationMs == 1000
+        && obstacle.actions[0].timeoutMs == 1300
+        && obstacle.actions[0].forward == 1.0f
+        && obstacle.actions[0].strafe == 0.0f
+        && obstacle.actions[0].yawDelta == 0.0f
+        && obstacle.actions[0].pitchDelta == 0.0f
+        && !obstacle.actions[0].jump && !obstacle.actions[0].duck
+        && !obstacle.actions[0].attack && !obstacle.actions[0].attack2
+        && !obstacle.actions[0].use);
+    }
     Scenario braking {};
     check(loadScenario(fixtureRoot, "ground_active_brake_01", braking, detail)
       == LoadStatus::Ok);

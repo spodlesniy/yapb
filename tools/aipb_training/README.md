@@ -434,3 +434,12 @@ aipb scenario run ground_step_down_01
 Save `result.csv`, `trace.csv` and `diagnostics.csv` for two or more repeats.
 Compare observed downward Z transitions, ground/airborne flags and horizontal movement with the positive ascent evidence.
 `Completed` only reports command execution and does not prove a successful descending traversal.
+
+## D299 — Four bounded obstacle movement scenarios
+
+The user-defined files `ground_block_box_01.scenario`, `ground_block_wall_01.scenario`, `ground_deflect_wall_01.scenario`, and `ground_block_corner_01.scenario` reside in `projects/aipb-explorer/scenarios/`.
+All use `de_dust2`, zero initial speed, pitch 0 and one `forward=1` action for 1000 commanded milliseconds without yaw change, jump or duck.
+The initial origin/yaw pairs are (-117, 2117.3, -92)/-90, (231, 2408, -92)/90, (231, 2408, -92)/45, and (418, 2434.5, -92)/45, respectively.
+After installing the files into the game's `explorer/scenarios` directory and preparing a bot, run each via `aipb scenario run <name>`, ideally at least twice.
+Collect `result.csv`, `trace.csv` and `diagnostics.csv` for each scenario and compare commanded heading with actual longitudinal and lateral motion, ground contact, and collision symptoms.
+The names describe intended obstacles; scheduler `Completed` is not a definitive judgment of progress, blockage or sliding.

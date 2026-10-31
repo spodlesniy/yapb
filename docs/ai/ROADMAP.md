@@ -767,3 +767,9 @@ The final ascent positions were (1666.843994, 893, 100.03125) and (1666.836548, 
 D298 adds `ground_step_down_01` with a new stationary start at the rounded mean endpoint (1666.8403, 893, 100.03125), yaw -180, pitch 0 and 1000 ms forward.
 A C++ scenario-loader fixture test covers this reverse path; runtime, other scenarios, overlay and physics remain unchanged.
 Four-step upward traversal has repeatable positive evidence; downward traversal, step limits, negative cases and automatic D298 CI remain pending before closing Stage B.
+D298 automatic Explorer CI passed at ba60e30 and the user supplied two repeatable `ground_step_down_01` traces with 1000 commanded ms, a 64-unit downward transition and two distinct airborne drops; descending is not equivalent to continuous grounded walking.
+D299 prepares four bounded, user-located `de_dust2` obstacle experiments: `ground_block_box_01` at (-117, 2117.3, -92), yaw -90; `ground_block_wall_01` at (231, 2408, -92), yaw 90; `ground_deflect_wall_01` at (231, 2408, -92), yaw 45; and `ground_block_corner_01` at (418, 2434.5, -92), yaw 45.
+All four fixtures reset initial velocity and issue exactly 1000 ms forward without jumping, strafing or view rotation, using existing bounded 1300-ms action and 2000-ms scenario timeouts.
+A single C++ loader regression checks each precise pose and command contract; runtime, physics, menu, original scenarios and the provisional navigation graph are not modified.
+These names label the intended obstacles, not observed outcome; classify Blocked, Deflected, Progress or Inconclusive only after inspecting repeated live per-frame GoldSrc evidence with direction-projected progress and lateral drift.
+The relevant Stage B criterion is practical local traversability in the tested direction and conditions, not a universal step-height maximum; repeatable positive and negative evidence remains mandatory before Stage B acceptance.
