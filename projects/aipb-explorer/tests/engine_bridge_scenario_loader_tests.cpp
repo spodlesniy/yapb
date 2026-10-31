@@ -54,6 +54,25 @@ duration_ms=100
     check(loadScenario(root.string(), "oversized", scenario, detail) == LoadStatus::TooLarge);
     check(scenario.name == "unchanged");
 
+    // Movement-only fixtures resolve their start pose from the live bot.
+    const std::string moving = R"([scenario]
+version=aipb-scenario-v1
+name=moving
+map=de_dust2
+timeout_ms=1000
+[bot]
+index=1
+[action]
+duration_ms=100
+forward=1
+)";
+    { std::ofstream file { root / "scenarios" / "moving.scenario", std::ios::binary };
+      file << moving; }
+    check(loadScenario(root.string(), "moving", scenario, detail) == LoadStatus::Ok);
+    check(!scenario.hasBot("x") && !scenario.hasBot("yaw") && !scenario.hasBot("pitch"));
+    check(checkScenarioPreflight(scenario, "de_dust2", true, true, 2)
+      == PreflightStatus::Ok);
+
     // Keep the two real HLDS examples loadable and verify their presence semantics.
     const std::string fixtureRoot { AIPB_EXPLORER_SCENARIO_FIXTURE_DIR };
     Scenario omitted {};

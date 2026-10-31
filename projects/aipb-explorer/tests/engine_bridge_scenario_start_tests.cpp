@@ -24,7 +24,8 @@ int main() {
     for (const char *key : {"primary", "secondary", "selected", "he", "flash", "smoke", "helmet", "money", "health", "armor", "defuse_kit"}) {
       s.equipment.specified.insert(key);
     }
-    for (const char *key : {"vx", "vy", "vz", "crouching"}) {
+    for (const char *key : {"x", "y", "z", "yaw", "pitch",
+      "vx", "vy", "vz", "crouching"}) {
       s.specifiedBot.insert(key);
     }
     s.actions.push_back({});
@@ -75,8 +76,46 @@ int main() {
     a.velocity[2] = 0.0f;
     check(planScenarioPose(s, a, false, plan) == PoseInitStatus::Ready);
     check(plan.velocity[0] == 35.0f && plan.velocity[1] == -10.0f);
-    check(plan.position[0] == 0.0f && plan.yaw == -1.0f);
+    check(!plan.setPosition && plan.position[0] == 0.0f && plan.yaw == 359.0f);
     check(!plan.crouching);
+
+    // Omitted start fields retain the live bot pose without preflight mismatches.
+    a.position[0] = 108.75;
+    a.position[1] = -54.5;
+    a.position[2] = 13.25;
+    a.yaw = 72.0f;
+    a.pitch = -9.0f;
+    check(assessScenarioStart(s, a, 0, 0, 29).ready());
+    check(planScenarioPose(s, a, false, plan) == PoseInitStatus::Ready);
+    check(!plan.setPosition && plan.position[0] == 108.75f);
+    check(plan.position[1] == -54.5f && plan.position[2] == 13.25f);
+    check(plan.yaw == 72.0f && plan.pitch == -9.0f);
+    s.specifiedBot.insert("yaw");
+    check(planScenarioPose(s, a, false, plan) == PoseInitStatus::Ready);
+    check(!plan.setPosition && plan.yaw == -1.0f && plan.pitch == -9.0f);
+    check(assessScenarioStart(s, a, 0, 0, 29).mismatches == 1);
+    s.specifiedBot.erase("yaw");
+    s.specifiedBot.insert("pitch");
+    s.pitch = 10.0f;
+    check(planScenarioPose(s, a, false, plan) == PoseInitStatus::Ready);
+    check(plan.yaw == 72.0f && plan.pitch == 10.0f);
+    check(assessScenarioStart(s, a, 0, 0, 29).mismatches == 1);
+    s.specifiedBot.erase("pitch");
+    s.specifiedBot.insert("x");
+    s.specifiedBot.insert("y");
+    s.specifiedBot.insert("z");
+    check(planScenarioPose(s, a, false, plan) == PoseInitStatus::Ready);
+    check(plan.setPosition && plan.position[0] == 0.0f);
+    check(assessScenarioStart(s, a, 0, 0, 29).mismatches == 3);
+    s.specifiedBot.erase("x");
+    s.specifiedBot.erase("y");
+    s.specifiedBot.erase("z");
+    a.position[0] = 0.0;
+    a.position[1] = 0.0;
+    a.position[2] = 0.0;
+    a.yaw = 359.0f;
+    a.pitch = 0.0f;
+
 
     s.specifiedBot.insert("vx");
     s.velocity[0] = 0.0f;

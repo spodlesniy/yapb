@@ -3758,3 +3758,13 @@ For an authorized living player, round live `edict_t::v.origin` coordinates and 
 Ignore only the invoking player in the destination occupancy trace; keep other geometry/occupancy checks in effect.
 Reset the bot's previous motion, command inputs and stale ground contact after moving without altering scenario fixtures or autonomous navigation permissions.
 Add deterministic engine-independent menu mask/rounding tests and require manual Windows x86/HLDS acceptance of the engine adapter; keep Stage A/T261-07 and Stage B gates open.
+
+## D303 — Optional scenario start position and view
+
+Keep `aipb-scenario-v1`, mandatory map/bot identity and action requirements unchanged.
+Make `x/y/z` optional only as a complete set and `yaw` and `pitch` independently optional, rejecting partial coordinate triples.
+Read omitted start pose values from each live bot observation; do not call GoldSrc SetOrigin when XYZ is omitted.
+Validate live grounded state and speed and explicitly given constraints as before; do not compare omitted position and view against zero-valued defaults.
+Preserve explicit velocity overrides and recorded actual start/terminal pose and frame traces, including for movement-only scenarios.
+Add loader, parser, pose, preflight and gate regression coverage without rewriting fixed-start fixtures.
+Require automatic CI and separately user-run Windows x86/HLDS confirmation, leaving T261-07 and formal Stage B acceptance open.

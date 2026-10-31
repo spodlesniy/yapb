@@ -330,15 +330,17 @@ bool runScenarioInternal(const char *name) {
    }
    const Vector target(pose.position[0], pose.position[1], pose.position[2]);
    const auto hull = pose.crouching ? head_hull : human_hull;
-   TraceResult occupancy {}, support {};
-   game.testHull(target, target, TraceIgnore::None, hull, bot->ent(), &occupancy);
-   game.testHull(target, target - Vector(0.0f, 0.0f, 4.0f),
-      TraceIgnore::None, hull, bot->ent(), &support);
-   if (occupancy.fStartSolid || occupancy.fAllSolid
-      || support.fStartSolid || support.fAllSolid
-      || support.flFraction >= 1.0f || support.vecPlaneNormal.z < 0.7f) {
-      game.print("AiPB scenario: '%s' blocked or unsupported pose.", name);
-      return false;
+   if (pose.setPosition) {
+      TraceResult occupancy {}, support {};
+      game.testHull(target, target, TraceIgnore::None, hull, bot->ent(), &occupancy);
+      game.testHull(target, target - Vector(0.0f, 0.0f, 4.0f),
+         TraceIgnore::None, hull, bot->ent(), &support);
+      if (occupancy.fStartSolid || occupancy.fAllSolid
+         || support.fStartSolid || support.fAllSolid
+         || support.flFraction >= 1.0f || support.vecPlaneNormal.z < 0.7f) {
+         game.print("AiPB scenario: '%s' blocked or unsupported pose.", name);
+         return false;
+      }
    }
    const auto equipment = aipb::explorer::scenario::planScenarioEquipment(
       scenario, observation.actual, false, observation.primary,
@@ -362,7 +364,9 @@ bool runScenarioInternal(const char *name) {
    const int oldImpulse = bot->pev->impulse;
    const int oldFlags = bot->pev->flags;
    const auto restore = [&] () {
-      engfuncs.pfnSetOrigin(bot->ent(), oldOrigin);
+      if (pose.setPosition) {
+         engfuncs.pfnSetOrigin(bot->ent(), oldOrigin);
+      }
       bot->pev->velocity = oldVelocity;
       bot->pev->v_angle = oldView;
       bot->pev->angles = oldAngles;
@@ -374,14 +378,18 @@ bool runScenarioInternal(const char *name) {
       bot->pev->impulse = oldImpulse;
       bot->pev->flags = oldFlags;
    };
-   engfuncs.pfnSetOrigin(bot->ent(), target);
+   if (pose.setPosition) {
+      engfuncs.pfnSetOrigin(bot->ent(), target);
+   }
    bot->pev->velocity = Vector(pose.velocity[0], pose.velocity[1], pose.velocity[2]);
    bot->pev->v_angle = Vector(pose.pitch, pose.yaw, 0.0f);
    bot->pev->angles = Vector(-pose.pitch / 3.0f, pose.yaw, 0.0f);
    bot->pev->button = 0;
    bot->pev->oldbuttons = 0;
    bot->pev->impulse = 0;
-   bot->pev->flags |= FL_ONGROUND;
+   if (pose.setPosition) {
+      bot->pev->flags |= FL_ONGROUND;
+   }
    if (equipment.plan.setHealth) {
       bot->pev->health = equipment.plan.health;
       bot->m_healthValue = equipment.plan.health;

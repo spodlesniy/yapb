@@ -148,6 +148,13 @@ inline bool validAction(const Action &action) {
 
 inline bool validScenario(const Scenario &scenario) {
   const auto &e = scenario.equipment;
+  const bool hasPosition = scenario.hasBot("x");
+
+  // Declared start positions are atomic XYZ triples.
+  if (hasPosition != scenario.hasBot("y")
+      || hasPosition != scenario.hasBot("z")) {
+    return false;
+  }
 
   if (!safeIdentifier(scenario.name) || !safeIdentifier(scenario.map)
     || scenario.botIndex < 0 || scenario.botIndex > 31
@@ -461,11 +468,13 @@ inline bool parseScenario(
     || !seen.count("scenario.name")
     || !seen.count("scenario.map")
     || !seen.count("scenario.timeout_ms")
-    || !seen.count("bot.index")
-    || !seen.count("bot.x") || !seen.count("bot.y")
-    || !seen.count("bot.z") || !seen.count("bot.yaw")
-    || !seen.count("bot.pitch")) {
+    || !seen.count("bot.index")) {
     return fail("missing required fields or name mismatch");
+  }
+  const bool hasX = seen.count("bot.x") != 0;
+  if (hasX != (seen.count("bot.y") != 0)
+      || hasX != (seen.count("bot.z") != 0)) {
+    return fail("position requires x, y and z together");
   }
 
   for (std::size_t i = 0; i < next.actions.size(); ++i) {

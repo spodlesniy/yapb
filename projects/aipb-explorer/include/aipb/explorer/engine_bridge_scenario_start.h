@@ -154,14 +154,20 @@ inline ScenarioStartAssessment assessScenarioStart(
   constexpr const char *kVelocity[] { "vx", "vy", "vz" };
 
   for (int i = 0; i < 3; ++i) {
-    compare(kPosition[i], scenario.position[i], actual.position[i], 1.0);
+    if (scenario.hasBot("x")) {
+      compare(kPosition[i], scenario.position[i], actual.position[i], 1.0);
+    }
     if (scenario.hasBot(kVelocity[i])) {
       compare(kVelocity[i], scenario.velocity[i], actual.velocity[i], 1.0);
     }
   }
 
-  compare("yaw_delta", 0.0, wrappedScenarioAngle(scenario.yaw, actual.yaw), 1.0);
-  compare("pitch", scenario.pitch, actual.pitch, 1.0);
+  if (scenario.hasBot("yaw")) {
+    compare("yaw_delta", 0.0, wrappedScenarioAngle(scenario.yaw, actual.yaw), 1.0);
+  }
+  if (scenario.hasBot("pitch")) {
+    compare("pitch", scenario.pitch, actual.pitch, 1.0);
+  }
   compare("grounded", 1.0, actual.onGround ? 1.0 : 0.0);
   if (scenario.hasBot("crouching")) {
     compare("crouching", scenario.crouching ? 1.0 : 0.0,

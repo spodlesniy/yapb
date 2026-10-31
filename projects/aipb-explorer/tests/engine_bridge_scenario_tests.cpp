@@ -155,6 +155,33 @@ int main() {
     check(rejected(replaceOnce(valid, "duration_ms=250", "unused=250")));
     check(rejected(replaceOnce(valid, "name=ground_forward_01", "")));
     check(rejected(replaceOnce(valid, "x=448", "")));
+    check(rejected(replaceOnce(valid, "y=2368", "")));
+    check(rejected(replaceOnce(valid, "z=-92", "")));
+    const auto noXyz = replaceOnce(replaceOnce(replaceOnce(valid,
+      "x=448\n", ""), "y=2368\n", ""), "z=-92\n", "");
+    const auto noPose = replaceOnce(replaceOnce(noXyz,
+      "yaw=-105\n", ""), "pitch=0\n", "");
+    check(parseScenario(noPose, "ground_forward_01", result, error));
+    check(!result.hasBot("x") && !result.hasBot("y") && !result.hasBot("z"));
+    check(!result.hasBot("yaw") && !result.hasBot("pitch"));
+    check(validScenario(result));
+    const auto onlyYaw = replaceOnce(noPose, "vz=0\n", "vz=0\nyaw=45\n");
+    check(parseScenario(onlyYaw, "ground_forward_01", result, error));
+    check(result.hasBot("yaw") && !result.hasBot("pitch") && result.yaw == 45);
+    const auto onlyPitch = replaceOnce(noPose, "vz=0\n", "vz=0\npitch=-12\n");
+    check(parseScenario(onlyPitch, "ground_forward_01", result, error));
+    check(!result.hasBot("yaw") && result.hasBot("pitch") && result.pitch == -12);
+    check(parseScenario(noXyz, "ground_forward_01", result, error));
+    check(!result.hasBot("x") && result.hasBot("yaw") && result.hasBot("pitch"));
+    const auto noAngles = replaceOnce(replaceOnce(valid,
+      "yaw=-105\n", ""), "pitch=0\n", "");
+    check(parseScenario(noAngles, "ground_forward_01", result, error));
+    check(result.hasBot("x") && !result.hasBot("yaw") && !result.hasBot("pitch"));
+    check(rejected(replaceOnce(noPose, "vz=0\n", "vz=0\nx=1\n")));
+    check(rejected(replaceOnce(noPose, "vz=0\n", "vz=0\ny=1\nz=2\n")));
+    Scenario invalidPartial = result;
+    invalidPartial.specifiedBot.erase("z");
+    check(!validScenario(invalidPartial));
     check(rejected(valid + "\n[action]\nforward=1\n"));
     check(rejected(std::string(65537, 'a')));
     check(rejected(replaceOnce(valid, "secondary=usp", "secondary=none")));

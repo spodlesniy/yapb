@@ -23,6 +23,10 @@ int main() {
     scenario.position[1] = 2368.0;
     scenario.position[2] = -92.0;
     scenario.yaw = -105.0f;
+    scenario.specifiedBot.insert("x");
+    scenario.specifiedBot.insert("y");
+    scenario.specifiedBot.insert("z");
+    scenario.specifiedBot.insert("yaw");
     scenario.actions.push_back({});
     scenario.actions[0].durationMs = 200;
     scenario.actions[0].timeoutMs = 250;

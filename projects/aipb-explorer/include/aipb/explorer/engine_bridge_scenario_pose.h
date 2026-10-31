@@ -31,6 +31,7 @@ inline const char *poseInitStatusName(PoseInitStatus status) {
 }
 
 struct PoseInitPlan {
+  bool setPosition {};
   float position[3] {};
   float velocity[3] {};
   float yaw {};
@@ -67,10 +68,16 @@ inline PoseInitStatus planScenarioPose(
   }
 
   PoseInitPlan next {};
+  next.setPosition = scenario.hasBot("x");
   constexpr const char *velocityKeys[] { "vx", "vy", "vz" };
 
   for (int axis = 0; axis < 3; ++axis) {
-    next.position[axis] = static_cast<float>(scenario.position[axis]);
+    const double position = next.setPosition
+      ? scenario.position[axis] : actual.position[axis];
+    if (!std::isfinite(position) || std::abs(position) > 16384.0) {
+      return PoseInitStatus::InvalidScenario;
+    }
+    next.position[axis] = static_cast<float>(position);
     next.velocity[axis] = scenario.hasBot(velocityKeys[axis])
       ? scenario.velocity[axis] : actual.velocity[axis];
 
@@ -79,8 +86,11 @@ inline PoseInitStatus planScenarioPose(
     }
   }
 
-  next.yaw = scenario.yaw;
-  next.pitch = scenario.pitch;
+  next.yaw = scenario.hasBot("yaw") ? scenario.yaw : actual.yaw;
+  next.pitch = scenario.hasBot("pitch") ? scenario.pitch : actual.pitch;
+  if (!std::isfinite(next.yaw) || !std::isfinite(next.pitch)) {
+    return PoseInitStatus::InvalidScenario;
+  }
   next.crouching = actual.crouching;
   result = next;
   return PoseInitStatus::Ready;
