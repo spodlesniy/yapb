@@ -103,3 +103,35 @@ D306 does not fix the scheduler timeout and does not close deferred Stage A/T261
 
 The 21 uploaded runs were audited in `docs/ai/INDEPENDENT_AI_JUMP_EVIDENCE_REVIEW.md`, with archive SHA-256, all run IDs, D306 physical classifications, measured speeds/heights/flight times and the outstanding ActionTimeout and geometry-validation gates.
 Only 12 have observed stable landings, two are stationary controls and seven are incomplete; Stage C acceptance remains open.
+
+## D309 — Explicit target landing classifications
+
+Use the read-only CLI with an independently measured target footprint:
+
+```sh
+python -m tools.aipb_training.scenario_jump_target <run-directory> <target.csv>
+```
+
+The target file is a single headerless CSV row:
+
+```text
+aipb-scenario-jump-target-v1,jump_box_plain_01,de_dust2,min_x,max_x,min_y,max_y,surface_z,z_tolerance,heading,inset
+```
+
+Replace placeholders with measured numeric values (the row is a format example, **not** a measured target).
+The axis-aligned XY footprint must describe actual supported top-surface geometry; `surface_z` is the **bot-origin Z at grounded support**, not automatically the BSP brush-top Z.
+`heading` is the intended approach heading in degrees; the analyzer requires the scenario start strictly before the target's near edge.
+`inset` conservatively shrinks the footprint by a user-measured hull/support margin.
+The classifier additionally excludes a 1-unit uncertainty band near edges and height tolerances.
+A rectangular bounding box is not sufficient for nonrectangular, sloped, hollow or otherwise unsupported surfaces.
+No target is inferred from a scenario name, displacement or jump apex.
+
+`TargetReached` requires a verified completed jump trajectory, a landing inside the declared XY footprint and at least 40 ms of terminal grounded, noncrouching support inside the same footprint at the measured Z.
+`Overshot` requires a stable grounded terminal position strictly beyond the farthest projected boundary along the declared approach heading; this is a geometric overshoot, not necessarily a fall.
+`MissedLanding` requires a complete recorded no-takeoff failure or a final stable grounded position provably outside the target or at the wrong height.
+`Inconclusive` covers missing geometry, malformed runs, unobserved or unstable landing, ambiguous boundary cases, unexpected action programs, unverified approach and missing support.
+An outcome does not prove no collision or a safe full-body path through BSP geometry.
+
+Exit codes: 0 = `TargetReached`, 1 = `Overshot` or `MissedLanding`, 2 = invalid target/bundle, 3 = `Inconclusive`.
+The older `scenario_jump_profile` CLI and its `Landed` classification remain unchanged.
+The supplied D309 capture `results__4.zip` has five trials, but without externally measured target rectangles and grounded origin heights the new tool cannot assign grounded target outcomes to those trials.

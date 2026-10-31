@@ -3833,3 +3833,14 @@ The preceding test deliberately leaves the scheduler Running after advancing fro
 Explicitly cancel the partial test session before the next independent timeout experiment and retain the single-active-run contract.
 No scheduler implementation or live runtime behavior changes; new automatic Explorer CI on the corrective commit is required.
 The independently supplied eight post-D308 HLDS traces are all Completed with observed takeoff and stable landing; this does not close Stage C or deferred Stage A/T261-07 acceptance.
+
+## D309 — Conservative declared-target classification for jump landings
+
+Implement a read-only offline companion for D306 that accepts a single bounded versioned CSV target declaration with scenario/map identity, axis-aligned landing footprint, grounded bot-origin Z and tolerance, approach direction and hull-support inset.
+Do not infer the target from jump traces or BSP without measured metadata; a rectangular bound is valid only when the user has established a supported surface over that rectangle.
+Require a complete trusted jump trace, observed final landing, stable grounded standing support and a start position strictly before the target to produce a spatial outcome.
+Label TargetReached only if the observed last landing and stable terminal support remain inside the declared target at the specified grounded origin elevation.
+Label Overshot only when the final grounded position is conclusively beyond the forward-projected far edge; label MissedLanding for other conclusively stable non-target landings or a complete no-takeoff case.
+Return Inconclusive for missing/ambiguous boundaries, unsupported input, interrupted motion, unverified ground contact, wrong approach or insufficient evidence.
+Do not modify the D306 trajectory classifier, the runtime scheduler, original YaPB or scenario input files.
+Add synthetic valid/negative/ambiguity/parser/CLI tests, record the geometry requirements and keep Stage C and deferred Stage A/T261-07 acceptance open.

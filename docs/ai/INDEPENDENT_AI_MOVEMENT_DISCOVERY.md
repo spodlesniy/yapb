@@ -67,6 +67,7 @@ These are commands awaiting physical verification, not validated jump trajectori
 D306 provides a conservative read-only jump trajectory analyzer of the saved D304 traces with physical start/flight/landing metrics and incomplete-run guards.
 The analyzer alone does not prove safe box/ledge/gap traversal or close the deferred Stage A/T261-07 acceptance gate.
 D307 audits the first 21 physical recordings and establishes 12 observed stable landings, two stable no-jump controls and seven incomplete timeouts; see `docs/ai/INDEPENDENT_AI_JUMP_EVIDENCE_REVIEW.md` for the per-run evidence and next gates.
+D309 adds a read-only target-footprint classifier with explicit measured XY bounds, supported landing origin Z, approach heading and edge inset; ambiguous or absent target geometry is not a validated crossing.
 D308 corrects the short-action scheduler wall-clock start anchor without changing movement commands; unit and HLDS revalidation of the seven previously timed-out jump trials remain separate required evidence.
 
 ### D. Traversal Discovery
