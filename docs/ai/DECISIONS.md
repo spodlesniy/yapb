@@ -3768,3 +3768,14 @@ Validate live grounded state and speed and explicitly given constraints as befor
 Preserve explicit velocity overrides and recorded actual start/terminal pose and frame traces, including for movement-only scenarios.
 Add loader, parser, pose, preflight and gate regression coverage without rewriting fixed-start fixtures.
 Require automatic CI and separately user-run Windows x86/HLDS confirmation, leaving T261-07 and formal Stage B acceptance open.
+
+## D304 — Supervised Stage C jump fixture family
+
+Create nine bounded `de_dust2` `jump_*.scenario` programs for neutral, standing, immediate-forward, 200/500-ms run-up, crouch-in-air, box/ledge and horizontal-gap comparisons.
+Require an existing living grounded bot #1, standing stance, explicitly zero initial velocity, and omit XYZ/yaw/pitch to use D303's live-pose start semantics after manual placement using `Move bot`.
+Use a 60-ms jump button pulse, explicitly release jump, and reserve sufficient subsequent movement/idle time to observe real takeoff and landing where physically possible.
+Treat run-up duration as a control input, not a speed measurement; compare actual takeoff speeds and positions from frame traces.
+Treat duck input as a requested button state, never as proof of changed airborne hull clearance or successful landing.
+Document safe user-directed geometry selection and repeated-run controls without inventing a safe obstacle coordinate or declaring an outcome in advance.
+Cover exact action programs, map identity, optional start pose and zero velocity with engine-neutral loader regressions.
+Keep runtime, physical movement, result formats, automatic navigation and the deferred Stage A/T261-07 safety gate unchanged.

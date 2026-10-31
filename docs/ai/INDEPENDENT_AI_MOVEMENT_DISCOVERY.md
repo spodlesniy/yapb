@@ -61,6 +61,9 @@ Do not extrapolate one successful jump into a universal maximum jump distance.
 **Exit gate:** Repeated successful and failed cases with different takeoff speeds, including a box or ledge on `de_dust2`.
 **Dependencies:** A and the speed measurements from B.
 
+D304 provides nine supervised `jump_*.scenario` fixtures and deterministic loader-contract tests for Stage C; see `docs/ai/INDEPENDENT_AI_JUMP_DISCOVERY.md` for placement, comparison rules and evidence collection.
+These are commands awaiting physical verification, not validated jump trajectories or permission for unattended tests.
+
 ### D. Traversal Discovery
 
 **Goal:** Measure nonstandard but common transitions without conflating them with ordinary walking.

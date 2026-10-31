@@ -3,6 +3,7 @@
 #include <fstream>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #include <aipb/explorer/engine_bridge_scenario_loader.h>
 #include <aipb/explorer/engine_bridge_scenario_start.h>
@@ -293,6 +294,65 @@ forward=1
         && !obstacle.actions[0].attack && !obstacle.actions[0].attack2
         && !obstacle.actions[0].use);
     }
+
+    // Stage C jump fixtures are action programs, not pre-approved physical outcomes.
+    struct JumpAction {
+      int milliseconds;
+      float forward;
+      bool jump;
+      bool duck;
+    };
+    struct JumpFixture {
+      const char *name;
+      int timeoutMs;
+      std::vector<JumpAction> actions;
+    };
+    const JumpFixture jumpFixtures[] {
+      { "jump_control_nojump_01", 2500, { { 1500, 0.0f, false, false } } },
+      { "jump_standing_01", 2500, { { 60, 0.0f, true, false }, { 1440, 0.0f, false, false } } },
+      { "jump_forward_01", 2500, { { 60, 1.0f, true, false }, { 340, 1.0f, false, false }, { 1100, 0.0f, false, false } } },
+      { "jump_runup_short_01", 2500, { { 200, 1.0f, false, false }, { 60, 1.0f, true, false }, { 340, 1.0f, false, false }, { 900, 0.0f, false, false } } },
+      { "jump_runup_long_01", 3000, { { 500, 1.0f, false, false }, { 60, 1.0f, true, false }, { 340, 1.0f, false, false }, { 900, 0.0f, false, false } } },
+      { "jump_crouch_01", 2500, { { 60, 0.0f, true, false }, { 250, 0.0f, false, true }, { 1190, 0.0f, false, false } } },
+      { "jump_box_plain_01", 2500, { { 200, 1.0f, false, false }, { 60, 1.0f, true, false }, { 340, 1.0f, false, false }, { 900, 0.0f, false, false } } },
+      { "jump_box_crouch_01", 2500, { { 200, 1.0f, false, false }, { 60, 1.0f, true, false }, { 250, 1.0f, false, true }, { 90, 1.0f, false, false }, { 900, 0.0f, false, false } } },
+      { "jump_gap_runup_01", 3000, { { 500, 1.0f, false, false }, { 60, 1.0f, true, false }, { 340, 1.0f, false, false }, { 900, 0.0f, false, false } } }
+    };
+    for (const auto &fixture : jumpFixtures) {
+      Scenario jump {};
+      check(loadScenario(fixtureRoot, fixture.name, jump, detail) == LoadStatus::Ok);
+      check(jump.name == fixture.name && jump.map == "de_dust2");
+      check(jump.timeoutMs == fixture.timeoutMs && jump.botIndex == 1);
+      check(jump.team == 0 && !jump.hasBot("team"));
+      check(!jump.hasBot("x") && !jump.hasBot("y") && !jump.hasBot("z"));
+      check(!jump.hasBot("yaw") && !jump.hasBot("pitch"));
+      check(jump.hasBot("vx") && jump.hasBot("vy") && jump.hasBot("vz"));
+      check(jump.velocity[0] == 0.0f && jump.velocity[1] == 0.0f
+        && jump.velocity[2] == 0.0f);
+      check(jump.hasBot("crouching") && !jump.crouching);
+      check(jump.equipment.specified.empty());
+      check(checkScenarioPreflight(jump, "de_dust2", true, true, 1)
+        == PreflightStatus::Ok);
+      check(checkScenarioPreflight(jump, "de_inferno", true, true, 1)
+        == PreflightStatus::MapMismatch);
+      check(jump.actions.size() == fixture.actions.size());
+      int totalMilliseconds = 0;
+      for (std::size_t i = 0; i < fixture.actions.size(); ++i) {
+        const Action &action = jump.actions[i];
+        const JumpAction &expected = fixture.actions[i];
+        check(action.durationMs == expected.milliseconds
+          && action.forward == expected.forward && action.strafe == 0.0f);
+        check(action.jump == expected.jump && action.duck == expected.duck);
+        check(action.yawDelta == 0.0f && action.pitchDelta == 0.0f);
+        check(!action.attack && !action.attack2 && !action.use
+          && action.select == "none");
+        check(action.timeoutMs == action.durationMs + (action.durationMs + 9) / 10);
+        totalMilliseconds += action.durationMs;
+      }
+      check(totalMilliseconds == (fixture.timeoutMs == 3000 ? 1800 : 1500));
+      check(validScenario(jump));
+    }
+
     Scenario braking {};
     check(loadScenario(fixtureRoot, "ground_active_brake_01", braking, detail)
       == LoadStatus::Ok);

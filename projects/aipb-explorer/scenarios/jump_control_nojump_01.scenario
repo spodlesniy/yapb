@@ -1,0 +1,21 @@
+# D304: Neutral no-jump baseline; confirms support and no accidental drop.
+# Manually place bot #1 on stable ground with Move bot before each run.
+# Omitted XYZ/yaw/pitch use the live bot pose; initial velocity is explicitly zero.
+[scenario]
+version=aipb-scenario-v1
+name=jump_control_nojump_01
+map=de_dust2
+timeout_ms=2500
+
+[bot]
+index=1
+vx=0
+vy=0
+vz=0
+crouching=0
+
+[action]
+duration_ms=1500
+forward=0
+jump=0
+duck=0

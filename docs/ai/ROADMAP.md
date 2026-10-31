@@ -790,3 +790,6 @@ D302 adds a supervised AiPB menu "Move bot" action that copies the authorized li
 The action resets motion inputs, does not launch a scenario or alter required scenario start fields, and still requires user-run Windows x86/HLDS verification; it does not close T261-07 or Stage B.
 D303 makes `.scenario` XYZ optional as a complete trio and yaw/pitch individually optional, resolving omitted values from the live bot pose at each run without teleporting for an omitted position.
 Parser, preflight and loader regression tests cover optional values and fixed-start compatibility; automatic CI and user-run Windows x86/HLDS verification are outstanding, and Stage A/T261-07 plus formal Stage B acceptance remain open.
+D304 prepares nine Stage C supervised jump scenarios: neutral control, standing, from-rest forward, two run-up durations, midair crouch, matched box/ledge plain-versus-crouch and gap run-up.
+All inherit current bot XYZ/yaw/pitch, require grounded standing entry, and explicitly reset start velocity; loader-contract tests and an HLDS comparison matrix accompany the fixtures, with no changes to runtime physics or automatic traversal permissions.
+D304 publication does not close the deferred Stage A/T261-07 A01–A11 gate or constitute Stage C physical acceptance; CI and user-run jump traces are outstanding.
