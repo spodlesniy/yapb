@@ -339,3 +339,25 @@ It reports entry and exit horizontal speeds, displacement for each turn, final v
 `Inconclusive: SpeedContrastNotObserved` means the experiment cannot distinguish the two starting-speed conditions; `Completed` alone does not prove turning efficacy.
 A view-angle change is commanded, but actual turning curvature is measured from physical displacement and velocity.
 Real HLDS traces are required to confirm absence of geometry interference before accepting Stage B turn-speed evidence.
+
+## D295 — Grounded upward-slope approach from ground_forward_02 endpoint
+
+Install `ground_slope_forward_01.scenario` from `projects/aipb-explorer/scenarios/` on `de_dust2`, leave `yb_freeze_bots 1` enabled and run after buying:
+`aipb scenario run ground_slope_forward_01`.
+
+The first two actions reproduce `ground_forward_02.scenario` exactly: 500 ms forward and 250 ms zero-input +45-degree yaw.
+The next action applies an additional +90-degree **left** yaw in one commanded millisecond with zero movement input.
+The final action commands `forward=1` for 2000 ms at final yaw +30 degrees.
+The initial bot coordinates remain the verified `ground_forward_02` start rather than guessing its exact observed endpoint.
+One-millisecond turning may leave a small residual displacement; the analyzer reports both the approach endpoint and actual slope-run start.
+The slope approach is not an independently established safe start: check the in-game position before interpreting this as an ascent trial.
+
+```sh
+python -m tools.aipb_training.ground_slope_forward_profile "<run_directory>" --heading-deg -105
+```
+
+The read-only profile reports observed approach position, actual start of the 2000-ms movement, forward/horizontal distance, ground contact, height gain, peak gain and time to the first >=4-unit rise.
+`Measured: NoHeightGain` means no qualifying rise, not proof of an impassable slope.
+`Measured: HeightGainObserved` is grounded elevation evidence, not proof that every frame was on a ramp rather than steps.
+Unexpected airborne states, pose discontinuity or phase mismatches are inconclusive.
+Compare repeated runs and verify the actual `de_dust2` geometry before interpreting physical feasibility.

@@ -121,6 +121,27 @@ duration_ms=100
     check(turning.actions[3].durationMs == 200 && turning.actions[3].forward == 1.0f
       && turning.actions[3].yawDelta == -30.0f);
     check(turning.actions[4].durationMs == 500 && turning.actions[4].forward == 0.0f);
+    Scenario slope {};
+    check(loadScenario(fixtureRoot, "ground_slope_forward_01", slope, detail)
+      == LoadStatus::Ok);
+    check(slope.map == "de_dust2" && slope.team == 0);
+    check(slope.equipment.specified.empty() && slope.actions.size() == 4);
+    check(checkScenarioPreflight(slope, "de_dust2", true, true, 2)
+      == PreflightStatus::Ok);
+    check(slope.position[0] == eitherTeam.position[0]
+      && slope.position[1] == eitherTeam.position[1]
+      && slope.position[2] == eitherTeam.position[2]
+      && slope.yaw == eitherTeam.yaw);
+    for (int index = 0; index < 2; ++index) {
+      check(slope.actions[index].durationMs == eitherTeam.actions[index].durationMs
+        && slope.actions[index].forward == eitherTeam.actions[index].forward
+        && slope.actions[index].yawDelta == eitherTeam.actions[index].yawDelta);
+    }
+    check(slope.actions[2].durationMs == 1 && slope.actions[2].forward == 0.0f
+      && slope.actions[2].yawDelta == 90.0f);
+    check(slope.actions[3].durationMs == 2000
+      && slope.actions[3].forward == 1.0f
+      && slope.actions[3].strafe == 0.0f && slope.actions[3].yawDelta == 0.0f);
     Scenario braking {};
     check(loadScenario(fixtureRoot, "ground_active_brake_01", braking, detail)
       == LoadStatus::Ok);

@@ -334,3 +334,13 @@ The offline profile verifies the applied per-frame yaw progression and uses phys
 Report turn-entry/exit velocities, displacement and velocity-direction mismatch; treat inconsistent commands, insufficient physical progress and insufficient speed contrast as inconclusive.
 This is not an independent geometry-controlled test of varying speed, since each turn occurs at a different location.
 The remaining bounded step/slope and negative-case checks still gate the next Movement Discovery stage.
+
+## D295 — Slope trial from the ground_forward_02 endpoint
+
+User-guided `de_dust2` slope entry is defined by the physical terminal location of `ground_forward_02`, followed by a leftward 90-degree rotation.
+Without an independently verified saved endpoint pose, the reproducible `ground_slope_forward_01` starts from the original declared position and executes the two unchanged ground_forward_02 actions.
+It then rotates +90 degrees over one commanded millisecond at zero movement input before driving forward for 2000 ms.
+The read-only evaluator inspects real per-frame position, velocity, grounded stance and yaw along the final segment and reports bounded uphill displacement and height gain.
+Actual approach and slope-start coordinates are reported separately, since engine physics can move the player while an idle rotation runs.
+No runtime physics changes or autonomous traversal claims are introduced.
+The Stage B step/slope exit gate remains open until the real geometry and repeated trials have been assessed.

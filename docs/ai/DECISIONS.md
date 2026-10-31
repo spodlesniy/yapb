@@ -3628,3 +3628,13 @@ Replace the CLI test fixture with a deterministic expanded five-phase 1250-ms tr
 Validate the actual per-action time budgets, default analyzer path and CLI output without patching immutable function defaults.
 Leave Scenario Runner, offline analysis algorithms, movement physics, D290 diagnostics and D292 anomaly handling unchanged.
 Require fresh automatic Training tools CI before accepting the correction.
+
+## D295 — Ground slope approach by reproducing ground_forward_02
+
+The user identifies the end of `ground_forward_02.scenario`, followed by a 90-degree leftward turn, as the appropriate approach to a `de_dust2` incline.
+Exact endpoint coordinates have not been independently recovered; do not invent a fixed pose.
+Create a single `ground_slope_forward_01` scenario starting at `ground_forward_02`'s declared pose.
+Replay its original two actions unchanged, then apply an additional +90 degrees at zero input over one commanded millisecond and drive forward for 2000 commanded ms at fixed yaw.
+An in-place turn is an engine command, not guaranteed exact spatial immobility, and the final direction is -105+45+90=+30 degrees.
+Add a pure read-only trace profiler for final-phase grounded height rise, projected displacement and both approach/end positions, with no claims based only on scheduler Completed.
+Preserve the Scenario Runner and physics runtime; require scenario-loader and offline analyzer tests and user-run HLDS repeated trials before treating the slope as traversed.

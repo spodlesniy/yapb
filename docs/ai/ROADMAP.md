@@ -732,3 +732,7 @@ Automatic CI and repeated HLDS traces remain pending, while D290 diagnostics and
 D294 automatic Explorer CI passed at 03ca694, but Build run 41164809193 failed one of 166 Python tests: the CLI regression patched `DEFAULT_DURATIONS` after `measure_turn_speed` captured its default tuple, so a 50-ms fixture could not meet the real 1250-ms expectation.
 D294.1 replaces only the test fixture with 10-ms frame samples matching all five real action durations, validates CLI output without patching function defaults, and documents the correction.
 Automatic Training tools CI and HLDS turning trials remain pending; no runtime or profiler changes are included.
+D294.1 automatic Build CI passed at f76834a; two user-run D294 traces completed with 1250 command ms and repeatable low- and high-entry-speed turns, and a first-frame clock reanchor that did not block movement.
+D295 prepares a supervised `de_dust2` ground-slope trial by replaying `ground_forward_02`'s two actions, adding a 1-ms +90-degree left turn and then commanding 2000 ms forward.
+This avoids guessing the exact scenario endpoint while measuring actual approach/start positions, ground contact, projected movement and elevation with a read-only profiler.
+C++ loader and Python analyzer tests are required; Stage B slope clearance remains unconfirmed pending automatic CI and repeated HLDS traces.
