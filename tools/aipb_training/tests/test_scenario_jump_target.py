@@ -48,7 +48,7 @@ class TargetOutcomeTests(unittest.TestCase):
     def test_inconclusive_context_ambiguity_and_incomplete(self):
         self.assertEqual(classify_target(self.run, replace(target(), map="de_inferno")).reason,
                          "TargetContextMismatch")
-        self.assertEqual(classify_target(self.run, target(145, 200)).reason,
+        self.assertEqual(classify_target(self.run, target(141, 200)).reason,
                          "TargetBoundaryAmbiguity")
         self.assertEqual(classify_target(self.run, target(100, 180)).reason,
                          "UnverifiedApproach")
@@ -77,7 +77,7 @@ class TargetParserTests(unittest.TestCase):
                 f"{TARGET_VERSION},jump_runup_short_01,de_dust2,118,180,180,220,nan,3,0,0\n",
                 f"{TARGET_VERSION},jump_runup_short_01,de_dust2,118,180,180,220,36,3,181,0\n",
                 f"{TARGET_VERSION},jump_runup_short_01,de_dust2,118,119,180,220,36,3,0,0\n",
-                f"{TARGET_VERSION},jump_runup_short_01,de_dust2,118,180,180,220,36,3,0,18\n",
+                f"{TARGET_VERSION},jump_runup_short_01,de_dust2,118,180,180,220,36,3,0,20\n",
             ):
                 path.write_text(row, encoding="utf-8")
                 with self.subTest(row=row), self.assertRaises(InvalidTarget):

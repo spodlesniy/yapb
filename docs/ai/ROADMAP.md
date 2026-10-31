@@ -810,3 +810,5 @@ The user-run post-D308 archive `results__3.zip` contains eight full Completed ru
 D309 implements the Stage C read-only target-footprint outcome gate: TargetReached, Overshot, MissedLanding or Inconclusive require explicit measured rectangular XY landing footprint, supported origin Z, direction and conservative inset, plus verified D306 trajectory and stable terminal support.
 No target geometry is invented from D309's five uploaded traces; the independent standalone classifier has synthetic regression tests and awaits automatic CI.
 The engine, scenarios, base jump profiler and original YaPB remain unchanged; repeated positive/negative measured geometry trials and deferred Stage A/T261-07 checks remain open.
+D309.1 corrects two synthetic fixture expectations in D309's source-neutral jump-target tests: the landing-edge ambiguity case now uses the actual sampled landing X, and the invalid-inset case uses an inset larger than the allowed target support width.
+No change to target classification, runtime, schema or the physical Stage C acceptance gate; rerun automatic Build CI on the corrective SHA.

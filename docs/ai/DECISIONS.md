@@ -3844,3 +3844,10 @@ Label Overshot only when the final grounded position is conclusively beyond the 
 Return Inconclusive for missing/ambiguous boundaries, unsupported input, interrupted motion, unverified ground contact, wrong approach or insufficient evidence.
 Do not modify the D306 trajectory classifier, the runtime scheduler, original YaPB or scenario input files.
 Add synthetic valid/negative/ambiguity/parser/CLI tests, record the geometry requirements and keep Stage C and deferred Stage A/T261-07 acceptance open.
+
+## D309.1 — Correct synthetic geometry cases for target-classifier tests
+
+D309 Build CI failed two newly added Python tests, not the production target classifier.
+The ambiguity fixture placed the landing four units beyond the footprint edge rather than within the one-unit uncertainty band, and the invalid-inset fixture specified an inset that still left sufficient interior support.
+Set the first boundary to the synthetic landing X and the second inset to one that actually invalidates the support width; keep target parsing and classification code unchanged.
+Require successful automatic Build CI before promoting D309 as validated and preserve the deferred Stage A/T261-07 gate.
