@@ -44,6 +44,19 @@ def trial(*, rise=True):
                   initial, position, tuple(frames))
 
 
+def direct_trial(*, rise=True):
+    # Keep the single 2000-ms movement segment of the historical fixture.
+    original = trial(rise=rise)
+    movement = tuple(replace(frame, index=index, action=0)
+                     for index, frame in enumerate(original.trace)
+                     if frame.action == 3)
+    return replace(
+        original, name="ground_slope_forward_02",
+        frames=len(movement), command_ms=2000,
+        start=movement[0].before, end=movement[-1].after, trace=movement,
+    )
+
+
 class SlopeProfileTests(unittest.TestCase):
     def test_rise_and_source_endpoint(self):
         result = measure_slope_forward(trial())
@@ -81,6 +94,54 @@ class SlopeProfileTests(unittest.TestCase):
         for item, reason in cases:
             with self.subTest(reason=reason):
                 self.assertEqual(measure_slope_forward(item).reason, reason)
+
+    def test_direct_slope_measures_only_uphill_action(self):
+        run = direct_trial()
+        result = measure_slope_forward(run, scenario="ground_slope_forward_02",
+                                       start_yaw=30)
+        self.assertEqual((result.outcome, result.reason),
+                         ("Measured", "HeightGainObserved"))
+        self.assertEqual(result.start_speed, 0)
+        self.assertAlmostEqual(result.approach_x, result.slope_start_x)
+        self.assertAlmostEqual(result.max_height_gain, 20)
+        self.assertAlmostEqual(result.end_height_delta, 20)
+        self.assertGreater(result.forward_distance, 1)
+        self.assertIsNotNone(result.first_height_gain_ms)
+
+    def test_direct_slope_flat_and_failure_contract(self):
+        run = direct_trial(rise=False)
+        profile = measure_slope_forward(run, scenario="ground_slope_forward_02",
+                                        start_yaw=30)
+        self.assertEqual((profile.outcome, profile.reason), ("Measured", "NoHeightGain"))
+        self.assertIsNone(profile.first_height_gain_ms)
+
+        def inspect(case):
+            return measure_slope_forward(case, scenario="ground_slope_forward_02",
+                                         start_yaw=30).reason
+
+        self.assertEqual(inspect(replace(run, command_ms=1999)), "DurationMismatch")
+        self.assertEqual(inspect(replace(run, status="Cancelled")), "IncompleteRun")
+        changed = list(run.trace)
+        changed[1] = replace(changed[1], yaw=45)
+        self.assertEqual(inspect(replace(run, trace=tuple(changed))), "UnexpectedYaw")
+        changed = list(run.trace)
+        changed[-1] = replace(changed[-1], forward=0)
+        self.assertEqual(inspect(replace(run, trace=tuple(changed))),
+                         "UnexpectedMovementCommand")
+        changed = list(run.trace)
+        changed[0] = replace(changed[0], before=replace(changed[0].before, vx=20))
+        self.assertEqual(inspect(replace(run, trace=tuple(changed),
+                                         start=changed[0].before)), "InitialSpeedMismatch")
+
+    def test_direct_cli(self):
+        with patch("tools.aipb_training.ground_slope_forward_profile.load_bundle",
+                   return_value=direct_trial()):
+            with redirect_stdout(io.StringIO()) as output:
+                status = main(["unused", "--scenario", "ground_slope_forward_02",
+                               "--heading-deg", "30"])
+        self.assertEqual(status, 0)
+        self.assertIn("Measured: HeightGainObserved", output.getvalue())
+        self.assertIn("start_speed=0", output.getvalue())
 
     def test_cli_and_invalid_bundle(self):
         with patch("tools.aipb_training.ground_slope_forward_profile.load_bundle",

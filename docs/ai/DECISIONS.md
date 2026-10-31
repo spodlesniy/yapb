@@ -3638,3 +3638,15 @@ Replay its original two actions unchanged, then apply an additional +90 degrees 
 An in-place turn is an engine command, not guaranteed exact spatial immobility, and the final direction is -105+45+90=+30 degrees.
 Add a pure read-only trace profiler for final-phase grounded height rise, projected displacement and both approach/end positions, with no claims based only on scheduler Completed.
 Preserve the Scenario Runner and physics runtime; require scenario-loader and offline analyzer tests and user-run HLDS repeated trials before treating the slope as traversed.
+
+## D295.1 — Isolate the slope start pose from the approach scenario
+
+The user supplied three real HLDS traces of the D295 four-action scenario, all Completed over 2751 commanded ms.
+The first two actions ended at (415.63712, 2247.21997, -92), (415.61798, 2247.15308, -92), and (415.61682, 2247.1438, -92), with final yaw -60 degrees and residual horizontal speed near 91.6 units/s.
+The following idle +90-degree action yielded yaw +30 degrees, i.e. a 135-degree net change from the original -105-degree start.
+The user observed collision with a box and lateral sliding despite some uphill progress, so these runs do not establish a clean incline traverse.
+Keep `ground_slope_forward_01` and its old analyzer mode available for provenance.
+Add `ground_slope_forward_02` with one 2000-ms forward action, static measured start (415.624, 2247.172, -92), yaw +30 degrees and explicitly zero velocity, without any setup movement or turn inside the test.
+Extend the read-only profiler for this distinct single-action contract and add loader/trace/CLI regressions; do not change runtime, physics, collisions, D290 diagnostics or the deferred D292 issue.
+The three observed endpoints differ slightly, so the start position is a rounded representative measured pose, not an exact universal final point.
+Stage B slope success still requires user-run repeats that independently verify unimpeded grounded progress.

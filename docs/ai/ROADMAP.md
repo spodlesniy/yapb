@@ -736,3 +736,9 @@ D294.1 automatic Build CI passed at f76834a; two user-run D294 traces completed 
 D295 prepares a supervised `de_dust2` ground-slope trial by replaying `ground_forward_02`'s two actions, adding a 1-ms +90-degree left turn and then commanding 2000 ms forward.
 This avoids guessing the exact scenario endpoint while measuring actual approach/start positions, ground contact, projected movement and elevation with a read-only profiler.
 C++ loader and Python analyzer tests are required; Stage B slope clearance remains unconfirmed pending automatic CI and repeated HLDS traces.
+D295 automatic Build and Explorer CI passed at e406f4b.
+Three user-run D295 traces completed with 2751 commanded ms, but the user observed a box collision and sliding during the climb.
+The end of the reproduced ground_forward_02 actions was (415.637/415.618/415.617, 2247.220/2247.153/2247.144, -92), yaw -60, with nonzero residual velocity; net yaw from the original -105 to slope heading +30 was 135 degrees.
+D295.1 adds a corrected single-action `ground_slope_forward_02` starting directly at rounded observed endpoint (415.624, 2247.172, -92), yaw +30 (left 90 degrees relative to the former endpoint), and zero initial velocity; it commands only 2000 ms forward.
+The existing historical four-action scenario is retained, and the read-only profiler gains a separate verified single-action mode.
+Automatic CI and repeated user-run HLDS acceptance remain pending; ground slope/step capability is not yet accepted.

@@ -361,3 +361,19 @@ The read-only profile reports observed approach position, actual start of the 20
 `Measured: HeightGainObserved` is grounded elevation evidence, not proof that every frame was on a ramp rather than steps.
 Unexpected airborne states, pose discontinuity or phase mismatches are inconclusive.
 Compare repeated runs and verify the actual `de_dust2` geometry before interpreting physical feasibility.
+
+## D295.1 — Direct slope start from measured ground_forward_02 endpoint
+
+The historical D295 scenario `ground_slope_forward_01` remains available unchanged for its original traces.
+Three user-run D295 traces measured the end of `ground_forward_02` at approximately `(415.624, 2247.172, -92)` with yaw `-60` degrees; this is a measurement, not an inferred BSP waypoint.
+The corrected `ground_slope_forward_02.scenario` starts **directly** at this position, facing `30` degrees (90 degrees left of -60), and requests zero initial velocity.
+It contains **one action only**, forward movement for 2000 commanded milliseconds with no further yaw change.
+The old `ground_slope_forward_01` first ran 750 milliseconds of approach actions and entered the slope with around 91.6 GoldSrc units/s of residual speed, so its collision-influenced trajectory is not an equivalent zero-speed start.
+
+```sh
+python -m tools.aipb_training.ground_slope_forward_profile "<run_directory>" --scenario ground_slope_forward_02 --heading-deg 30
+```
+
+The same read-only tool accepts both the historical four-action profile and the corrected single-action profile and distinguishes them by scenario name.
+It reports actual grounded elevation and displacement, and returns Inconclusive for unexpected actions, non-ground movement, wrong yaw, nonzero entry speed or incomplete trace.
+Run the corrected scenario in HLDS after normal buying and verify the starting position and whether a box still interferes before accepting any slope capability.

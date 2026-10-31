@@ -48,6 +48,9 @@ def measure_slope_forward(
     min_rise: float = 4.0,
 ) -> SlopeProfile:
     """Record grounded height changes without inferring slope geometry from Z alone."""
+    if scenario == "ground_slope_forward_02":
+        return _measure_direct_slope(run, map_name, start_yaw, min_rise)
+
     def inconclusive(reason: str) -> SlopeProfile:
         return SlopeProfile("Inconclusive", reason)
 
@@ -166,6 +169,104 @@ def measure_slope_forward(
         end_height_delta=end.z - slope_start.z,
         max_height_gain=max_height_gain,
         first_height_gain_ms=first_gain,
+    )
+
+
+
+def _measure_direct_slope(
+    run: Bundle, map_name: str, heading_deg: float, min_rise: float
+) -> SlopeProfile:
+    """Evaluate the single 2000-ms ramp trial without its historical approach."""
+    def inconclusive(reason: str) -> SlopeProfile:
+        return SlopeProfile("Inconclusive", reason)
+
+    if not math.isfinite(heading_deg) or not -180 <= heading_deg < 180:
+        return inconclusive("InvalidHeading")
+    if not math.isfinite(min_rise) or min_rise <= 0:
+        return inconclusive("InvalidRiseThreshold")
+    if run.name != "ground_slope_forward_02" or run.map != map_name:
+        return inconclusive("ContextMismatch")
+    if run.status != "Completed" or run.source != "live":
+        return inconclusive("IncompleteRun")
+    if run.command_ms != 2000:
+        return inconclusive("DurationMismatch")
+    if not run.trace or len(run.trace) != run.frames:
+        return inconclusive("IncompleteTrace")
+    if _pose_mismatch(run.start, run.trace[0].before, "start"):
+        return inconclusive("StartObservationMismatch")
+    if _pose_mismatch(run.end, run.trace[-1].after, "end"):
+        return inconclusive("EndObservationMismatch")
+
+    initial = run.trace[0].before
+    if math.hypot(initial.vx, initial.vy) > 5.0 or abs(initial.vz) > 5.0:
+        return inconclusive("InitialSpeedMismatch")
+    cap = run.trace[0].max_speed
+    if not math.isfinite(cap) or cap < 10.0:
+        return inconclusive("InvalidSpeedCap")
+
+    elapsed = 0
+    first_gain_ms = None
+    max_height_gain = -math.inf
+    previous = None
+    for index, frame in enumerate(run.trace):
+        if frame.action != 0 or frame.index != index:
+            return inconclusive("UnexpectedAction")
+        if frame.msec < 1 or frame.msec > 255:
+            return inconclusive("InvalidFrameDuration")
+        elapsed += frame.msec
+        if elapsed > 2000:
+            return inconclusive("PhaseTimingMismatch")
+        if previous is not None:
+            old, new = previous.after, frame.before
+            if (max(abs(getattr(old, name) - getattr(new, name))
+                    for name in ("x", "y", "z", "vx", "vy", "vz"))
+                    > POSITION_CONTINUITY_TOLERANCE
+                    or old.ground != new.ground or old.duck != new.duck):
+                return inconclusive("ObservationDiscontinuity")
+        if not math.isfinite(frame.max_speed) or abs(frame.max_speed - cap) > COMMAND_TOLERANCE:
+            return inconclusive("SpeedCapChanged")
+        if (frame.before.ground != 1 or frame.after.ground != 1
+                or frame.before.duck or frame.after.duck or frame.buttons != 0):
+            return inconclusive("GroundContactOrStance")
+        if (abs(frame.forward - cap) > COMMAND_TOLERANCE
+                or abs(frame.strafe) > COMMAND_TOLERANCE):
+            return inconclusive("UnexpectedMovementCommand")
+        for yaw in (frame.yaw, frame.before.yaw, frame.after.yaw):
+            if not math.isfinite(yaw) or _angle_difference(yaw, heading_deg) > YAW_TOLERANCE:
+                return inconclusive("UnexpectedYaw")
+
+        gain = frame.after.z - initial.z
+        max_height_gain = max(max_height_gain, gain)
+        if first_gain_ms is None and gain >= min_rise:
+            first_gain_ms = elapsed
+        previous = frame
+
+    if elapsed != 2000:
+        return inconclusive("PhaseTimingMismatch")
+    end = run.trace[-1].after
+    heading = math.radians(heading_deg)
+    forward = ((end.x - initial.x) * math.cos(heading)
+               + (end.y - initial.y) * math.sin(heading))
+    distance = math.hypot(end.x - initial.x, end.y - initial.y)
+    if forward <= 1.0 or distance <= 1.0:
+        return inconclusive("InsufficientPhysicalProgress")
+
+    return SlopeProfile(
+        outcome="Measured",
+        reason="HeightGainObserved" if max_height_gain >= min_rise else "NoHeightGain",
+        approach_x=initial.x,
+        approach_y=initial.y,
+        approach_z=initial.z,
+        slope_start_x=initial.x,
+        slope_start_y=initial.y,
+        slope_start_z=initial.z,
+        start_speed=math.hypot(initial.vx, initial.vy),
+        end_speed=math.hypot(end.vx, end.vy),
+        forward_distance=forward,
+        horizontal_distance=distance,
+        end_height_delta=end.z - initial.z,
+        max_height_gain=max_height_gain,
+        first_height_gain_ms=first_gain_ms,
     )
 
 

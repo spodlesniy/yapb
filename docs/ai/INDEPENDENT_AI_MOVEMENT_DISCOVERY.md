@@ -344,3 +344,12 @@ The read-only evaluator inspects real per-frame position, velocity, grounded sta
 Actual approach and slope-start coordinates are reported separately, since engine physics can move the player while an idle rotation runs.
 No runtime physics changes or autonomous traversal claims are introduced.
 The Stage B step/slope exit gate remains open until the real geometry and repeated trials have been assessed.
+
+## D295.1 — Corrected direct incline-entry scenario
+
+Three D295 real HLDS repetitions reproduced the same end of ground_forward_02 at roughly (415.624, 2247.172, -92), yaw -60 degrees.
+They also demonstrated an unwanted box collision while progressing upward.
+For a cleaner slope test, `ground_slope_forward_02` starts directly at that measured pose with yaw +30 degrees (a 90-degree left offset from the former endpoint), zero velocity and a single 2000-ms forward action.
+The older D295 route remains for provenance rather than being overwritten.
+A separate offline validation path checks the new one-action trace, ground contact, yaw, entry speed, height gain and movement, and never infers traversal success from Completed alone.
+Independent HLDS repetition without box interference is still required for Stage B acceptance.
