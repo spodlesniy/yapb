@@ -3618,3 +3618,13 @@ Use trace observations to validate commanded yaw ramps, action timings, constant
 The speed contrast is observational and the turns are at different locations and headings, so this is not a controlled causal estimate independent of geometry.
 Add scenario loader and offline profile tests and preserve existing runtime, physics, trace and diagnostic behavior.
 Completion requires automatic CI and user-run HLDS repetition; Stage B still requires verified step/slope and negative cases.
+
+## D294.1 — Use real scenario phase durations in the turn-speed CLI regression
+
+D294 automatic Explorer CI passed, but the Build Training tools job failed one of 166 Python tests.
+The CLI regression patched the module-level `DEFAULT_DURATIONS` constant to 10 ms per action after `measure_turn_speed` had already captured its actual default argument tuple at definition time.
+Thus the CLI correctly returned `Inconclusive: DurationMismatch` for the 50-ms synthetic run; no game runtime or physical turn logic failed.
+Replace the CLI test fixture with a deterministic expanded five-phase 1250-ms trace using 10-ms frames, matching the declared 50/200/300/200/500-ms scenario durations and per-frame yaw ramp.
+Validate the actual per-action time budgets, default analyzer path and CLI output without patching immutable function defaults.
+Leave Scenario Runner, offline analysis algorithms, movement physics, D290 diagnostics and D292 anomaly handling unchanged.
+Require fresh automatic Training tools CI before accepting the correction.

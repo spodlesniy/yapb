@@ -729,3 +729,6 @@ D293.1 automatic Build CI passed at fa5462f, and the user reported two completed
 D294 combines turning and different entry speeds in one `ground_turn_speed_01` scenario: stationary hold, forward +30-degree low-speed turn, straight acceleration, forward -30-degree higher-speed turn and coast.
 A new read-only analyzer measures actual entry speed and movement for both turns, checks applied yaw progression and marks insufficient speed contrast Inconclusive; C++ loader and Python tests accompany the fixture.
 Automatic CI and repeated HLDS traces remain pending, while D290 diagnostics and the deferred D292 anomaly stay untouched.
+D294 automatic Explorer CI passed at 03ca694, but Build run 41164809193 failed one of 166 Python tests: the CLI regression patched `DEFAULT_DURATIONS` after `measure_turn_speed` captured its default tuple, so a 50-ms fixture could not meet the real 1250-ms expectation.
+D294.1 replaces only the test fixture with 10-ms frame samples matching all five real action durations, validates CLI output without patching function defaults, and documents the correction.
+Automatic Training tools CI and HLDS turning trials remain pending; no runtime or profiler changes are included.

@@ -40,6 +40,41 @@ def inspect(run):
     return measure_turn_speed(run, durations=(10, 10, 10, 10, 10))
 
 
+def full_duration_trial():
+    # Expand each compact phase into 10ms samples matching the real scenario.
+    base = trial()
+    phase_ms = (50, 200, 300, 200, 500)
+    yaw_deltas = (0, 30, 0, -30, 0)
+    frames = []
+    entry_yaw = -105.0
+    for template, duration, delta in zip(base.trace, phase_ms, yaw_deltas):
+        count = duration // 10
+
+        def interpolate(fraction, yaw):
+            before, after = template.before, template.after
+            return replace(
+                before,
+                x=before.x + (after.x - before.x) * fraction,
+                y=before.y + (after.y - before.y) * fraction,
+                vx=before.vx + (after.vx - before.vx) * fraction,
+                vy=before.vy + (after.vy - before.vy) * fraction,
+                yaw=yaw,
+            )
+
+        for step in range(count):
+            # The engine applies the turn angle before the pre-frame pose.
+            yaw = entry_yaw + delta * (step + 1) / count
+            frames.append(replace(
+                template, index=len(frames), msec=10, yaw=yaw,
+                before=interpolate(step / count, yaw),
+                after=interpolate((step + 1) / count, yaw),
+            ))
+        entry_yaw += delta
+
+    return replace(base, frames=len(frames), command_ms=sum(phase_ms),
+                   trace=tuple(frames))
+
+
 class TurnSpeedTests(unittest.TestCase):
     def test_two_turns_have_distinct_entry_speeds(self):
         result = inspect(trial())
@@ -88,12 +123,20 @@ class TurnSpeedTests(unittest.TestCase):
                 self.assertEqual(inspect(case).reason, expected)
 
     def test_cli_and_invalid_bundle(self):
+        complete = full_duration_trial()
+        self.assertEqual(complete.frames, 125)
+        self.assertEqual(complete.command_ms, 1250)
+        self.assertEqual(
+            [sum(frame.msec for frame in complete.trace if frame.action == index)
+             for index in range(5)],
+            [50, 200, 300, 200, 500],
+        )
+        self.assertEqual(measure_turn_speed(complete).reason, "TwoTurnsObserved")
+
         with patch("tools.aipb_training.ground_turn_speed_profile.load_bundle",
-                   return_value=trial()):
-            with patch("tools.aipb_training.ground_turn_speed_profile.DEFAULT_DURATIONS",
-                       (10, 10, 10, 10, 10)):
-                with redirect_stdout(io.StringIO()) as output:
-                    self.assertEqual(main(["unused", "--heading-deg", "-105"]), 0)
+                   return_value=complete):
+            with redirect_stdout(io.StringIO()) as output:
+                self.assertEqual(main(["unused", "--heading-deg", "-105"]), 0)
         self.assertIn("Measured: TwoTurnsObserved", output.getvalue())
         self.assertIn("speed_difference=", output.getvalue())
         with patch("tools.aipb_training.ground_turn_speed_profile.load_bundle",
