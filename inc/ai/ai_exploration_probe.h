@@ -27,6 +27,8 @@ void reset();
 void cancelBot(int botIndex);
 bool active();
 bool scenarioRunning();
+// An authorized menu action can place bot #1 at the invoking player's rounded pose.
+bool moveBotToPlayer(edict_t *player);
 const char *currentScenarioName();
 bool runScenario(const char *name);
 void stopScenario();

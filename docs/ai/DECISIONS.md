@@ -3749,3 +3749,12 @@ The evidence supports local `de_dust2` ground movement and blocked/deflected cla
 Retain the active-braking outlier and blocked historical yaw-30 slope trials rather than silently selecting only positive trajectories.
 Stage B's local experimental evidence exit conditions are supported but the formal stage acceptance remains pending because Stage A/T261-07's deferred A01–A11 HLDS lifecycle/negative-path acceptance is still open.
 Do not relax that prerequisite, invent a universal numerical step-height limit, change runtime or navigation permissions, or treat an automated CI pass as a substitute for supervised engine checks.
+
+## D302 — Supervised Move bot menu action
+
+Keep `aipb-scenario-v1` start position and view fields mandatory; omission is invalid and does not imply the bot's current pose.
+Insert "2. Move bot" immediately after Overlay in the AiPB menu, shifting Run Scenario to 3 and Stop Scenario to 4; disable Move bot while a scenario is running.
+For an authorized living player, round live `edict_t::v.origin` coordinates and `v_angle` yaw/pitch to the nearest integer and teleport living bot #1 via GoldSrc `pfnSetOrigin`, rejecting busy Explorer sessions, invalid poses and blocked standing/crouch hulls.
+Ignore only the invoking player in the destination occupancy trace; keep other geometry/occupancy checks in effect.
+Reset the bot's previous motion, command inputs and stale ground contact after moving without altering scenario fixtures or autonomous navigation permissions.
+Add deterministic engine-independent menu mask/rounding tests and require manual Windows x86/HLDS acceptance of the engine adapter; keep Stage A/T261-07 and Stage B gates open.

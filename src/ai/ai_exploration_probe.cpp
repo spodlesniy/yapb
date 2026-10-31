@@ -2,6 +2,7 @@
 #include <ai/ai_exploration_probe.h>
 #include <ai/ai_menu.h>
 #include <aipb/explorer/engine_bridge_scenario_pose.h>
+#include <aipb/explorer/engine_bridge_scenario_menu.h>
 #include <aipb/explorer/engine_bridge_math.h>
 #include <aipb/explorer/engine_bridge_scenario_equipment_init.h>
 #include <aipb/explorer/engine_bridge_scenario_loader.h>
@@ -494,6 +495,61 @@ void printScenarioStatus(edict_t *client) { statusScenarioInternal(client); }
 
 bool active() {
    return session.botIndex >= 0 || scenarioScheduler.running();
+}
+
+bool moveBotToPlayer(edict_t *player) {
+   if (!game.isPlayerEntity(player) || game.isFakeClientEntity(player)
+      || !game.isAliveEntity(player)) {
+      game.print("AiPB: move bot rejected (PlayerUnavailable).");
+      return false;
+   }
+   const int playerIndex = game.indexOfPlayer(player);
+   if (playerIndex < 0 || (player != game.getLocalEntity()
+      && !(util.getClient(playerIndex).flags & ClientFlags::Admin))) {
+      game.print("AiPB: move bot rejected (Unauthorized).");
+      return false;
+   }
+   if (active() || queue.running || gameState.isRoundOver()) {
+      game.print("AiPB: move bot rejected (BusyOrRoundOver).");
+      return false;
+   }
+   constexpr int kBotIndex = 1;
+   auto *bot = bots.findBotByIndex(kBotIndex);
+   if (!bot || !game.isAliveEntity(bot->ent())) {
+      game.print("AiPB: move bot rejected (BotMissingOrDead).");
+      return false;
+   }
+   const auto &origin = player->v.origin;
+   const auto &view = player->v.v_angle;
+   aipb::explorer::scenario::ScenarioMenuTargetPose pose {};
+   if (!aipb::explorer::scenario::scenarioMenuRoundedPose(
+      origin.x, origin.y, origin.z, view.y, view.x, pose)) {
+      game.print("AiPB: move bot rejected (InvalidPlayerPose).");
+      return false;
+   }
+   const Vector target(pose.position[0], pose.position[1], pose.position[2]);
+   TraceResult occupancy {};
+   const auto hull = bot->pev->flags & FL_DUCKING ? head_hull : human_hull;
+   // Ignore the initiating player who necessarily occupies the destination.
+   game.testHull(target, target, TraceIgnore::None, hull, player, &occupancy);
+   if (occupancy.fStartSolid || occupancy.fAllSolid) {
+      game.print("AiPB: move bot rejected (DestinationBlocked).");
+      return false;
+   }
+   engfuncs.pfnSetOrigin(bot->ent(), target);
+   bot->pev->velocity.clear();
+   bot->pev->basevelocity.clear();
+   bot->pev->v_angle = Vector(pose.pitch, pose.yaw, 0.0f);
+   bot->pev->angles = Vector(-pose.pitch / 3.0f, pose.yaw, 0.0f);
+   bot->pev->button = 0;
+   bot->pev->oldbuttons = 0;
+   bot->pev->impulse = 0;
+   bot->pev->flags &= ~FL_ONGROUND;
+   bot->pev->groundentity = nullptr;
+   game.print("AiPB: bot #%d moved to (%.0f %.0f %.0f), yaw %.0f pitch %.0f.",
+      kBotIndex, pose.position[0], pose.position[1], pose.position[2],
+      pose.yaw, pose.pitch);
+   return true;
 }
 
 bool begin(int botIndex, const AipbExplorerBridgeCommand &command, int limit, bool milliseconds, bool append) {

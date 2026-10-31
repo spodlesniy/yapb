@@ -66,20 +66,56 @@ struct ScenarioMenuPage {
 
 struct ScenarioMenuAvailability {
   bool toggleOverlay { true };
+  bool moveBot {};
   bool start {};
   bool stop {};
 };
 
 inline ScenarioMenuAvailability scenarioMenuAvailability(bool running) {
-  return { true, !running, running };
+  return { true, !running, !running, running };
 }
 
 inline unsigned int scenarioMenuRootKeyMask(bool running) {
   const auto availability = scenarioMenuAvailability(running);
 
   return (1u << 0) | (1u << 9)
-    | (availability.start ? (1u << 1) : 0u)
-    | (availability.stop ? (1u << 2) : 0u);
+    | (availability.moveBot ? (1u << 1) : 0u)
+    | (availability.start ? (1u << 2) : 0u)
+    | (availability.stop ? (1u << 3) : 0u);
+}
+
+struct ScenarioMenuTargetPose {
+  float position[3] {};
+  float yaw {};
+  float pitch {};
+};
+
+// Round live client coordinates and view angles before the engine adapter teleports.
+// Do not change the output if the source pose is invalid.
+inline bool scenarioMenuRoundedPose(
+  double x,
+  double y,
+  double z,
+  double yaw,
+  double pitch,
+  ScenarioMenuTargetPose &result
+) {
+  if (!std::isfinite(x) || !std::isfinite(y) || !std::isfinite(z)
+      || !std::isfinite(yaw) || !std::isfinite(pitch)
+      || std::abs(x) > 16384.0 || std::abs(y) > 16384.0
+      || std::abs(z) > 16384.0 || std::abs(yaw) > 3600.0
+      || std::abs(pitch) > 3600.0) {
+    return false;
+  }
+
+  ScenarioMenuTargetPose next {};
+  next.position[0] = static_cast<float>(std::round(x));
+  next.position[1] = static_cast<float>(std::round(y));
+  next.position[2] = static_cast<float>(std::round(z));
+  next.yaw = static_cast<float>(std::round(yaw));
+  next.pitch = static_cast<float>(std::round(pitch));
+  result = next;
+  return true;
 }
 
 inline std::string scenarioMenuOverlayText(

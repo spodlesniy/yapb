@@ -41,10 +41,26 @@ int main() {
     check(scenarioMenuOverlayPoseText(false, "",
       std::numeric_limits<double>::quiet_NaN(), 0, 0, 0, 0)
       == "No scenario running\nPos: unavailable\nView: unavailable");
-    check(scenarioMenuRootKeyMask(false) == ((1u << 0) | (1u << 1) | (1u << 9)));
-    check(scenarioMenuRootKeyMask(true) == ((1u << 0) | (1u << 2) | (1u << 9)));
-    check((scenarioMenuRootKeyMask(false) & (1u << 2)) == 0u);
+    check(scenarioMenuAvailability(false).moveBot);
+    check(!scenarioMenuAvailability(true).moveBot);
+    check(scenarioMenuRootKeyMask(false) == ((1u << 0) | (1u << 1)
+      | (1u << 2) | (1u << 9)));
+    check(scenarioMenuRootKeyMask(true) == ((1u << 0) | (1u << 3) | (1u << 9)));
+    check((scenarioMenuRootKeyMask(false) & (1u << 3)) == 0u);
     check((scenarioMenuRootKeyMask(true) & (1u << 1)) == 0u);
+    check((scenarioMenuRootKeyMask(true) & (1u << 2)) == 0u);
+
+    ScenarioMenuTargetPose moved {};
+    check(scenarioMenuRoundedPose(448.49, -2368.5, -91.51, -104.5, 7.5, moved));
+    check(moved.position[0] == 448.0f && moved.position[1] == -2369.0f);
+    check(moved.position[2] == -92.0f && moved.yaw == -105.0f);
+    check(moved.pitch == 8.0f);
+    check(!scenarioMenuRoundedPose(
+      std::numeric_limits<double>::quiet_NaN(), 0, 0, 0, 0, moved));
+    check(!scenarioMenuRoundedPose(20000, 0, 0, 0, 0, moved));
+    check(!scenarioMenuRoundedPose(0, 0, 0, 0,
+      std::numeric_limits<double>::infinity(), moved));
+    check(moved.position[0] == 448.0f && moved.yaw == -105.0f);
 
     // An open root must update on both start and completion, even with HUD off.
     check(!scenarioMenuNeedsRefresh(ScenarioMenuScreen::Closed, true, false));

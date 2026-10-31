@@ -786,3 +786,5 @@ D301 audits 32 user-supplied HLDS run bundles across eleven archives, verifies c
 The audit preserves two historical yaw-30 failures, three historical box-interfered incline trials and one active-braking outlier, rather than treating all successful scheduler completions as physical success.
 See `docs/ai/INDEPENDENT_AI_GROUND_MOVEMENT_REVIEW.md` for archive hashes, metrics, evidence classifications and outstanding gates.
 Stage B's bounded local experimental evidence is sufficient, but formal Stage B acceptance remains open because prerequisite Stage A/T261-07 HLDS safety checks A01–A11 are not fully accepted; no universal step-height limit or navigation permission is inferred.
+D302 adds a supervised AiPB menu "Move bot" action that copies the authorized live player's position and yaw/pitch, rounded to whole units/degrees, to existing living bot #1 after verifying idle Explorer state and destination hull clearance.
+The action resets motion inputs, does not launch a scenario or alter required scenario start fields, and still requires user-run Windows x86/HLDS verification; it does not close T261-07 or Stage B.

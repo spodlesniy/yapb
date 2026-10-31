@@ -108,8 +108,9 @@ void root(edict_t *ent) {
    String text {};
    text.assignf("\\yAiPB Scenarios\\w\n\n1. Overlay: %s\n",
       overlayEnabled ? "ON" : "OFF");
-   text.appendf("%s2. Run Scenario\n", availability.start ? "\\w" : "\\d");
-   text.appendf("%s3. Stop Scenario\n\n\\w0. Exit",
+   text.appendf("%s2. Move bot\n", availability.moveBot ? "\\w" : "\\d");
+   text.appendf("%s3. Run Scenario\n", availability.start ? "\\w" : "\\d");
+   text.appendf("%s4. Stop Scenario\n\n\\w0. Exit",
       availability.stop ? "\\w" : "\\d");
    const int keys = static_cast<int>(aipb::explorer::scenario::scenarioMenuRootKeyMask(running));
    send(ent, keys, text);
@@ -168,10 +169,16 @@ void onSelect(edict_t *ent, int selected) {
          overlayEnabled = !overlayEnabled;
          root(ent);
       }
-      else if (selected == 2 && availability.start) {
+      else if (selected == 2 && availability.moveBot) {
+         const bool moved = ai::explore::moveBotToPlayer(ent);
+         game.clientPrint(ent, "%s", moved ? "AiPB: bot #1 moved to player pose." :
+            "AiPB: move bot rejected; see server console.");
+         root(ent);
+      }
+      else if (selected == 3 && availability.start) {
          browse(ent, true);
       }
-      else if (selected == 3 && availability.stop) {
+      else if (selected == 4 && availability.stop) {
          ai::explore::stopScenario();
          root(ent);
       }
