@@ -3598,3 +3598,12 @@ Validate exact action timings, normalized commands, constant speed cap and yaw, 
 Report forward/right acceleration displacements, release velocity components, release/peak horizontal speed and release-direction error from yaw minus 45 degrees.
 Require C++ loader fixture and Python profile/CLI regression tests.
 Retain Stage B acceptance pending user-run repeated HLDS evidence and subsequent turning, speed and obstacle experiments.
+
+## D293.1 — Allow floating-point roundoff in diagonal CLI test
+
+The D293 automatic Explorer CI passed, but the Training tools job in Build run 41099905893 failed one of 162 Python tests.
+The `test_diagonal_cli_preserves_existing_axes` test required an exact textual `release_heading_error_deg=0` even though the correct normalized diagonal has a signed trigonometric roundoff of approximately -6.5e-15 degrees.
+Replace the exact-string assertion with parsing of the printed field and a bounded numeric tolerance of 1e-6 degrees.
+Keep the existing output representation, measurement calculations, scenario fixture, runtime movement behavior and D290 diagnostics unchanged.
+The corrective test must still require the field to exist and remain numerically near zero.
+Require automatic Training tools tests to pass before accepting the step.

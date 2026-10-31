@@ -722,3 +722,6 @@ D292 automatic Build and Explorer CI passed at 3473b465; the user recorded four 
 One later position stall was observed; at the user's request further investigation is deferred unless it recurs.
 D293 adds a normalized simultaneous forward/strafe acceleration and coast fixture, a read-only diagonal projection profile and Python/C++ fixture tests, leaving runtime and D290 diagnostics unchanged.
 Automatic CI and user-run HLDS measurements remain necessary; Stage B is not complete.
+D293.1 addresses the sole D293 automated regression failure: Training tools Build run 41099905893 reported 1 failure in 162 Python tests because a CLI test expected exactly `release_heading_error_deg=0`, while the correct result was approximately -6.5e-15 degrees.
+The independent Explorer CI passed on the same D293 commit.
+The correction validates the CLI output numerically to within 1e-6 degrees without changing the profiler or runtime; automatic CI acceptance and user-run HLDS trials remain pending.

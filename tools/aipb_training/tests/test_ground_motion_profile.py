@@ -196,7 +196,10 @@ class GroundMotionTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertIn("Measured: StopObserved", output.getvalue())
         self.assertIn("release_horizontal_speed=250", output.getvalue())
-        self.assertIn("release_heading_error_deg=0", output.getvalue())
+        # Trigonometric roundoff can produce a tiny signed value near zero.
+        angle_text = output.getvalue().split("release_heading_error_deg=", 1)
+        self.assertEqual(len(angle_text), 2)
+        self.assertAlmostEqual(float(angle_text[1].split()[0]), 0.0, delta=1e-6)
         self.assertEqual(self.measure(trial()).outcome, "Measured")
         self.assertEqual(measure_ground_motion(
             diagonal_trial(), "ground_diagonal_coast_01", "de_dust2",
