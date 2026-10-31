@@ -182,6 +182,29 @@ duration_ms=100
       && descent.actions[0].strafe == 0.0f
       && descent.actions[0].yawDelta == 0.0f
       && !descent.actions[0].jump && !descent.actions[0].duck);
+    Scenario step {};
+    check(loadScenario(fixtureRoot, "ground_step_forward_01", step, detail)
+      == LoadStatus::Ok);
+    check(step.name == "ground_step_forward_01" && step.map == "de_dust2");
+    check(step.team == 0 && step.equipment.specified.empty());
+    check(checkScenarioPreflight(step, "de_dust2", true, true, 2)
+      == PreflightStatus::Ok);
+    check(step.position[0] == 1456.0 && step.position[1] == 893.0
+      && step.position[2] == 36.0);
+    check(step.yaw == 0.0f && step.pitch == 0.0f && !step.crouching);
+    check(step.velocity[0] == 0.0f && step.velocity[1] == 0.0f
+      && step.velocity[2] == 0.0f);
+    check(step.hasBot("vx") && step.hasBot("vy") && step.hasBot("vz"));
+    check(step.actions.size() == 1);
+    check(step.actions[0].durationMs == 1000
+      && step.actions[0].timeoutMs == 1300
+      && step.actions[0].forward == 1.0f
+      && step.actions[0].strafe == 0.0f
+      && step.actions[0].yawDelta == 0.0f
+      && step.actions[0].pitchDelta == 0.0f
+      && !step.actions[0].jump && !step.actions[0].duck
+      && !step.actions[0].attack && !step.actions[0].attack2
+      && !step.actions[0].use);
     Scenario braking {};
     check(loadScenario(fixtureRoot, "ground_active_brake_01", braking, detail)
       == LoadStatus::Ok);

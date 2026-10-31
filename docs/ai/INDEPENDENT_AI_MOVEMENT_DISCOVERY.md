@@ -379,3 +379,11 @@ In the engine-specific `ai_menu.cpp`, access a human player's coordinates and vi
 The earlier `player->pev` access belonged to the `Bot` class, not the GoldSrc `edict_t`, and failed Windows x86 MSVC.
 The original D296 downhill scenario and engine-neutral overlay formatting stay unchanged.
 A source-contract test checks that the overlay adapter uses the raw GoldSrc fields; native Windows x86 build confirmation remains necessary because automated tests do not compile that DLL.
+
+## D297 — First user-specified step trial
+
+The `ground_step_forward_01` experiment tests commanded forward movement on `de_dust2` from a manually selected position (1456, 893, 36) with yaw=0, pitch=0 and initial velocity zero.
+It contains exactly one grounded-intent `forward=1` action lasting 1000 ms, with no jump, duck or other controls.
+The experimental outcome must be classified from physical observations rather than inferred from a `Completed` scheduler state.
+Use repeated real traces to measure approach distance, any elevation rise/drop, grounded continuity and collision or stopping behavior.
+This is a scenario preparation step, not acceptance of step-up capability.

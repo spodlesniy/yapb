@@ -756,3 +756,8 @@ D296 automatic Build and Explorer CI passed at 77e622a, but a user-run Windows x
 D296.1 corrects only the GoldSrc HUD adapter to read `player->v.origin` and `player->v.v_angle`, matching `edict_t::v` and existing `src/linkage.cpp` usage.
 An AI-only source-contract regression guards against reintroducing `player->pev` because regular Build/Explorer CI does not compile the Win32 DLL.
 HUD access control, scenario status, formatting, downhill fixture and physics remain unchanged; D296.1 requires automatic CI and a user-run Windows x86 compile to confirm this platform-specific fix.
+D296.1 automatic Build CI passed at ee023fe; Windows x86 game DLL compilation still requires user confirmation.
+Two user-run `ground_slope_down_01` trials completed for 2000 ms with full ground contact and nearly identical downward elevation changes (about 91.001 units), corroborating the earlier upward incline trials.
+D297 adds a user-directed `ground_step_forward_01` fixture on `de_dust2`, starting at (1456, 893, 36), yaw=0 and pitch=0 with explicitly zero velocity, and commands one 1000-ms forward movement without jump or duck.
+A C++ loader regression guards the exact initial pose and action contract; runtime, HUD overlay, movement physics and existing scenarios remain untouched.
+Automatic Explorer CI and user-run HLDS trace evidence are pending; step traversal capability is not yet established, and Stage B remains open.

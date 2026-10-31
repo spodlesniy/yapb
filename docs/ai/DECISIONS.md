@@ -3685,3 +3685,13 @@ Preserve the HUD's per-authorized-recipient pose values, formatting, refresh fre
 Add a Python source-contract regression to the existing Win32-sensitive include-order test suite, since automatic Build and Explorer CI do not compile the Windows x86 game DLL.
 Do not modify `yapb/yapb`, the pinned linkage submodule, movement physics, downhill scenario or HUD formatter.
 Require a fresh automatic CI run and manual user Windows x86 compilation to confirm the platform-specific repair.
+
+## D297 — Fixed-pose forward step trial
+
+Create `ground_step_forward_01.scenario` from the user's measured initial pose on `de_dust2`: (1456, 893, 36), yaw 0 degrees, pitch 0 degrees.
+Use a zero initial velocity, standing posture, unrestricted team, and no required equipment.
+Run exactly one `forward=1` action for 1000 commanded milliseconds with yaw and pitch unchanged and no strafe, jump, crouch, attack or use input.
+Set an explicit bounded action timeout of 1300 ms and scenario timeout of 2000 ms to match existing experiment conventions.
+Keep the fixture separate from prior slope experiments and do not modify Scenario Runner or physics.
+Add a scenario-loader regression checking the complete initial pose, velocity and command semantics.
+A `Completed` status only indicates scheduled command completion; step height, ground contact, obstacles, actual progress and any airborne segments must be verified from user-run HLDS traces before drawing a traversal conclusion.

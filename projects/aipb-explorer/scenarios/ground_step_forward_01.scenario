@@ -1,0 +1,32 @@
+# Place in addons/yapb/data/explorer/scenarios/ground_step_forward_01.scenario
+# D297: forward ground step experiment from a user-measured start pose.
+[scenario]
+version=aipb-scenario-v1
+name=ground_step_forward_01
+map=de_dust2
+timeout_ms=2000
+
+[bot]
+index=1
+x=1456
+y=893
+z=36
+yaw=0
+pitch=0
+vx=0
+vy=0
+vz=0
+crouching=0
+
+[action]
+duration_ms=1000
+timeout_ms=1300
+forward=1
+strafe=0
+yaw_delta=0
+pitch_delta=0
+jump=0
+duck=0
+attack=0
+attack2=0
+use=0

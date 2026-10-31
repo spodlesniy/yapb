@@ -406,3 +406,16 @@ It now shows, on separate lines for each authorized viewing player, the current 
 The coordinates are raw engine `origin` (not eye position), displayed with three decimal places, and yaw/pitch come from `v_angle` with two decimals.
 These values update every half-second even with no active scenario; use them to report start points for later scenario fixtures.
 The overlay does not read another player's pose or change Scenario Runner movement physics.
+
+## D297 — Forward step from a measured start pose
+
+The one-action `ground_step_forward_01.scenario` is stored under `projects/aipb-explorer/scenarios/` for installation in the game `explorer/scenarios` directory.
+It starts on `de_dust2` at `(1456, 893, 36)`, `yaw=0`, `pitch=0`, velocity zero, standing and either playable team, with a single 1000-ms forward command.
+After installing and preparing the bot, run:
+
+```text
+aipb scenario run ground_step_forward_01
+```
+
+Collect `result.csv`, `trace.csv` and `diagnostics.csv` for repeated HLDS trials to determine actual step traversal.
+The runner's `Completed` message alone does not establish that the step was climbed.
