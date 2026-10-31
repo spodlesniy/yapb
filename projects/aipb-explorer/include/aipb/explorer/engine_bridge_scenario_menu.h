@@ -90,9 +90,9 @@ struct ScenarioMenuTargetPose {
   float pitch {};
 };
 
-// Round live client coordinates and view angles before the engine adapter teleports.
+// Preserve the exact GoldSrc player origin and round only the view angles.
 // Do not change the output if the source pose is invalid.
-inline bool scenarioMenuRoundedPose(
+inline bool scenarioMenuPlayerTargetPose(
   double x,
   double y,
   double z,
@@ -109,9 +109,9 @@ inline bool scenarioMenuRoundedPose(
   }
 
   ScenarioMenuTargetPose next {};
-  next.position[0] = static_cast<float>(std::round(x));
-  next.position[1] = static_cast<float>(std::round(y));
-  next.position[2] = static_cast<float>(std::round(z));
+  next.position[0] = static_cast<float>(x);
+  next.position[1] = static_cast<float>(y);
+  next.position[2] = static_cast<float>(z);
   next.yaw = static_cast<float>(std::round(yaw));
   next.pitch = static_cast<float>(std::round(pitch));
   result = next;

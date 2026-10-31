@@ -8,6 +8,12 @@ The only changes in D304 are test fixtures, regression coverage and documentatio
 No autonomous movement, engine physics or Scenario Runner runtime is changed.
 The Stage A/T261-07 A01–A11 acceptance checks remain deliberately deferred; this fixture suite does not close Stage C or Stage B.
 
+## Move bot placement note (D305)
+
+The engine adapter now copies the initiating player's exact floating-point XYZ origin, not rounded whole-unit coordinates.
+It rounds only yaw and pitch to integer degrees and checks solid map/brush geometry while ignoring player and bot hulls in the occupancy probe.
+The destination can therefore overlap the invoking player or the bot's previous position; GoldSrc may still resolve overlapping actors after teleportation, so allow the bot to settle and verify the actual start recorded in the scenario result.
+
 ## Preparing each experiment
 
 1. Use a private `de_dust2` HLDS session and a living bot with AiPB index `1` on T or CT.

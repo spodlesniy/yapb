@@ -3779,3 +3779,13 @@ Treat duck input as a requested button state, never as proof of changed airborne
 Document safe user-directed geometry selection and repeated-run controls without inventing a safe obstacle coordinate or declaring an outcome in advance.
 Cover exact action programs, map identity, optional start pose and zero velocity with engine-neutral loader regressions.
 Keep runtime, physical movement, result formats, automatic navigation and the deferred Stage A/T261-07 safety gate unchanged.
+
+## D305 — Exact Move bot coordinates and actor-independent destination check
+
+The D302 integer rounding of player XYZ displaced the requested landing pose and created avoidable blocked-hull reports near geometry.
+Preserve raw GoldSrc `edict_t::v.origin` floating-point XYZ in the placement plan; retain integer rounding of yaw and pitch as previously requested.
+The placement hull probe must ignore the initiating player and the target bot, including when the bot overlaps the player or its previous position.
+Use GoldSrc `TraceIgnore::Monsters` combined with the moved bot as the explicit ignored entity rather than mutating either actor's solidity; this also ignores other player/monster actors, but retains world and solid brush collision checks.
+Reject genuinely blocked map geometry and invalid coordinates and keep existing authorization, busy-session and alive-bot checks.
+Record precise XYZ in the server log, add deterministic nonintegral-coordinate tests and retain existing overlay and scenario-run semantics.
+Stage C run evidence requires separate review and the deferred Stage A/T261-07 HLDS acceptance gate remains open.

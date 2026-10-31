@@ -51,16 +51,24 @@ int main() {
     check((scenarioMenuRootKeyMask(true) & (1u << 2)) == 0u);
 
     ScenarioMenuTargetPose moved {};
-    check(scenarioMenuRoundedPose(448.49, -2368.5, -91.51, -104.5, 7.5, moved));
-    check(moved.position[0] == 448.0f && moved.position[1] == -2369.0f);
-    check(moved.position[2] == -92.0f && moved.yaw == -105.0f);
+    check(scenarioMenuPlayerTargetPose(
+      448.125, -2368.5, -91.875, -104.5, 7.5, moved));
+    check(moved.position[0] == 448.125f && moved.position[1] == -2368.5f);
+    check(moved.position[2] == -91.875f && moved.yaw == -105.0f);
     check(moved.pitch == 8.0f);
-    check(!scenarioMenuRoundedPose(
+    check(scenarioMenuPlayerTargetPose(
+      448.49, 2368.49, -91.51, -104.1, 7.1, moved));
+    check(moved.position[0] == static_cast<float>(448.49)
+      && moved.position[1] == static_cast<float>(2368.49));
+    check(moved.position[2] == static_cast<float>(-91.51));
+    check(moved.yaw == -104.0f && moved.pitch == 7.0f);
+    check(!scenarioMenuPlayerTargetPose(
       std::numeric_limits<double>::quiet_NaN(), 0, 0, 0, 0, moved));
-    check(!scenarioMenuRoundedPose(20000, 0, 0, 0, 0, moved));
-    check(!scenarioMenuRoundedPose(0, 0, 0, 0,
+    check(!scenarioMenuPlayerTargetPose(20000, 0, 0, 0, 0, moved));
+    check(!scenarioMenuPlayerTargetPose(0, 0, 0, 0,
       std::numeric_limits<double>::infinity(), moved));
-    check(moved.position[0] == 448.0f && moved.yaw == -105.0f);
+    check(moved.position[0] == static_cast<float>(448.49)
+      && moved.yaw == -104.0f);
 
     // An open root must update on both start and completion, even with HUD off.
     check(!scenarioMenuNeedsRefresh(ScenarioMenuScreen::Closed, true, false));

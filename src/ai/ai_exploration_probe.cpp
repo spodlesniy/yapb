@@ -530,7 +530,7 @@ bool moveBotToPlayer(edict_t *player) {
    const auto &origin = player->v.origin;
    const auto &view = player->v.v_angle;
    aipb::explorer::scenario::ScenarioMenuTargetPose pose {};
-   if (!aipb::explorer::scenario::scenarioMenuRoundedPose(
+   if (!aipb::explorer::scenario::scenarioMenuPlayerTargetPose(
       origin.x, origin.y, origin.z, view.y, view.x, pose)) {
       game.print("AiPB: move bot rejected (InvalidPlayerPose).");
       return false;
@@ -538,8 +538,9 @@ bool moveBotToPlayer(edict_t *player) {
    const Vector target(pose.position[0], pose.position[1], pose.position[2]);
    TraceResult occupancy {};
    const auto hull = bot->pev->flags & FL_DUCKING ? head_hull : human_hull;
-   // Ignore the initiating player who necessarily occupies the destination.
-   game.testHull(target, target, TraceIgnore::None, hull, player, &occupancy);
+   // Ignore player/bot hulls, including the caller and the target bot.
+   // GoldSrc still tests solid map and brush geometry at the exact origin.
+   game.testHull(target, target, TraceIgnore::Monsters, hull, bot->ent(), &occupancy);
    if (occupancy.fStartSolid || occupancy.fAllSolid) {
       game.print("AiPB: move bot rejected (DestinationBlocked).");
       return false;
@@ -554,7 +555,7 @@ bool moveBotToPlayer(edict_t *player) {
    bot->pev->impulse = 0;
    bot->pev->flags &= ~FL_ONGROUND;
    bot->pev->groundentity = nullptr;
-   game.print("AiPB: bot #%d moved to (%.0f %.0f %.0f), yaw %.0f pitch %.0f.",
+   game.print("AiPB: bot #%d moved to (%.3f %.3f %.3f), yaw %.0f pitch %.0f.",
       kBotIndex, pose.position[0], pose.position[1], pose.position[2],
       pose.yaw, pose.pitch);
    return true;
