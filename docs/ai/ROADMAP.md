@@ -781,3 +781,8 @@ D300 does not change physics, runtime, or the provisional navigation graph; Stag
 D300 automatic Build CI run 41190212084 failed one of 180 training-tool tests: `test_initial_pose_and_speed` expected `InitialSpeedMismatch` but reused the frame with an earlier shifted X position, so the classifier correctly returned `UnexpectedStartPose`.
 D300.1 restores the pristine synthetic trace for the independent initial-speed test case and asserts its original X coordinate; only the regression fixture is fixed, while production classification and existing evidence remain unchanged.
 Automatic CI for D300.1 remains a gate before Stage B acceptance.
+D300.1 automatic Build CI passed at e62180d (run 41191282280), resolving the isolated training-tools fixture failure without production changes.
+D301 audits 32 user-supplied HLDS run bundles across eleven archives, verifies command-time and terminal/start-pose consistency, and records repeatable grounded acceleration/directional controls, three clean yaw-zero slope ascents, two slope descents, two four-step ascents, two airborne step descents, six blocked obstacle outcomes and two wall-deflection outcomes.
+The audit preserves two historical yaw-30 failures, three historical box-interfered incline trials and one active-braking outlier, rather than treating all successful scheduler completions as physical success.
+See `docs/ai/INDEPENDENT_AI_GROUND_MOVEMENT_REVIEW.md` for archive hashes, metrics, evidence classifications and outstanding gates.
+Stage B's bounded local experimental evidence is sufficient, but formal Stage B acceptance remains open because prerequisite Stage A/T261-07 HLDS safety checks A01–A11 are not fully accepted; no universal step-height limit or navigation permission is inferred.

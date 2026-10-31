@@ -416,3 +416,12 @@ It produces `Blocked`, `Deflected`, `Progress`, or `Inconclusive`, with explicit
 The diagnostics CSV is parsed for optional supporting stall counts and probe fractions without using diagnostic event presence as a physics verdict.
 Eight real HLDS trial bundles confirm six terminal stops and two continuing lateral deflections; this is evidence for those local directed trials only.
 Synthetic tests cover forward progress, ambiguity and fail-closed paths, and automatic CI remains a separate acceptance condition.
+
+## D301 — Evidence audit of Stage B and preserved Stage A prerequisite
+
+The reproducible read-only audit at `docs/ai/INDEPENDENT_AI_GROUND_MOVEMENT_REVIEW.md` covers 32 user-provided `de_dust2` run bundles from eleven ZIP archives and checks their start/end observations and commanded time.
+It identifies repeatable positive grounded ascent and descent of a ramp, four grounded upward steps, and separately two step descents with airborne falls, plus six repeated terminal obstacle blocks and two oblique wall deflections.
+The historical wrong-yaw slope trials and one divergent active-braking trial remain documented as limitations, not filtered out.
+The intended Stage B exit gate concerns local directed feasibility under tested controls rather than a universal height limit.
+Its experimental evidence is sufficient for the bounded conditions reviewed, but Stage B is not formally accepted while the Stage A/T261-07 HLDS safety acceptance matrix remains open.
+Future Stage C offline design may proceed, but unsupervised movement and automatic navigation permissions remain unauthorized by this evidence alone.

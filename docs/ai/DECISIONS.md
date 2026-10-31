@@ -3740,3 +3740,12 @@ The read-only classifier correctly checked the start pose before speed and retur
 Build the second case from a fresh `list(run.trace)`, modify only the initial VX value, and verify the original start X was preserved before asserting the speed validation reason.
 Leave `ground_obstacle_profile.py`, runtime, gameplay physics, scenario data and prior D300 classification behavior unchanged.
 Treat the new automatic Build CI as necessary independent confirmation.
+
+## D301 — Audit Stage B measurements without prematurely closing the prerequisite gate
+
+Review original user-supplied HLDS result/trace pairs and D300.1 green automatic CI before deciding whether Stage B can be closed.
+Save the audit in `docs/ai/INDEPENDENT_AI_GROUND_MOVEMENT_REVIEW.md` with archive SHA-256 provenance, 32 inspected run records, reproducible positive and negative movement examples, and explicit counterexamples and outliers.
+The evidence supports local `de_dust2` ground movement and blocked/deflected classification, while descending stairs includes airborne drops and must not be mislabeled continuous grounded walking.
+Retain the active-braking outlier and blocked historical yaw-30 slope trials rather than silently selecting only positive trajectories.
+Stage B's local experimental evidence exit conditions are supported but the formal stage acceptance remains pending because Stage A/T261-07's deferred A01–A11 HLDS lifecycle/negative-path acceptance is still open.
+Do not relax that prerequisite, invent a universal numerical step-height limit, change runtime or navigation permissions, or treat an automated CI pass as a substitute for supervised engine checks.
