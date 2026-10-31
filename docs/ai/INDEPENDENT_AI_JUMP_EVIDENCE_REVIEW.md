@@ -93,3 +93,14 @@ D308 keeps a deadline on the wait for the first callback, but re-anchors the act
 The re-anchor applies to every action and does not change applied frame duration, total scenario timeout, monotonic clock validation, timeout on later stalled frames, or terminal result recording.
 Unit tests cover the delayed 60-ms action transition, callback gaps, late engine frames and exact command-ms accounting.
 This fix needs fresh real-engine HLDS trials; the 21 historical D307 results remain unchanged and are not retrospectively relabeled.
+
+## D308 post-fix retest — user archive results__3.zip
+
+The separately uploaded `results__3.zip` contains eight independent HLDS runs, two each of `jump_standing_01`, `jump_forward_01`, `jump_crouch_01`, and `jump_box_plain_01`.
+All eight end with `Completed` (1500 simulated command ms) and a `live` end observation; no `ActionTimeout` occurs.
+Every trace shows grounded takeoff, subsequent airborne samples, a return-to-ground transition and a grounded terminal state.
+For standing and crouch-from-rest, the sampled apex is approximately +45 units, with return to ground after approximately 664–665 ms and about 0 net horizontal displacement.
+Immediate-forward jumps also reach approximately +45 units and land at roughly 664 ms, with about 20.2 units of total scenario displacement.
+Both box attempts land roughly +32 units above their initial Z, but measured box-top geometry and a demonstrated stable target footprint are not supplied; they remain physical landings rather than validated obstacle traversal.
+The eight successful terminal statuses are evidence the D308 short-action timeout fix works in this tested HLDS setup.
+Formal automatic CI for D308 failed from an isolated regression-test lifecycle bug and requires D308.1; the Stage A/T261-07 safety tests remain deferred.

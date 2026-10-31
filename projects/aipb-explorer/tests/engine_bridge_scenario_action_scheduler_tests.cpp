@@ -149,6 +149,7 @@ int main() {
       "second action retains exact accounting");
 
     // An action still times out when no callback arrives before its first frame.
+    check(scheduler.cancel(), "finish partial short-jump test session");
     check(scheduler.begin(jump, admitted(), 2000), "wait for first jump callback");
     check(scheduler.prepareFrame(2066, 10).ticket == 0, "missing first callback deadline");
     check(scheduler.status() == ActionScheduleStatus::ActionTimeout,

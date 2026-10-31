@@ -3825,3 +3825,11 @@ Apply this independently to the first and subsequent actions; retain the global 
 Cover real-world short jump timing with deterministic engine-neutral scheduler tests, as well as callback starvation and late frame failure cases.
 Do not change the D304 scenario files or D306/D307 physical evidence classification, and require a fresh user-run Windows x86/HLDS rerun for the seven earlier timeouts.
 Deferred Stage A/T261-07 acceptance remains open.
+
+## D308.1 — End the active short-jump test fixture before starting another run
+
+The D308 explorer CI failed in the action scheduler test at `wait for first jump callback`, not in a runtime assertion.
+The preceding test deliberately leaves the scheduler Running after advancing from a 60-ms first action to its second action; `begin` rejects starting any concurrent scenario by design.
+Explicitly cancel the partial test session before the next independent timeout experiment and retain the single-active-run contract.
+No scheduler implementation or live runtime behavior changes; new automatic Explorer CI on the corrective commit is required.
+The independently supplied eight post-D308 HLDS traces are all Completed with observed takeoff and stable landing; this does not close Stage C or deferred Stage A/T261-07 acceptance.
