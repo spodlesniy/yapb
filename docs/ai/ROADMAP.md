@@ -752,3 +752,7 @@ Two further user-run `ground_slope_forward_02` uphill repetitions at yaw 0 compl
 D296 adds the reverse `ground_slope_down_01` experiment with an independently initialized zero-velocity pose averaged from the two recent uphill endpoints (876.419, 2247.172, -0.968), yaw -180, and 2000 ms forward.
 D296 also enhances the existing AiPB menu-controlled HUD overlay with the current authorized recipient's own `origin` and `v_angle` yaw/pitch beneath scenario status, to allow manual start-pose selection for later step tests.
 Build/Explorer CI and user-run downhill traces remain pending; Stage B is not marked complete, and no autonomous movement or physics rules change.
+D296 automatic Build and Explorer CI passed at 77e622a, but a user-run Windows x86 DLL build failed in `src/ai/ai_menu.cpp`: `edict_t` does not provide `pev`.
+D296.1 corrects only the GoldSrc HUD adapter to read `player->v.origin` and `player->v.v_angle`, matching `edict_t::v` and existing `src/linkage.cpp` usage.
+An AI-only source-contract regression guards against reintroducing `player->pev` because regular Build/Explorer CI does not compile the Win32 DLL.
+HUD access control, scenario status, formatting, downhill fixture and physics remain unchanged; D296.1 requires automatic CI and a user-run Windows x86 compile to confirm this platform-specific fix.

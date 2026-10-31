@@ -143,6 +143,16 @@ class YapbFirstIncludeTests(unittest.TestCase):
         self.assertIn("session.ownsSelection(util.getClient(index).menu != Menu::None)", menu)
         self.assertIn("game.sendHudMessage(player, parameters, label.c_str());", menu)
 
+    def test_aipb_overlay_uses_edict_entvars(self) -> None:
+        # edict_t holds entvars_t as .v; .pev belongs to Bot, not edict_t.
+        # The game DLL does not compile in ordinary AI-only unit tests.
+        menu = (ROOT / "src" / "ai" / "ai_menu.cpp").read_text(encoding="utf-8")
+        self.assertIn("const auto &origin = player->v.origin;", menu)
+        self.assertIn("const auto &view = player->v.v_angle;", menu)
+        self.assertNotIn("player->pev", menu)
+        self.assertIn("scenarioMenuOverlayPoseText(", menu)
+        self.assertIn("if (!allowed(player))", menu)
+
     def test_aipb_menu_english_labels_and_live_availability(self) -> None:
         menu = (ROOT / "src" / "ai" / "ai_menu.cpp").read_text(encoding="utf-8")
         model = (ROOT / "projects" / "aipb-explorer" / "include" /

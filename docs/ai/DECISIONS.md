@@ -3674,3 +3674,14 @@ Do not change menu selection ownership or HUD broadcast authorization and do not
 Use three decimals for world-space coordinates and two for view angles so recorded poses can be copied into future .scenario fixtures.
 Keep the existing status line, toggle and 0.5-second refresh cadence, and add engine-independent formatting regression tests including invalid floating-point values.
 The remaining Stage B slope and step limits require user-run HLDS recordings; automatic Build/Explorer CI is mandatory before this step is accepted.
+
+## D296.1 — Correct raw GoldSrc edict access in overlay
+
+The D296 overlay adapter in `src/ai/ai_menu.cpp` used `player->pev->origin` and `player->pev->v_angle` on `edict_t *player`.
+Windows x86 MSVC reported C2039 because the pinned GoldSrc `edict_t` owns its `entvars_t` directly as member `v`; `pev` is the separate Bot wrapper's pointer to entity variables.
+The same correct raw-edict access pattern already exists in `src/linkage.cpp`.
+Replace the invalid pointer test and field accesses with `allowed(player)`, `player->v.origin` and `player->v.v_angle` respectively.
+Preserve the HUD's per-authorized-recipient pose values, formatting, refresh frequency and menu ownership.
+Add a Python source-contract regression to the existing Win32-sensitive include-order test suite, since automatic Build and Explorer CI do not compile the Windows x86 game DLL.
+Do not modify `yapb/yapb`, the pinned linkage submodule, movement physics, downhill scenario or HUD formatter.
+Require a fresh automatic CI run and manual user Windows x86 compilation to confirm the platform-specific repair.

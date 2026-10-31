@@ -366,11 +366,11 @@ void frame() {
    const auto scenarioName = ai::explore::currentScenarioName();
    for (int i = 0; i < kPlayers; ++i) {
       auto *player = game.playerOfIndex(i);
-      if (!allowed(player) || !player->pev) {
+      if (!allowed(player)) {
          continue;
       }
-      const auto &origin = player->pev->origin;
-      const auto &view = player->pev->v_angle;
+      const auto &origin = player->v.origin;
+      const auto &view = player->v.v_angle;
       const auto label = aipb::explorer::scenario::scenarioMenuOverlayPoseText(
          running, scenarioName, origin.x, origin.y, origin.z, view.y, view.x);
       game.sendHudMessage(player, parameters, label.c_str());

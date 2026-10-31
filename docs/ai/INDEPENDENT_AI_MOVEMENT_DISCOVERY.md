@@ -372,3 +372,10 @@ Extend the opt-in `aipb menu` overlay by retaining scenario status and placing t
 The HUD is refreshed periodically using live client entity values rather than a stored bot or scenario pose.
 This supports the user's subsequent identification of controlled step and obstacle test start locations without guessing positions.
 Do not infer validated movement capability from HUD coordinates alone.
+
+## D296.1 — GoldSrc overlay integration fix
+
+In the engine-specific `ai_menu.cpp`, access a human player's coordinates and view through `edict_t::v.origin` and `edict_t::v.v_angle`.
+The earlier `player->pev` access belonged to the `Bot` class, not the GoldSrc `edict_t`, and failed Windows x86 MSVC.
+The original D296 downhill scenario and engine-neutral overlay formatting stay unchanged.
+A source-contract test checks that the overlay adapter uses the raw GoldSrc fields; native Windows x86 build confirmation remains necessary because automated tests do not compile that DLL.
