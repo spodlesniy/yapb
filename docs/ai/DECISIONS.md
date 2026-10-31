@@ -3607,3 +3607,14 @@ Replace the exact-string assertion with parsing of the printed field and a bound
 Keep the existing output representation, measurement calculations, scenario fixture, runtime movement behavior and D290 diagnostics unchanged.
 The corrective test must still require the field to exist and remain numerically near zero.
 Require automatic Training tools tests to pass before accepting the step.
+
+## D294 — One scenario compares turns from low and high initial speeds
+
+Combine the two pending Stage B topics, turning while moving and the influence of different initial speeds, into one supervised `ground_turn_speed_01` experiment.
+At the familiar `de_dust2` pose, use a short zero-input hold, a forward +30-degree turn starting from rest, sustained straight acceleration, a same-duration opposite -30-degree turn starting at higher speed, and a final no-input coast.
+Both turn segments use 200 commanded ms and unit forward input; the contrast is observed speed at the beginning of each turn rather than a manually assigned mid-run velocity.
+The runner sets yaw before its frame pre-observation, so the analyzer must compare physical continuity across frames without incorrectly requiring yaw continuity at a phase boundary.
+Use trace observations to validate commanded yaw ramps, action timings, constant maxspeed, ground/stance, speed difference and physical displacement; inconclusive runs must not be reported as verified turns.
+The speed contrast is observational and the turns are at different locations and headings, so this is not a controlled causal estimate independent of geometry.
+Add scenario loader and offline profile tests and preserve existing runtime, physics, trace and diagnostic behavior.
+Completion requires automatic CI and user-run HLDS repetition; Stage B still requires verified step/slope and negative cases.

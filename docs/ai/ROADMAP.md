@@ -725,3 +725,7 @@ Automatic CI and user-run HLDS measurements remain necessary; Stage B is not com
 D293.1 addresses the sole D293 automated regression failure: Training tools Build run 41099905893 reported 1 failure in 162 Python tests because a CLI test expected exactly `release_heading_error_deg=0`, while the correct result was approximately -6.5e-15 degrees.
 The independent Explorer CI passed on the same D293 commit.
 The correction validates the CLI output numerically to within 1e-6 degrees without changing the profiler or runtime; automatic CI acceptance and user-run HLDS trials remain pending.
+D293.1 automatic Build CI passed at fa5462f, and the user reported two completed 1500-ms diagonal trials with comparable trajectories and normalized 250-unit/s horizontal speed.
+D294 combines turning and different entry speeds in one `ground_turn_speed_01` scenario: stationary hold, forward +30-degree low-speed turn, straight acceleration, forward -30-degree higher-speed turn and coast.
+A new read-only analyzer measures actual entry speed and movement for both turns, checks applied yaw progression and marks insufficient speed contrast Inconclusive; C++ loader and Python tests accompany the fixture.
+Automatic CI and repeated HLDS traces remain pending, while D290 diagnostics and the deferred D292 anomaly stay untouched.

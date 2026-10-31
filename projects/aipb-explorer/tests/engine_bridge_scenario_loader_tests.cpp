@@ -107,6 +107,20 @@ duration_ms=100
       && diagonal.actions[1].timeoutMs == 1300
       && diagonal.actions[1].forward == 0.0f
       && diagonal.actions[1].strafe == 0.0f);
+    Scenario turning {};
+    check(loadScenario(fixtureRoot, "ground_turn_speed_01", turning, detail)
+      == LoadStatus::Ok);
+    check(turning.map == "de_dust2" && turning.team == 0);
+    check(turning.equipment.specified.empty() && turning.actions.size() == 5);
+    check(checkScenarioPreflight(turning, "de_dust2", true, true, 2)
+      == PreflightStatus::Ok);
+    check(turning.actions[0].durationMs == 50 && turning.actions[0].forward == 0.0f);
+    check(turning.actions[1].durationMs == 200 && turning.actions[1].forward == 1.0f
+      && turning.actions[1].yawDelta == 30.0f);
+    check(turning.actions[2].durationMs == 300 && turning.actions[2].yawDelta == 0.0f);
+    check(turning.actions[3].durationMs == 200 && turning.actions[3].forward == 1.0f
+      && turning.actions[3].yawDelta == -30.0f);
+    check(turning.actions[4].durationMs == 500 && turning.actions[4].forward == 0.0f);
     Scenario braking {};
     check(loadScenario(fixtureRoot, "ground_active_brake_01", braking, detail)
       == LoadStatus::Ok);

@@ -321,3 +321,21 @@ Besides the earlier ground-motion metrics, diagonal mode reports forward/right d
 Invalid commands, changed speed cap, non-ground movement, nonzero initial speed and insufficient physical progress yield Inconclusive.
 Compare only equivalent starting pose, weapon speed cap and round conditions with D287 and D291.
 `Completed` does not establish success or collision-free traversability.
+
+## Two turns at different entry speeds in one scenario (D294)
+
+Install `ground_turn_speed_01.scenario` and execute `aipb scenario run ground_turn_speed_01` after buying on `de_dust2` with `yb_freeze_bots 1`.
+One run performs five phases: 50 ms stationary hold, 200 ms forward +30-degree turn from rest, 300 ms straight acceleration, 200 ms forward -30-degree turn at speed, and 500 ms no-input coast.
+The scenario starts from the established de_dust2 pose with zero velocity.
+Both turns use the same commanded 30-degree magnitude; their opposite signs avoid indefinitely accumulating heading changes.
+The first and second turns have different actual entry speeds, which must be verified from the trace rather than inferred from elapsed time.
+
+```sh
+python -m tools.aipb_training.ground_turn_speed_profile "<run_directory>" --heading-deg -105
+```
+
+The read-only analyzer validates the five commanded phases and actual per-frame yaw schedule, grounded motion, continuous observed physical state, stable speed cap and sufficient entry-speed contrast.
+It reports entry and exit horizontal speeds, displacement for each turn, final velocity direction relative to each exit yaw, and speed difference.
+`Inconclusive: SpeedContrastNotObserved` means the experiment cannot distinguish the two starting-speed conditions; `Completed` alone does not prove turning efficacy.
+A view-angle change is commanded, but actual turning curvature is measured from physical displacement and velocity.
+Real HLDS traces are required to confirm absence of geometry interference before accepting Stage B turn-speed evidence.

@@ -325,3 +325,12 @@ The diagonal analysis measures forward and right components, release and peak ho
 It rejects unreliable ground, speed cap, command, continuity, initial-speed or progress evidence as Inconclusive.
 No Scenario Runner, engine physics or D290 runtime change is included.
 Repeatable HLDS measurements and later Stage B speed, turn and obstacle experiments are still required.
+
+## D294 — Turning at two entry speeds in one run
+
+The `ground_turn_speed_01` scenario combines two Stage B experiment goals in a single bounded trace.
+From the established grounded start with zero velocity, it holds without controls for 50 ms, turns +30 degrees with forward input for 200 ms, accelerates straight for 300 ms, turns -30 degrees while moving forward for 200 ms, and coasts for 500 ms.
+The offline profile verifies the applied per-frame yaw progression and uses physical velocity at both turn entries to establish that their start speeds differ materially.
+Report turn-entry/exit velocities, displacement and velocity-direction mismatch; treat inconsistent commands, insufficient physical progress and insufficient speed contrast as inconclusive.
+This is not an independent geometry-controlled test of varying speed, since each turn occurs at a different location.
+The remaining bounded step/slope and negative-case checks still gate the next Movement Discovery stage.
