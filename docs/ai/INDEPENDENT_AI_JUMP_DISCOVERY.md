@@ -151,3 +151,17 @@ For measured target support rectangles, create one D309 target file per `(target
 These must be independently determined from actual supported surfaces, not derived from the manually assigned outcome or the observed landing coordinate.
 Without those measurements, labeled trials return `PendingGeometry`; incomplete physical traces return `Inconclusive` and the unobserved gap remains `Unlabeled`.
 `Agree` and `Disagree` are only issued when the geometry-based classifier returns a conclusive result.
+
+## D311 — BSP-assisted target CSV proposal
+
+After building the standalone `aipb-map` from `projects/aipb-map/`, extract a completed, verified jump run directory and point the tool at the matching **local** `de_dust2.bsp`:
+
+```sh
+python -m tools.aipb_training.scenario_jump_bsp_target --bsp /path/to/de_dust2.bsp --run /path/to/jump_box_crouch_01/<run-id> --map-tool /path/to/aipb-map --scenario jump_box_plain_01 --output box_plain_target.csv
+```
+
+The tool imports the BSP through the existing independent v30 importer, validates the source checksum, matches a horizontal static world/func_wall render component beneath the seed, and checks standing hull-1 collision support across a conservatively inset rectangle.
+It rejects absent, dynamic, nonconvex, overlapping, ambiguous or unsupported faces rather than inventing target geometry.
+The output contains origin support Z, not a guaranteed maximum physically climbable height; apex only bounds observed vertical origin travel and cannot establish crouch capability by itself.
+A box seed from a successful crouch jump may be used to generate the target for a plain-jump run of the same map and geometry, but any suggested target still requires independent inspection if BSP static collision is insufficient to represent gameplay.
+The source BSP is not bundled with this step, so live-map extraction remains unverified and cannot be called a measured automatic `TargetReached` decision yet.

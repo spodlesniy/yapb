@@ -3860,3 +3860,12 @@ Return PendingGeometry when a labeled run lacks measured target bounds, Agree or
 Never use the user's outcome label to fabricate a target rectangle, BSP obstacle height or physically confirmed success in the automated path.
 Add deterministic parser, agreement, disagreement, absence-of-geometry, archive integrity and CLI regressions without modifying GoldSrc runtime, scenario execution or D309 classification.
 Stage C and deferred T261-07 safety acceptance remain open.
+
+## D311 — Export candidate target geometry from imported BSP support
+
+Reuse the independent aipb-map GoldSrc v30 importer rather than parsing BSP in the game DLL.
+Accept a stable standing landing as a seed, verify the BSP/artifact SHA-256 and require an unambiguous static worldspawn or func_wall render support component with matching standing hull-1 collision occupancy across a conservative inset rectangle.
+Reject nonconvex, overlapping, too-small, moving or dynamically ambiguous geometry; do not treat a render triangle or a terminal pose alone as evidence of support.
+Export the existing D309 target CSV schema only when these conservative checks pass, without overwriting prior targets or taking human labels as geometric input.
+Write synthetic extraction, collision-negative, source-integrity and CLI tests; do not modify the legacy engine or D309/D310 classifiers.
+A real de_dust2 BSP was not available to run in the current workspace, so the step's publication does not establish actual box/ledge target bounds or resolve formal Stage C/T261-07 acceptance.
