@@ -75,6 +75,39 @@ class ExtractorTests(unittest.TestCase):
         with self.assertRaises(UnverifiedSurface):
             extract_surface_target(duplicate, landing())
 
+    def test_diagnostics_for_unsupported_brush_class(self):
+        source = model()
+        source["entities"][0]["type"] = "func_breakable"
+        with self.assertRaisesRegex(UnverifiedSurface, "nearby_nonstatic=\\['func_breakable'\\]"):
+            extract_surface_target(source, landing())
+
+    def test_diagnostics_for_player_center_overhanging_edge(self):
+        source = model(vertices=[[105, 180, 0], [155, 180, 0],
+                                 [155, 220, 0], [105, 220, 0]])
+        with self.assertRaisesRegex(UnverifiedSurface, "overhang=\\["):
+            extract_surface_target(source, landing())
+
+    def test_diagnostics_for_mismatched_bsp_floor(self):
+        source = model(vertices=[[105, 180, 8], [185, 180, 8],
+                                 [185, 220, 8], [105, 220, 8]])
+        with self.assertRaisesRegex(UnverifiedSurface, "dz=8.000"):
+            extract_surface_target(source, landing())
+
+    def test_diagnostics_for_rejected_collision_hull(self):
+        source = model()
+        source["partition_clipnodes"][0]["back"] = -1
+        with self.assertRaisesRegex(UnverifiedSurface, "hull_rejected"):
+            extract_surface_target(source, landing())
+
+    def test_diagnostics_for_multiple_static_models(self):
+        source = model()
+        source["meshes"].append({"id": "2", **{k: v for k, v in source["meshes"][0].items()
+                                              if k != "id"}})
+        source["partition_models"].append({"id": "2", "heads": [-1, 0, -1, -1]})
+        source["entities"].append({"type": "func_wall", "mesh_id": "2", "origin": [0, 0, 0]})
+        with self.assertRaisesRegex(UnverifiedSurface, "ambiguous overlapping static support"):
+            extract_surface_target(source, landing())
+
     def test_nonconvex_or_overlapping_support_rejected(self):
         overlapping = model(triangles=[[0, 1, 2], [0, 2, 3], [0, 1, 2]])
         with self.assertRaises(UnverifiedSurface):

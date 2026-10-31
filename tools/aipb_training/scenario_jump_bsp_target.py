@@ -167,8 +167,24 @@ def _component(triangles: list, seed: int) -> list:
     return sorted(seen)
 
 
+def _triangle_xy_distance(x: float, y: float, triangle: tuple) -> float:
+    """Distance from the player center to the projected render triangle."""
+    if _triangle_contains(x, y, triangle):
+        return 0.0
+    best = math.inf
+    for i in range(3):
+        a, b = triangle[i], triangle[(i + 1) % 3]
+        dx, dy = b[0] - a[0], b[1] - a[1]
+        length2 = dx * dx + dy * dy
+        if length2 <= 0:
+            continue
+        t = max(0.0, min(1.0, ((x - a[0]) * dx + (y - a[1]) * dy) / length2))
+        best = min(best, math.hypot(x - a[0] - t * dx, y - a[1] - t * dy))
+    return best
+
+
 def extract_surface_target(map_data: dict, landing: tuple[float, float, float]) -> SurfaceTarget:
-    """Return an inset convex support rectangle, or reject ambiguous BSP evidence."""
+    """Return an inset convex support rectangle, or diagnose why BSP cannot prove it."""
     x, y, origin_z = landing
     floor_z = origin_z - FOOT_OFFSET
     meshes = {str(m["id"]): m for m in map_data["meshes"]}
@@ -177,37 +193,77 @@ def extract_surface_target(map_data: dict, landing: tuple[float, float, float]) 
     nodes = map_data["partition_clipnodes"]
 
     candidates = []
+    unsupported = set()
+    overhang = set()
+    static_at_xy = 0
+    static_without_hull = set()
+    nearest = None
+    nearby_radius = 16.0  # GoldSrc standing hull XY half-width, for diagnostics only.
+
     for entity in map_data["entities"]:
-        if entity["type"] not in {"worldspawn", "func_wall"}:
-            continue
         mesh_id = entity.get("mesh_id")
         if mesh_id is None or str(mesh_id) not in meshes or str(mesh_id) not in models:
             continue
         mid = str(mesh_id)
+        name = entity["type"]
         mesh = meshes[mid]
         shift = tuple(float(v) for v in entity["origin"])
         vertices = [tuple(float(v[i]) + shift[i] for i in range(3))
                     for v in mesh["vertices"]]
         triangles = []
+        nearest_overhang = math.inf
         for face in mesh["triangles"]:
             if max(face) >= len(vertices) or min(face) < 0:
                 raise UnverifiedSurface("BSP render triangle references invalid vertex")
             points = tuple(vertices[i] for i in face)
-            if max(abs(p[2] - floor_z) for p in points) > Z_TOLERANCE:
+            z = sum(p[2] for p in points) / 3
+            if max(abs(p[2] - z) for p in points) > Z_TOLERANCE:
                 continue
             projected = tuple((p[0], p[1]) for p in points)
-            if _area(projected) > 0.001:
-                triangles.append(projected)
+            if _area(projected) <= 0.001:
+                continue
+            distance = _triangle_xy_distance(x, y, projected)
+            if distance <= nearby_radius:
+                dz = abs(z - floor_z)
+                if nearest is None or (dz, distance, name, mid) < nearest:
+                    nearest = (dz, distance, name, mid, z)
+            if abs(z - floor_z) > Z_TOLERANCE:
+                continue
+            if distance <= nearby_radius and name not in {"worldspawn", "func_wall"}:
+                unsupported.add(name)
+            if name not in {"worldspawn", "func_wall"}:
+                continue
+            triangles.append(projected)
+            if distance > 0 and distance <= nearby_radius:
+                nearest_overhang = min(nearest_overhang, distance)
+        if name not in {"worldspawn", "func_wall"}:
+            continue
         if len(triangles) > MAX_TRIANGLES:
             raise UnverifiedSurface("too many horizontal triangles")
         matching = [i for i, t in enumerate(triangles) if _triangle_contains(x, y, t)]
         if not matching:
+            if math.isfinite(nearest_overhang):
+                overhang.add((name, mid, round(nearest_overhang, 2)))
             continue
+        static_at_xy += 1
         if not _has_standing_support(x, y, origin_z, models[mid], planes, nodes, shift):
+            static_without_hull.add((name, mid))
             continue
         candidates.append((mid, triangles, matching[0], shift))
+
     if len(candidates) != 1:
-        raise UnverifiedSurface("no unique world/static brush support under landing")
+        context = (f"landing=({x:.3f},{y:.3f},{origin_z:.3f}), "
+                   f"expected BSP floor z={floor_z:.3f}; "
+                   f"static_xy={static_at_xy}, hull_rejected={sorted(static_without_hull)}, "
+                   f"nearby_nonstatic={sorted(unsupported)}, overhang={sorted(overhang)}")
+        if nearest is not None:
+            context += (f"; nearest horizontal face: class={nearest[2]}, model={nearest[3]}, "
+                        f"z={nearest[4]:.3f}, dz={nearest[0]:.3f}, xy_distance={nearest[1]:.3f}")
+        if not candidates:
+            raise UnverifiedSurface("no uniquely verified static support; " + context)
+        raise UnverifiedSurface(
+            "ambiguous overlapping static support models="
+            + str([item[0] for item in candidates]) + "; " + context)
 
     mid, triangles, seed, shift = candidates[0]
     indices = _component(triangles, seed)

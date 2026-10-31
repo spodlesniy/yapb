@@ -165,3 +165,11 @@ It rejects absent, dynamic, nonconvex, overlapping, ambiguous or unsupported fac
 The output contains origin support Z, not a guaranteed maximum physically climbable height; apex only bounds observed vertical origin travel and cannot establish crouch capability by itself.
 A box seed from a successful crouch jump may be used to generate the target for a plain-jump run of the same map and geometry, but any suggested target still requires independent inspection if BSP static collision is insufficient to represent gameplay.
 The source BSP is not bundled with this step, so live-map extraction remains unverified and cannot be called a measured automatic `TargetReached` decision yet.
+
+## D313 — Diagnosing missing BSP support
+
+If the BSP target exporter reports that no unique static surface was found, its error now includes the observed landing XYZ, expected standing-origin floor Z, the number of eligible surface XY matches, collision hull rejections, nearby unsupported brush classes, and projected horizontal overhangs or the closest horizontal BSP face.
+A `nearby_nonstatic=['func_breakable']` report indicates that a potentially destructible BSP brush is near the landing but does **not** authorize a fixed target; `overhang` indicates the player center may extend beyond the visible top although the hull can still touch it.
+An elevation difference `dz` warns about a different BSP revision, a wrong standing-origin assumption, or a mismatched face rather than proving any one of them.
+Run the existing command again unchanged after updating to D313 and retain the full diagnostic output for follow-up.
+Never force a target CSV from an ambiguous or unsupported surface; label comparison remains PendingGeometry until the physical support is established.

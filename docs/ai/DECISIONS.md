@@ -3878,3 +3878,12 @@ Apply the same script-only context to direct unit-test modules and non-entrypoin
 Add a subprocess regression that clears PYTHONPATH and runs the CLI help paths and representative test entrypoints from an unrelated working directory, plus syntax checking for package source files.
 The independent projects/aipb-map scripts and root package.py have no tools.aipb_training package imports and are not modified; preserve their existing specialized workflow.
 Do not alter navigation, engine, scenarios, training models or Stage A/T261-07 acceptance.
+
+## D313 — Make BSP target extraction failures actionable
+
+A user-run D311 extraction of `jump_box_crouch_01/20261031_210009_000` on `de_dust2` returned only `no unique world/static brush support under landing` despite a stable observed landing.
+The trace records a standing origin approximately `(-1179.684, 2525.669, 148.031)`; the expected render floor elevation under a 36-unit standing hull is approximately `112.031`.
+Differentiate no horizontal render face near the player, an unsupported BSP brush class such as `func_breakable`, a standing hull center slightly overhanging the visible top (within its 16-unit horizontal extent), static collision mismatching the renderer, and multiple overlapping static support models.
+Preserve the existing fail-closed target-export contract and deterministic source validation: a nearby breakable brush or collision-supported overhang is diagnostic evidence, not automatically accepted permanent target geometry.
+Add synthetic negative fixtures for each diagnostic branch without changing the runtime, map exporter, classifier, existing target CSV schema or deferred Stage A/T261-07 acceptance.
+The original BSP from the user-run game is not mounted here; rerunning on that exact BSP is required to isolate the real case and verify the proposed explanation.
