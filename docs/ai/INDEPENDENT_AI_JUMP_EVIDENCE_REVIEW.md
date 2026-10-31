@@ -84,3 +84,12 @@ The common boundary at 60 or 200 ms suggests an action-boundary issue worth exam
 
 Stage C is **not formally accepted**.
 Stage A/T261-07 A01–A11 remain deliberately deferred, and there is no permission for unsupervised navigation or automatic map-wide jump inference.
+
+## D308 — Short-action scheduler clock anchor
+
+The seven `ActionTimeout` attempts in the D307 archive consumed exactly the programmed first action (60 ms in six runs, 200 ms in one run), while `result.csv` showed no advance to the next action.
+The old `ActionScheduler` started an action wall timeout at scenario admission or the previous action's final callback; the first GoldSrc bot callback could arrive 15–31 ms later, consuming the small default 10% timeout margin even when the action's committed frames met the programmed duration.
+D308 keeps a deadline on the wait for the first callback, but re-anchors the action's execution deadline on its first prepared engine frame.
+The re-anchor applies to every action and does not change applied frame duration, total scenario timeout, monotonic clock validation, timeout on later stalled frames, or terminal result recording.
+Unit tests cover the delayed 60-ms action transition, callback gaps, late engine frames and exact command-ms accounting.
+This fix needs fresh real-engine HLDS trials; the 21 historical D307 results remain unchanged and are not retrospectively relabeled.

@@ -118,6 +118,13 @@ public:
       return {};
     }
 
+    // Waiting for the first callback still has a deadline, checked above.
+    // Once an action begins, its wall timeout starts at the first prepared
+    // engine frame, not at admission or the previous action's final callback.
+    if (actionMs_ == 0) {
+      actionStartedAtMs_ = nowMs;
+    }
+
     ++nextTicket_;
     pendingFrame_ = { action, actionIndex_, milliseconds, frames_, nextTicket_ };
     pendingAtMs_ = nowMs;

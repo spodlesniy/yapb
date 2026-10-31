@@ -116,6 +116,71 @@ int main() {
     check(scheduler.commitFrame(second, 200), "global exact deadline");
     check(scheduler.status() == ActionScheduleStatus::Completed, "exact deadline completes");
 
+    // A short jump action must not inherit the callback delay from admission.
+    // The default 60-ms action allows only 6 ms of wall-clock headroom.
+    auto jump = makeScenario(60, 1440);
+    jump.timeoutMs = 2500;
+    jump.actions[0].timeoutMs = 66;
+    jump.actions[1].timeoutMs = 1584;
+    check(scheduler.begin(jump, admitted(), 1000), "short jump start");
+    first = scheduler.prepareFrame(1017, 1);
+    check(first.ticket != 0 && first.milliseconds == 1, "delayed first jump frame");
+    check(scheduler.commitFrame(first, 1018), "first jump frame committed");
+    auto jumpPart = scheduler.prepareFrame(1030, 15);
+    check(jumpPart.ticket != 0 && jumpPart.actionIndex == 0, "short action progresses");
+    check(scheduler.commitFrame(jumpPart, 1031), "short action partial committed");
+    jumpPart = scheduler.prepareFrame(1045, 15);
+    check(scheduler.commitFrame(jumpPart, 1046), "second jump slice");
+    jumpPart = scheduler.prepareFrame(1060, 15);
+    check(scheduler.commitFrame(jumpPart, 1061), "third jump slice");
+    jumpPart = scheduler.prepareFrame(1077, 255);
+    check(jumpPart.milliseconds == 14 && jumpPart.actionIndex == 0,
+      "last jump slice clamped to duration");
+    check(scheduler.commitFrame(jumpPart, 1078), "short action boundary committed");
+    check(scheduler.running() && scheduler.actionIndex() == 1
+      && scheduler.totalMilliseconds() == 60, "short action advances without timeout");
+
+    // The next action also starts at its first real engine frame.
+    jumpPart = scheduler.prepareFrame(1095, 20);
+    check(jumpPart.actionIndex == 1 && jumpPart.milliseconds == 20,
+      "second action starts after callback gap");
+    check(scheduler.commitFrame(jumpPart, 1096), "second action first commit");
+    check(scheduler.totalMilliseconds() == 80 && scheduler.running(),
+      "second action retains exact accounting");
+
+    // An action still times out when no callback arrives before its first frame.
+    check(scheduler.begin(jump, admitted(), 2000), "wait for first jump callback");
+    check(scheduler.prepareFrame(2066, 10).ticket == 0, "missing first callback deadline");
+    check(scheduler.status() == ActionScheduleStatus::ActionTimeout,
+      "first callback remains bounded");
+
+    // A callback gap after the preceding action is also bounded.
+    check(scheduler.begin(makeScenario(10, 60), admitted(), 3000),
+      "next action wait start");
+    first = scheduler.prepareFrame(3000, 10);
+    check(scheduler.commitFrame(first, 3000) && scheduler.actionIndex() == 1,
+      "first action completes");
+    check(scheduler.prepareFrame(3260, 10).ticket == 0,
+      "missing callback for next action");
+    check(scheduler.status() == ActionScheduleStatus::ActionTimeout,
+      "next action waits only until its wall deadline");
+
+    // After the action begins, a stalled or late engine frame still times out.
+    check(scheduler.begin(jump, admitted(), 4000), "started action deadline");
+    first = scheduler.prepareFrame(4015, 1);
+    check(scheduler.commitFrame(first, 4016), "started action first frame");
+    check(scheduler.prepareFrame(4081, 10).ticket == 0,
+      "started action timeout unaffected by admission anchoring");
+    check(scheduler.status() == ActionScheduleStatus::ActionTimeout,
+      "started action deadline retained");
+
+    // An applied late frame is still counted and can terminally time out.
+    check(scheduler.begin(jump, admitted(), 5000), "late jump frame");
+    first = scheduler.prepareFrame(5015, 10);
+    check(scheduler.commitFrame(first, 5082), "late jump frame committed");
+    check(scheduler.status() == ActionScheduleStatus::ActionTimeout
+      && scheduler.totalMilliseconds() == 10, "late frame still fails");
+
     // Timeout is measured in wall-clock ms even without any simulated progress.
     check(scheduler.begin(makeScenario(), admitted(), 0), "wall timeout start");
     check(scheduler.prepareFrame(321, 10).milliseconds == 0, "first action timed out");

@@ -3816,3 +3816,12 @@ Document scoped run-up and airborne-range measurements, including the clear dist
 Preserve paired box plain/crouch observations as unconfirmed geometry hypotheses until target surfaces and collision conditions are measured independently.
 Do not claim the cause of 60-ms or 200-ms action-boundary timeouts without inspecting scheduler behavior; their repair and retest belong to a separate named development step.
 This documentation-only step changes no code, tests, scenario behavior, navigation model or deferred Stage A/T261-07 acceptance gate.
+
+## D308 — Anchor running action deadlines to first applied callback
+
+The D307 seven ActionTimeout runs all finished their first configured control duration but ended before the next action; diagnostic timestamps show an initial callback latency that consumes the default 10% wall-clock margin.
+Retain the wall-clock deadline while an action is waiting to start, but after that admission check anchor the active action timer at the first prepared GoldSrc engine frame for that action.
+Apply this independently to the first and subsequent actions; retain the global scenario deadline, continuous clock validation, command-ms frame accounting, strict late-frame timeout and all other lifecycle guards.
+Cover real-world short jump timing with deterministic engine-neutral scheduler tests, as well as callback starvation and late frame failure cases.
+Do not change the D304 scenario files or D306/D307 physical evidence classification, and require a fresh user-run Windows x86/HLDS rerun for the seven earlier timeouts.
+Deferred Stage A/T261-07 acceptance remains open.
