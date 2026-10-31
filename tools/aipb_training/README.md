@@ -377,3 +377,19 @@ python -m tools.aipb_training.ground_slope_forward_profile "<run_directory>" --s
 The same read-only tool accepts both the historical four-action profile and the corrected single-action profile and distinguishes them by scenario name.
 It reports actual grounded elevation and displacement, and returns Inconclusive for unexpected actions, non-ground movement, wrong yaw, nonzero entry speed or incomplete trace.
 Run the corrected scenario in HLDS after normal buying and verify the starting position and whether a box still interferes before accepting any slope capability.
+
+## D295.2 — Verified straight slope heading
+
+The user changed `ground_slope_forward_02.scenario` to yaw=0 at commit `bf7b7cc` after real HLDS tests.
+Two 2000-ms trials with yaw=30 ran into a wall/corner and stayed at Z=-92; one trial with yaw=0 stayed grounded and climbed from Z=-92 to approximately -0.958 (gain ~91.04 units).
+All three completed their movement commands; `Completed` alone does not mean the ramp was traversed.
+The single-action test still starts at (415.624, 2247.172, -92) with zero velocity and drives forward for 2000 ms.
+Use the new default analysis command:
+
+```sh
+python -m tools.aipb_training.ground_slope_forward_profile "<run_directory>" --scenario ground_slope_forward_02
+```
+
+The read-only profiler now defaults to heading 0 degrees for the direct scenario, while keeping -105 degrees for historical `ground_slope_forward_01` data.
+Use explicit `--heading-deg 30` only when analyzing historical yaw-30 attempts; a mismatch with a yaw-0 trace is Inconclusive.
+The grounded yaw-0 ascent is one positive result; repeat the test to confirm reproducibility before declaring the slope accepted.

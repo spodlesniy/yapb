@@ -742,3 +742,8 @@ The end of the reproduced ground_forward_02 actions was (415.637/415.618/415.617
 D295.1 adds a corrected single-action `ground_slope_forward_02` starting directly at rounded observed endpoint (415.624, 2247.172, -92), yaw +30 (left 90 degrees relative to the former endpoint), and zero initial velocity; it commands only 2000 ms forward.
 The existing historical four-action scenario is retained, and the read-only profiler gains a separate verified single-action mode.
 Automatic CI and repeated user-run HLDS acceptance remain pending; ground slope/step capability is not yet accepted.
+D295.2 updates the direct incline validation contract after user commit `bf7b7cc` changed the slope scenario heading to yaw=0.
+In user-run evidence, two yaw-30 attempts ran into a wall without height gain; one yaw-0 attempt rose about 91.04 units while grounded.
+Explorer CI run 41171877016 failed only `aipb_explorer_scenario_loader` on GCC, Clang and MSVC due to its old yaw=30 assertion.
+D295.2 fixes loader and Python fixtures, sets scenario-aware offline heading defaults, and updates documentation without changing runtime or physics.
+The Stage B slope gate remains open pending green CI and repeat successful yaw-0 HLDS ascents.

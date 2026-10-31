@@ -353,3 +353,10 @@ For a cleaner slope test, `ground_slope_forward_02` starts directly at that meas
 The older D295 route remains for provenance rather than being overwritten.
 A separate offline validation path checks the new one-action trace, ground contact, yaw, entry speed, height gain and movement, and never infers traversal success from Completed alone.
 Independent HLDS repetition without box interference is still required for Stage B acceptance.
+
+## D295.2 — Correct measured slope heading
+
+On `de_dust2`, the user found that the direct incline trial `ground_slope_forward_02` requires yaw=0, not the previously inferred yaw=30; the committed change is `bf7b7cc`.
+Two 30-degree attempts made no upward progress due to a wall/corner, whereas one 0-degree attempt remained grounded and gained approximately 91.04 units of elevation.
+The D295.2 loader and offline regression fixtures follow yaw=0 and the profiler's scenario-based default reflects this, while historical `ground_slope_forward_01` interpretation is unchanged.
+One successful run is preliminary positive evidence; repeated yaw-0 runs and automatic CI are required before Stage B slope acceptance.

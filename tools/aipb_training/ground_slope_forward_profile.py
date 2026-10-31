@@ -42,12 +42,15 @@ def measure_slope_forward(
     run: Bundle,
     scenario: str = "ground_slope_forward_01",
     map_name: str = "de_dust2",
-    start_yaw: float = -105.0,
+    start_yaw: float | None = None,
     durations: tuple[int, ...] = DEFAULT_DURATIONS,
     *,
     min_rise: float = 4.0,
 ) -> SlopeProfile:
     """Record grounded height changes without inferring slope geometry from Z alone."""
+    if start_yaw is None:
+        start_yaw = 0.0 if scenario == "ground_slope_forward_02" else -105.0
+
     if scenario == "ground_slope_forward_02":
         return _measure_direct_slope(run, map_name, start_yaw, min_rise)
 
@@ -275,7 +278,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("run", type=Path, help="Saved result.csv and trace.csv directory")
     parser.add_argument("--scenario", default="ground_slope_forward_01")
     parser.add_argument("--map", dest="map_name", default="de_dust2")
-    parser.add_argument("--heading-deg", type=float, default=-105.0)
+    parser.add_argument("--heading-deg", type=float, default=None)
     parser.add_argument("--min-rise", type=float, default=4.0)
     args = parser.parse_args(argv)
     try:

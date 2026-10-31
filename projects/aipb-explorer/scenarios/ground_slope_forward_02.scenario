@@ -1,5 +1,5 @@
 # Place in addons/yapb/data/explorer/scenarios/ground_slope_forward_02.scenario
-# D295.1: start at observed ground_forward_02 endpoint, facing 90 degrees left.
+# D295.2: measured uphill heading yaw=0, forward 2000 ms from the fixed endpoint.
 [scenario]
 version=aipb-scenario-v1
 name=ground_slope_forward_02

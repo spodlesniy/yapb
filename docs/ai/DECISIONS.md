@@ -3650,3 +3650,12 @@ Add `ground_slope_forward_02` with one 2000-ms forward action, static measured s
 Extend the read-only profiler for this distinct single-action contract and add loader/trace/CLI regressions; do not change runtime, physics, collisions, D290 diagnostics or the deferred D292 issue.
 The three observed endpoints differ slightly, so the start position is a rounded representative measured pose, not an exact universal final point.
 Stage B slope success still requires user-run repeats that independently verify unimpeded grounded progress.
+
+## D295.2 — Align direct-slope test contracts with observed yaw
+
+The user's published `bf7b7cc` edit set the direct slope scenario's start yaw to 0 after two yaw-30 HLDS trials hit a wall without gaining elevation and a third yaw-0 trial climbed approximately 91.04 units while grounded.
+Explorer run `41171877016` failed only the scenario-loader test on GCC, Clang and MSVC because the test expected the previous yaw=30.
+The direct-slope loader assertion and Python synthetic trace now use the actual yaw=0 scenario and retain an explicit negative test for mismatched yaw=30.
+The offline analyzer selects 0 degrees when the current direct scenario is requested without a heading override and retains the historical -105-degree default for the original four-action experiment.
+Do not rewrite the user's yaw correction, historical scenario, movement runtime or physics.
+CI plus repeat grounded yaw-0 attempts remain the acceptance gates.

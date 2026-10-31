@@ -151,7 +151,7 @@ duration_ms=100
       == PreflightStatus::Ok);
     check(slopeDirect.position[0] > 415.62 && slopeDirect.position[0] < 415.63);
     check(slopeDirect.position[1] > 2247.17 && slopeDirect.position[1] < 2247.18);
-    check(slopeDirect.position[2] == -92 && slopeDirect.yaw == 30.0f);
+    check(slopeDirect.position[2] == -92 && slopeDirect.yaw == 0.0f);
     check(slopeDirect.velocity[0] == 0.0f && slopeDirect.velocity[1] == 0.0f
       && slopeDirect.velocity[2] == 0.0f);
     check(slopeDirect.actions[0].durationMs == 2000

@@ -45,15 +45,23 @@ def trial(*, rise=True):
 
 
 def direct_trial(*, rise=True):
-    # Keep the single 2000-ms movement segment of the historical fixture.
-    original = trial(rise=rise)
-    movement = tuple(replace(frame, index=index, action=0)
-                     for index, frame in enumerate(original.trace)
-                     if frame.action == 3)
-    return replace(
-        original, name="ground_slope_forward_02",
-        frames=len(movement), command_ms=2000,
-        start=movement[0].before, end=movement[-1].after, trace=movement,
+    # The current direct fixture starts stationary, facing world +X.
+    start = Pose(415.624, 2247.172, -92, 0, 0, 0, 0, 0, 1, 0)
+    position = start
+    frames = []
+    for index in range(200):
+        after = replace(
+            position, x=position.x + 2.0,
+            z=position.z + (0.1 if rise else 0.0),
+            vx=250,
+        )
+        frames.append(Frame(index, 0, 10, 250, 0, 250, 0, 0, 0, 0, position, after))
+        position = after
+
+    return Bundle(
+        "ground_slope_forward_02", "de_dust2", 1, 2, 1,
+        "Completed", "finished", len(frames), 2000, "live",
+        start, position, tuple(frames),
     )
 
 
@@ -97,32 +105,36 @@ class SlopeProfileTests(unittest.TestCase):
 
     def test_direct_slope_measures_only_uphill_action(self):
         run = direct_trial()
-        result = measure_slope_forward(run, scenario="ground_slope_forward_02",
-                                       start_yaw=30)
+        result = measure_slope_forward(run, scenario="ground_slope_forward_02")
         self.assertEqual((result.outcome, result.reason),
                          ("Measured", "HeightGainObserved"))
         self.assertEqual(result.start_speed, 0)
         self.assertAlmostEqual(result.approach_x, result.slope_start_x)
         self.assertAlmostEqual(result.max_height_gain, 20)
         self.assertAlmostEqual(result.end_height_delta, 20)
-        self.assertGreater(result.forward_distance, 1)
+        self.assertAlmostEqual(result.forward_distance, 400)
+        self.assertAlmostEqual(result.horizontal_distance, 400)
+        self.assertAlmostEqual(result.slope_start_y, 2247.172)
         self.assertIsNotNone(result.first_height_gain_ms)
 
     def test_direct_slope_flat_and_failure_contract(self):
         run = direct_trial(rise=False)
-        profile = measure_slope_forward(run, scenario="ground_slope_forward_02",
-                                        start_yaw=30)
+        profile = measure_slope_forward(run, scenario="ground_slope_forward_02")
         self.assertEqual((profile.outcome, profile.reason), ("Measured", "NoHeightGain"))
         self.assertIsNone(profile.first_height_gain_ms)
 
         def inspect(case):
-            return measure_slope_forward(case, scenario="ground_slope_forward_02",
-                                         start_yaw=30).reason
+            return measure_slope_forward(case, scenario="ground_slope_forward_02").reason
 
         self.assertEqual(inspect(replace(run, command_ms=1999)), "DurationMismatch")
         self.assertEqual(inspect(replace(run, status="Cancelled")), "IncompleteRun")
+        self.assertEqual(
+            measure_slope_forward(run, scenario="ground_slope_forward_02",
+                                  start_yaw=30).reason,
+            "UnexpectedYaw",
+        )
         changed = list(run.trace)
-        changed[1] = replace(changed[1], yaw=45)
+        changed[1] = replace(changed[1], yaw=30)
         self.assertEqual(inspect(replace(run, trace=tuple(changed))), "UnexpectedYaw")
         changed = list(run.trace)
         changed[-1] = replace(changed[-1], forward=0)
@@ -137,11 +149,18 @@ class SlopeProfileTests(unittest.TestCase):
         with patch("tools.aipb_training.ground_slope_forward_profile.load_bundle",
                    return_value=direct_trial()):
             with redirect_stdout(io.StringIO()) as output:
-                status = main(["unused", "--scenario", "ground_slope_forward_02",
-                               "--heading-deg", "30"])
+                status = main(["unused", "--scenario", "ground_slope_forward_02"])
         self.assertEqual(status, 0)
         self.assertIn("Measured: HeightGainObserved", output.getvalue())
         self.assertIn("start_speed=0", output.getvalue())
+
+        with patch("tools.aipb_training.ground_slope_forward_profile.load_bundle",
+                   return_value=direct_trial()):
+            with redirect_stdout(io.StringIO()) as rejected:
+                status = main(["unused", "--scenario", "ground_slope_forward_02",
+                               "--heading-deg", "30"])
+        self.assertEqual(status, 3)
+        self.assertIn("Inconclusive: UnexpectedYaw", rejected.getvalue())
 
     def test_cli_and_invalid_bundle(self):
         with patch("tools.aipb_training.ground_slope_forward_profile.load_bundle",
