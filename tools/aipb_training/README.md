@@ -443,3 +443,20 @@ The initial origin/yaw pairs are (-117, 2117.3, -92)/-90, (231, 2408, -92)/90, (
 After installing the files into the game's `explorer/scenarios` directory and preparing a bot, run each via `aipb scenario run <name>`, ideally at least twice.
 Collect `result.csv`, `trace.csv` and `diagnostics.csv` for each scenario and compare commanded heading with actual longitudinal and lateral motion, ground contact, and collision symptoms.
 The names describe intended obstacles; scheduler `Completed` is not a definitive judgment of progress, blockage or sliding.
+
+## D300 — Explainable obstacle profiling
+
+Analyze a saved D299 result bundle from its directory using:
+
+```sh
+python -m tools.aipb_training.ground_obstacle_profile "<run_directory>"
+```
+
+The tool reads and validates `result.csv`, `trace.csv` and `diagnostics.csv` without writing to the game or changing its physics.
+It requires a completed, live 1000-ms trial with the expected start pose and forward-only standing ground movement.
+It projects movement onto the commanded yaw and its lateral axis, reporting `forward_distance`, `lateral_distance`, `tail_forward`, `tail_lateral`, `end_speed`, `stop_ms`, `diagnostic_stalls` and `diagnostic_direct_hits`.
+A terminal 200-ms stillness after initial forward approach means `Blocked: TerminalStall`; substantial ongoing lateral drift means `Deflected: SustainedLateralMotion`; continued forward motion without large sideways drift means `Progress: SustainedForwardMotion`.
+Unexpected conditions produce `Inconclusive` with a reason; invalid or malformed bundle data produce `InvalidEvidence`.
+Exit code 0 indicates a classified valid result, 3 indicates inconclusive motion, and 2 indicates invalid input files.
+The eight D299 HLDS trials yielded six Blocked cases and two Deflected cases; no positive `Progress` was demonstrated by these obstacle trials.
+These are evidence labels for bounded local motions, not universal predictions of route feasibility.

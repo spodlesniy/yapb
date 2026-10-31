@@ -406,3 +406,13 @@ Interpret observed progress, blockage, deflection and uncertainty from repeated 
 A physical drop with airborne frames remains distinct from continuous grounded traversal, as shown in the preceding step-down experiment.
 Future tests of locally impassable raised edges or steps belong to the obstacle/blocked-movement evidence set when suitable geometry is available; a universal numerical step-height limit is not a Stage B exit requirement.
 Continue to require repeatable positive and negative outcomes, independent start/end observation and actual movement diagnostics before closing Stage B.
+
+## D300 — Conservative obstacle evidence from saved trials
+
+Run the new offline `ground_obstacle_profile` on four bounded 1000-ms scenario types from D299.
+Compare actual forward and lateral progress with commanded yaw, and inspect the final 200 ms to distinguish terminal stops from sustained wall sliding.
+The tool refuses to classify untrusted starts, mismatched commands, non-ground samples, observation discontinuity or incomplete execution as successful or blocked.
+It produces `Blocked`, `Deflected`, `Progress`, or `Inconclusive`, with explicit reasons and recorded metrics.
+The diagnostics CSV is parsed for optional supporting stall counts and probe fractions without using diagnostic event presence as a physics verdict.
+Eight real HLDS trial bundles confirm six terminal stops and two continuing lateral deflections; this is evidence for those local directed trials only.
+Synthetic tests cover forward progress, ambiguity and fail-closed paths, and automatic CI remains a separate acceptance condition.

@@ -3718,3 +3718,17 @@ The scenario names express test intent only; do not assert blockage, wall slidin
 For acceptance, examine per-frame commanded direction, longitudinal displacement, lateral drift, speed, ground/airborne state and actual collision/probe diagnostics across repeated trials.
 Treat a stopped or deflected movement as a local directed observation, not a universal geometry threshold or guarantee of impassability from all headings.
 Do not change runtime movement, collision rules or the evidence interpretation system in this scenario-preparation step.
+
+## D300 — Read-only local obstacle classifier
+
+Provide an offline profiler `tools/aipb_training/ground_obstacle_profile.py` for the four D299 `de_dust2` scenarios, with deterministic classification based on actual motion rather than scenario-name labels or scheduler `Completed`.
+Reject wrong map/start pose/yaw/pitch, unexpected initial speed, incomplete/non-live status, incomplete frame traces, discontinuities, non-ground or crouched motion, elevation changes, abnormal command inputs, speed-cap changes and oversized frame durations as `Inconclusive`.
+Project XY displacement into the declared forward heading and lateral axis; measure full-run totals, the last 200 ms of motion, terminal speed and the onset of the final stationary suffix.
+Report `Blocked: TerminalStall` when at least 15 units of forward approach precede a terminal 200-ms window with at most 1 unit longitudinal and lateral movement and end speed at most 5 units/s.
+Report `Deflected: SustainedLateralMotion` when forward progress is at least 20 units, final speed at least 20 units/s, absolute net and terminal-window lateral displacements at least 8 units, and both lateral displacements agree in sign.
+Report `Progress: SustainedForwardMotion` for at least 20 units of net forward movement, at least 8 units in the final window, final speed at least 20 units/s and less than 8 units absolute lateral movement.
+All other valid motions remain `Inconclusive: AmbiguousMovement` rather than being coerced into blocked or passable.
+Validate the bounded `diagnostics.csv` schema and report observed stall/zero-fraction contact counts independently; never infer collisions from command completion or scenario name.
+The user's eight real D299 traces produce six `Blocked` and two `Deflected` classifications, without a fabricated positive `Progress` record.
+Add deterministic synthetic regression cases for all four outcomes and malformed/noncompliant evidence, preserving old scenario contracts and history.
+This is local directed movement evidence under the tested conditions, not a universal wall/step limit or a navigation permission grant.
