@@ -69,3 +69,32 @@ Do not infer a global jump height or distance from any one location.
 A first useful Stage C evidence set is two runs for the standing baseline, run-up-speed contrast, crouch contrast, one successful or failed box comparison and one safe gap attempt, each with explicit initial state and measured outcome.
 A later step can add a read-only jump trajectory analyzer and synthetic success/failure tests using these fixture families.
 Formal Stage C acceptance additionally requires repeated positive and negative measurements and the deferred Stage A safety gates.
+
+## D306 — Offline jump trajectory analysis
+
+The read-only CLI analyzes one versioned Scenario Runner bundle without a new DLL:
+
+~~~sh
+python -m tools.aipb_training.scenario_jump_profile addons/yapb/data/explorer/scenarios/results/jump_standing_01/<run-directory>
+~~~
+
+It accepts the nine D304 jump scenarios on `de_dust2` and reuses the strict v1 result/trace bundle parser.
+It verifies the actual action/button timeline, bot identity, grounded and stationary start, frame sampling, physical continuity, completed program and terminal observation before reporting a stable landing.
+Only committed engine frames count as physical evidence; uncommitted or incomplete runs cannot be labeled successful.
+
+`Landed / ObservedStableLanding` requires an airborne transition, a subsequent landing and at least 40 ms of additional observed grounded state.
+`NoTakeoff / NoAirborneTransition` means a complete jump attempt never left the ground.
+`GroundedControl / StableWithoutJump` means a completed neutral control remained near the start position.
+`Inconclusive` covers ActionTimeout, unobserved landing, premature fall, unexpected commands, state discontinuities, coarse frames and unstable contact.
+Exit codes: 0 for `Landed` or `GroundedControl`, 1 for `NoTakeoff`, 2 for invalid evidence and 3 for `Inconclusive`.
+
+Reported measures: sampled takeoff and landing times, observed flight duration, takeoff XY speed, greatest observed origin rise, total horizontal displacement, landing elevation and physical crouch state.
+Transition times are frame-boundary observations, not precise instants.
+For interrupted runs the observed peak is only a lower bound and absent landing data remain unknown.
+A crouch can change hull/origin geometry; origin-height gain is not head clearance.
+`Landed` is not proof of successful box, ledge or gap traversal without an independently specified target and landing geometry.
+
+The 31 October `results__2.zip` archive contains **21 runs: 14 Completed and 7 ActionTimeout**.
+Six early ActionTimeout records ended after the initial 60-ms jump action (standing, immediate-forward, crouch pairs); another timed out during a box approach.
+These interrupted traces must not be counted as completed physical jump results.
+D306 does not fix the scheduler timeout and does not close deferred Stage A/T261-07 gates or Stage C.

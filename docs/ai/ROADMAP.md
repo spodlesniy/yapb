@@ -795,3 +795,6 @@ All inherit current bot XYZ/yaw/pitch, require grounded standing entry, and expl
 D304 publication does not close the deferred Stage A/T261-07 A01–A11 gate or constitute Stage C physical acceptance; CI and user-run jump traces are outstanding.
 D305 corrects the supervised Move bot placement adapter: retain exact live player XYZ, continue rounding view yaw/pitch, and use the GoldSrc hull trace ignore-monsters mode plus the moved bot as ignore entity so neither the administrator player nor the target bot blocks the destination, while retaining world/brush collision checks.
 The change adds source-neutral precision regressions; manual Windows x86/HLDS validation remains necessary and no pending Stage C evidence or deferred T261-07 safety gate is promoted to accepted.
+D306 provides offline read-only Stage C jump trajectory profiling for nine D304 fixtures, validating command timing, frame continuity, grounded start, takeoff, apex, and stable landing without changing engine behavior.
+Of 21 runs in the user's 31 October archive, 14 completed and 7 timed out (six immediately after 60-ms jump commands); interrupted evidence must remain Inconclusive.
+Landed indicates observed ground contact rather than proved box/ledge/gap clearance; automatic CI, follow-up HLDS and deferred T261-07 acceptance remain independent gates.

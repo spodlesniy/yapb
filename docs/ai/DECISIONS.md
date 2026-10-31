@@ -3789,3 +3789,14 @@ Use GoldSrc `TraceIgnore::Monsters` combined with the moved bot as the explicit 
 Reject genuinely blocked map geometry and invalid coordinates and keep existing authorization, busy-session and alive-bot checks.
 Record precise XYZ in the server log, add deterministic nonintegral-coordinate tests and retain existing overlay and scenario-run semantics.
 Stage C run evidence requires separate review and the deferred Stage A/T261-07 HLDS acceptance gate remains open.
+
+## D306 — Conservative offline Stage C jump trajectory evidence
+
+Reuse the bounded versioned Scenario Runner result/trace parser to analyze the nine D304 programs without changing engine physics or scenario execution.
+Verify the control timeline, grounded start, near-zero initial speed, pose continuity, live terminal observation and completed action program before granting an observed landing.
+Report the observed takeoff, speed, sampled apex rise, time aloft, horizontal displacement, landing elevation and actual duck state, marking unobserved values as unknown.
+Require at least 40 commanded milliseconds of stable grounded state after landing.
+Separate NoTakeoff, GroundedControl and Inconclusive, including all ActionTimeout, invalid/uncommitted, missed-landing or uncertain traces.
+Never infer box/ledge/gap reachability from Landed or physical hull clearance from origin-height gain alone.
+Add deterministic synthetic tests and a versioned bundle CLI test; document the user archive's 21 runs (14 Completed, 7 ActionTimeout) without publishing the ZIP as fixtures.
+Keep the Stage A/T261-07 gates open, and treat automatic CI and user-run HLDS verification separately.

@@ -64,6 +64,9 @@ Do not extrapolate one successful jump into a universal maximum jump distance.
 D304 provides nine supervised `jump_*.scenario` fixtures and deterministic loader-contract tests for Stage C; see `docs/ai/INDEPENDENT_AI_JUMP_DISCOVERY.md` for placement, comparison rules and evidence collection.
 These are commands awaiting physical verification, not validated jump trajectories or permission for unattended tests.
 
+D306 provides a conservative read-only jump trajectory analyzer of the saved D304 traces with physical start/flight/landing metrics and incomplete-run guards.
+The analyzer alone does not prove safe box/ledge/gap traversal or close the deferred Stage A/T261-07 acceptance gate.
+
 ### D. Traversal Discovery
 
 **Goal:** Measure nonstandard but common transitions without conflating them with ordinary walking.
