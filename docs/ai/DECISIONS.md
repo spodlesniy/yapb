@@ -3732,3 +3732,11 @@ Validate the bounded `diagnostics.csv` schema and report observed stall/zero-fra
 The user's eight real D299 traces produce six `Blocked` and two `Deflected` classifications, without a fabricated positive `Progress` record.
 Add deterministic synthetic regression cases for all four outcomes and malformed/noncompliant evidence, preserving old scenario contracts and history.
 This is local directed movement evidence under the tested conditions, not a universal wall/step limit or a navigation permission grant.
+
+## D300.1 — Isolate synthetic start-speed regression from shifted start pose
+
+Training tools CI run `41190212084` reported one failure in `test_initial_pose_and_speed`: the test for initial speed reused a previously mutated first frame whose X coordinate had been shifted by two units.
+The read-only classifier correctly checked the start pose before speed and returned `UnexpectedStartPose`, rather than the test's expected `InitialSpeedMismatch`.
+Build the second case from a fresh `list(run.trace)`, modify only the initial VX value, and verify the original start X was preserved before asserting the speed validation reason.
+Leave `ground_obstacle_profile.py`, runtime, gameplay physics, scenario data and prior D300 classification behavior unchanged.
+Treat the new automatic Build CI as necessary independent confirmation.

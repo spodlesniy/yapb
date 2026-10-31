@@ -778,3 +778,6 @@ D300 adds an offline `ground_obstacle_profile` with strict trace/start-pose/comm
 The read-only CLI validates diagnostics separately, reports stall/probe counts as supporting observations rather than decision labels, and rejects unexpected airborne, discontinuous or corrupted evidence.
 Its fixed geometry-specific acceptance bounds were checked against all eight D299 HLDS recordings (6 Blocked, 2 Deflected), plus synthetic positive, ambiguous and invalid cases.
 D300 does not change physics, runtime, or the provisional navigation graph; Stage B acceptance still requires green automatic CI and review of repeatable evidence and outstanding coverage.
+D300 automatic Build CI run 41190212084 failed one of 180 training-tool tests: `test_initial_pose_and_speed` expected `InitialSpeedMismatch` but reused the frame with an earlier shifted X position, so the classifier correctly returned `UnexpectedStartPose`.
+D300.1 restores the pristine synthetic trace for the independent initial-speed test case and asserts its original X coordinate; only the regression fixture is fixed, while production classification and existing evidence remain unchanged.
+Automatic CI for D300.1 remains a gate before Stage B acceptance.

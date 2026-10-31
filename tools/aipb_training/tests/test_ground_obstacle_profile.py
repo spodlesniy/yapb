@@ -109,9 +109,13 @@ class ObstacleTests(unittest.TestCase):
                             before=replace(frames[0].before, x=run.start.x+2))
         modified = replace(run, start=frames[0].before, trace=tuple(frames))
         self.assertEqual(measure_obstacle(modified).reason, "UnexpectedStartPose")
-        frames[0] = replace(frames[0],
-                            before=replace(frames[0].before, vx=20))
-        modified = replace(run, start=frames[0].before, trace=tuple(frames))
+        # Start the speed case from the pristine trace, not the shifted pose.
+        speed_frames = list(run.trace)
+        speed_frames[0] = replace(speed_frames[0],
+                                 before=replace(speed_frames[0].before, vx=20))
+        modified = replace(run, start=speed_frames[0].before,
+                           trace=tuple(speed_frames))
+        self.assertEqual(modified.start.x, run.start.x)
         self.assertEqual(measure_obstacle(modified).reason, "InitialSpeedMismatch")
 
     def test_bounded_diagnostics(self):
