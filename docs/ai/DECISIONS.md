@@ -3896,3 +3896,11 @@ Match possible horizontal support within a conservative 14-unit bot-center dista
 Require the near-top surfaces to belong to one connected component and retain ambiguity rejection for overlapping static models, missing contact, and disjoint support polygons.
 Generate a supported bot-center target rectangle rather than claiming that all valid centers project inside the visible brush top; retain the existing target.csv schema, immutable human labels and fail-closed behavior.
 Add positive overhang and negative unsupported/disjoint fixtures, leaving game physics and formal Stage C/T261-07 acceptance unchanged.
+
+## D314.1 — Correct the obsolete D311 render-footprint assertion
+
+The D314 automatic Build CI run 41215611693 failed only `test_static_support_rectangle`, which incorrectly required the exported player-center rectangle to lie wholly within the BSP render-face XY bounds.
+That contradicts D314's intentional support of a stable standing hull overhanging a render-face edge by up to the conservative `SUPPORT_RADIUS`.
+Replace both stale assertions with bounded comparisons to the BSP rectangle expanded by `SUPPORT_RADIUS`, plus checks that the generated target extends to valid outside-face center positions while retaining the measured landing within its XY range.
+Do not weaken collision-support, nonconvex, ambiguity, or out-of-hull failure tests; do not modify the BSP exporter, runtime, or D309 classification.
+Preserve the pending Stage C and T261-07 acceptance gates; the corrected commit requires its own automatic CI result.

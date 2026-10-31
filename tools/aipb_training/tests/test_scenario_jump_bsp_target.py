@@ -17,8 +17,8 @@ from pathlib import Path
 from unittest.mock import patch
 
 from tools.aipb_training.scenario_jump_bsp_target import (
-    UnverifiedSurface, _artifact, _convex_hull, _has_standing_support,
-    _point_contents, extract_surface_target, generate, main,
+    SUPPORT_RADIUS, UnverifiedSurface, _artifact, _convex_hull,
+    _has_standing_support, _point_contents, extract_surface_target, generate, main,
 )
 from tools.aipb_training.scenario_jump_target import read_target, classify_target
 from tools.aipb_training.tests.test_scenario_jump_profile import run_fixture
@@ -47,11 +47,18 @@ class ExtractorTests(unittest.TestCase):
         surface = extract_surface_target(model(), landing())
         self.assertEqual(surface.model_id, "1")
         self.assertEqual(surface.origin_z, 36)
-        self.assertGreater(surface.min_x, 105)
-        self.assertLess(surface.max_x, 185)
+        # The verified support rectangle is expressed in player-center space.
+        # It may extend past the render face, but not beyond the safe hull reach.
+        self.assertGreaterEqual(surface.min_x, 105 - SUPPORT_RADIUS)
+        self.assertLessEqual(surface.max_x, 185 + SUPPORT_RADIUS)
+        self.assertGreaterEqual(surface.min_y, 180 - SUPPORT_RADIUS)
+        self.assertLessEqual(surface.max_y, 220 + SUPPORT_RADIUS)
+        self.assertLess(surface.min_x, 105)
+        self.assertGreater(surface.max_x, 185)
         self.assertLess(surface.min_x, landing()[0])
         self.assertGreater(surface.max_x, landing()[0])
-        self.assertGreater(surface.max_y - surface.min_y, 4)
+        self.assertLess(surface.min_y, landing()[1])
+        self.assertGreater(surface.max_y, landing()[1])
 
     def test_clip_hull_is_required(self):
         source = model()
