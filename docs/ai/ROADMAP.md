@@ -800,3 +800,6 @@ Of 21 runs in the user's 31 October archive, 14 completed and 7 timed out (six i
 Landed indicates observed ground contact rather than proved box/ledge/gap clearance; automatic CI, follow-up HLDS and deferred T261-07 acceptance remain independent gates.
 D306.1 repairs the outdated AiPB menu source-contract assertions in training-tools tests after D302 inserted Move bot: the test now verifies Overlay 1, Move bot 2, Run Scenario 3 and Stop Scenario 4 and corresponding availability/selection guards.
 The D306 Python profiler and engine runtime remain unchanged; automatic Build CI for D306.1 is a required gate before Stage C jump-analysis results are accepted as a validated tool.
+D306.1 automatic Build CI succeeded at a118000 (run 41202832213), validating the previously corrected Python menu contract and the D306 profiler tests.
+D307 audits the entire 21-run Stage C jump archive (SHA-256 recorded in `INDEPENDENT_AI_JUMP_EVIDENCE_REVIEW.md`), classifying 12 observed stable landings, two stable no-jump controls and seven incomplete ActionTimeout runs.
+Measured takeoff-speed and in-flight-distance pairs are bounded local evidence, not blanket jump reachability; box/ledge/gap geometry validation, short-action timeout investigation, repeated HLDS trials and deferred Stage A/T261-07 checks remain open.

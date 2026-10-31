@@ -98,3 +98,8 @@ The 31 October `results__2.zip` archive contains **21 runs: 14 Completed and 7 A
 Six early ActionTimeout records ended after the initial 60-ms jump action (standing, immediate-forward, crouch pairs); another timed out during a box approach.
 These interrupted traces must not be counted as completed physical jump results.
 D306 does not fix the scheduler timeout and does not close deferred Stage A/T261-07 gates or Stage C.
+
+## D307 — First physical evidence review
+
+The 21 uploaded runs were audited in `docs/ai/INDEPENDENT_AI_JUMP_EVIDENCE_REVIEW.md`, with archive SHA-256, all run IDs, D306 physical classifications, measured speeds/heights/flight times and the outstanding ActionTimeout and geometry-validation gates.
+Only 12 have observed stable landings, two are stationary controls and seven are incomplete; Stage C acceptance remains open.

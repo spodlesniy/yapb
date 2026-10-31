@@ -66,6 +66,7 @@ These are commands awaiting physical verification, not validated jump trajectori
 
 D306 provides a conservative read-only jump trajectory analyzer of the saved D304 traces with physical start/flight/landing metrics and incomplete-run guards.
 The analyzer alone does not prove safe box/ledge/gap traversal or close the deferred Stage A/T261-07 acceptance gate.
+D307 audits the first 21 physical recordings and establishes 12 observed stable landings, two stable no-jump controls and seven incomplete timeouts; see `docs/ai/INDEPENDENT_AI_JUMP_EVIDENCE_REVIEW.md` for the per-run evidence and next gates.
 
 ### D. Traversal Discovery
 

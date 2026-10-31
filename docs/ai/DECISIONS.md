@@ -3807,3 +3807,12 @@ The D306 Build CI failed only the training-tools test that still required the ol
 Update the source-contract test to assert the actual Overlay 1, Move bot 2, Run Scenario 3 and Stop Scenario 4 labels, availability checks and selection branches.
 Do not alter the runtime menu, scenario fixture definitions or D306 jump-analysis behavior for this test-only correction.
 Treat fresh automatic Build CI on the corrective SHA as the validation gate, without manually triggering windows-x86 or full jobs.
+
+## D307 — Audit first 21 Stage C user-run jump bundles without promoting capability
+
+Audit every versioned run in the user-supplied `results__2.zip`, record its SHA-256 and all run-directory identifiers without committing raw game capture ZIP files.
+Use the D306 read-only classification contract and report 12 observed stable landings, two grounded no-jump controls and seven incomplete ActionTimeout runs, rather than equating scheduler Completed with a successful traversal.
+Document scoped run-up and airborne-range measurements, including the clear distinction between total scenario travel and takeoff-to-landing displacement.
+Preserve paired box plain/crouch observations as unconfirmed geometry hypotheses until target surfaces and collision conditions are measured independently.
+Do not claim the cause of 60-ms or 200-ms action-boundary timeouts without inspecting scheduler behavior; their repair and retest belong to a separate named development step.
+This documentation-only step changes no code, tests, scenario behavior, navigation model or deferred Stage A/T261-07 acceptance gate.
