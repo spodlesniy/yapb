@@ -5,6 +5,12 @@ Never infer a target footprint from an outcome label or a trace endpoint.
 
 from __future__ import annotations
 
+if __name__ == "__main__" and not __package__:
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+    __package__ = "tools.aipb_training"
+
 import argparse
 import csv
 import hashlib

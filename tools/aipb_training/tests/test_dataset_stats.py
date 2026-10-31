@@ -3,6 +3,12 @@
 
 from __future__ import annotations
 
+if __name__ == "__main__" and not __package__:
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+    __package__ = "tools.aipb_training.tests"
+
 import json
 import tempfile
 import unittest

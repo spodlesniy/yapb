@@ -3869,3 +3869,12 @@ Reject nonconvex, overlapping, too-small, moving or dynamically ambiguous geomet
 Export the existing D309 target CSV schema only when these conservative checks pass, without overwriting prior targets or taking human labels as geometric input.
 Write synthetic extraction, collision-negative, source-integrity and CLI tests; do not modify the legacy engine or D309/D310 classifiers.
 A real de_dust2 BSP was not available to run in the current workspace, so the step's publication does not establish actual box/ledge target bounds or resolve formal Stage C/T261-07 acceptance.
+
+## D312 — Allow independent direct-file Python entrypoints
+
+The repository includes 62 Python files, with 55 non-init files under tools/aipb_training that use relative or tools-prefixed package imports.
+Support both `python tools/aipb_training/<script>.py` and `python -m tools.aipb_training.<script>` when invoked from any working directory by adding a narrowly gated script-mode bootstrap above imports: prepend the resolved repository root and set the correct module `__package__`.
+Apply the same script-only context to direct unit-test modules and non-entrypoint library modules, without changing import semantics or making dependency failures appear successful.
+Add a subprocess regression that clears PYTHONPATH and runs the CLI help paths and representative test entrypoints from an unrelated working directory, plus syntax checking for package source files.
+The independent projects/aipb-map scripts and root package.py have no tools.aipb_training package imports and are not modified; preserve their existing specialized workflow.
+Do not alter navigation, engine, scenarios, training models or Stage A/T261-07 acceptance.

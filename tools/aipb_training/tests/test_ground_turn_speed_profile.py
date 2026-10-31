@@ -1,5 +1,11 @@
 """D294 combined turn and entry-speed profile regressions."""
 
+
+if __name__ == "__main__" and not __package__:
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+    __package__ = "tools.aipb_training.tests"
 import io
 import math
 import unittest

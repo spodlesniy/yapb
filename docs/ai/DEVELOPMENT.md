@@ -246,3 +246,10 @@ Development discussion should therefore stay concise and technical:
 - prefer one complete technical update over several redundant intermediate messages.
 
 This rule applies to planning and discussion only; source code, tests, and documentation must remain complete and sufficiently explicit.
+
+## Direct Python invocation (D312)
+
+Run AiPB training and Stage C CLIs either as `python -m tools.aipb_training.scenario_jump_profile --help` from the repository root or as `python /absolute/path/to/tools/aipb_training/scenario_jump_profile.py --help` from another working directory.
+Direct execution resolves the checkout from the script location and preserves package-relative imports without requiring PYTHONPATH or pip installation.
+Unit-test modules under `tools/aipb_training/tests` support the same direct-file mode, but automatic suite discovery remains the normal regression gate.
+Optional third-party packages (such as PyTorch) are still required for commands that actually use them.

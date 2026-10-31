@@ -3,6 +3,12 @@
 
 from __future__ import annotations
 
+if __name__ == "__main__" and not __package__:
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+    __package__ = "tools.aipb_training"
+
 from dataclasses import dataclass
 
 from .model_contract import MODEL_ACTION_ID_COUNT, MODEL_ACTION_TENSOR_SIZE, MODEL_FEATURE_COUNT
