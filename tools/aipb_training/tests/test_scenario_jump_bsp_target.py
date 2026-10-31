@@ -81,10 +81,37 @@ class ExtractorTests(unittest.TestCase):
         with self.assertRaisesRegex(UnverifiedSurface, "nearby_nonstatic=\\['func_breakable'\\]"):
             extract_surface_target(source, landing())
 
-    def test_diagnostics_for_player_center_overhanging_edge(self):
+    def test_standing_hull_supports_center_overhanging_render_edge(self):
         source = model(vertices=[[105, 180, 0], [155, 180, 0],
                                  [155, 220, 0], [105, 220, 0]])
+        surface = extract_surface_target(source, landing())
+        self.assertLess(surface.min_x, 160)
+        self.assertGreater(surface.max_x, 162)
+        self.assertEqual(surface.origin_z, 36)
+
+    def test_reject_center_outside_safe_standing_hull_margin(self):
+        source = model(vertices=[[105, 180, 0], [143, 180, 0],
+                                 [143, 220, 0], [105, 220, 0]])
         with self.assertRaisesRegex(UnverifiedSurface, "overhang=\\["):
+            extract_surface_target(source, landing())
+
+    def test_overhang_without_collision_contact_is_rejected(self):
+        source = model(vertices=[[105, 180, 0], [155, 180, 0],
+                                 [155, 220, 0], [105, 220, 0]])
+        source["partition_clipnodes"][0]["back"] = -1
+        with self.assertRaisesRegex(UnverifiedSurface, "hull_rejected="):
+            extract_surface_target(source, landing())
+
+    def test_multiple_disjoint_surfaces_near_hull_are_ambiguous(self):
+        source = model(
+            vertices=[[105, 180, 0], [154, 180, 0],
+                      [154, 220, 0], [105, 220, 0],
+                      [165, 180, 0], [200, 180, 0],
+                      [200, 220, 0], [165, 220, 0]],
+            triangles=[[0, 1, 2], [0, 2, 3],
+                       [4, 5, 6], [4, 6, 7]],
+        )
+        with self.assertRaisesRegex(UnverifiedSurface, "multiple disjoint horizontal supports"):
             extract_surface_target(source, landing())
 
     def test_diagnostics_for_mismatched_bsp_floor(self):

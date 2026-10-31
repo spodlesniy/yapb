@@ -31,6 +31,8 @@ MAX_TRIANGLES = 200000
 Z_TOLERANCE = 0.12
 FOOT_OFFSET = 36.0  # GoldSrc standing hull 1 has mins.z = -36.
 EDGE_MARGIN = 2.0
+HULL_HALF_WIDTH = 16.0
+SUPPORT_RADIUS = HULL_HALF_WIDTH - EDGE_MARGIN
 HULL_INSET = 1.0
 TARGET_Z_TOLERANCE = 3.0
 
@@ -240,8 +242,13 @@ def extract_surface_target(map_data: dict, landing: tuple[float, float, float]) 
             continue
         if len(triangles) > MAX_TRIANGLES:
             raise UnverifiedSurface("too many horizontal triangles")
-        matching = [i for i, t in enumerate(triangles) if _triangle_contains(x, y, t)]
-        if not matching:
+        # The standing GoldSrc hull extends 16 units beyond the bot's origin
+        # in XY. Its collision-supported center may overhang a visible edge.
+        # Keep a two-unit safety margin and require physical hull contact.
+        nearby = [(i, _triangle_xy_distance(x, y, t))
+                  for i, t in enumerate(triangles)]
+        nearby = [(i, d) for i, d in nearby if d <= SUPPORT_RADIUS]
+        if not nearby:
             if math.isfinite(nearest_overhang):
                 overhang.add((name, mid, round(nearest_overhang, 2)))
             continue
@@ -249,7 +256,12 @@ def extract_surface_target(map_data: dict, landing: tuple[float, float, float]) 
         if not _has_standing_support(x, y, origin_z, models[mid], planes, nodes, shift):
             static_without_hull.add((name, mid))
             continue
-        candidates.append((mid, triangles, matching[0], shift))
+        seed = min(nearby, key=lambda pair: (pair[1], pair[0]))[0]
+        component = _component(triangles, seed)
+        if any(i not in component for i, _ in nearby):
+            raise UnverifiedSurface(
+                f"multiple disjoint horizontal supports within standing hull: model={mid}")
+        candidates.append((mid, triangles, seed, shift, component))
 
     if len(candidates) != 1:
         context = (f"landing=({x:.3f},{y:.3f},{origin_z:.3f}), "
@@ -265,8 +277,7 @@ def extract_surface_target(map_data: dict, landing: tuple[float, float, float]) 
             "ambiguous overlapping static support models="
             + str([item[0] for item in candidates]) + "; " + context)
 
-    mid, triangles, seed, shift = candidates[0]
-    indices = _component(triangles, seed)
+    mid, triangles, seed, shift, indices = candidates[0]
     region = [triangles[i] for i in indices]
     polygon = _convex_hull({p for tri in region for p in tri})
     area = _polygon_area(polygon)
@@ -274,13 +285,16 @@ def extract_surface_target(map_data: dict, landing: tuple[float, float, float]) 
     if area < 64 or abs(area - combined) > max(0.25, area * 0.001):
         raise UnverifiedSurface("landing support is nonconvex, overlapping or too small")
 
-    left = min(p[0] for p in polygon) + EDGE_MARGIN
-    right = max(p[0] for p in polygon) - EDGE_MARGIN
-    bottom = min(p[1] for p in polygon) + EDGE_MARGIN
-    top = max(p[1] for p in polygon) - EDGE_MARGIN
+    # Bounds are in *bot-center* coordinates. They may extend beyond the
+    # visible top only where the standing collision hull confirms support.
+    left = min(p[0] for p in polygon) - SUPPORT_RADIUS
+    right = max(p[0] for p in polygon) + SUPPORT_RADIUS
+    bottom = min(p[1] for p in polygon) - SUPPORT_RADIUS
+    top = max(p[1] for p in polygon) + SUPPORT_RADIUS
 
     def safe_at(px, py):
-        return (any(_triangle_contains(px, py, tri) for tri in region)
+        return (any(_triangle_xy_distance(px, py, tri) <= SUPPORT_RADIUS
+                    for tri in region)
                 and _has_standing_support(px, py, origin_z, models[mid], planes, nodes, shift))
     if not safe_at(x, y):
         raise UnverifiedSurface("landing lacks static collision support")

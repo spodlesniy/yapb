@@ -3887,3 +3887,12 @@ Differentiate no horizontal render face near the player, an unsupported BSP brus
 Preserve the existing fail-closed target-export contract and deterministic source validation: a nearby breakable brush or collision-supported overhang is diagnostic evidence, not automatically accepted permanent target geometry.
 Add synthetic negative fixtures for each diagnostic branch without changing the runtime, map exporter, classifier, existing target CSV schema or deferred Stage A/T261-07 acceptance.
 The original BSP from the user-run game is not mounted here; rerunning on that exact BSP is required to isolate the real case and verify the proposed explanation.
+
+## D314 — Handle physically supported overhanging player centers
+
+D313 user diagnostics identify the source of the target-export rejection: a horizontal worldspawn face at z=112 lies only 4.316 units from the standing bot center, whose origin is z=148.031.
+A standing GoldSrc collision hull extends 16 units horizontally from the center, so the center need not project into the render triangle for ground contact.
+Match possible horizontal support within a conservative 14-unit bot-center distance to static surface triangles, but accept it only when hull-1 BSP collision contents confirm actual physical support.
+Require the near-top surfaces to belong to one connected component and retain ambiguity rejection for overlapping static models, missing contact, and disjoint support polygons.
+Generate a supported bot-center target rectangle rather than claiming that all valid centers project inside the visible brush top; retain the existing target.csv schema, immutable human labels and fail-closed behavior.
+Add positive overhang and negative unsupported/disjoint fixtures, leaving game physics and formal Stage C/T261-07 acceptance unchanged.

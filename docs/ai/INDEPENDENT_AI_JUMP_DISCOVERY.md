@@ -173,3 +173,11 @@ A `nearby_nonstatic=['func_breakable']` report indicates that a potentially dest
 An elevation difference `dz` warns about a different BSP revision, a wrong standing-origin assumption, or a mismatched face rather than proving any one of them.
 Run the existing command again unchanged after updating to D313 and retain the full diagnostic output for follow-up.
 Never force a target CSV from an ambiguous or unsupported surface; label comparison remains PendingGeometry until the physical support is established.
+
+## D314 — Standing hull overhang support
+
+The de_dust2 box top is a worldspawn surface at BSP z=112; the observed standing origin is z=148.031, and its center is 4.316 units outside the closest visible top edge.
+This is compatible with the 16-unit standing collision-hull horizontal half-extent and is not by itself a missed landing.
+The target exporter now searches render triangles within 14 XY units of the center, requires hull-1 collision support, and emits a sampled supported rectangle in **bot-center coordinates** (which can extend beyond the visible BSP face).
+If multiple disjoint top surfaces are within the hull, or the hull does not confirm contact, it refuses to create a target.
+After updating to D314, repeat the same extraction command and inspect whether a target is generated; only a successful user-run BSP extraction can validate real-map behavior.
