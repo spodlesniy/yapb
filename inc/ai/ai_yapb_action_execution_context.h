@@ -9,6 +9,8 @@
 #pragma once
 
 #include <ai/ai_action_execution_context.h>
+#include <ai/ai_action_result.h>
+#include <ai/ai_controller.h>
 
 class Bot;
 
@@ -58,6 +60,14 @@ private:
 
 public:
   explicit YaPBActionExecutionContext(Bot &bot);
+
+  // Narrow access for independent runtime adapters; Bot grants this class friendship.
+  static bool runtimeActive(const Bot &bot);
+  static ControlMode runtimeMode(const Bot &bot);
+  static void cancelRuntimeAction(Bot &bot);
+  static bool armMockRuntimeMove(Bot &bot, const Vec3 &target);
+  static ActionResult mockRuntimeResult(const Bot &bot);
+  static void cancelMockRuntimeMove(Bot &bot);
 
   bool isAlive() const override;
   bool allowsNavigationOverride() const override;

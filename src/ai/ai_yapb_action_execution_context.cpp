@@ -18,6 +18,31 @@
 #include <ai/ai_yapb_action_execution_context.h>
 
 namespace ai {
+
+bool YaPBActionExecutionContext::runtimeActive(const Bot &bot) {
+  return bot.m_aiRuntime.isActive();
+}
+
+ControlMode YaPBActionExecutionContext::runtimeMode(const Bot &bot) {
+  return bot.m_aiRuntime.getMode();
+}
+
+void YaPBActionExecutionContext::cancelRuntimeAction(Bot &bot) {
+  bot.m_aiRuntime.cancel(bot.m_aiObservation);
+}
+
+bool YaPBActionExecutionContext::armMockRuntimeMove(Bot &bot, const Vec3 &target) {
+  return bot.m_aiRuntime.armMockMove(target);
+}
+
+ActionResult YaPBActionExecutionContext::mockRuntimeResult(const Bot &bot) {
+  return bot.m_aiRuntime.mockMoveResult();
+}
+
+void YaPBActionExecutionContext::cancelMockRuntimeMove(Bot &bot) {
+  bot.m_aiRuntime.cancelMockMove();
+}
+
 namespace {
 
 constexpr float kNavigationReachDistance = 48.0f;

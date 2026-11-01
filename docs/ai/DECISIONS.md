@@ -3959,3 +3959,11 @@ Temporarily select the existing Neural controller for that bot without changing 
 Stop after one terminal result, explicit server cancellation, invalid session or a five-second timeout; report semantic result separately from measured displacement using D316 self state.
 Do not claim that MoveToPosition proves independent navigation: its implementation still delegates to YaPB nearest-waypoint navigation and may semantically complete without the intended motion.
 Do not modify original YaPB files, default gameplay, ONNX feature contract, Explorer scenario evidence or prior Movement Discovery outcome labels.
+
+## D320.1 — Repair MSVC Bot private access in runtime adapters
+
+The D320 user-run Windows x86 build failed with C2248 because the D317 perception adapter directly read private Bot sensing fields.
+Use the pre-existing friend `buildObservationInput` to consume only verified visible and heard flags, and never expose hidden player state from the observation to perception.
+Route D319 cancellation and D320 Mock trial operations through narrow static accessors on the existing `YaPBActionExecutionContext` Bot friend, avoiding modification of original `inc/yapb.h` or other YaPB files.
+Retain the current action lifecycle, permissions, model feature schema and Explorer behavior.
+Require a fresh user-run Windows x86 compilation to verify all runtime adapter translation units.

@@ -8,6 +8,7 @@
 
 #include <ai/ai_execution_ownership_adapter.h>
 #include <ai/ai_server_state_adapter.h>
+#include <ai/ai_yapb_action_execution_context.h>
 
 namespace ai::runtime_io {
 namespace {
@@ -35,16 +36,16 @@ bool captureControlFrame(Bot &bot, bool explorerOwnsFrame) {
     return false;
   }
 
-  if (explorerOwnsFrame && bot.m_aiRuntime.isActive()) {
+  if (explorerOwnsFrame && ai::YaPBActionExecutionContext::runtimeActive(bot)) {
     // The existing Explorer frame suppresses Bot::update; cancel any prior policy action.
-    bot.cancelAIAction();
-    if (bot.m_aiRuntime.isActive()) {
+    ai::YaPBActionExecutionContext::cancelRuntimeAction(bot);
+    if (ai::YaPBActionExecutionContext::runtimeActive(bot)) {
       return false;
     }
   }
 
   const auto owner = explorerOwnsFrame
-      ? ControlOwner::Explorer : ownerForMode(bot.m_aiRuntime.getMode());
+      ? ControlOwner::Explorer : ownerForMode(ai::YaPBActionExecutionContext::runtimeMode(bot));
   return g_ownership.observe(bot.index(), snapshot.stamp, owner);
 }
 
@@ -53,7 +54,7 @@ void recordBotActionResult(const Bot &bot, const ActionResult &result) {
   if (!readServerBotSnapshot(bot.index(), snapshot)) {
     return;
   }
-  const auto owner = ownerForMode(bot.m_aiRuntime.getMode());
+  const auto owner = ownerForMode(ai::YaPBActionExecutionContext::runtimeMode(bot));
   if (owner != ControlOwner::Neural && owner != ControlOwner::Training) {
     return;
   }

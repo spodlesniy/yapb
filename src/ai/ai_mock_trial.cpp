@@ -10,6 +10,7 @@
 #include <ai/ai_exploration_probe.h>
 #include <ai/ai_server_state_adapter.h>
 #include <ai/ai_world_query_adapter.h>
+#include <ai/ai_yapb_action_execution_context.h>
 
 #include <cmath>
 #include <cstdlib>
@@ -58,7 +59,7 @@ void clearSelection() {
 
 void abortTrial(Bot *bot, const char *reason) {
   if (bot != nullptr && executing) {
-    bot->m_aiRuntime.cancelMockMove();
+    ai::YaPBActionExecutionContext::cancelMockRuntimeMove(*bot);
   }
   game.print("AiPB mock: cancelled (%s).", reason);
   clearSelection();
@@ -97,7 +98,7 @@ bool handleServer() {
   }
   auto *bot = bots.findBotByIndex(static_cast<int>(index));
   if (bot == nullptr || bot->pev == nullptr || !game.isAliveEntity(bot->ent()) ||
-      bot->m_aiRuntime.isActive()) {
+      ai::YaPBActionExecutionContext::runtimeActive(*bot)) {
     game.print("AiPB mock: rejected (BotUnavailableOrBusy).");
     return true;
   }
@@ -121,7 +122,7 @@ void frame(Bot &bot) {
   }
 
   if (pending) {
-    if (!state.self.onGround || bot.m_aiRuntime.isActive()) {
+    if (!state.self.onGround || ai::YaPBActionExecutionContext::runtimeActive(bot)) {
       abortTrial(&bot, "bot not grounded or already executing");
       return;
     }
@@ -140,7 +141,7 @@ void frame(Bot &bot) {
     const auto reply = ai::runtime_io::queryBotWorld(selectedBot, request);
     if (!ai::runtime_io::isCompleted(request, reply) || reply.startSolid ||
         reply.fraction < 0.999f ||
-        !bot.m_aiRuntime.armMockMove(request.end)) {
+        !ai::YaPBActionExecutionContext::armMockRuntimeMove(bot, request.end)) {
       game.print("AiPB mock: rejected (UnsafeTraceOrAction), query_status=%d.",
                  static_cast<int>(reply.status));
       clearSelection();
@@ -156,7 +157,7 @@ void frame(Bot &bot) {
     return;
   }
 
-  const auto outcome = bot.m_aiRuntime.mockMoveResult();
+  const auto outcome = ai::YaPBActionExecutionContext::mockRuntimeResult(bot);
   if (outcome.type != ai::ActionResultType::None && outcome.isTerminal()) {
     const float moved = displacement(origin, state.self.origin);
     game.print("AiPB mock: result=%s; physical_displacement=%.2f; action_elapsed=%.3f; session=%llu; frame=%llu.",

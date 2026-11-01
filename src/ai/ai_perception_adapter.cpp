@@ -7,6 +7,7 @@
 #include <yapb.h>
 
 #include <ai/ai_perception_adapter.h>
+#include <ai/ai_bot_adapter.h>
 #include <ai/ai_perception_guard.h>
 #include <ai/ai_server_state_adapter.h>
 
@@ -35,37 +36,51 @@ void capturePerceptionFrame(Bot &bot) {
   signals.roundOver = gameState.isRoundOver();
   const float now = snapshot.stamp.gameTime;
 
-  // Use only YaPB's confirmed sighting and its previously observed location.
-  // Never query the target's current entvars position behind the perception boundary.
-  if (bot.m_blindTime <= now &&
-      canUseLiveEnemyState(!!(bot.m_states & Sense::SeeingEnemy),
-                           !!(bot.m_states & Sense::SuspectEnemy),
-                           bot.m_enemy != nullptr && bot.m_enemy == bot.m_lastEnemy) &&
-      !game.isNullEntity(bot.m_enemy) && game.isPlayerEntity(bot.m_enemy) &&
-      game.isAliveEntity(bot.m_enemy)) {
+  // buildObservationInput is the existing friend of Bot authorized to read
+  // private sensory flags. Consume only confirmed evidence, never its raw
+  // unseen player positions, health, or armor.
+  const auto observed = ai::buildObservationInput(bot);
+  const auto flags = observed.combat.perceptionFlags;
+  const bool seeing = !!(flags & static_cast<uint32_t>(ai::PerceptionFlag::SeeingEnemy));
+  const bool suspect = !!(flags & static_cast<uint32_t>(ai::PerceptionFlag::SuspectedEnemy));
+  const bool hearing = !!(flags & static_cast<uint32_t>(ai::PerceptionFlag::HearingEnemy));
+
+  if (!observed.combat.blind &&
+      ai::canUseLiveEnemyState(seeing, suspect,
+          observed.combat.enemyEntity > 0 &&
+          observed.combat.enemyEntity == observed.combat.lastEnemyEntity) &&
+      observed.combat.enemyEntity > 0) {
     signals.visibleEnemy = true;
-    signals.enemyEntityIndex = game.indexOfEntity(bot.m_enemy);
-    signals.seenPosition = { bot.m_lastEnemyOrigin.x, bot.m_lastEnemyOrigin.y, bot.m_lastEnemyOrigin.z };
+    signals.enemyEntityIndex = observed.combat.enemyEntity;
+    signals.seenPosition = observed.combat.lastEnemyOrigin;
   }
 
-  // The shared client noise cache stores the sound origin and its audible radius.
-  // The source entity and its live coordinates are intentionally not exported.
-  if ((bot.m_states & Sense::HearingEnemy) &&
-      !game.isNullEntity(bot.m_hearedEnemy) &&
-      game.isPlayerEntity(bot.m_hearedEnemy) && bot.pev != nullptr) {
-    for (const auto &client : util.getClients()) {
-      if (!(client.flags & ClientFlags::Used) || client.ent != bot.m_hearedEnemy) {
+  // Only a client positively identified as heard by the existing friend
+  // adapter may contribute its acoustic origin. Never export its entity ID.
+  if (hearing && bot.pev != nullptr) {
+    const auto count = observed.playerCount <= ai::kMaxObservedPlayers
+        ? observed.playerCount : ai::kMaxObservedPlayers;
+    for (size_t i = 0; i < count && !signals.heardSound; ++i) {
+      const auto &heard = observed.players[i];
+      if (!heard.valid || !heard.heard || !heard.enemy || heard.entityIndex <= 0) {
         continue;
       }
-      const auto &noise = client.noise;
-      if (std::isfinite(noise.last) && noise.last > now &&
-          std::isfinite(noise.dist) && noise.dist > 0.0f &&
-          std::isfinite(noise.pos.x) && std::isfinite(noise.pos.y) && std::isfinite(noise.pos.z) &&
-          noise.pos.distanceSq(bot.pev->origin) <= noise.dist * noise.dist) {
-        signals.heardSound = true;
-        signals.soundPosition = { noise.pos.x, noise.pos.y, noise.pos.z };
+      for (const auto &client : util.getClients()) {
+        if (!(client.flags & ClientFlags::Used) || client.ent == nullptr ||
+            game.indexOfEntity(client.ent) != heard.entityIndex) {
+          continue;
+        }
+        const auto &noise = client.noise;
+        if (std::isfinite(noise.last) && noise.last > now &&
+            std::isfinite(noise.dist) && noise.dist > 0.0f &&
+            std::isfinite(noise.pos.x) && std::isfinite(noise.pos.y) &&
+            std::isfinite(noise.pos.z) &&
+            noise.pos.distanceSq(bot.pev->origin) <= noise.dist * noise.dist) {
+          signals.heardSound = true;
+          signals.soundPosition = { noise.pos.x, noise.pos.y, noise.pos.z };
+        }
+        break;
       }
-      break;
     }
   }
 
