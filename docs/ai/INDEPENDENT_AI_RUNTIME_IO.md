@@ -118,3 +118,17 @@ The returned trace never includes player identity; unexpected player contacts fa
 No model policy directly calls the adapter in this step and no movement/action control changes.
 Tests cover stale sessions and frames, budget isolation, request replays, bounds, unsupported calls and result sanitization.
 Windows x86/HLDS validation is still pending; collision tracing alone does not prove the ability to traverse a proposed segment.
+
+## D319 — Execution ownership and observed action feedback
+
+`ai_execution_ownership.h` introduces a bounded per-bot ledger for Legacy, Neural, Training and Explorer control, backed by the D316 validated session and frame stamp.
+Only one owner can be registered per frame and an active semantic action must be cancelled before Explorer or another control mode takes ownership.
+The existing `ai::explore::frame` hook already suppresses `Bot::update` for an Explorer-owned bot frame; D319 calls the existing `Bot::cancelAIAction` before granting Explorer ownership and refuses movement if the handoff cannot be verified.
+`BotRuntime::step`, its cancellation path, and mode-change cancellations forward their real `ActionResult` to a read-only ledger.
+An Accepted result anchors the decision frame; terminal results use the actual observed D316 frame and preserve the decision's identity.
+A terminal result emitted immediately on a first action frame anchors both IDs to that frame.
+Explorer scenario evidence continues in its established trace/scheduler result format, not misrepresented as `ActionResult` outcomes.
+The ledger does not implement or authorize an additional Independent controller, and its copies are not dispatched to a model in D319.
+Disconnect and map deactivation invalidate the ownership ledger and the previously created server, perception and query caches.
+Unit tests cover exclusive handoff with cancellation, multiple bot independence, completed and one-frame terminal outcomes, stale sessions, wrong-owner results and invalid action IDs.
+Windows x86/HLDS acceptance and actual model-driven movement remain outstanding.

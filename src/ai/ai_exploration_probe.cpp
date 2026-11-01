@@ -4,6 +4,7 @@
 #include <ai/ai_server_state_adapter.h>
 #include <ai/ai_perception_adapter.h>
 #include <ai/ai_world_query_adapter.h>
+#include <ai/ai_execution_ownership_adapter.h>
 #include <aipb/explorer/engine_bridge_scenario_pose.h>
 #include <aipb/explorer/engine_bridge_scenario_menu.h>
 #include <aipb/explorer/engine_bridge_math.h>
@@ -909,6 +910,7 @@ bool init(int botIndex) {
 }
 
 void reset() {
+   ai::runtime_io::resetControlFrames();
    ai::runtime_io::resetWorldQueries();
    ai::runtime_io::resetPerceptionFrames();
    ai::runtime_io::resetServerState();
@@ -921,6 +923,10 @@ void reset() {
 }
 
 void cancelBot(int botIndex) {
+   ai::runtime_io::releaseControlBot(botIndex);
+   ai::runtime_io::releaseWorldQueryBot(botIndex);
+   ai::runtime_io::releasePerceptionBot(botIndex);
+   ai::runtime_io::releaseBot(botIndex);
    if (scenarioScheduler.running() && scenarioScheduler.botIndex() == botIndex) {
       scenarioScheduler.cancel();
       scenarioEnd(nullptr, "bot disconnected");
@@ -933,6 +939,19 @@ void cancelBot(int botIndex) {
 bool frame(Bot &bot) {
    ai::runtime_io::captureBotFrame(bot);
    ai::runtime_io::capturePerceptionFrame(bot);
+   const bool explorerOwnsFrame = session.botIndex == bot.index()
+      || (scenarioScheduler.running() && scenarioScheduler.botIndex() == bot.index());
+   const bool ownershipReady = ai::runtime_io::captureControlFrame(bot, explorerOwnsFrame);
+   if (explorerOwnsFrame && !ownershipReady) {
+      if (scenarioScheduler.running() && scenarioScheduler.botIndex() == bot.index()) {
+         scenarioScheduler.cancel();
+         scenarioEnd(&bot, "ownership unavailable");
+      }
+      if (session.botIndex == bot.index()) {
+         stop("ownership unavailable");
+      }
+      return true;
+   }
    // The first bot frame is the earliest existing AiPB hook with a ready engine.
    // GoldSrc server commands persist across map changes.
    static bool aipbCommandRegistered {};

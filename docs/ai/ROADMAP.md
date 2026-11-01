@@ -841,3 +841,7 @@ No hidden live opponent position or health is exported, and no movement, model i
 D317 automatic Build CI passed for ca1af56 (run 41310201208).
 D318 introduces a read-only bounded per-bot geometry query gate and engine-thread TraceLine/TraceHull adapter, validating current D316 session/frame, own-position proximity and query budget before GoldSrc collision tests.
 Entity enumeration, contents and visibility/PAS queries remain explicitly Unsupported; automatic CI and manual Windows x86/HLDS validation are required before claims of real-world query correctness, and Movement Discovery Stage C/T261-07 remain open.
+D318 automatic Build CI passed at 42e0fcd (run 41311144800).
+D319 records a single execution owner for each validated D316 bot frame and correlates observed Neural/Training ActionResult outcomes with decision/observation frame IDs.
+Explorer retains its established single-frame precedence and cancels active semantic AI actions before taking movement control; conflicting or invalid handoffs fail closed, and disconnect/map shutdown invalidate ownership and adjacent read-only caches.
+The step does not add an Independent control mode, substitute Explorer outcomes for semantic ActionResult, or certify HLDS behavior; automatic tests, manual Windows x86 checks and Movement Discovery acceptance gates remain separate.

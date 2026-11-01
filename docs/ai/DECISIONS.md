@@ -3939,3 +3939,13 @@ Restrict the start to within 64 GoldSrc units of the bot origin and trace distan
 Use engine collision traces ignoring player monsters, return geometric fraction/contact but never entity identity or hidden player information.
 Fail closed on unsupported requests, stale state, out-of-budget calls or invalid trace samples; reset per-bot gate on disconnect and global gate on map shutdown.
 Do not connect requests to the policy yet, change navigation, modify upstream YaPB code or claim HLDS acceptance without Windows x86 game verification.
+
+## D319 — Correlate single-owner bot control and actual AI action feedback
+
+Reuse Bot::frame's existing Explorer early-return precedence and BotRuntime's TrainingCollector/ActionRuntime rather than installing a second movement scheduler.
+Maintain a bounded per-bot, engine-neutral ownership ledger for Legacy, Neural, Training and Explorer with validated D316 session/frame identity.
+Reject ownership handoff while a semantic AI action is still active; before an Explorer-controlled frame, cancel that action through the existing Bot::cancelAIAction path and reject Explorer movement if exclusive ownership cannot be established.
+Observe Accepted/terminal ActionResult from existing runtime step, cancellation and mode-switch paths, correlating outcomes to their original decision frame and the observed frame without synthesizing physics or Explorer action outcomes.
+The policy switch within a bot frame may update the owner only when no pending action exists.
+Invalidate ownership, WorldQuery, Perception and ServerBot caches on bot disconnect; invalidate all of them on map shutdown.
+Do not change original YaPB files, ONNX, action execution semantics, Movement Discovery tests or existing Explorer scenario-result schema.

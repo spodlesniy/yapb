@@ -13,6 +13,7 @@
 #include <ai/ai_yapb_action_execution_context.h>
 #include <ai/ai_goal_navigation_policy.h>
 #include <ai/ai_inference_policy.h>
+#include <ai/ai_execution_ownership_adapter.h>
 #include <ai/ai_reward_provider.h>
 #include <ai/ai_training_collector.h>
 #include <ai/ai_training_dataset.h>
@@ -51,6 +52,9 @@ public:
 
     if ((previousMode == ControlMode::Neural || previousMode == ControlMode::Training) && m_runtime.isActive()) {
       if (m_trainingCollector.cancel(m_runtime)) {
+        if (m_bot != nullptr) {
+          runtime_io::recordBotActionResult(*m_bot, m_runtime.result());
+        }
         m_trainingCollector.finalizeTerminal(captureObservation());
       }
     }
@@ -187,6 +191,9 @@ public:
 
   ActionResult step(const Observation &observation, bool allowDecision = true) {
     const auto result = m_trainingCollector.step(m_runtime, observation, allowDecision);
+    if (m_bot != nullptr) {
+      runtime_io::recordBotActionResult(*m_bot, result);
+    }
 
     if (result.isTerminal()) {
       m_trainingCollector.finalizeTerminal(captureObservation());
@@ -197,6 +204,9 @@ public:
   bool cancel(const Observation &) {
     if (!m_trainingCollector.cancel(m_runtime)) {
       return false;
+    }
+    if (m_bot != nullptr) {
+      runtime_io::recordBotActionResult(*m_bot, m_runtime.result());
     }
 
     m_trainingCollector.finalizeTerminal(captureObservation());
