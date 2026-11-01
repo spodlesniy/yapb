@@ -3,6 +3,7 @@
 #include <ai/ai_menu.h>
 #include <ai/ai_server_state_adapter.h>
 #include <ai/ai_perception_adapter.h>
+#include <ai/ai_world_query_adapter.h>
 #include <aipb/explorer/engine_bridge_scenario_pose.h>
 #include <aipb/explorer/engine_bridge_scenario_menu.h>
 #include <aipb/explorer/engine_bridge_math.h>
@@ -908,6 +909,7 @@ bool init(int botIndex) {
 }
 
 void reset() {
+   ai::runtime_io::resetWorldQueries();
    ai::runtime_io::resetPerceptionFrames();
    ai::runtime_io::resetServerState();
    if (scenarioScheduler.running()) {

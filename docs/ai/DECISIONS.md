@@ -3930,3 +3930,12 @@ Read confirmed sensory flags and stored last-seen coordinates from YaPB only at 
 Create events on sight-acquisition/loss, sound onset and round transitions; disappearance events contain only the previously visible entity index, not a position.
 Reject stale, invalid, mismatched-session/slot observations and clear perception on disconnect and map shutdown.
 Keep existing gameplay, ONNX input contracts, original YaPB sources and Movement Discovery trials unchanged; test the permission rules with independent unit tests.
+
+## D318 — Gate read-only world traces by bot session and bounded geometry
+
+Allow only synchronous TraceLine and TraceHull on the GoldSrc game thread, with at most four calls per bot per observed frame.
+Require request schema, nonzero and monotonic request IDs, exact D316 session/frame and valid bot ownership before consuming the per-frame budget.
+Restrict the start to within 64 GoldSrc units of the bot origin and trace distance to 384 units; reject nonfinite vectors and invalid hull types.
+Use engine collision traces ignoring player monsters, return geometric fraction/contact but never entity identity or hidden player information.
+Fail closed on unsupported requests, stale state, out-of-budget calls or invalid trace samples; reset per-bot gate on disconnect and global gate on map shutdown.
+Do not connect requests to the policy yet, change navigation, modify upstream YaPB code or claim HLDS acceptance without Windows x86 game verification.

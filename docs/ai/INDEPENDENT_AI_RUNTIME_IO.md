@@ -107,3 +107,14 @@ Only source-tagged evidence is included; no tactical inference, historical targe
 The bounded state is invalidated for bad frame provenance, bot removal and map changes; it never controls movement or inference.
 Unit tests exercise hidden-state exclusion, audible anonymity, visual loss, event deduplication, round changes, bad clocks, reused slots and copy isolation.
 Windows x86 compile/link and real in-game perception acceptance remain pending user-run verification.
+
+## D318 — World Query Adapter
+
+`ai_world_query_gate.h` checks frame provenance, session, caller bot slot, monotonic request ID, finite trace geometry, permitted hull, range and fixed per-frame work budget without GoldSrc dependencies.
+The permitted operations are `TraceLine` and `TraceHull`; each bot gets four accepted traces per current D316 frame, with start within 64 units of self and segment length no longer than 384 units.
+`ai_world_query_adapter.cpp` runs on the GoldSrc game thread, revalidates the current D316 frame and bot identity and calls existing `game.testLine`/`game.testHull` with `TraceIgnore::Monsters`.
+The returned trace never includes player identity; unexpected player contacts fail closed, as do nonfinite collision fields.
+`PointContents`, entity search, PVS/PAS and other deferred operations return `Unsupported` without querying the engine.
+No model policy directly calls the adapter in this step and no movement/action control changes.
+Tests cover stale sessions and frames, budget isolation, request replays, bounds, unsupported calls and result sanitization.
+Windows x86/HLDS validation is still pending; collision tracing alone does not prove the ability to traverse a proposed segment.

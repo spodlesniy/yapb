@@ -838,3 +838,6 @@ D316 adds read-only physical self-state capture at the existing Explorer bot-fra
 The adapter does not expose opponents, drive movement, run inference or change the legacy control path; automatic AI unit-test CI and user-run Windows x86/HLDS acceptance remain separate gates.
 D317 adds a bounded read-only Perception/Event Adapter over D316 self snapshots, with confirmed sighting, anonymous audible-origin and public round-transition events, explicit provenance, and fail-closed handling of invalid/stale captures.
 No hidden live opponent position or health is exported, and no movement, model inference, world query or legacy tactical decision is changed; automatic CI and user-run Windows x86/HLDS acceptance remain separate gates.
+D317 automatic Build CI passed for ca1af56 (run 41310201208).
+D318 introduces a read-only bounded per-bot geometry query gate and engine-thread TraceLine/TraceHull adapter, validating current D316 session/frame, own-position proximity and query budget before GoldSrc collision tests.
+Entity enumeration, contents and visibility/PAS queries remain explicitly Unsupported; automatic CI and manual Windows x86/HLDS validation are required before claims of real-world query correctness, and Movement Discovery Stage C/T261-07 remain open.
