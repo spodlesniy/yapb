@@ -196,6 +196,7 @@ if(YAPB_BUILD_TESTS)
       "tests/unit/ai_test.cpp"
       "tests/unit/ai_action_tests.cpp"
       "tests/unit/ai_observation_tests.cpp"
+      "tests/unit/ai_runtime_io_tests.cpp"
       "tests/unit/ai_controller_tests.cpp"
       "tests/unit/ai_action_validation_tests.cpp"
       "tests/unit/ai_action_runtime_tests.cpp"

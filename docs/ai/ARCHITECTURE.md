@@ -554,3 +554,10 @@ They never imply `IN_USE`, BarTime or success and do not modify the training obs
 
 For an isolated Training CT pursuing planted C4, an unobstructed direct segment outside the interaction radius takes precedence over the interaction-waypoint graph branch.
 This changes movement choice only: it does not turn a clear trace into an IN_USE attempt and does not skip `canBeginPlantedBombUse`, blocked-geometry fallback, BarTime confirmation or late-escape logic.
+
+
+## Independent Runtime I/O boundary (D315)
+
+The [Runtime I/O v1 contract](INDEPENDENT_AI_RUNTIME_IO.md) defines the engine-neutral stamp, event, world query and feedback envelopes for a future independent-model integration.
+It reuses the existing `Observation`, `Policy`, `ActionResult` and engine execution abstractions, without adding hooks or changing the legacy model tensor schema.
+Engine-only authoritative state and debug truth must not cross the model-facing perception boundary.

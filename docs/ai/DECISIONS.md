@@ -3904,3 +3904,13 @@ That contradicts D314's intentional support of a stable standing hull overhangin
 Replace both stale assertions with bounded comparisons to the BSP rectangle expanded by `SUPPORT_RADIUS`, plus checks that the generated target extends to valid outside-face center positions while retaining the measured landing within its XY range.
 Do not weaken collision-support, nonconvex, ambiguity, or out-of-hull failure tests; do not modify the BSP exporter, runtime, or D309 classification.
 Preserve the pending Stage C and T261-07 acceptance gates; the corrected commit requires its own automatic CI result.
+
+## D315 — Introduce engine-neutral Runtime I/O contracts without changing gameplay
+
+Specify a versioned and fail-closed HLDS-to-model boundary using `FrameStamp`, `WorldEvent`, `WorldQueryRequest/WorldQueryResult` and `ActionFeedback`.
+Reuse the existing `Observation`, `Policy`, `InferenceProvider`, `ActionExecutionContext`, `ActionResult` and Explorer telemetry instead of constructing competing runtime or model contracts.
+Require nonzero session/frame/request provenance, monotonic per-session frame observations, explicit query statuses, and rejection of stale or mismatched replies.
+Keep information-source classification distinct from authorization; do not surface hidden enemy state merely because the engine can read it.
+Only future server-thread adapters may execute GoldSrc queries and must enforce permissions, work budgets and exclusive movement ownership.
+D315 introduces no runtime wiring, new policy, inference-schema changes or movement capability claims.
+See [Runtime I/O boundary v1](INDEPENDENT_AI_RUNTIME_IO.md) for the complete audit, cadence and follow-up gates.
