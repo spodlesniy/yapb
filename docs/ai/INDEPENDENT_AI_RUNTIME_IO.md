@@ -96,3 +96,14 @@ The new snapshots are not connected to a policy, model inference, movement comma
 The sampling cadence follows existing per-bot frame callbacks, not an independent timer.
 Unit tests cover session identity replacement, round/frame sequencing, invalid clock and physics, disconnect and map reset, and copy-only access.
 Windows x86 linking and in-game frame timing still require user-run HLDS validation.
+
+## D317 — Perception/Event Adapter
+
+`ai_perception_events.h` defines a bounded per-bot `PerceptionFrame` with a copied D316 self snapshot, one currently confirmed visible enemy and up to four stamped `WorldEvent` entries per frame.
+The adapter is called after D316 capture through the existing Explorer callback and only consumes YaPB's positive seeing/hearing signals, remembered last-seen enemy position and audible client noise origin, never live hidden-player positions or health.
+A visual acquisition exports a `Seen` entity and location; losing sight produces only a position-free disappearance event.
+A sound onset provides an anonymous `Heard` position with no source identity, and public round edges carry no positions.
+Only source-tagged evidence is included; no tactical inference, historical target location or unauthorized hidden state is synthesized.
+The bounded state is invalidated for bad frame provenance, bot removal and map changes; it never controls movement or inference.
+Unit tests exercise hidden-state exclusion, audible anonymity, visual loss, event deduplication, round changes, bad clocks, reused slots and copy isolation.
+Windows x86 compile/link and real in-game perception acceptance remain pending user-run verification.

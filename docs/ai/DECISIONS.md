@@ -3922,3 +3922,11 @@ Correlate copies with D315 session, frame and round provenance, reject invalid c
 Bot disconnect and map shutdown invalidate stored snapshots; a subsequent capture receives a new session ID even when the engine reuses an entity slot or bot pointer.
 Read-only snapshot access does not authorize exposing enemy or privileged state to the AI policy.
 Do not alter original YaPB files, execution ownership, ONNX inputs or Movement Discovery evidence in this step.
+
+## D317 — Bound independent perceptions to confirmed sight and audible evidence
+
+Add a fixed-capacity per-bot perception frame with one confirmed visible enemy, anonymous sound-origin evidence, and public round-transition events; reuse D315 WorldEvent stamps and D316 ServerBotSnapshot provenance.
+Read confirmed sensory flags and stored last-seen coordinates from YaPB only at the existing engine-thread Explorer frame boundary; do not query arbitrary hidden player entvars or expose health, identity through hearing, or unseen live positions.
+Create events on sight-acquisition/loss, sound onset and round transitions; disappearance events contain only the previously visible entity index, not a position.
+Reject stale, invalid, mismatched-session/slot observations and clear perception on disconnect and map shutdown.
+Keep existing gameplay, ONNX input contracts, original YaPB sources and Movement Discovery trials unchanged; test the permission rules with independent unit tests.

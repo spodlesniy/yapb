@@ -18,6 +18,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(YAPB_SRC
     "src/ai/ai_bot_adapter.cpp"
     "src/ai/ai_server_state_adapter.cpp"
+    "src/ai/ai_perception_adapter.cpp"
     "src/ai/ai_controller.cpp"
     "src/ai/ai_observation_builder.cpp"
     "src/ai/ai_action_validator.cpp"
@@ -199,6 +200,7 @@ if(YAPB_BUILD_TESTS)
       "tests/unit/ai_observation_tests.cpp"
       "tests/unit/ai_runtime_io_tests.cpp"
       "tests/unit/ai_server_state_tests.cpp"
+      "tests/unit/ai_perception_events_tests.cpp"
       "tests/unit/ai_controller_tests.cpp"
       "tests/unit/ai_action_validation_tests.cpp"
       "tests/unit/ai_action_runtime_tests.cpp"
