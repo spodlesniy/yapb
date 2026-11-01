@@ -1,6 +1,7 @@
 #include <yapb.h>
 #include <ai/ai_exploration_probe.h>
 #include <ai/ai_menu.h>
+#include <ai/ai_server_state_adapter.h>
 #include <aipb/explorer/engine_bridge_scenario_pose.h>
 #include <aipb/explorer/engine_bridge_scenario_menu.h>
 #include <aipb/explorer/engine_bridge_math.h>
@@ -906,6 +907,7 @@ bool init(int botIndex) {
 }
 
 void reset() {
+   ai::runtime_io::resetServerState();
    if (scenarioScheduler.running()) {
       auto *bot = bots.findBotByIndex(scenarioScheduler.botIndex());
       scenarioScheduler.cancel();
@@ -925,6 +927,7 @@ void cancelBot(int botIndex) {
 }
 
 bool frame(Bot &bot) {
+   ai::runtime_io::captureBotFrame(bot);
    // The first bot frame is the earliest existing AiPB hook with a ready engine.
    // GoldSrc server commands persist across map changes.
    static bool aipbCommandRegistered {};

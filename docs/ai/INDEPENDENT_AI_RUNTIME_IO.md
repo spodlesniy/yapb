@@ -83,3 +83,16 @@ All GoldSrc calls and entity dereferences remain on the main game thread.
 D315 acceptance is a compiling engine-independent header and focused unit tests on lifecycle, timestamp monotonicity, query correlation and default unknown values.
 No runtime safety, perception secrecy, movement feasibility or in-game timing is considered verified until the corresponding adapter and user-run HLDS tests exist.
 Movement Discovery Stage A–G and its outstanding Stage C and T261-07 acceptance gates remain unchanged.
+
+## D316 — Read-only HLDS self-state capture
+
+`ai_server_state.h` defines a bounded 32-slot, engine-neutral cache for physical self-state, with a nonzero session and monotonically increasing frame ID.
+`ai_server_state_adapter.cpp` copies authoritative GoldSrc bot position, velocity, view angles, health, armor, maximum speed, and stance/life flags when the existing Explorer callback runs before bot movement.
+Only a managed fake-client bot with a consistent entity pointer is accepted.
+A rejected clock, identity or physics sample clears the prior snapshot instead of exposing stale data.
+Bot disconnection invalidates the selected slot and map deactivation invalidates all slots without resetting the session counter.
+`readServerBotSnapshot` returns a copy; the cache never retains `edict_t` pointers.
+The new snapshots are not connected to a policy, model inference, movement commands or any query execution.
+The sampling cadence follows existing per-bot frame callbacks, not an independent timer.
+Unit tests cover session identity replacement, round/frame sequencing, invalid clock and physics, disconnect and map reset, and copy-only access.
+Windows x86 linking and in-game frame timing still require user-run HLDS validation.

@@ -3914,3 +3914,11 @@ Keep information-source classification distinct from authorization; do not surfa
 Only future server-thread adapters may execute GoldSrc queries and must enforce permissions, work budgets and exclusive movement ownership.
 D315 introduces no runtime wiring, new policy, inference-schema changes or movement capability claims.
 See [Runtime I/O boundary v1](INDEPENDENT_AI_RUNTIME_IO.md) for the complete audit, cadence and follow-up gates.
+
+## D316 — Capture validated read-only bot self state at the existing frame hook
+
+Use the existing `ai::explore::frame(Bot&)` callback, invoked by every `Bot::frame()` before movement control, to capture self-origin, velocity, view angles, health, armor, maximum speed, stance and life state into a bounded engine-neutral cache.
+Correlate copies with D315 session, frame and round provenance, reject invalid clocks or nonfinite physics, and never retain entity pointers.
+Bot disconnect and map shutdown invalidate stored snapshots; a subsequent capture receives a new session ID even when the engine reuses an entity slot or bot pointer.
+Read-only snapshot access does not authorize exposing enemy or privileged state to the AI policy.
+Do not alter original YaPB files, execution ownership, ONNX inputs or Movement Discovery evidence in this step.

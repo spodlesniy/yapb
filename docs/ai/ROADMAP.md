@@ -833,3 +833,6 @@ Only the unit-test expectation and documentation change; BSP extraction, generat
 
 D315 establishes a contract-only engine-neutral Runtime I/O v1 for future HLDS ↔ bot ↔ independent-model integration: session/frame provenance, explicit world-event evidence, query/result correlation, lifecycle transitions and action feedback, with dedicated AI unit tests and no gameplay or ONNX model changes.
 The next gate is a read-only server-frame adapter with verified bot/session identity, followed separately by perception authorization, bounded world queries, control arbitration and HLDS validation; Movement Discovery Stage C and the deferred Stage A/T261-07 safety gates remain open.
+
+D316 adds read-only physical self-state capture at the existing Explorer bot-frame hook; validated session/frame provenance and automatic invalidation on bot disconnect and server deactivation are covered by new tests.
+The adapter does not expose opponents, drive movement, run inference or change the legacy control path; automatic AI unit-test CI and user-run Windows x86/HLDS acceptance remain separate gates.
