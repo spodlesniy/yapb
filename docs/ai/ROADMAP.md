@@ -851,3 +851,7 @@ No trained model, new game control mode, automatic policy activation, multi-bot 
 The action executor still uses the legacy YaPB navigation graph and may report a semantic Completed result without physical displacement; actual HLDS test acceptance, Windows x86 build, Stage C Movement Discovery and T261-07 safety gates remain open.
 D320 Windows x86 MSVC reported C2248 in D317 perception's direct Bot private sensing access; audit also found D319/D320 private AI runtime access from separate adapters.
 D320.1 routes sensory signals through the existing Bot-friend buildObservationInput and action-runtime operations through the already Bot-friend YaPBActionExecutionContext, without changing YaPB's class declaration; Windows x86 retest is required.
+D320.2 changes the opt-in Mock trial to Neural-only, with no temporary Legacy→Neural mode override.
+A selected Mock bot bypasses normal Bot::logic during its isolated frame; its existing Neural ActionRuntime produces one MoveToPosition and validated GoldSrc player movement follows a bounded forward command without invoking the YaPB navigation graph.
+The result is reported with measured elapsed time and target-distance remaining, and the previous Neural model/fallback policy is restored after terminal result or cancellation.
+Unit CI and Windows x86/HLDS integration remain required; the previous 57.11-unit D320 test demonstrated physical movement but not correct target completion.

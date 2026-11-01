@@ -3967,3 +3967,13 @@ Use the pre-existing friend `buildObservationInput` to consume only verified vis
 Route D319 cancellation and D320 Mock trial operations through narrow static accessors on the existing `YaPBActionExecutionContext` Bot friend, avoiding modification of original `inc/yapb.h` or other YaPB files.
 Retain the current action lifecycle, permissions, model feature schema and Explorer behavior.
 Require a fresh user-run Windows x86 compilation to verify all runtime adapter translation units.
+
+## D320.2 — Isolate Mock inside Neural and verify physical target
+
+Run the one-shot Mock policy only when its bot is already Neural-controlled; never force a Legacy bot into Neural.
+Temporarily replace only that bot's policy, preempt any existing Neural action through the standard runtime cancellation path, and restore its model or fallback policy on completion and cancellation.
+During Mock ownership, skip the normal Bot::logic tactical loop through the existing Explorer-style early frame return.
+Use the existing ActionRuntime for one MoveToPosition intent, but bypass YaPB's waypoint-dependent MoveToPosition completion and task mutation for this explicit trial.
+Move the player with a bounded main-thread GoldSrc RunPlayerMove command, accepting completion only within explicit physical XY/Z tolerances of the requested position.
+Log elapsed wall-clock game time, actual displacement, and remaining target distance independently.
+Preserve all non-Mock gameplay paths and require user-run Windows x86 and HLDS acceptance.

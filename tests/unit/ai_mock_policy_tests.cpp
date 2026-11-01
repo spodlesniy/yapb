@@ -8,6 +8,7 @@
 
 #include <ai/ai_action_validator.h>
 #include <ai/ai_mock_policy.h>
+#include <ai/ai_mock_motion.h>
 
 #include <limits>
 
@@ -54,4 +55,15 @@ AI_TEST(testMockPolicyRearmingOnlyAfterReset) {
   expect(policy.arm({ 4.0f, 5.0f, 6.0f }), "second run after explicit reset");
   auto action = policy.decide(observation);
   expect(action.targetPosition.z == 6.0f, "second run target distinct");
+}
+
+AI_TEST(testMockNeuralOnlyAndPhysicalTarget) {
+  expect(!ai::mockTrialModeAllowed(ai::ControlMode::Legacy), "Legacy never owns Mock");
+  expect(ai::mockTrialModeAllowed(ai::ControlMode::Neural), "Neural permits Mock");
+  expect(!ai::mockTrialModeAllowed(ai::ControlMode::Training), "Training never owns Mock");
+  const ai::Vec3 target { 96.0f, 0.0f, 132.0f };
+  expect(!ai::mockReachedTarget({ 57.11f, 0.0f, 132.0f }, target), "waypoint completion does not imply physical target");
+  expect(ai::mockReachedTarget({ 86.0f, 0.0f, 133.0f }, target), "physical tolerance applies");
+  expect(!ai::mockReachedTarget({ 96.0f, 0.0f, 160.0f }, target), "vertical mismatch fails");
+  expect(ai::mockDistanceToTarget({ 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 96.0f }) == 96.0f, "distance measured");
 }

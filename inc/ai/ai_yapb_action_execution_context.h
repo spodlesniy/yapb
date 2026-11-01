@@ -68,6 +68,7 @@ public:
   static bool armMockRuntimeMove(Bot &bot, const Vec3 &target);
   static ActionResult mockRuntimeResult(const Bot &bot);
   static void cancelMockRuntimeMove(Bot &bot);
+  static ActionResult stepMockRuntime(Bot &bot, const Observation &observation);
 
   bool isAlive() const override;
   bool allowsNavigationOverride() const override;

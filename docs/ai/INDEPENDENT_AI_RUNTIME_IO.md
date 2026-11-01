@@ -144,3 +144,12 @@ The existing ActionRuntime, BotActionExecutor and D319 ActionFeedback process th
 The trial is one-shot, rejects competing Explorer ownership, times out after five seconds and resets on disconnect/map shutdown.
 A clear hull trace is necessary but not sufficient for floor continuity, and the current MoveToPosition executor still uses the YaPB navigation graph; no independent traversal capability or success claim follows from a semantic Completed status.
 The targeted unit tests validate opt-in, one-shot intent, reset/rearming and action validation; true movement and feedback acceptance require a user-run Windows x86/HLDS test on a representative map.
+
+## D320.2 — Neural-only isolated Mock movement
+
+The opt-in mock requires yb_ai_mode 1 (Neural) before run, and never changes the global or per-bot control mode.
+While the selected Mock policy is armed, the existing AI action loop is evaluated in the per-bot frame without running Bot::logic or its Legacy tasks.
+Only the Mock MoveToPosition action uses physical target completion and direct frame-bounded GoldSrc forward movement; other action types retain their normal executor.
+The previous Neural inference/fallback policy is restored after completion or explicit cancellation.
+The server result includes true game elapsed seconds, physical displacement and remaining three-dimensional target distance.
+This short-horizon integration probe is not a general-purpose independent navigation executor; movement safety beyond the initial hull trace is not yet guaranteed.

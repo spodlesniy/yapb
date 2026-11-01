@@ -16,6 +16,7 @@
 #include <ai/ai_navigation_task_guard.h>
 #include <ai/ai_objective_navigation_guard.h>
 #include <ai/ai_yapb_action_execution_context.h>
+#include <ai/ai_mock_motion.h>
 
 namespace ai {
 
@@ -41,6 +42,10 @@ ActionResult YaPBActionExecutionContext::mockRuntimeResult(const Bot &bot) {
 
 void YaPBActionExecutionContext::cancelMockRuntimeMove(Bot &bot) {
   bot.m_aiRuntime.cancelMockMove();
+}
+
+ActionResult YaPBActionExecutionContext::stepMockRuntime(Bot &bot, const Observation &observation) {
+  return bot.m_aiRuntime.step(observation, true);
 }
 
 namespace {
@@ -69,6 +74,9 @@ bool YaPBActionExecutionContext::allowsNavigationOverride() const {
   if (m_bot == nullptr) {
     return false;
   }
+  if (m_bot->m_aiRuntime.mockMoveActive()) {
+    return true;
+  }
 
   const bool legacyObjectiveActive =
       (m_bot->m_team == Team::CT && gameState.isBombPlanted())
@@ -79,15 +87,28 @@ bool YaPBActionExecutionContext::allowsNavigationOverride() const {
 }
 
 bool YaPBActionExecutionContext::navigationNodeExists(int node) const {
+  if (m_bot != nullptr && m_bot->m_aiRuntime.mockMoveActive() &&
+      node == kMockDirectNavigationNode) {
+    return true;
+  }
   return graph.exists(node);
 }
 
 int YaPBActionExecutionContext::navigationNodeForPosition(const Vec3 &position) const {
+  if (m_bot != nullptr && m_bot->m_aiRuntime.mockMoveActive()) {
+    return kMockDirectNavigationNode;
+  }
   const Vector target { position.x, position.y, position.z };
   return graph.getNearest(target);
 }
 
 bool YaPBActionExecutionContext::isNavigationTargetReached(int node) const {
+  if (m_bot != nullptr && m_bot->pev != nullptr && m_bot->m_aiRuntime.mockMoveActive() &&
+      node == kMockDirectNavigationNode) {
+    const Vector &position = m_bot->pev->origin;
+    return mockReachedTarget({ position.x, position.y, position.z },
+                             m_bot->m_aiRuntime.mockMoveTarget());
+  }
   if (m_bot == nullptr || m_bot->pev == nullptr || !graph.exists(node) || m_bot->m_currentNodeIndex != node) {
     return false;
   }
@@ -120,6 +141,11 @@ void YaPBActionExecutionContext::moveToNode(int node) {
 
 void YaPBActionExecutionContext::moveToPosition(const Vec3 &position, int node) {
   if (m_bot == nullptr) {
+    return;
+  }
+  // An isolated Mock trial performs GoldSrc player movement in its own frame.
+  // Do not start or overwrite a Legacy navigation task.
+  if (m_bot->m_aiRuntime.mockMoveActive()) {
     return;
   }
 

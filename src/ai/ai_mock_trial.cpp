@@ -11,6 +11,9 @@
 #include <ai/ai_server_state_adapter.h>
 #include <ai/ai_world_query_adapter.h>
 #include <ai/ai_yapb_action_execution_context.h>
+#include <ai/ai_bot_adapter.h>
+#include <ai/ai_observation_builder.h>
+#include <ai/ai_mock_motion.h>
 
 #include <cmath>
 #include <cstdlib>
@@ -26,7 +29,9 @@ int selectedBot = -1;
 bool pending {};
 bool executing {};
 float started {};
+float lastFrameTime {};
 ai::Vec3 origin {};
+ai::Vec3 target {};
 uint64_t expectedSession {};
 uint64_t nextRequestId {};
 
@@ -98,7 +103,7 @@ bool handleServer() {
   }
   auto *bot = bots.findBotByIndex(static_cast<int>(index));
   if (bot == nullptr || bot->pev == nullptr || !game.isAliveEntity(bot->ent()) ||
-      ai::YaPBActionExecutionContext::runtimeActive(*bot)) {
+      !ai::mockTrialModeAllowed(ai::YaPBActionExecutionContext::runtimeMode(*bot))) {
     game.print("AiPB mock: rejected (BotUnavailableOrBusy).");
     return true;
   }
@@ -108,23 +113,24 @@ bool handleServer() {
   return true;
 }
 
-void frame(Bot &bot) {
+bool frame(Bot &bot) {
   if (selectedBot != bot.index()) {
-    return;
+    return false;
   }
   ai::runtime_io::ServerBotSnapshot state {};
   if (!ai::runtime_io::readServerBotSnapshot(selectedBot, state) ||
       !state.self.alive || !std::isfinite(state.self.maxSpeed) || state.self.maxSpeed < 10.0f ||
       ai::explore::active() || gameState.isRoundOver() ||
+      !ai::mockTrialModeAllowed(ai::YaPBActionExecutionContext::runtimeMode(bot)) ||
       (executing && state.stamp.sessionId != expectedSession)) {
     abortTrial(&bot, "stale bot, round or competing owner");
-    return;
+    return true;
   }
 
   if (pending) {
-    if (!state.self.onGround || ai::YaPBActionExecutionContext::runtimeActive(bot)) {
-      abortTrial(&bot, "bot not grounded or already executing");
-      return;
+    if (!state.self.onGround) {
+      abortTrial(&bot, "bot not grounded");
+      return true;
     }
     const float yaw = state.self.viewAngles.y * 0.017453292519943295f;
     ai::runtime_io::WorldQueryRequest request {};
@@ -145,30 +151,62 @@ void frame(Bot &bot) {
       game.print("AiPB mock: rejected (UnsafeTraceOrAction), query_status=%d.",
                  static_cast<int>(reply.status));
       clearSelection();
-      return;
+      return true;
     }
     origin = state.self.origin;
+    target = request.end;
     expectedSession = state.stamp.sessionId;
     started = state.stamp.gameTime;
+    lastFrameTime = started;
     pending = false;
     executing = true;
     game.print("AiPB mock: bot #%d armed MoveToPosition; from=(%.1f,%.1f,%.1f) to=(%.1f,%.1f,%.1f).",
                selectedBot, origin.x, origin.y, origin.z, request.end.x, request.end.y, request.end.z);
-    return;
+    return true;
   }
 
+  // Execute the same Neural ActionRuntime policy/executor without Bot::logic.
+  const auto observation = ai::buildObservation(ai::buildObservationInput(bot));
+  const auto runtimeResult = ai::YaPBActionExecutionContext::stepMockRuntime(bot, observation);
   const auto outcome = ai::YaPBActionExecutionContext::mockRuntimeResult(bot);
   if (outcome.type != ai::ActionResultType::None && outcome.isTerminal()) {
     const float moved = displacement(origin, state.self.origin);
-    game.print("AiPB mock: result=%s; physical_displacement=%.2f; action_elapsed=%.3f; session=%llu; frame=%llu.",
-               resultName(outcome.type), moved, outcome.elapsedTime,
+    const float remaining = ai::mockDistanceToTarget(state.self.origin, target);
+    game.print("AiPB mock: result=%s; physical_displacement=%.2f; target_distance_remaining=%.2f; action_elapsed=%.3f; session=%llu; frame=%llu.",
+               resultName(outcome.type), moved, remaining, state.stamp.gameTime - started,
                static_cast<unsigned long long>(state.stamp.sessionId),
                static_cast<unsigned long long>(state.stamp.frameId));
     clearSelection();
+    return true;
   }
-  else if (state.stamp.gameTime - started > kTrialTimeout) {
+  if (state.stamp.gameTime - started > kTrialTimeout) {
     abortTrial(&bot, "action timeout");
+    return true;
   }
+
+  // No tactical Legacy logic runs while the selected Mock policy owns this bot.
+  // PlayerMove's buttons are scoped to this frame, just like Explorer scenarios.
+  const float dt = state.stamp.gameTime - lastFrameTime;
+  lastFrameTime = state.stamp.gameTime;
+  if (dt <= 0.0f || !std::isfinite(dt) || !state.self.onGround ||
+      runtimeResult.type == ai::ActionResultType::Invalid ||
+      runtimeResult.type == ai::ActionResultType::Rejected) {
+    abortTrial(&bot, "invalid movement state");
+    return true;
+  }
+  const float yaw = std::atan2(target.y - state.self.origin.y, target.x - state.self.origin.x);
+  auto angles = bot.pev->v_angle;
+  angles.y = yaw * 57.29577951308232f;
+  angles.x = 0.0f;
+  bot.pev->v_angle = angles;
+  bot.pev->angles.y = angles.y;
+  bot.pev->button = 0;
+  bot.pev->impulse = 0;
+  const float speed = cr::min(state.self.maxSpeed, 180.0f);
+  const float boundedDt = cr::min(dt, 0.05f);
+  const auto milliseconds = static_cast<uint8_t>(cr::max(1, static_cast<int>(boundedDt * 1000.0f)));
+  engfuncs.pfnRunPlayerMove(bot.ent(), angles, speed, 0.0f, 0.0f, 0, 0, milliseconds);
+  return true;
 }
 
 void cancelBot(int botIndex) {

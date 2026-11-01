@@ -942,7 +942,6 @@ void cancelBot(int botIndex) {
 bool frame(Bot &bot) {
    ai::runtime_io::captureBotFrame(bot);
    ai::runtime_io::capturePerceptionFrame(bot);
-   ai::mock::frame(bot);
    const bool explorerOwnsFrame = session.botIndex == bot.index()
       || (scenarioScheduler.running() && scenarioScheduler.botIndex() == bot.index());
    const bool ownershipReady = ai::runtime_io::captureControlFrame(bot, explorerOwnsFrame);
@@ -954,6 +953,9 @@ bool frame(Bot &bot) {
       if (session.botIndex == bot.index()) {
          stop("ownership unavailable");
       }
+      return true;
+   }
+   if (!explorerOwnsFrame && ai::mock::frame(bot)) {
       return true;
    }
    // The first bot frame is the earliest existing AiPB hook with a ready engine.
