@@ -845,3 +845,7 @@ D318 automatic Build CI passed at 42e0fcd (run 41311144800).
 D319 records a single execution owner for each validated D316 bot frame and correlates observed Neural/Training ActionResult outcomes with decision/observation frame IDs.
 Explorer retains its established single-frame precedence and cancels active semantic AI actions before taking movement control; conflicting or invalid handoffs fail closed, and disconnect/map shutdown invalidate ownership and adjacent read-only caches.
 The step does not add an Independent control mode, substitute Explorer outcomes for semantic ActionResult, or certify HLDS behavior; automatic tests, manual Windows x86 checks and Movement Discovery acceptance gates remain separate.
+D319 automatic Build CI passed at ae7d347 (run 41312041914).
+D320 introduces an explicit server-console-only per-bot one-shot MockMovePolicy integration trial through the existing Neural policy and semantic MoveToPosition executor, with D316 self-state, D318 bounded hull trace, D319 action feedback, fail-closed gating and an observed displacement report.
+No trained model, new game control mode, automatic policy activation, multi-bot change, or claim of independent map traversal is introduced.
+The action executor still uses the legacy YaPB navigation graph and may report a semantic Completed result without physical displacement; actual HLDS test acceptance, Windows x86 build, Stage C Movement Discovery and T261-07 safety gates remain open.

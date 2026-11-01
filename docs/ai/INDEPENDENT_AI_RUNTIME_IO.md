@@ -132,3 +132,15 @@ The ledger does not implement or authorize an additional Independent controller,
 Disconnect and map deactivation invalidate the ownership ledger and the previously created server, perception and query caches.
 Unit tests cover exclusive handoff with cancellation, multiple bot independence, completed and one-frame terminal outcomes, stale sessions, wrong-owner results and invalid action IDs.
 Windows x86/HLDS acceptance and actual model-driven movement remain outstanding.
+
+## D320 — Opt-in Mock Policy vertical integration
+
+The engine-neutral `MockMovePolicy` returns exactly one position-target action while explicitly armed and never reads enemies, map internals, or GoldSrc.
+The server-console-only `aipb mock run <bot-index>` command arms one trial; `aipb mock status` reports Pending/Executing/Idle and `aipb mock stop` cancels it.
+Only a currently Legacy-controlled, grounded, alive bot with no active semantic action can start a mock trial.
+On the next D316 snapshot, the adapter computes a 96-unit forward target from self view yaw, checks the segment with a budgeted D318 TraceHull, and rejects collisions, stale snapshots and unsafe movement parameters.
+The trial temporarily selects that bot's existing Neural policy path, injecting MockMovePolicy rather than changing the actual model provider or global mode.
+The existing ActionRuntime, BotActionExecutor and D319 ActionFeedback process the requested MoveToPosition action, while a final server log reports the semantic ActionResult and actual displacement measured by D316 snapshots.
+The trial is one-shot, rejects competing Explorer ownership, times out after five seconds and resets on disconnect/map shutdown.
+A clear hull trace is necessary but not sufficient for floor continuity, and the current MoveToPosition executor still uses the YaPB navigation graph; no independent traversal capability or success claim follows from a semantic Completed status.
+The targeted unit tests validate opt-in, one-shot intent, reset/rearming and action validation; true movement and feedback acceptance require a user-run Windows x86/HLDS test on a representative map.

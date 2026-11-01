@@ -5,6 +5,7 @@
 #include <ai/ai_perception_adapter.h>
 #include <ai/ai_world_query_adapter.h>
 #include <ai/ai_execution_ownership_adapter.h>
+#include <ai/ai_mock_trial.h>
 #include <aipb/explorer/engine_bridge_scenario_pose.h>
 #include <aipb/explorer/engine_bridge_scenario_menu.h>
 #include <aipb/explorer/engine_bridge_math.h>
@@ -910,6 +911,7 @@ bool init(int botIndex) {
 }
 
 void reset() {
+   ai::mock::reset();
    ai::runtime_io::resetControlFrames();
    ai::runtime_io::resetWorldQueries();
    ai::runtime_io::resetPerceptionFrames();
@@ -923,6 +925,7 @@ void reset() {
 }
 
 void cancelBot(int botIndex) {
+   ai::mock::cancelBot(botIndex);
    ai::runtime_io::releaseControlBot(botIndex);
    ai::runtime_io::releaseWorldQueryBot(botIndex);
    ai::runtime_io::releasePerceptionBot(botIndex);
@@ -939,6 +942,7 @@ void cancelBot(int botIndex) {
 bool frame(Bot &bot) {
    ai::runtime_io::captureBotFrame(bot);
    ai::runtime_io::capturePerceptionFrame(bot);
+   ai::mock::frame(bot);
    const bool explorerOwnsFrame = session.botIndex == bot.index()
       || (scenarioScheduler.running() && scenarioScheduler.botIndex() == bot.index());
    const bool ownershipReady = ai::runtime_io::captureControlFrame(bot, explorerOwnsFrame);
@@ -957,7 +961,9 @@ bool frame(Bot &bot) {
    static bool aipbCommandRegistered {};
    if (!aipbCommandRegistered) {
       game.registerEngineCommand("aipb", [] () {
-         ai::menu::handleServer();
+         if (!ai::mock::handleServer()) {
+            ai::menu::handleServer();
+         }
       });
       aipbCommandRegistered = true;
    }

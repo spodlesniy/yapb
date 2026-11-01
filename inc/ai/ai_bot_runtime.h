@@ -13,6 +13,7 @@
 #include <ai/ai_yapb_action_execution_context.h>
 #include <ai/ai_goal_navigation_policy.h>
 #include <ai/ai_inference_policy.h>
+#include <ai/ai_mock_policy.h>
 #include <ai/ai_execution_ownership_adapter.h>
 #include <ai/ai_reward_provider.h>
 #include <ai/ai_training_collector.h>
@@ -28,6 +29,9 @@ class BotRuntime final {
 private:
   Bot *m_bot {};
   GoalNavigationPolicy m_goalNavigationPolicy {};
+  MockMovePolicy m_mockPolicy {};
+  bool m_mockMoveActive {};
+  ActionResult m_mockMoveResult {};
   InferencePolicy m_inferencePolicy {};
   TrainingRecorder m_trainingRecorder {};
   ActionOutcomeRewardProvider m_defaultRewardProvider {};
@@ -45,6 +49,9 @@ public:
   explicit BotRuntime(Bot &bot);
 
   void setMode(ControlMode mode, const Observation &) {
+    if (m_mockMoveActive) {
+      mode = ControlMode::Neural;
+    }
     const auto previousMode = m_runtime.getMode();
     if (mode == previousMode) {
       return;
@@ -67,9 +74,9 @@ public:
       break;
 
     case ControlMode::Neural:
-      m_runtime.setPolicy((m_inferencePolicy.getProvider() != nullptr || m_inferencePolicy.getFallbackPolicy() != nullptr)
-                              ? static_cast<const Policy *>(&m_inferencePolicy)
-                              : nullptr);
+      m_runtime.setPolicy(m_mockMoveActive ? static_cast<const Policy *>(&m_mockPolicy) :
+          (m_inferencePolicy.getProvider() != nullptr || m_inferencePolicy.getFallbackPolicy() != nullptr)
+              ? static_cast<const Policy *>(&m_inferencePolicy) : nullptr);
       break;
 
     case ControlMode::Training:
@@ -92,7 +99,46 @@ public:
   }
 
   void setPolicy(const Policy *policy) {
-    m_runtime.setPolicy(policy);
+    if (!m_mockMoveActive) {
+      m_runtime.setPolicy(policy);
+    }
+  }
+
+  // Only an explicit single-bot server-console trial can enable the mock.
+  bool armMockMove(const Vec3 &target) {
+    if (m_mockMoveActive || m_runtime.isActive() || m_runtime.getMode() != ControlMode::Legacy ||
+        !m_mockPolicy.arm(target)) {
+      return false;
+    }
+    m_mockMoveResult = {};
+    m_mockMoveActive = true;
+    return true;
+  }
+
+  bool mockMoveActive() const {
+    return m_mockMoveActive;
+  }
+
+  const ActionResult &mockMoveResult() const {
+    return m_mockMoveResult;
+  }
+
+  void cancelMockMove() {
+    if (!m_mockMoveActive) {
+      return;
+    }
+    if (m_runtime.isActive() && m_trainingCollector.cancel(m_runtime)) {
+      if (m_bot != nullptr) {
+        runtime_io::recordBotActionResult(*m_bot, m_runtime.result());
+      }
+      m_trainingCollector.finalizeTerminal(captureObservation());
+      m_mockMoveResult = m_runtime.result();
+    }
+    else {
+      m_mockMoveResult = { ActionType::MoveToPosition, ActionResultType::Interrupted, 0.0f };
+    }
+    m_mockMoveActive = false;
+    m_mockPolicy.reset();
   }
 
   const Policy *getPolicy() const {
@@ -102,7 +148,7 @@ public:
   void setInferenceProvider(const InferenceProvider *provider) {
     m_inferencePolicy.setProvider(provider);
 
-    if (m_runtime.getMode() == ControlMode::Neural) {
+    if (m_runtime.getMode() == ControlMode::Neural && !m_mockMoveActive) {
       m_runtime.setPolicy(provider != nullptr || m_inferencePolicy.getFallbackPolicy() != nullptr
                               ? static_cast<const Policy *>(&m_inferencePolicy)
                               : nullptr);
@@ -112,7 +158,7 @@ public:
   void setInferenceFallbackEnabled(bool enabled) {
     m_inferencePolicy.setFallbackPolicy(enabled ? static_cast<const Policy *>(&m_goalNavigationPolicy) : nullptr);
 
-    if (m_runtime.getMode() == ControlMode::Neural) {
+    if (m_runtime.getMode() == ControlMode::Neural && !m_mockMoveActive) {
       const bool inferenceAvailable = m_inferencePolicy.getProvider() != nullptr;
       m_runtime.setPolicy(inferenceAvailable || enabled ? static_cast<const Policy *>(&m_inferencePolicy) : nullptr);
     }
@@ -198,6 +244,14 @@ public:
     if (result.isTerminal()) {
       m_trainingCollector.finalizeTerminal(captureObservation());
     }
+    if (m_mockMoveActive && result.action == ActionType::MoveToPosition &&
+        (result.type == ActionResultType::Accepted || result.isTerminal())) {
+      m_mockMoveResult = result;
+      if (result.isTerminal()) {
+        m_mockMoveActive = false;
+        m_mockPolicy.reset();
+      }
+    }
     return result;
   }
 
@@ -214,6 +268,7 @@ public:
   }
 
   void reset() {
+    cancelMockMove();
     if (m_trainingCollector.hasPendingTerminal()) {
       m_trainingCollector.finalizeTerminal(captureObservation());
     }

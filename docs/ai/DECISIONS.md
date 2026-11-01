@@ -3949,3 +3949,13 @@ Observe Accepted/terminal ActionResult from existing runtime step, cancellation 
 The policy switch within a bot frame may update the owner only when no pending action exists.
 Invalidate ownership, WorldQuery, Perception and ServerBot caches on bot disconnect; invalidate all of them on map shutdown.
 Do not change original YaPB files, ONNX, action execution semantics, Movement Discovery tests or existing Explorer scenario-result schema.
+
+## D320 — Add explicit one-shot Mock Policy with observed movement result
+
+Provide a deterministic engine-independent MockMovePolicy that emits one MoveToPosition action from an explicitly armed target and otherwise returns no decision.
+Run it only on one explicitly selected bot using the server-console `aipb mock run <bot-index>` command, refusing already active AI actions and competing Explorer scenarios.
+At the next validated bot frame, require a grounded live bot and a clear, budgeted D318 TraceHull of at most 96 GoldSrc units before arming the mock.
+Temporarily select the existing Neural controller for that bot without changing global `yb_ai_mode`, model configuration or other bots, then reuse its normal ActionRuntime and ActionResult recording.
+Stop after one terminal result, explicit server cancellation, invalid session or a five-second timeout; report semantic result separately from measured displacement using D316 self state.
+Do not claim that MoveToPosition proves independent navigation: its implementation still delegates to YaPB nearest-waypoint navigation and may semantically complete without the intended motion.
+Do not modify original YaPB files, default gameplay, ONNX feature contract, Explorer scenario evidence or prior Movement Discovery outcome labels.
