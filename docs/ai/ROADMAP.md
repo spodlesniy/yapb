@@ -855,3 +855,7 @@ D320.2 changes the opt-in Mock trial to Neural-only, with no temporary Legacy→
 A selected Mock bot bypasses normal Bot::logic during its isolated frame; its existing Neural ActionRuntime produces one MoveToPosition and validated GoldSrc player movement follows a bounded forward command without invoking the YaPB navigation graph.
 The result is reported with measured elapsed time and target-distance remaining, and the previous Neural model/fallback policy is restored after terminal result or cancellation.
 Unit CI and Windows x86/HLDS integration remain required; the previous 57.11-unit D320 test demonstrated physical movement but not correct target completion.
+D320.2 automatic Build CI succeeded at 02e273c (run 41317656635), and the user-run HLDS Mock trial reported Completed after 0.852 seconds with 84.14 units of physical displacement and 11.86 units remaining to the requested 96-unit target, consistent with the documented 12-unit horizontal completion tolerance.
+D321 adds bounded self-only telemetry to opt-in Neural Mock runs and read-only deterministic audit replay, retaining one last trace in memory until the next accepted run or map shutdown.
+The replay verifies a reproducible Mock policy intent, D316 monotonic self frames, D319 correlated ActionFeedback and actual physical target completion without executing GoldSrc movement.
+Trace records intentionally omit other players and do not persist to disk; full-model policy replay, arbitrary-map movement evidence, file-based export, and independent training remain future steps.

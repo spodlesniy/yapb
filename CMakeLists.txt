@@ -207,6 +207,7 @@ if(YAPB_BUILD_TESTS)
       "tests/unit/ai_world_query_tests.cpp"
       "tests/unit/ai_execution_ownership_tests.cpp"
       "tests/unit/ai_mock_policy_tests.cpp"
+      "tests/unit/ai_mock_telemetry_tests.cpp"
       "tests/unit/ai_controller_tests.cpp"
       "tests/unit/ai_action_validation_tests.cpp"
       "tests/unit/ai_action_runtime_tests.cpp"

@@ -3977,3 +3977,13 @@ Use the existing ActionRuntime for one MoveToPosition intent, but bypass YaPB's 
 Move the player with a bounded main-thread GoldSrc RunPlayerMove command, accepting completion only within explicit physical XY/Z tolerances of the requested position.
 Log elapsed wall-clock game time, actual displacement, and remaining target distance independently.
 Preserve all non-Mock gameplay paths and require user-run Windows x86 and HLDS acceptance.
+
+## D321 — Record bounded Mock observations and replay without gameplay effects
+
+Store one opt-in Neural Mock trial as a fixed-capacity per-bot-session in-memory trace of D316 self snapshots, policy target, D318 initial trace status, one ActionResult per observed step and the matching D319 ActionFeedback.
+Do not retain raw Bot/GoldSrc objects, opponent state, hidden positions or entire legacy observation structures.
+Keep the completed trace after the mock returns to Idle, and discard it when a new valid trial begins or the map is deactivated.
+Fail closed if frames are stale or out of order, feedback correlation is absent, or the trace capacity is exceeded.
+The read-only `aipb mock trace replay` command re-evaluates the one-shot deterministic policy target and audits physical completion, never calls any movement engine function, and is not a simulation of GoldSrc physics.
+The `aipb mock trace dump [start]` command prints at most 16 consecutive recorded frames to the server console; no file I/O or additional networking is introduced.
+Do not alter normal Legacy/Neural inference behavior, ONNX feature contracts, or previously collected Movement Discovery evidence.

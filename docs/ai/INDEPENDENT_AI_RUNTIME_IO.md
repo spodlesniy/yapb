@@ -153,3 +153,18 @@ Only the Mock MoveToPosition action uses physical target completion and direct f
 The previous Neural inference/fallback policy is restored after completion or explicit cancellation.
 The server result includes true game elapsed seconds, physical displacement and remaining three-dimensional target distance.
 This short-horizon integration probe is not a general-purpose independent navigation executor; movement safety beyond the initial hull trace is not yet guaranteed.
+
+## D321 — Bounded Mock trace and read-only replay
+
+`ai_mock_telemetry.h` stores up to 512 self-only D316 snapshots together with frame-correlated D319 feedback and the existing Mock MoveToPosition results.
+The recorded trial starts with its verified D318 preflight status and requested target and never includes other player coordinates, health or internal engine pointers.
+Each subsequent frame records authoritative self position, velocity, session/frame IDs, elapsed game time, semantic result and optional feedback.
+Missing feedback is retained as missing evidence; the trace is not silently repaired.
+Invalid/duplicate frames and overflow make a trace non-replayable.
+An interrupted trial is explicitly marked Cancelled.
+The deterministic audit reconstructs the one-shot policy decision and verifies feedback identity, one terminal result, monotonic time/session and physical completion tolerance.
+It never re-executes player movement, traces, model inference or GoldSrc world simulation and therefore does not predict physics.
+Only the last accepted Mock trial is retained in memory, including after `aipb mock status` reports Idle; it is cleared on the next valid run or map reset.
+The server-console commands `aipb mock trace status`, `aipb mock trace replay`, and paginated `aipb mock trace dump [start]` inspect that trace with no side effects; each dump prints at most 16 records.
+Read-only replay and trace schema do not replace Explorer's real movement scenarios or historical training transition records.
+D321 unit tests verify acceptance, replay determinism, stale frames, incorrect feedback, premature completion, cancellation and capacity limits; Windows x86/HLDS acceptance remains user-run.
