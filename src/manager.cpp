@@ -7,6 +7,7 @@
 
 #include <yapb.h>
 #include <ai/ai_exploration_probe.h>
+#include <ai/ai_model_io_trial.h>
 
 ConVar cv_autovacate ("autovacate", "1", "Kicks bots to automatically make room for human players.");
 ConVar cv_autovacate_keep_slots ("autovacate_keep_slots", "1", "How many slots the autovacate feature should keep for human players.", true, 1.0f, 8.0f);
@@ -1396,6 +1397,8 @@ bool BotManager::isTeamStacked (int team) {
 }
 
 void BotManager::disconnectBot (Bot *bot) {
+   // Detach opt-in AI control while the original bot runtime is still alive.
+   ai::model_io_trial::cancelBot(bot->index());
    ai::explore::cancelBot(bot->index());
 
    for (auto &e : m_bots) {
@@ -1852,6 +1855,8 @@ void Bot::kick (bool silent) {
    if (!(pev->flags & FL_CLIENT) || (pev->flags & FL_DORMANT) || strings.isEmpty (username)) {
       return;
    }
+   // Mark the trial as disconnected before markStale cancels its action.
+   ai::model_io_trial::cancelBot(index());
    markStale ();
 
    game.serverCommand ("kick \"%s\"", username);

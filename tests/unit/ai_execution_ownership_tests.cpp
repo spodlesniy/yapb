@@ -120,3 +120,35 @@ AI_TEST(testExecutionFeedbackRejectsInvalidOrWrongAction) {
          "negative elapsed time rejected");
   expect(ledger.read(0, view) && view.hasPendingAction, "invalid updates do not cancel pending action");
 }
+
+AI_TEST(testExecutionOwnershipClearsOnlyFinishedFeedbackBeforeNewTrial) {
+  io::ExecutionOwnershipLedger ledger {};
+  io::ControlFrame frame {};
+  expect(ledger.clearFinishedFeedback(0), "empty ledger is safe to prepare");
+  expect(!ledger.clearFinishedFeedback(-1), "invalid bot slot is rejected");
+
+  expect(ledger.observe(0, stamp(7, 10), io::ControlOwner::Neural),
+         "trial owner can observe current session");
+  expect(ledger.record(0, stamp(7, 10), io::ControlOwner::Neural,
+      result(ai::ActionResultType::Accepted)), "movement accepted");
+  expect(!ledger.clearFinishedFeedback(0),
+         "pending action cannot lose its live result");
+  expect(ledger.read(0, frame) && frame.hasFeedback && frame.hasPendingAction,
+         "active feedback and ownership remain untouched");
+
+  expect(ledger.observe(0, stamp(7, 11), io::ControlOwner::Neural),
+         "new engine frame observed");
+  expect(ledger.record(0, stamp(7, 11), io::ControlOwner::Neural,
+      result(ai::ActionResultType::Completed)), "previous leg completed");
+  expect(ledger.read(0, frame) && !frame.hasPendingAction && frame.hasFeedback,
+         "terminal result persists until a new trial starts");
+  expect(ledger.clearFinishedFeedback(0) && ledger.read(0, frame) &&
+         !frame.hasFeedback && !frame.hasPendingAction &&
+         frame.owner == io::ControlOwner::Neural && frame.stamp.frameId == 11,
+         "new trial drops stale feedback without clearing session or owner");
+  expect(ledger.record(0, stamp(7, 12), io::ControlOwner::Neural,
+      result(ai::ActionResultType::Accepted)), "new action can start");
+  expect(ledger.read(0, frame) && frame.hasFeedback &&
+         frame.feedback.decisionFrameId == 12,
+         "fresh action result is not suppressed by old feedback watermark");
+}

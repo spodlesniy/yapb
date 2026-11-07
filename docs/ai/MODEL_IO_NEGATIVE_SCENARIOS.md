@@ -280,3 +280,24 @@ If the trial finishes before Ctrl+C, repeat with a fresh bot position and termin
 - Any continuation after a negative trial, second action after an invalid response, or failed recovery flag is a **D332 acceptance failure** even if an automatic test passed.
 
 No trained-model performance, arbitrary map navigation, peer authentication or Windows x86 physical acceptance is implied by source publication.
+
+## D332.1 — Targeted follow-up acceptance
+
+D332's manual N01–N23 checks all stopped safely with `recovered=1`, with N22's reason reported as `InvalidAction` rather than the expected `BotDisconnected`.
+With a D332.1 Windows x86 DLL, rerun N22 on an isolated HLDS and verify that `BotDisconnected` is reported while all five recovery flags remain `1` and no additional sequence leg executes.
+To verify feedback cleanup, first execute the known-good two-leg sequence on clear ground, then repeat a fresh single-leg trial and confirm the diagnostic for a negative first response uses `request_has_feedback=0` and zero prior `feedback_decision` and `feedback_observed`.
+For this targeted case, use:
+
+```powershell
+python -m tools.aipb_training.modelio_test_server --port 8765 --mode move-once --max-connections 1 --fault unsafe-target
+```
+
+Then run:
+
+```text
+aipb modelio external 1 8765
+aipb modelio status
+```
+
+The expected failure is `InvalidAction` with `transport=Completed`, `request_has_feedback=0`, and `recovered=1`; unlike a legitimate terminal result, old prior-trial feedback must not appear in the new request.
+This specifically checks D332.1's new-trial cleanup; it does not modify ordinary ONNX or general feedback retention while an action is active.

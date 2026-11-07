@@ -4146,3 +4146,14 @@ Extend the independent C++ cross-process acceptance runner with cases that expec
 Add Python tests for precise byte mutation and invalid option bounds, and document each manual HLDS command plus expected recovery fields in `MODEL_IO_NEGATIVE_SCENARIOS.md`.
 Lifecycle interventions, such as explicit stop, global mode change, round/map reset, bot removal and Python process shutdown, remain deliberate manual HLDS acceptance gates using the existing D324 cancellation paths.
 No general gameplay AI, arbitrary navigation, untrusted network transport or autonomous reconnect is introduced.
+
+## D332.1 — Classify bot removal before stale cancellation and isolate trial feedback
+
+Manual D332 HLDS reports confirmed safe provider/fallback/owner restoration in all N01–N23 scenarios, but N22 reported InvalidAction instead of BotDisconnected while `yb removebots` kicked an active Model I/O bot.
+In the existing kick path, `Bot::kick` calls `markStale` before the later `BotManager::disconnectBot`; cancelling the runtime action there can let the active Model I/O frame report an InvalidAction before the disconnect callback.
+Notify the Model I/O trial explicitly before `markStale` and also at the beginning of the manager's disconnect path, while the original bot runtime still exists; the repeated notification must be harmless if the selected trial is already cleared.
+Do not change the semantics of unrelated bot kicks, Legacy policy, Mock or Explorer cancellation.
+Investigate repeated D319 ActionFeedback observed in new Model I/O requests after each D331 leg: the ownership ledger retains the last terminal feedback, but reattaching ModelIOAdapter resets its per-backend delivery watermark, causing previously completed feedback to be re-exported.
+At the new trial arm boundary, drop only finished feedback in the existing per-bot ownership ledger; refuse to clear while an action is pending, and preserve session, stamp and owner.
+Do not globally erase feedback on every new frame or change the existing once-per-result feedback contract in an ongoing trial.
+Add ownership and Model I/O adapter regression tests covering prior terminal feedback removal and refusal to clear a live action, and require a new user-run Windows x86 HLDS N22 and sequence feedback acceptance after CI.

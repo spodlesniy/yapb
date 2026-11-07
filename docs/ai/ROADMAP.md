@@ -925,3 +925,9 @@ D332 introduces opt-in one-shot negative fault injection in the bounded Python M
 The independent cross-process C++ test client now checks that malformed remote responses fail at the transport boundary and well-formed unauthorized actions fail at D330's guard; Python tests cover injected byte differences and argument bounds.
 The full N01–N23 manual HLDS acceptance matrix, including exact Python/HLDS commands, late feedback failures, second-leg abort, explicit stop, mode change, bot removal and map/server shutdown, is documented in docs/ai/MODEL_IO_NEGATIVE_SCENARIOS.md.
 D331 positive physical acceptance is retained, but D332 is not accepted until automatic CI and the user-run Windows x86/HLDS negative recovery checks pass; trained-model, arbitrary-navigation and peer-authentication gates remain open.
+
+D332 manual HLDS reports confirmed all 23 negative scenarios safely terminated with recovered=1 and no unintended continuation, but N22 returned InvalidAction rather than the expected BotDisconnected, leaving the reason-classification gate open.
+D332.1 notifies the Model I/O trial before the bot's normal markStale cancellation on explicit kick and at the manager disconnect boundary, preserving existing execution ownership and ordinary bot lifecycle.
+D332.1 additionally clears only terminal feedback from the existing ownership ledger before arming each new opt-in Model I/O trial, preventing a newly reattached adapter from forwarding the previous trial's completed action after its watermark reset.
+Unit tests check active-action preservation, historical feedback removal and first-request isolation.
+D332.1 automatic CI and manual Windows x86/HLDS N22 plus a two-leg feedback-free first-request recheck are acceptance gates; general independent navigation and Movement Discovery remain separate.

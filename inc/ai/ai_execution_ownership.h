@@ -119,6 +119,24 @@ public:
     return true;
   }
 
+  // Starting a distinct Model I/O trial must not re-export the previous
+  // action's terminal feedback. Never discard evidence for a live action.
+  bool clearFinishedFeedback(int slot) {
+    if (!validSlot(slot)) {
+      return false;
+    }
+    auto &stored = m_slots[slot];
+    if (!stored.valid) {
+      return true;
+    }
+    if (stored.frame.hasPendingAction) {
+      return false;
+    }
+    stored.frame.feedback = {};
+    stored.frame.hasFeedback = false;
+    return true;
+  }
+
   void release(int slot) {
     if (validSlot(slot)) {
       m_slots[slot] = {};

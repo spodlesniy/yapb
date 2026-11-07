@@ -338,3 +338,14 @@ The cross-process C++ client verifies expected failure categories with the actua
 The complete operator-oriented N01–N23 manual scenario matrix, commands and expected outcomes is maintained in [MODEL_IO_NEGATIVE_SCENARIOS.md](MODEL_IO_NEGATIVE_SCENARIOS.md).
 Manual fault injection must never be used as proof of successful movement; pass criteria are absence of subsequent unwanted actions and full D324 provider/fallback/backend/action/owner recovery.
 Actual Windows x86/HLDS negative acceptance remains user-run; the D331 multi-leg positive result and default ONNX/Legacy behavior are retained.
+
+## D332.1 — Bot disconnect ordering and terminal feedback isolation
+
+N22 field evidence showed a normal `yb removebots` removal left the Model I/O trial in `Idle` with all five recovery flags true, but recorded `InvalidAction` instead of `BotDisconnected`.
+The actual kick path calls `Bot::markStale` before the normal manager disconnect hook, so the runtime can cancel the active action before the Model I/O trial receives a disconnect notification.
+D332.1 notifies `ai::model_io_trial::cancelBot` before `markStale` and again before the manager destroys the bot, with idempotent selection filtering.
+An independent investigation of repeated prior `feedback_decision` values identified the D319 ownership ledger's retained terminal result plus the ModelIOAdapter's reset feedback watermark on reattachment.
+Each new explicitly armed trial now calls the per-bot `clearFinishedControlFeedback` boundary before installing the Model I/O backend; it rejects an attempt to discard feedback for a still-pending action and preserves the active owner/session.
+The existing terminal feedback still flows through the original leg until its completion, and resetting the backend between legs cannot re-export the previous leg's terminal result.
+Automatic unit tests cover the ledger's active/finished states and the first external request after cleared feedback.
+User-run Windows x86 HLDS acceptance must repeat N22, check `stop_reason=BotDisconnected`, and verify the first request of each new leg no longer carries unrelated earlier feedback.

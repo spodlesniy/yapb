@@ -172,7 +172,10 @@ public:
       }
       m_trainingCollector.finalizeTerminal(captureObservation());
     }
-    if (m_runtime.isActive() || !setModelIOBackend(backend)) {
+    // ModelIOAdapter resets its per-backend feedback watermark on reattach.
+    // Drop prior terminal evidence before the first new external request.
+    if (m_runtime.isActive() || !runtime_io::clearFinishedControlFeedback(botSlot()) ||
+        !setModelIOBackend(backend)) {
       return false;
     }
     m_modelIOTrialFallbackEnabled = isInferenceFallbackEnabled();

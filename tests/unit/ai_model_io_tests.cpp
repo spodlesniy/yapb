@@ -259,6 +259,42 @@ AI_TEST(testModelIORejectsStaleAndConflictingOwnership) {
          "explicit invalidation prevents new calls");
 }
 
+AI_TEST(testModelIONewBackendCanBindFeedbackFreeFrameAfterLedgerClear) {
+  io::ExecutionOwnershipLedger ledger {};
+  const auto prior = makeSelf(7, 20, 2.0f);
+  expect(ledger.observe(1, prior.stamp, io::ControlOwner::Neural),
+         "owner captured for prior action");
+  ai::ActionResult accepted {};
+  accepted.action = ai::ActionType::MoveToPosition;
+  accepted.type = ai::ActionResultType::Accepted;
+  accepted.elapsedTime = 0.1f;
+  expect(ledger.record(1, prior.stamp, io::ControlOwner::Neural, accepted),
+         "prior movement accepted");
+  const auto terminal = makeSelf(7, 21, 2.1f);
+  expect(ledger.observe(1, terminal.stamp, io::ControlOwner::Neural),
+         "terminal engine frame observed");
+  accepted.type = ai::ActionResultType::Completed;
+  expect(ledger.record(1, terminal.stamp, io::ControlOwner::Neural, accepted),
+         "terminal feedback retained");
+  io::ControlFrame control {};
+  expect(ledger.read(1, control) && control.hasFeedback,
+         "old terminal feedback would be available without cleanup");
+  expect(ledger.clearFinishedFeedback(1), "starting new leg clears old terminal result");
+  const auto next = makeSelf(7, 22, 2.2f);
+  expect(ledger.observe(1, next.stamp, io::ControlOwner::Neural) &&
+         ledger.read(1, control) && !control.hasFeedback,
+         "new leg receives no stale feedback");
+  TestBackend backend {};
+  io::ModelIOAdapter adapter {};
+  adapter.setBackend(&backend);
+  expect(adapter.bindFrame(next, makePerception(next), control),
+         "adapter binds fresh frame with previous history filtered out");
+  const auto output = adapter.infer({ ai::kInferenceInputSchemaVersion,
+                                    makeObservation(2.2f) });
+  expect(output.isSuccess() && !backend.last.hasFeedback,
+         "first fresh request cannot repeat a prior action's feedback");
+}
+
 AI_TEST(testModelIOFeedbackDeliveredOnlyOncePerResult) {
   TestBackend backend {};
   io::ModelIOAdapter adapter {};

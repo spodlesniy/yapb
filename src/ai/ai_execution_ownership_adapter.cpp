@@ -69,6 +69,10 @@ bool readControlFrame(int botSlot, ControlFrame &frame) {
   return g_ownership.read(botSlot, frame);
 }
 
+bool clearFinishedControlFeedback(int botSlot) {
+  return g_ownership.clearFinishedFeedback(botSlot);
+}
+
 void releaseControlBot(int botSlot) {
   g_ownership.release(botSlot);
 }
