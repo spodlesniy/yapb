@@ -4116,3 +4116,15 @@ Retain the strict one-shot safe target, single bot, default provider isolation, 
 Allow a terminal result observed in the original decision frame (observedFrameId equal to decisionFrameId), matching the existing D323 deterministic backend and D319 feedback semantics, while still requiring the later Model I/O request frame to be strictly newer.
 For the manually opt-in external Python subprocess trial only, raise the synchronous exchange limit from the five-millisecond default to the already supported twenty-millisecond maximum; other Model I/O uses keep their current budget.
 Unit tests cover missing feedback and same-decision-frame completion; this does not assume that either same-frame reporting or timeouts was the sole cause of the observed failure.
+
+## D331 — Bounded multi-leg external Model I/O session with independent recovery
+
+Record D330.2's user-observed physical PASS as the successful single-leg HLDS acceptance evidence, not a trained-model or general-navigation acceptance.
+Add an explicit server-console `aipb modelio sequence <bot-index> <port> <legs>` command that permits only two or three successive independent, preflighted external movement legs within the same bot session.
+Every leg must independently pass the existing D323/D324 TraceHull preflight, strict D330 external one-shot action guard, physical reach and correlated terminal D319 feedback, then detach the backend and verify all provider/fallback/owner/action recovery conditions before arming the next leg.
+A bounded engine-neutral sequence ledger records only verified legs, their original session identity, combined request count and distance; failures, mode/round changes, session changes, disconnects and explicit stop prevent any further movement.
+Reattach only in a later frame after full recovery; do not retain an active action, bypass independent destination validation, or allow arbitrary remote destinations, combat, parallel bots or automatic activation.
+Extend the D329 standalone Python loopback server with an explicit `move-sequence` mode, requiring matching terminal feedback before issuing another forward movement and limiting configured legs to two or three.
+Keep default NoDecision and prior move-once behavior intact, and retain strict network bounds and per-request deadlines.
+Cover ledger bounds/recovery, feedback-gated Python sequence and real Python subprocess exchanges in dedicated tests.
+This is an operator-armed finite sequence rather than unrestricted autonomous inference; Windows x86/HLDS multi-leg physical acceptance remains user-run.

@@ -312,3 +312,17 @@ The external feedback validator now accepts a terminal result observed on the sa
 The explicit external trial uses D327's previously supported 20 ms upper bound; the standard transport default remains 5 ms and no network I/O occurs unless the server operator explicitly requests the trial.
 A diagnostic status of `TimedOut`, `InvalidResponse`, `Failed`, or `Completed` distinguishes transport failures from absent or mismatched D319 feedback.
 The target preflight, one-shot movement guard, fail-closed behavior and ONNX/fallback recovery are unchanged.
+
+## D331 — Operator-armed bounded external sequence
+
+The single-leg D330.2 test completed successfully in HLDS: two Model I/O requests, a correlated terminal feedback, physically reached target and all five recovery checks passing.
+To trial successive actions, launch the Python server with `--mode move-sequence --legs 2 --max-connections 4` (use 3 legs and 6 connections for a three-leg test).
+In the HLDS server console use `aipb modelio sequence <bot-index> <port> <legs>`, where legs must be 2 or 3 and the bot must already be alive in Neural mode.
+The bounded sequence uses the same local TCP socket transport and 20 ms deadline as D330.2.
+After each verified terminal feedback, the existing Model I/O runtime is fully detached and provider/fallback/action/ownership recovery is checked; only then does the command internally queue the next fresh preflight on a later game frame without requiring another console command.
+A new D318 TraceHull from the bot's current location selects the next 96-unit forward target; the remote model may confirm only that target within D330's existing tolerance.
+The sequence ledger requires the same session identity, at least two Model I/O requests per leg, physical reach and full recovery, and refuses more legs than the operator requested.
+The Python `move-sequence` mode similarly enforces two or three maximum action legs, returns NoDecision for the feedback request, and permits another movement only after terminal feedback referencing the prior decision frame.
+`aipb modelio status` reports completed/total legs and aggregate request count, while stop, mode changes, round end, bot disconnect, invalid remote reply, missing feedback, or unsafe geometry abort the remaining legs.
+A user must start the Python server independently; no model weights, new navigation planner, persistent external trust or default ONNX behavior is changed.
+Python subprocess and C++ ledger unit tests cover finite sequencing, feedback gating and failure cases; actual Windows x86/HLDS two-or-three-leg movement still needs manual acceptance.

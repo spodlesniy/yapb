@@ -48,6 +48,16 @@ class Request:
     yaw: float
     alive: bool
     on_ground: bool
+    feedback_decision: int | None = None
+    feedback_observed: int = 0
+    feedback_completed: bool = False
+
+
+@dataclass
+class SequenceState:
+    completed: int = 0
+    pending_frame: int = 0
+    last_frame: int = 0
 
 
 class Reader:
@@ -153,6 +163,9 @@ def parse_frame(frame: bytes) -> Request:
         if not valid:
             raise ProtocolError("unauthorized event")
 
+    feedback_decision: int | None = None
+    feedback_observed = 0
+    feedback_completed = False
     if reader.boolean():  # ActionFeedback
         feedback_session = reader.read("Q")
         decision_frame = reader.read("Q")
@@ -165,6 +178,9 @@ def parse_frame(frame: bytes) -> Request:
                 or action == 0 or result_type not in (1, 2, 3, 4, 5, 6)
                 or elapsed < 0):
             raise ProtocolError("invalid feedback")
+        feedback_decision = decision_frame
+        feedback_observed = observed_frame
+        feedback_completed = action == 2 and result_type == 2
 
     feature_schema = reader.read("I")
     count = reader.read("I")
@@ -174,7 +190,8 @@ def parse_frame(frame: bytes) -> Request:
         reader.f32()
     reader.finish()
     return Request(request_id, session_id, frame_id, bot_index,
-                   origin, view[1], alive, on_ground)
+                   origin, view[1], alive, on_ground,
+                   feedback_decision, feedback_observed, feedback_completed)
 
 
 def response_frame(request: Request, *, move: bool) -> bytes:
@@ -214,7 +231,30 @@ def recv_exact(client: socket.socket, length: int) -> bytes:
     return bytes(parts)
 
 
-def handle_client(client: socket.socket, mode: str, emitted: set[tuple[int, int]]):
+def choose_sequence_action(request: Request, state: SequenceState, legs: int) -> bool:
+    """Require a correlated terminal result between successive model actions."""
+    if request.frame_id <= state.last_frame:
+        raise ProtocolError("stale sequence frame")
+    state.last_frame = request.frame_id
+    if state.pending_frame:
+        if (request.feedback_completed
+                and request.feedback_decision == state.pending_frame
+                and request.feedback_observed >= state.pending_frame
+                and request.feedback_observed < request.frame_id):
+            state.pending_frame = 0
+            state.completed += 1
+        return False
+    if state.completed >= legs:
+        return False
+    if not request.alive or not request.on_ground:
+        return False
+    state.pending_frame = request.frame_id
+    return True
+
+
+def handle_client(client: socket.socket, mode: str, emitted: set[tuple[int, int]],
+                  sequences: dict[tuple[int, int], SequenceState] | None = None,
+                  legs: int = 2):
     client.settimeout(READ_TIMEOUT)
     try:
         header = recv_exact(client, HEADER.size)
@@ -224,10 +264,16 @@ def handle_client(client: socket.socket, mode: str, emitted: set[tuple[int, int]
             raise ProtocolError("invalid length or frame kind")
         request = parse_frame(header + recv_exact(client, payload_length))
         key = request.session_id, request.bot_index
-        move = mode == "move-once" and key not in emitted
+        if mode == "move-sequence":
+            if sequences is None:
+                raise ProtocolError("sequence store missing")
+            state = sequences.setdefault(key, SequenceState())
+            move = choose_sequence_action(request, state, legs)
+        else:
+            move = mode == "move-once" and key not in emitted
         reply = response_frame(request, move=move)
         client.sendall(reply)
-        if move and reply[45] == 2:
+        if move and reply[45] == 2 and mode == "move-once":
             emitted.add(key)
     except (ProtocolError, OSError, struct.error, OverflowError):
         # Invalid clients are disconnected without a success response.
@@ -235,9 +281,13 @@ def handle_client(client: socket.socket, mode: str, emitted: set[tuple[int, int]
 
 
 def serve(port: int, max_connections: int, mode: str,
-          stop_event: threading.Event | None = None) -> int:
+          stop_event: threading.Event | None = None, legs: int = 2) -> int:
     if not 0 <= port <= 65535 or not 1 <= max_connections <= MAX_CONNECTIONS:
         raise ValueError("port or max-connections outside limits")
+    if legs not in (2, 3):
+        raise ValueError("sequence legs must be 2 or 3")
+    if mode == "move-sequence" and max_connections < 2 * legs:
+        raise ValueError("move-sequence needs at least two connections per leg")
     if stop_event is None:
         stop_event = threading.Event()
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
@@ -249,6 +299,7 @@ def serve(port: int, max_connections: int, mode: str,
         idle_deadline = time.monotonic() + LISTENER_IDLE_TIMEOUT
         print(f"READY {listener.getsockname()[1]}", flush=True)
         emitted: set[tuple[int, int]] = set()
+        sequences: dict[tuple[int, int], SequenceState] = {}
         accepted = 0
         while accepted < max_connections:
             if stop_event.is_set():
@@ -261,7 +312,7 @@ def serve(port: int, max_connections: int, mode: str,
             except socket.timeout:
                 continue
             with client:
-                handle_client(client, mode, emitted)
+                handle_client(client, mode, emitted, sequences, legs)
             accepted += 1
             idle_deadline = time.monotonic() + LISTENER_IDLE_TIMEOUT
     return 0
@@ -273,8 +324,10 @@ def main(argv: Sequence[str] | None = None) -> int:
                         help="IPv4 loopback port; 0 selects an ephemeral test port")
     parser.add_argument("--max-connections", type=int, default=1,
                         help=f"bounded accepted connections (1..{MAX_CONNECTIONS})")
-    parser.add_argument("--mode", choices=("no-decision", "move-once"),
+    parser.add_argument("--mode", choices=("no-decision", "move-once", "move-sequence"),
                         default="no-decision")
+    parser.add_argument("--legs", type=int, choices=(2, 3), default=2,
+                        help="number of verified movement legs in move-sequence mode")
     args = parser.parse_args(argv)
     stop_event = threading.Event()
 
@@ -283,7 +336,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     previous_handler = signal.signal(signal.SIGINT, request_stop)
     try:
-        return serve(args.port, args.max_connections, args.mode, stop_event)
+        return serve(args.port, args.max_connections, args.mode, stop_event, args.legs)
     except KeyboardInterrupt:
         # Preserve a clean exit if an interrupt arrives outside socket polling.
         print("STOPPED", flush=True)

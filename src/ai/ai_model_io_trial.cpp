@@ -19,6 +19,7 @@
 #include <ai/ai_observation_builder.h>
 #include <ai/ai_mock_motion.h>
 #include <ai/ai_model_io_recovery.h>
+#include <ai/ai_model_io_sequence.h>
 
 #include <cmath>
 #include <cstdlib>
@@ -47,6 +48,10 @@ ai::runtime_io::ModelIOTransportBackend transportBackend { externalTransport, ex
 ai::runtime_io::ModelIOExternalTrialBackend externalBackend { transportBackend };
 bool externalMode {};
 uint16_t externalPort {};
+ai::runtime_io::ModelIOSequenceProgress sequence {};
+uint8_t lastSequenceTotal {};
+uint8_t lastSequenceCompleted {};
+uint32_t lastSequenceRequests {};
 
 bool lastCompleted {};
 float lastMoved {};
@@ -126,6 +131,12 @@ void fail(Bot *bot, ai::runtime_io::ModelIOTrialStopReason reason, const char *d
     lastTransportStatus = transportBackend.lastStatus();
   }
   lastCompleted = false;
+  if (sequence.total() > 0) {
+    lastSequenceTotal = sequence.total();
+    lastSequenceCompleted = sequence.completed();
+    lastSequenceRequests = sequence.requests();
+    sequence.reset();
+  }
   clear(bot, reason);
   game.print("AiPB modelio: stopped (%s, %s); requests=%u; decision_frame=%llu; feedback_frame=%llu; recovered=%d.",
       ai::runtime_io::modelIOTrialStopReasonName(lastStopReason), detail, count,
@@ -165,6 +176,11 @@ bool handleServer() {
         lastRequests, static_cast<unsigned long long>(lastDecisionFrame),
         static_cast<unsigned long long>(lastFeedbackFrame),
         lastMoved, lastRemaining, lastElapsed);
+    if (lastSequenceTotal > 0) {
+      game.print("AiPB modelio: sequence progress=%u/%u; total_requests=%u.",
+          static_cast<unsigned>(lastSequenceCompleted), static_cast<unsigned>(lastSequenceTotal),
+          lastSequenceRequests);
+    }
     return true;
   }
   if (argc == 3 && std::strcmp(cmd, "stop") == 0) {
@@ -173,16 +189,36 @@ bool handleServer() {
       clear(bot, ai::runtime_io::ModelIOTrialStopReason::Requested);
       lastCompleted = false;
     }
+    if (sequence.total() > 0) {
+      lastSequenceTotal = sequence.total();
+      lastSequenceCompleted = sequence.completed();
+      lastSequenceRequests = sequence.requests();
+      sequence.reset();
+    }
     game.print("AiPB modelio: stopped; reason=%s; recovered=%d.",
         ai::runtime_io::modelIOTrialStopReasonName(lastStopReason),
         lastRecovery.verified());
     return true;
   }
-  const bool useExternal = std::strcmp(cmd, "external") == 0;
+  const bool useSequence = std::strcmp(cmd, "sequence") == 0;
+  const bool useExternal = useSequence || std::strcmp(cmd, "external") == 0;
   if ((std::strcmp(cmd, "run") != 0 || argc != 4) &&
-      (!useExternal || argc != 5)) {
-    game.print("Usage: aipb modelio run <bot-index> | external <bot-index> <port> | status | stop");
+      (!useExternal || argc != (useSequence ? 6 : 5))) {
+    game.print("Usage: aipb modelio run <bot-index> | external <bot-index> <port> | sequence <bot-index> <port> <legs:2-3> | status | stop");
     return true;
+  }
+  uint8_t requestedLegs {};
+  if (useSequence) {
+    const char *legArg = engfuncs.pfnCmd_Argv(5);
+    char *legEnd {};
+    const long parsed = std::strtol(legArg, &legEnd, 10);
+    if (legArg == legEnd || *legEnd != '\0' ||
+        parsed < ai::runtime_io::kModelIOSequenceMinLegs ||
+        parsed > ai::runtime_io::kModelIOSequenceMaxLegs) {
+      game.print("AiPB modelio: rejected (InvalidSequenceLength).");
+      return true;
+    }
+    requestedLegs = static_cast<uint8_t>(parsed);
   }
   uint16_t requestedPort {};
   if (useExternal) {
@@ -210,6 +246,13 @@ bool handleServer() {
     game.print("AiPB modelio: rejected (BotUnavailableOrMode).");
     return true;
   }
+  if (useSequence && !sequence.arm(requestedLegs)) {
+    game.print("AiPB modelio: rejected (UnableToArmSequence).");
+    return true;
+  }
+  if (!useSequence) {
+    sequence.reset();
+  }
   selected = static_cast<int>(index);
   externalMode = useExternal;
   externalPort = requestedPort;
@@ -218,14 +261,18 @@ bool handleServer() {
   lastMoved = lastRemaining = lastElapsed = 0.0f;
   lastRequests = 0;
   lastDecisionFrame = lastFeedbackFrame = 0;
+  lastSequenceTotal = requestedLegs;
+  lastSequenceCompleted = 0;
+  lastSequenceRequests = 0;
   lastRequestHadFeedback = false;
   lastRawDecisionFrame = lastRawObservedFrame = 0;
   lastSourceStatus = ai::InferenceStatus::NoDecision;
   lastTransportStatus = ai::runtime_io::ModelIOTransportStatus::Idle;
   lastStopReason = ai::runtime_io::ModelIOTrialStopReason::None;
   lastRecovery = {};
-  game.print("AiPB modelio: requested for bot #%d; backend=%s; port=%u.",
-       selected, externalMode ? "ExternalLoopback" : "Deterministic", externalPort);
+  game.print("AiPB modelio: requested for bot #%d; backend=%s; port=%u; legs=%u.",
+       selected, useSequence ? "ExternalSequence" : externalMode ? "ExternalLoopback" : "Deterministic",
+       externalPort, useSequence ? requestedLegs : 1);
   return true;
 }
 
@@ -249,6 +296,10 @@ bool frame(Bot &bot) {
   }
 
   if (pending) {
+    if (sequence.total() > 0 && !sequence.bindSession(state.stamp.sessionId)) {
+      fail(&bot, ai::runtime_io::ModelIOTrialStopReason::SessionChanged, "sequence session changed");
+      return true;
+    }
     if (!state.self.onGround) {
       fail(&bot, ai::runtime_io::ModelIOTrialStopReason::BotUnavailable, "not grounded");
       return true;
@@ -327,8 +378,48 @@ bool frame(Bot &bot) {
     lastRemaining = ai::mockDistanceToTarget(state.self.origin, destination);
     const auto completedSession = sessionId;
     const bool physicallyReached = ai::mockReachedTarget(state.self.origin, destination);
+    const bool sequential = sequence.total() > 0;
+    const int botIndex = selected;
+    const uint16_t port = externalPort;
     clear(&bot, ai::runtime_io::ModelIOTrialStopReason::Completed);
-    lastCompleted = physicallyReached && lastRecovery.verified();
+    const bool reachedAndRecovered = physicallyReached && lastRecovery.verified();
+    if (sequential) {
+      if (!sequence.completeLeg(completedSession, physicallyReached, lastRecovery.verified(),
+          lastRequests, lastMoved)) {
+        lastCompleted = false;
+        lastStopReason = physicallyReached
+            ? ai::runtime_io::ModelIOTrialStopReason::RecoveryFailed
+            : ai::runtime_io::ModelIOTrialStopReason::InvalidAction;
+        lastSequenceTotal = sequence.total();
+        lastSequenceCompleted = sequence.completed();
+        lastSequenceRequests = sequence.requests();
+        sequence.reset();
+        game.print("AiPB modelio: sequence stopped; reason=%s; completed=%u/%u; recovered=%d.",
+            ai::runtime_io::modelIOTrialStopReasonName(lastStopReason),
+            static_cast<unsigned>(lastSequenceCompleted), static_cast<unsigned>(lastSequenceTotal),
+            lastRecovery.verified());
+        return true;
+      }
+      lastSequenceTotal = sequence.total();
+      lastSequenceCompleted = sequence.completed();
+      lastSequenceRequests = sequence.requests();
+      game.print("AiPB modelio: sequence leg=%u/%u PASS; requests=%u; moved=%.2f; recovered=%d.",
+          static_cast<unsigned>(sequence.completed()), static_cast<unsigned>(sequence.total()),
+          lastRequests, lastMoved, lastRecovery.verified());
+      if (sequence.hasNext()) {
+        selected = botIndex;
+        externalMode = true;
+        externalPort = port;
+        pending = true;
+        running = false;
+        awaitingFeedback = false;
+        game.print("AiPB modelio: sequence awaiting fresh preflight for leg=%u.",
+            static_cast<unsigned>(sequence.completed() + 1));
+        return true;
+      }
+      sequence.reset();
+    }
+    lastCompleted = reachedAndRecovered;
     game.print("AiPB modelio: %s; result=Completed; recovered=%d; requests=%u; decision_frame=%llu; feedback_frame=%llu; moved=%.2f; remaining=%.2f; elapsed=%.3f; session=%llu.",
         lastCompleted ? "PASS" : "FAIL", lastRecovery.verified(), lastRequests,
         static_cast<unsigned long long>(lastDecisionFrame),
@@ -386,12 +477,24 @@ void cancelBot(int botIndex) {
   if (selected == botIndex) {
     auto *bot = bots.findBotByIndex(selected);
     lastCompleted = false;
+    if (sequence.total() > 0) {
+      lastSequenceTotal = sequence.total();
+      lastSequenceCompleted = sequence.completed();
+      lastSequenceRequests = sequence.requests();
+      sequence.reset();
+    }
     clear(bot, ai::runtime_io::ModelIOTrialStopReason::BotDisconnected);
   }
 }
 
 void reset() {
   auto *bot = selected >= 0 ? bots.findBotByIndex(selected) : nullptr;
+  if (sequence.total() > 0) {
+    lastSequenceTotal = sequence.total();
+    lastSequenceCompleted = sequence.completed();
+    lastSequenceRequests = sequence.requests();
+    sequence.reset();
+  }
   clear(bot, ai::runtime_io::ModelIOTrialStopReason::MapReset);
   lastCompleted = false;
 }

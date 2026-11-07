@@ -22,11 +22,12 @@ from tools.aipb_training import modelio_test_server as server
 SCRIPT = Path(server.__file__).resolve()
 
 
-def fixture(*, seen: bool = False, count: int = server.FEATURE_COUNT) -> bytes:
+def fixture(*, seen: bool = False, count: int = server.FEATURE_COUNT,
+            frame: int = 12, feedback_decision: int | None = None) -> bytes:
     """Build an independent wire-v1 fixture with all 252 model features."""
     payload = bytearray()
-    payload.extend(struct.pack("<IQ", server.MODEL_SCHEMA, 9))
-    payload.extend(struct.pack("<IQQQffi", 1, 7, 12, 1, 2.0, 0.02, 2))
+    payload.extend(struct.pack("<IQ", server.MODEL_SCHEMA, frame))
+    payload.extend(struct.pack("<IQQQffi", 1, 7, frame, 1, 2.0, 0.02, 2))
     payload.extend(struct.pack("<3f3f3f3f", 10, 20, 30, 0, 0, 0,
                                0, 0, 0, 100, 0, 250))
     payload.extend(struct.pack("<BBB", 1, 1, 0))
@@ -34,7 +35,10 @@ def fixture(*, seen: bool = False, count: int = server.FEATURE_COUNT) -> bytes:
                                40 if seen else 0, 50 if seen else 0,
                                60 if seen else 0, int(seen)))
     payload.extend(struct.pack("<B", 0))  # zero perception events
-    payload.extend(struct.pack("<B", 0))  # no ActionFeedback
+    payload.extend(struct.pack("<B", 1 if feedback_decision is not None else 0))
+    if feedback_decision is not None:
+        payload.extend(struct.pack("<QQQBBf", 7, feedback_decision, frame - 1,
+                                   2, 2, 0.5))
     payload.extend(struct.pack("<II", server.FEATURE_SCHEMA, count))
     payload.extend(struct.pack(f"<{count}f", *([0.0] * count)))
     return server.HEADER.pack(server.MAGIC, 1, 1, len(payload)) + payload
@@ -83,11 +87,36 @@ class ServerProtocolTests(unittest.TestCase):
         with self.assertRaises(server.ProtocolError):
             server.parse_frame(bytes(raw))
 
+    def test_sequence_requires_correlated_terminal_feedback(self):
+        state = server.SequenceState()
+        first = server.parse_frame(fixture(frame=12))
+        self.assertTrue(server.choose_sequence_action(first, state, 2))
+        self.assertEqual(state.pending_frame, 12)
+        self.assertFalse(server.choose_sequence_action(
+            server.parse_frame(fixture(frame=13)), state, 2))
+        self.assertEqual(state.completed, 0)
+        self.assertFalse(server.choose_sequence_action(
+            server.parse_frame(fixture(frame=14, feedback_decision=12)), state, 2))
+        self.assertEqual(state.completed, 1)
+        self.assertTrue(server.choose_sequence_action(
+            server.parse_frame(fixture(frame=15)), state, 2))
+        self.assertFalse(server.choose_sequence_action(
+            server.parse_frame(fixture(frame=16, feedback_decision=15)), state, 2))
+        self.assertEqual(state.completed, 2)
+        self.assertFalse(server.choose_sequence_action(
+            server.parse_frame(fixture(frame=17)), state, 2))
+        with self.assertRaises(server.ProtocolError):
+            server.choose_sequence_action(server.parse_frame(fixture(frame=17)), state, 2)
+
     def test_cli_limits(self):
         with self.assertRaises(ValueError):
             server.serve(70000, 1, "no-decision")
         with self.assertRaises(ValueError):
             server.serve(0, 65, "no-decision")
+        with self.assertRaises(ValueError):
+            server.serve(0, 3, "move-sequence", legs=2)
+        with self.assertRaises(ValueError):
+            server.serve(0, 6, "move-sequence", legs=4)
 
 
 class ServerProcessTests(unittest.TestCase):
@@ -118,6 +147,38 @@ class ServerProcessTests(unittest.TestCase):
             process.send_signal(signal.SIGINT)
             self.assertEqual(process.wait(timeout=3), 0)
             self.assertEqual(process.stdout.readline().strip(), "STOPPED")
+        finally:
+            if process.poll() is None:
+                process.kill()
+                process.wait(timeout=3)
+            if process.stdout:
+                process.stdout.close()
+            if process.stderr:
+                process.stderr.close()
+
+    def test_subprocess_sequence_two_verified_moves(self):
+        process = subprocess.Popen(
+            [sys.executable, str(SCRIPT), "--port", "0",
+             "--max-connections", "5", "--mode", "move-sequence",
+             "--legs", "2"],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+        )
+        try:
+            self.assertIsNotNone(process.stdout)
+            ready = process.stdout.readline().strip()
+            self.assertTrue(ready.startswith("READY "), ready)
+            port = int(ready.split()[1])
+            expected = ((12, None, 2), (13, 12, 0), (14, None, 2),
+                        (15, 14, 0), (16, None, 0))
+            for frame, feedback, action in expected:
+                with socket.create_connection((server.HOST, port), timeout=2) as client:
+                    client.settimeout(2)
+                    client.sendall(fixture(frame=frame, feedback_decision=feedback))
+                    header = server.recv_exact(client, 12)
+                    size = server.HEADER.unpack(header)[3]
+                    reply = header + server.recv_exact(client, size)
+                self.assertEqual(reply[45], action)
+            self.assertEqual(process.wait(timeout=3), 0)
         finally:
             if process.poll() is None:
                 process.kill()

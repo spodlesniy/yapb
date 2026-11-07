@@ -912,3 +912,7 @@ D330.1 corrects only those test expectations, preserving backend behavior and th
 D330.2 addresses the field report where the local external move was accepted but the two-request trial failed terminal feedback verification despite provider recovery.
 It preserves failure counters, adds transport/source and incoming feedback-frame diagnostics, allows D319 completion observed in the original decision frame as D323 already does, and uses the supported 20 ms budget for the explicitly selected external trial.
 Automatic CI must pass and Windows x86/HLDS must be retested by the user before marking the external end-to-end acceptance gate complete; Movement Discovery and D324 manual lifecycle gates remain independent.
+D331 records the user-confirmed D330.2 HLDS one-shot external Model I/O PASS (2 requests, physical reach, terminal feedback and all recovery checks).
+D331 introduces an explicit bounded 2–3-leg `aipb modelio sequence` operator trial and matching Python `move-sequence` server mode, requiring per-leg fresh TraceHull, correlated terminal feedback, full provider/fallback recovery, and unchanged bot session identity before each next external decision.
+An engine-neutral sequence ledger, C++ tests and real Python subprocess tests enforce request/leg bounds and prohibit continuation without verified prior feedback.
+The default NoDecision, `move-once`, ordinary ONNX/Legacy and deterministic single-leg trial remain unchanged; this is not arbitrary-navigation or trained-model acceptance, and manual Windows x86/HLDS multi-leg acceptance remains open.
