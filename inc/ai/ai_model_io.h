@@ -105,7 +105,7 @@ public:
   }
 
   void reset() {
-    m_bound = {};
+    m_bound = ModelIORequest {};
     m_lastBound = {};
     m_haveLastBound = false;
     m_ready = false;
@@ -155,7 +155,7 @@ public:
       m_lastFeedbackForwarded = 0;
     }
 
-    m_bound = {};
+    m_bound = ModelIORequest {};
     m_bound.stamp = stamp;
     m_bound.self = self.self;
     m_bound.visibleEnemy = perception.visibleEnemy;

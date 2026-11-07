@@ -868,3 +868,5 @@ D322 adds an opt-in synchronous Model I/O bridge to the existing Neural Inferenc
 The per-bot adapter correlates D316 self, D317 authorized perception and D319 action feedback by session/frame; its model request contains only the existing sanitized feature vector, verified self/events and once-only feedback, while stale or mismatched responses fail closed.
 No external model backend is configured by default; the existing ONNX model provider and fallback remain unchanged, and neither automated CI nor this contract-only step proves actual external-model actuation on HLDS.
 The next integration gate is an explicit concrete model backend/provider and user-run Windows x86/HLDS acceptance, followed separately by arbitrary-map navigation and movement safety.
+D322 automatic Build CI failed at 07050a6 (run 42367467117) in the AI unit-test C++17 compilation because the large ModelIORequest was assigned an untyped empty braced initializer in two places.
+D322.1 changes only those two assignments to explicit ModelIORequest value-initialization; the same Model I/O unit tests and original execution behavior remain authoritative for the corrective CI gate.

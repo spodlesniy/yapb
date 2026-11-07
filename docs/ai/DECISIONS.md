@@ -4008,3 +4008,9 @@ Forward each observed ActionFeedback to the model at most once and reset that wa
 Make ModelIOAdapter an optional, explicitly selected provider in BotRuntime; preserve ordinary ONNX inference by default, keep Mock ownership exclusive, and disable new model/fallback decisions when the current stamped frame is unavailable.
 Delegate inference output decoding and action validation to the existing InferencePolicy and ActionValidator instead of implementing a second executor or controller.
 Do not add networking, worker threads, model installations, new runtime modes, or automatic backend activation in D322.
+
+## D322.1 — Make large model request reset explicitly typed for GCC C++17
+
+The D322 automatic AI unit test compile failed in `ai_model_io.h` because GCC rejected two implicit empty-brace assignments to `ModelIORequest` with its nested fixed-size payload.
+Replace these expressions with explicit `ModelIORequest {}` value-initialization in the adapter's reset and frame-binding paths.
+Preserve every field, runtime action, test contract, and feedback validation rule without introducing a compatibility flag or touching original YaPB files.
