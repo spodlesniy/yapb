@@ -55,6 +55,11 @@ float lastElapsed {};
 uint32_t lastRequests {};
 uint64_t lastDecisionFrame {};
 uint64_t lastFeedbackFrame {};
+bool lastRequestHadFeedback {};
+uint64_t lastRawDecisionFrame {};
+uint64_t lastRawObservedFrame {};
+ai::InferenceStatus lastSourceStatus { ai::InferenceStatus::NoDecision };
+ai::runtime_io::ModelIOTransportStatus lastTransportStatus { ai::runtime_io::ModelIOTransportStatus::Idle };
 ai::runtime_io::ModelIOTrialStopReason lastStopReason {
     ai::runtime_io::ModelIOTrialStopReason::None
 };
@@ -110,12 +115,31 @@ void fail(Bot *bot, ai::runtime_io::ModelIOTrialStopReason reason, const char *d
   const uint32_t count = externalMode ? externalBackend.requests() : backend.requests();
   const auto decision = externalMode ? externalBackend.decisionFrame() : backend.decisionFrame();
   const auto feedback = externalMode ? externalBackend.feedbackFrame() : backend.feedbackFrame();
+  lastRequests = count;
+  lastDecisionFrame = decision;
+  lastFeedbackFrame = feedback;
+  if (externalMode) {
+    lastRequestHadFeedback = externalBackend.lastRequestHadFeedback();
+    lastRawDecisionFrame = externalBackend.lastFeedbackDecisionFrame();
+    lastRawObservedFrame = externalBackend.lastFeedbackObservedFrame();
+    lastSourceStatus = externalBackend.lastSourceStatus();
+    lastTransportStatus = transportBackend.lastStatus();
+  }
   lastCompleted = false;
   clear(bot, reason);
   game.print("AiPB modelio: stopped (%s, %s); requests=%u; decision_frame=%llu; feedback_frame=%llu; recovered=%d.",
       ai::runtime_io::modelIOTrialStopReasonName(lastStopReason), detail, count,
       static_cast<unsigned long long>(decision),
       static_cast<unsigned long long>(feedback), lastRecovery.verified());
+  if (count != 0 && lastTransportStatus != ai::runtime_io::ModelIOTransportStatus::Idle) {
+    game.print("AiPB modelio: external diagnostic; transport=%s; source_status=%d; request_has_feedback=%d; feedback_decision=%llu; feedback_observed=%llu; attempts=%llu; completed=%llu.",
+        ai::runtime_io::modelIOTransportStatusName(lastTransportStatus),
+        static_cast<int>(lastSourceStatus), lastRequestHadFeedback,
+        static_cast<unsigned long long>(lastRawDecisionFrame),
+        static_cast<unsigned long long>(lastRawObservedFrame),
+        static_cast<unsigned long long>(transportBackend.attempts()),
+        static_cast<unsigned long long>(transportBackend.completed()));
+  }
 }
 
 } // namespace
@@ -194,6 +218,10 @@ bool handleServer() {
   lastMoved = lastRemaining = lastElapsed = 0.0f;
   lastRequests = 0;
   lastDecisionFrame = lastFeedbackFrame = 0;
+  lastRequestHadFeedback = false;
+  lastRawDecisionFrame = lastRawObservedFrame = 0;
+  lastSourceStatus = ai::InferenceStatus::NoDecision;
+  lastTransportStatus = ai::runtime_io::ModelIOTransportStatus::Idle;
   lastStopReason = ai::runtime_io::ModelIOTrialStopReason::None;
   lastRecovery = {};
   game.print("AiPB modelio: requested for bot #%d; backend=%s; port=%u.",
@@ -244,6 +272,7 @@ bool frame(Bot &bot) {
     bool armed {};
     if (externalMode) {
       externalTransport = ai::runtime_io::ModelIOLoopbackTcpTransport(externalPort);
+      transportBackend.setTimeoutMs(ai::runtime_io::kModelIOTransportMaxTimeoutMs);
       armed = externalBackend.arm(request.end);
       trialBackend = &externalBackend;
     }

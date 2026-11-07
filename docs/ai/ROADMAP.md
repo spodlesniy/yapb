@@ -908,3 +908,7 @@ No general gameplay model integration, peer authentication or arbitrary-map move
 
 D330 automatic CI at 4487aa8 (run 42380231945) compiled, but two external-trial unit-test assertions failed because their expected request counts ignored the documented arm-time reset.
 D330.1 corrects only those test expectations, preserving backend behavior and the requirement for separate automatic CI and manual Windows x86/HLDS acceptance.
+
+D330.2 addresses the field report where the local external move was accepted but the two-request trial failed terminal feedback verification despite provider recovery.
+It preserves failure counters, adds transport/source and incoming feedback-frame diagnostics, allows D319 completion observed in the original decision frame as D323 already does, and uses the supported 20 ms budget for the explicitly selected external trial.
+Automatic CI must pass and Windows x86/HLDS must be retested by the user before marking the external end-to-end acceptance gate complete; Movement Discovery and D324 manual lifecycle gates remain independent.

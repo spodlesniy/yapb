@@ -303,3 +303,12 @@ The transport uses the hardcoded 127.0.0.1 endpoint and D327 default five-millis
 Do not expose the Python service to untrusted local users: TCP loopback is not authenticated; the command is intended for deliberate operator-controlled single-bot testing only.
 The tested target is not general navigation and a completed trial does not imply safe external AI control or Windows x86 compatibility.
 Manual Windows x86/HLDS acceptance and D324 recovery gates remain separate.
+
+## D330.2 — Feedback and transport failure diagnostics
+
+A field test of `aipb modelio external` yielded two outbound Model I/O requests and successful runtime recovery, but no validated terminal feedback.
+The error path now retains the last request and frame counters for `status`, and prints an additional diagnostic line including D327 transport status, model source status, whether the last request carried feedback, incoming decision/observed frames, and transport attempts/completions.
+The external feedback validator now accepts a terminal result observed on the same engine frame as its originating decision, provided the request carrying that result is from a later frame; this matches the original deterministic D323 backend.
+The explicit external trial uses D327's previously supported 20 ms upper bound; the standard transport default remains 5 ms and no network I/O occurs unless the server operator explicitly requests the trial.
+A diagnostic status of `TimedOut`, `InvalidResponse`, `Failed`, or `Completed` distinguishes transport failures from absent or mismatched D319 feedback.
+The target preflight, one-shot movement guard, fail-closed behavior and ONNX/fallback recovery are unchanged.

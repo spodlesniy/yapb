@@ -4107,3 +4107,12 @@ This tests an external decision only under the same short safe-movement physical
 The D330 automatic AI unit suite failed two assertions because the new external-trial test counted a pre-arm invalid request even though arm explicitly resets per-trial request counters.
 Keep the backend's intended isolation semantics and update the test to expect one accepted request immediately after arm and two after the next NoDecision, while retaining source-call counts and decision checks.
 Do not modify the runtime, protocol, external target verification, or recovery logic for a test-only bookkeeping error.
+
+## D330.2 — Diagnose external terminal feedback and align the frame boundary
+
+A user-run D330 HLDS trial accepted the external movement decision but stopped after the next request with no recorded terminal feedback, despite successful provider/fallback recovery.
+The original error message did not distinguish absent forwarded feedback from an invalid NoDecision response, transport timeout or invalid wire payload, and the subsequent status lost the failed request counters.
+Retain the strict one-shot safe target, single bot, default provider isolation, and fail-closed recovery, but preserve failed request/decision/feedback counters and report the actual last transport status, source inference status and incoming feedback frame identity.
+Allow a terminal result observed in the original decision frame (observedFrameId equal to decisionFrameId), matching the existing D323 deterministic backend and D319 feedback semantics, while still requiring the later Model I/O request frame to be strictly newer.
+For the manually opt-in external Python subprocess trial only, raise the synchronous exchange limit from the five-millisecond default to the already supported twenty-millisecond maximum; other Model I/O uses keep their current budget.
+Unit tests cover missing feedback and same-decision-frame completion; this does not assume that either same-frame reporting or timeouts was the sole cause of the observed failure.

@@ -27,6 +27,10 @@ private:
   mutable uint64_t m_decisionFrame {};
   mutable uint64_t m_feedbackFrame {};
   mutable ActionResultType m_feedbackResult { ActionResultType::None };
+  mutable bool m_lastRequestHadFeedback {};
+  mutable uint64_t m_lastFeedbackDecisionFrame {};
+  mutable uint64_t m_lastFeedbackObservedFrame {};
+  mutable InferenceStatus m_lastSourceStatus { InferenceStatus::NoDecision };
 
   static ModelIOResponse error(const ModelIORequest &request) {
     ModelIOResponse response {};
@@ -65,6 +69,10 @@ public:
     m_decisionFrame = 0;
     m_feedbackFrame = 0;
     m_feedbackResult = ActionResultType::None;
+    m_lastRequestHadFeedback = false;
+    m_lastFeedbackDecisionFrame = 0;
+    m_lastFeedbackObservedFrame = 0;
+    m_lastSourceStatus = InferenceStatus::NoDecision;
   }
 
   bool arm(const Vec3 &expectedTarget) {
@@ -79,6 +87,9 @@ public:
 
   ModelIOResponse infer(const ModelIORequest &request) const override {
     ++m_requests;
+    m_lastRequestHadFeedback = request.hasFeedback;
+    m_lastFeedbackDecisionFrame = request.hasFeedback ? request.feedback.decisionFrameId : 0;
+    m_lastFeedbackObservedFrame = request.hasFeedback ? request.feedback.observedFrameId : 0;
     if (!m_armed || request.requestId == 0 ||
         validateFrame(request.stamp) != FrameValidation::Valid ||
         !validSelfState(request.self) || !request.self.alive) {
@@ -86,6 +97,7 @@ public:
     }
 
     const auto response = m_source.infer(request);
+    m_lastSourceStatus = response.inference.status;
     if (!modelIOResponseMatches(request, response)) {
       return error(request);
     }
@@ -114,7 +126,7 @@ public:
 
     if (request.hasFeedback && request.feedback.sessionId == m_sessionId &&
         request.feedback.decisionFrameId == m_decisionFrame &&
-        request.feedback.observedFrameId > m_decisionFrame &&
+        request.feedback.observedFrameId >= m_decisionFrame &&
         request.feedback.observedFrameId < request.stamp.frameId &&
         request.feedback.result.action == ActionType::MoveToPosition &&
         request.feedback.result.isTerminal()) {
@@ -132,6 +144,10 @@ public:
   uint64_t decisionFrame() const { return m_decisionFrame; }
   uint64_t feedbackFrame() const { return m_feedbackFrame; }
   ActionResultType feedbackResult() const { return m_feedbackResult; }
+  bool lastRequestHadFeedback() const { return m_lastRequestHadFeedback; }
+  uint64_t lastFeedbackDecisionFrame() const { return m_lastFeedbackDecisionFrame; }
+  uint64_t lastFeedbackObservedFrame() const { return m_lastFeedbackObservedFrame; }
+  InferenceStatus lastSourceStatus() const { return m_lastSourceStatus; }
 };
 
 } // namespace ai::runtime_io

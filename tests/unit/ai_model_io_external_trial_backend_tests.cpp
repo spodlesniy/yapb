@@ -134,3 +134,31 @@ AI_TEST(testExternalTrialRequiresTerminalFeedbackAfterNoDecision) {
   expect(trial.infer(input(14)).inference.status == ai::InferenceStatus::Error,
          "replayed second remote movement cannot take control");
 }
+
+AI_TEST(testExternalTrialAcceptsSameFrameTerminalFeedbackAndDiagnosesMissing) {
+  ExternalSource source {};
+  movement(source);
+  io::ModelIOExternalTrialBackend trial(source);
+  expect(trial.arm({ 106.0f, 20.0f, 30.0f }), "trial armed");
+  expect(trial.infer(input(10)).inference.status == ai::InferenceStatus::Success,
+         "first decision accepted");
+  source.status = ai::InferenceStatus::NoDecision;
+  source.output = {};
+  auto later = input(11);
+  expect(trial.infer(later).inference.status == ai::InferenceStatus::NoDecision &&
+         !trial.terminalFeedbackObserved() && !trial.lastRequestHadFeedback(),
+         "missing terminal result remains visible for diagnostics");
+  later = input(12);
+  later.hasFeedback = true;
+  later.feedback.sessionId = 7;
+  later.feedback.decisionFrameId = 10;
+  later.feedback.observedFrameId = 10;
+  later.feedback.result.action = ai::ActionType::MoveToPosition;
+  later.feedback.result.type = ai::ActionResultType::Completed;
+  expect(trial.infer(later).inference.status == ai::InferenceStatus::NoDecision &&
+         trial.terminalFeedbackObserved() && trial.feedbackFrame() == 10 &&
+         trial.lastRequestHadFeedback() && trial.lastFeedbackDecisionFrame() == 10 &&
+         trial.lastFeedbackObservedFrame() == 10 &&
+         trial.lastSourceStatus() == ai::InferenceStatus::NoDecision,
+         "terminal result observed in decision frame is valid as in D323");
+}

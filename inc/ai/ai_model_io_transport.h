@@ -57,6 +57,21 @@ enum class ModelIOTransportStatus : uint8_t {
   InvalidResponse,
 };
 
+inline const char *modelIOTransportStatusName(ModelIOTransportStatus status) {
+  switch (status) {
+  case ModelIOTransportStatus::Idle: return "Idle";
+  case ModelIOTransportStatus::Completed: return "Completed";
+  case ModelIOTransportStatus::InvalidRequest: return "InvalidRequest";
+  case ModelIOTransportStatus::Unavailable: return "Unavailable";
+  case ModelIOTransportStatus::TimedOut: return "TimedOut";
+  case ModelIOTransportStatus::Failed: return "Failed";
+  case ModelIOTransportStatus::InvalidClock: return "InvalidClock";
+  case ModelIOTransportStatus::InvalidResponse: return "InvalidResponse";
+  }
+  return "Unknown";
+}
+
+
 // Explicitly installed per-bot backend; it does not change the default ONNX
 // provider, open network connections or start an independent worker.
 class ModelIOTransportBackend final : public ModelIOBackend {
