@@ -70,12 +70,12 @@ AI_TEST(testExternalTrialRequiresAuthorizedTargetAndSingleDecision) {
   expect(decision.inference.status == ai::InferenceStatus::Success &&
          decision.inference.output.targetPosition.x == 106.0f &&
          trial.decided() && trial.decisionFrame() == 10 &&
-         trial.requests() == 2, "validated first remote action admitted once");
+         trial.requests() == 1, "validated first remote action admitted once");
   source.status = ai::InferenceStatus::NoDecision;
   source.output = {};
   const auto later = trial.infer(input(11));
   expect(later.inference.status == ai::InferenceStatus::NoDecision &&
-         trial.requests() == 3 && source.calls == 2,
+         trial.requests() == 2 && source.calls == 2,
          "second decision cannot be issued after first target");
 }
 

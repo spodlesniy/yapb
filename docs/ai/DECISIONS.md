@@ -4101,3 +4101,9 @@ Reject any other remote action, changed target, foreign session/frame response, 
 Keep the existing D323 deterministic `aipb modelio run` command, `status` and `stop` semantics, provider/fallback restoration and exclusive owner unchanged.
 Add unit tests for the restricted external decision envelope, forbidden actions and destinations, feedback correlation and reset behavior.
 This tests an external decision only under the same short safe-movement physical gate, not full neural independence, arbitrary-map navigation or proof of Windows x86/HLDS readiness.
+
+## D330.1 — Correct external trial request count expectations after arm reset
+
+The D330 automatic AI unit suite failed two assertions because the new external-trial test counted a pre-arm invalid request even though arm explicitly resets per-trial request counters.
+Keep the backend's intended isolation semantics and update the test to expect one accepted request immediately after arm and two after the next NoDecision, while retaining source-call counts and decision checks.
+Do not modify the runtime, protocol, external target verification, or recovery logic for a test-only bookkeeping error.

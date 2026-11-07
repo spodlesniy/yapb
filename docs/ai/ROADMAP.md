@@ -905,3 +905,6 @@ D330 adds a manual server-only `aipb modelio external <bot-index> <port>` path t
 Only a single MoveToPosition matching the traced 96-unit forward destination within 0.75 units is admitted; a later correlated NoDecision with terminal feedback and full provider/fallback recovery are required for PASS.
 Unit tests cover the external guard, unsafe action/target rejection, request identity and one-shot lifecycle; deterministic `aipb modelio run`, Legacy and ordinary ONNX defaults remain unchanged.
 No general gameplay model integration, peer authentication or arbitrary-map movement safety is claimed; CI and user-run Windows x86/HLDS acceptance are independent gates.
+
+D330 automatic CI at 4487aa8 (run 42380231945) compiled, but two external-trial unit-test assertions failed because their expected request counts ignored the documented arm-time reset.
+D330.1 corrects only those test expectations, preserving backend behavior and the requirement for separate automatic CI and manual Windows x86/HLDS acceptance.
