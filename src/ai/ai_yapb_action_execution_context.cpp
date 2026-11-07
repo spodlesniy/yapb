@@ -52,6 +52,28 @@ ActionResult YaPBActionExecutionContext::stepMockRuntime(Bot &bot, const Observa
   return bot.m_aiRuntime.step(observation, true);
 }
 
+bool YaPBActionExecutionContext::armModelIOTrial(
+    Bot &bot, const runtime_io::ModelIOBackend *backend, const Vec3 &target) {
+  return bot.m_aiRuntime.armModelIOTrial(backend, target);
+}
+
+void YaPBActionExecutionContext::stopModelIOTrial(Bot &bot) {
+  bot.m_aiRuntime.stopModelIOTrial();
+}
+
+bool YaPBActionExecutionContext::modelIOTrialActive(const Bot &bot) {
+  return bot.m_aiRuntime.modelIOTrialActive();
+}
+
+ActionResult YaPBActionExecutionContext::stepModelIOTrial(
+    Bot &bot, const Observation &observation) {
+  return bot.m_aiRuntime.step(observation, true);
+}
+
+ActionResult YaPBActionExecutionContext::modelIOTrialResult(const Bot &bot) {
+  return bot.m_aiRuntime.result();
+}
+
 namespace {
 
 constexpr float kNavigationReachDistance = 48.0f;
@@ -78,7 +100,7 @@ bool YaPBActionExecutionContext::allowsNavigationOverride() const {
   if (m_bot == nullptr) {
     return false;
   }
-  if (m_bot->m_aiRuntime.mockMoveActive()) {
+  if ((m_bot->m_aiRuntime.mockMoveActive() || m_bot->m_aiRuntime.modelIOTrialActive())) {
     return true;
   }
 
@@ -91,7 +113,7 @@ bool YaPBActionExecutionContext::allowsNavigationOverride() const {
 }
 
 bool YaPBActionExecutionContext::navigationNodeExists(int node) const {
-  if (m_bot != nullptr && m_bot->m_aiRuntime.mockMoveActive() &&
+  if (m_bot != nullptr && (m_bot->m_aiRuntime.mockMoveActive() || m_bot->m_aiRuntime.modelIOTrialActive()) &&
       node == kMockDirectNavigationNode) {
     return true;
   }
@@ -99,7 +121,7 @@ bool YaPBActionExecutionContext::navigationNodeExists(int node) const {
 }
 
 int YaPBActionExecutionContext::navigationNodeForPosition(const Vec3 &position) const {
-  if (m_bot != nullptr && m_bot->m_aiRuntime.mockMoveActive()) {
+  if (m_bot != nullptr && (m_bot->m_aiRuntime.mockMoveActive() || m_bot->m_aiRuntime.modelIOTrialActive())) {
     return kMockDirectNavigationNode;
   }
   const Vector target { position.x, position.y, position.z };
@@ -107,11 +129,13 @@ int YaPBActionExecutionContext::navigationNodeForPosition(const Vec3 &position) 
 }
 
 bool YaPBActionExecutionContext::isNavigationTargetReached(int node) const {
-  if (m_bot != nullptr && m_bot->pev != nullptr && m_bot->m_aiRuntime.mockMoveActive() &&
+  if (m_bot != nullptr && m_bot->pev != nullptr && (m_bot->m_aiRuntime.mockMoveActive() || m_bot->m_aiRuntime.modelIOTrialActive()) &&
       node == kMockDirectNavigationNode) {
     const Vector &position = m_bot->pev->origin;
     return mockReachedTarget({ position.x, position.y, position.z },
-                             m_bot->m_aiRuntime.mockMoveTarget());
+                             (m_bot->m_aiRuntime.mockMoveActive()
+                                 ? m_bot->m_aiRuntime.mockMoveTarget()
+                                 : m_bot->m_aiRuntime.modelIOTrialTarget()));
   }
   if (m_bot == nullptr || m_bot->pev == nullptr || !graph.exists(node) || m_bot->m_currentNodeIndex != node) {
     return false;
@@ -149,7 +173,7 @@ void YaPBActionExecutionContext::moveToPosition(const Vec3 &position, int node) 
   }
   // An isolated Mock trial performs GoldSrc player movement in its own frame.
   // Do not start or overwrite a Legacy navigation task.
-  if (m_bot->m_aiRuntime.mockMoveActive()) {
+  if ((m_bot->m_aiRuntime.mockMoveActive() || m_bot->m_aiRuntime.modelIOTrialActive())) {
     return;
   }
 

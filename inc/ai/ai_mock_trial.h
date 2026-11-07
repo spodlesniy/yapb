@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 class Bot;
 
 namespace ai::mock {
@@ -14,6 +16,8 @@ namespace ai::mock {
 bool handleServer();
 // Returns true when Mock owns the frame and normal YaPB logic must be skipped.
 bool frame(Bot &bot);
+bool active();
+uint64_t nextWorldQueryRequestId();
 void reset();
 void cancelBot(int botIndex);
 

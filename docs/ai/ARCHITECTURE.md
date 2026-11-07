@@ -569,3 +569,10 @@ When explicitly configured per bot, ModelIOAdapter implements InferenceProvider,
 Requests carry D316 self state, D317 authorized sensory evidence, D319 one-time feedback, and inference features with hidden-opponent masking; they do not carry engine pointers or unauthenticated entity state.
 Backend choice is not a new ControlMode and does not alter Legacy, Training, Mock ownership or the original ONNX model tensors.
 The external backend/transport remains intentionally unimplemented; invalid current frames suppress new decisions even if Neural fallback is enabled.
+
+## D323 — Deterministic Model I/O integration trial
+
+D323 supplies a concrete opt-in local backend for the previously abstract Model I/O transport boundary.
+Its one-shot decision exercises the same InferencePolicy, ActionRuntime and ActionFeedback as a later independent model; it does not change Neural ONNX default behavior.
+The `aipb modelio` test temporarily isolates one Neural bot from tactical Legacy tasks while using bounded direct GoldSrc movement, then verifies physical completion and feedback delivery on a later model request.
+This probe cannot substitute for map exploration, collision guarantees beyond the tested initial trace or a full independent policy execution scheduler.

@@ -35,6 +35,9 @@ private:
   GoalNavigationPolicy m_goalNavigationPolicy {};
   MockMovePolicy m_mockPolicy {};
   bool m_mockMoveActive {};
+  bool m_modelIOTrialActive {};
+  bool m_modelIOTrialFallbackEnabled {};
+  Vec3 m_modelIOTrialTarget {};
   ActionResult m_mockMoveResult {};
   Vec3 m_mockTarget {};
   float m_mockStartedAt { -1.0f };
@@ -60,6 +63,9 @@ public:
   void setMode(ControlMode mode, const Observation &) {
     if (m_mockMoveActive && mode != ControlMode::Neural) {
       cancelMockMove();
+    }
+    if (m_modelIOTrialActive && mode != ControlMode::Neural) {
+      stopModelIOTrial();
     }
     const auto previousMode = m_runtime.getMode();
     if (mode == previousMode) {
@@ -115,7 +121,7 @@ public:
 
   // Only an explicit single-bot server-console trial can enable the mock.
   bool armMockMove(const Vec3 &target) {
-    if (m_mockMoveActive || !mockTrialModeAllowed(m_runtime.getMode()) ||
+    if (m_mockMoveActive || m_modelIOTrialActive || !mockTrialModeAllowed(m_runtime.getMode()) ||
         !m_mockPolicy.arm(target)) {
       return false;
     }
@@ -140,6 +146,53 @@ public:
 
   bool mockMoveActive() const {
     return m_mockMoveActive;
+  }
+
+  // D323 uses the same direct physical completion path, but never the Mock
+  // policy: the trial's action must originate from ModelIOTestBackend.
+  bool modelIOTrialActive() const {
+    return m_modelIOTrialActive;
+  }
+
+  Vec3 modelIOTrialTarget() const {
+    return m_modelIOTrialTarget;
+  }
+
+  bool armModelIOTrial(const runtime_io::ModelIOBackend *backend, const Vec3 &target) {
+    if (m_mockMoveActive || m_modelIOTrialActive || !mockTrialModeAllowed(m_runtime.getMode()) ||
+        backend == nullptr || !runtime_io::finiteVector(target)) {
+      return false;
+    }
+    if (m_runtime.isActive() && m_trainingCollector.cancel(m_runtime)) {
+      if (m_bot != nullptr) {
+        runtime_io::recordBotActionResult(*m_bot, m_runtime.result());
+      }
+      m_trainingCollector.finalizeTerminal(captureObservation());
+    }
+    if (m_runtime.isActive() || !setModelIOBackend(backend)) {
+      return false;
+    }
+    m_modelIOTrialFallbackEnabled = isInferenceFallbackEnabled();
+    setInferenceFallbackEnabled(false);
+    m_modelIOTrialActive = true;
+    m_modelIOTrialTarget = target;
+    return true;
+  }
+
+  void stopModelIOTrial() {
+    if (!m_modelIOTrialActive) {
+      return;
+    }
+    if (m_runtime.isActive() && m_trainingCollector.cancel(m_runtime)) {
+      if (m_bot != nullptr) {
+        runtime_io::recordBotActionResult(*m_bot, m_runtime.result());
+      }
+      m_trainingCollector.finalizeTerminal(captureObservation());
+    }
+    m_modelIOTrialActive = false;
+    m_modelIOTrialTarget = {};
+    setModelIOBackend(nullptr);
+    setInferenceFallbackEnabled(m_modelIOTrialFallbackEnabled);
   }
 
   Vec3 mockMoveTarget() const {
@@ -185,7 +238,8 @@ public:
   // Backend overrides the Neural inference source only when explicitly set;
   // normal ONNX and fallback selection continue to work unchanged by default.
   bool setModelIOBackend(const runtime_io::ModelIOBackend *backend) {
-    if (m_runtime.isActive() || m_mockMoveActive) {
+    if (m_runtime.isActive() || m_mockMoveActive ||
+        (m_modelIOTrialActive && backend != nullptr)) {
       return false;
     }
     m_modelIOAdapter.setBackend(backend);
@@ -347,6 +401,7 @@ public:
 
   void reset() {
     cancelMockMove();
+    stopModelIOTrial();
     if (m_trainingCollector.hasPendingTerminal()) {
       m_trainingCollector.finalizeTerminal(captureObservation());
     }

@@ -4014,3 +4014,13 @@ Do not add networking, worker threads, model installations, new runtime modes, o
 The D322 automatic AI unit test compile failed in `ai_model_io.h` because GCC rejected two implicit empty-brace assignments to `ModelIORequest` with its nested fixed-size payload.
 Replace these expressions with explicit `ModelIORequest {}` value-initialization in the adapter's reset and frame-binding paths.
 Preserve every field, runtime action, test contract, and feedback validation rule without introducing a compatibility flag or touching original YaPB files.
+
+## D323 — Opt-in deterministic Model I/O backend with HLDS movement acceptance
+
+Provide a small engine-independent ModelIOTestBackend which accepts one explicitly armed absolute position and returns a correlated InferenceActionId::MoveToPosition through the existing InferenceProvider, InferencePolicy and ActionRuntime, with no ONNX or network dependency.
+A dedicated `aipb modelio run <bot-index>` server-console command selects one live grounded Neural bot and performs the established 96-unit D318 forward TraceHull preflight before attaching the backend.
+Keep one temporary physical movement owner per trial and reuse the existing Mock direct-navigation completion tolerance only while that owner is active, without replacing Model I/O actions with MockMovePolicy decisions or invoking tactical Legacy navigation.
+Suppress the configured inference fallback while this test backend is active and restore both fallback and original inference provider on completion or cancellation; reject concurrent Explorer or Mock ownership.
+Require the backend to receive a later stamped Model I/O request containing matching terminal D319 ActionFeedback for the first action's decision frame before reporting PASS.
+Expose `aipb modelio status` and `aipb modelio stop`; reset on bot deletion and map shutdown.
+No automatic activation or claim of arbitrary-map traversal follows from this single short direct-motion test.

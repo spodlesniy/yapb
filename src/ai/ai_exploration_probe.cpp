@@ -6,6 +6,7 @@
 #include <ai/ai_world_query_adapter.h>
 #include <ai/ai_execution_ownership_adapter.h>
 #include <ai/ai_mock_trial.h>
+#include <ai/ai_model_io_trial.h>
 #include <aipb/explorer/engine_bridge_scenario_pose.h>
 #include <aipb/explorer/engine_bridge_scenario_menu.h>
 #include <aipb/explorer/engine_bridge_math.h>
@@ -911,6 +912,7 @@ bool init(int botIndex) {
 }
 
 void reset() {
+   ai::model_io_trial::reset();
    ai::mock::reset();
    ai::runtime_io::resetControlFrames();
    ai::runtime_io::resetWorldQueries();
@@ -925,6 +927,7 @@ void reset() {
 }
 
 void cancelBot(int botIndex) {
+   ai::model_io_trial::cancelBot(botIndex);
    ai::mock::cancelBot(botIndex);
    ai::runtime_io::releaseControlBot(botIndex);
    ai::runtime_io::releaseWorldQueryBot(botIndex);
@@ -955,6 +958,9 @@ bool frame(Bot &bot) {
       }
       return true;
    }
+   if (!explorerOwnsFrame && ai::model_io_trial::frame(bot)) {
+      return true;
+   }
    if (!explorerOwnsFrame && ai::mock::frame(bot)) {
       return true;
    }
@@ -963,7 +969,7 @@ bool frame(Bot &bot) {
    static bool aipbCommandRegistered {};
    if (!aipbCommandRegistered) {
       game.registerEngineCommand("aipb", [] () {
-         if (!ai::mock::handleServer()) {
+         if (!ai::model_io_trial::handleServer() && !ai::mock::handleServer()) {
             ai::menu::handleServer();
          }
       });

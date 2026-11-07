@@ -870,3 +870,8 @@ No external model backend is configured by default; the existing ONNX model prov
 The next integration gate is an explicit concrete model backend/provider and user-run Windows x86/HLDS acceptance, followed separately by arbitrary-map navigation and movement safety.
 D322 automatic Build CI failed at 07050a6 (run 42367467117) in the AI unit-test C++17 compilation because the large ModelIORequest was assigned an untyped empty braced initializer in two places.
 D322.1 changes only those two assignments to explicit ModelIORequest value-initialization; the same Model I/O unit tests and original execution behavior remain authoritative for the corrective CI gate.
+D322.1 automatic CI succeeded at 4319fb4 (run 42367604970), confirming that the optional stamped Model I/O contract compiles and passes unit tests; real backend actuation remained untested.
+D323 introduces an opt-in server-only deterministic Model I/O test backend and isolated Neural integration trial on one selected bot.
+The trial uses a D316 self snapshot and D318 forward TraceHull preflight, then passes a backend-originated MoveToPosition action through the D322 ModelIOAdapter, existing InferencePolicy, ActionRuntime and semantic executor, and drives only safe bounded direct movement while suppressing Legacy tactical decisions.
+Success requires both physical target completion and a subsequent stamped Model I/O request delivering D319's original terminal ActionFeedback to the backend.
+Ordinary ONNX inference, model feature/action schemas and Legacy/Training behavior remain unchanged unless a server operator explicitly starts the trial; CI and manual Windows x86/HLDS acceptance are separate gates.

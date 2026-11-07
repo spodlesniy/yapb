@@ -7,6 +7,7 @@
 #include <yapb.h>
 
 #include <ai/ai_mock_trial.h>
+#include <ai/ai_model_io_trial.h>
 #include <ai/ai_exploration_probe.h>
 #include <ai/ai_server_state_adapter.h>
 #include <ai/ai_world_query_adapter.h>
@@ -78,6 +79,14 @@ void abortTrial(Bot *bot, const char *reason) {
 }
 
 } // namespace
+
+bool active() {
+  return selectedBot >= 0;
+}
+
+uint64_t nextWorldQueryRequestId() {
+  return ++nextRequestId;
+}
 
 bool handleServer() {
   if (engfuncs.pfnCmd_Argc() < 2 || std::strcmp(engfuncs.pfnCmd_Argv(1), "mock") != 0) {
@@ -174,7 +183,7 @@ bool handleServer() {
   char *end {};
   const long index = std::strtol(argument, &end, 10);
   if (argument == end || *end != '\0' || index < 0 || index >= ai::runtime_io::kServerBotSlots ||
-      selectedBot >= 0 || ai::explore::active() || gameState.isRoundOver()) {
+      selectedBot >= 0 || ai::model_io_trial::active() || ai::explore::active() || gameState.isRoundOver()) {
     game.print("AiPB mock: rejected (InvalidBotOrBusy).");
     return true;
   }
@@ -211,7 +220,7 @@ bool frame(Bot &bot) {
     }
     const float yaw = state.self.viewAngles.y * 0.017453292519943295f;
     ai::runtime_io::WorldQueryRequest request {};
-    request.requestId = ++nextRequestId;
+    request.requestId = nextWorldQueryRequestId();
     request.sessionId = state.stamp.sessionId;
     request.observationFrameId = state.stamp.frameId;
     request.kind = ai::runtime_io::QueryKind::TraceHull;

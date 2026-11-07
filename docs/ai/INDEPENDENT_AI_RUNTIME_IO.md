@@ -193,3 +193,15 @@ An invalid current self/perception/control frame disables new decisions for that
 The adapter has no live engine pointers and no extra threads, transport, file or socket I/O; a future concrete model backend must provide these capabilities separately.
 No `aipb` server command is introduced by D322 because no external-model backend is installed or enabled.
 Unit tests exercise matching/stale responses, per-session feedback, anonymous sensory evidence, hidden player masking and the existing policy decoder; Windows x86 and real backend movement remain separate acceptance gates.
+
+## D323 — Opt-in HLDS Model I/O acceptance backend
+
+The engine-neutral `ModelIOTestBackend` in `inc/ai/ai_model_io_test_backend.h` replies to a single, explicitly armed D322 request with a versioned MoveToPosition output and echoes its request/session/frame identity.
+It emits no other actions after the first decision and only marks feedback confirmed after a later request carries matching terminal D319 ActionFeedback from the original decision.
+The engine integration module registers `aipb modelio run <bot-index>`, `aipb modelio status`, and `aipb modelio stop` in the existing `aipb` server console dispatch.
+Run requires `yb_ai_mode 1`, a living grounded selected bot, no Explorer or Mock trial, a clear forward 96-unit TraceHull and a valid Neural controller.
+The one-bot trial attaches the backend using `BotRuntime::armModelIOTrial`, temporarily disables fallback, steps the original ModelIOAdapter and ActionRuntime, and uses bounded GoldSrc `RunPlayerMove` in the same short direct physical movement path as the prior Mock trial.
+Its terminal PASS requires actual position tolerance and a subsequent model request delivering the original action feedback; a semantic Completed result alone is insufficient.
+Stop, disconnect, invalid mode and map shutdown release the test provider and restore the previously configured ONNX source and fallback setting.
+This is a deterministic local model-backend acceptance probe, not a trained model and not a network client; no new ONNX tensor formats or other player information are introduced.
+Windows x86/HLDS manual validation and independent map safety are separate acceptance gates.

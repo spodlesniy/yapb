@@ -11,6 +11,7 @@
 #include <ai/ai_action_execution_context.h>
 #include <ai/ai_action_result.h>
 #include <ai/ai_controller.h>
+#include <ai/ai_model_io.h>
 
 class Bot;
 
@@ -70,6 +71,11 @@ public:
   static ActionResult mockRuntimeResult(const Bot &bot);
   static void cancelMockRuntimeMove(Bot &bot);
   static ActionResult stepMockRuntime(Bot &bot, const Observation &observation);
+  static bool armModelIOTrial(Bot &bot, const runtime_io::ModelIOBackend *backend, const Vec3 &target);
+  static void stopModelIOTrial(Bot &bot);
+  static bool modelIOTrialActive(const Bot &bot);
+  static ActionResult stepModelIOTrial(Bot &bot, const Observation &observation);
+  static ActionResult modelIOTrialResult(const Bot &bot);
 
   bool isAlive() const override;
   bool allowsNavigationOverride() const override;
