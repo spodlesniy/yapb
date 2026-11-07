@@ -4042,3 +4042,12 @@ Only position-free public round transitions, position-free remembered disappeara
 Reject stale or hidden fields even when a `hasPosition` or `valid` flag is false; an invalid event must never reach `ModelIOBackend::infer`.
 Keep request/session correlation, existing inference/action schemas, ONNX default behavior and D323 test-trial semantics unchanged.
 Do not introduce a network transport, async calls, a new control mode or claims of real-model/HLDS acceptance in this hardening step.
+
+## D326 — Define a bounded binary wire codec for independent Model I/O
+
+Keep D322's synchronous ModelIOBackend interface and established feature/action schemas unchanged while specifying the external byte-level request and response envelope.
+Use a fixed maximum of 2048 bytes per message, explicit little-endian integers, IEEE-754 finite binary32 values, an AIPB magic header, wire version, request/response kind and exact payload length.
+Serialize only the D316 self state, D317 authorized visibility/events, D319 correlated action feedback and existing sanitized fixed feature vector; reconstruct per-event frame stamps from the enclosing authenticated request.
+Validate versions, allowed event kinds, identities, enumerations, finite values and request/session/frame correlation before exposing a decoded message, and never mutate the caller's output on parse failure.
+Keep the codec transport-neutral and independent of GoldSrc, platform struct padding, sockets, background workers and new runtime controls.
+Do not install the codec as a production backend yet or claim tested networking, external-model inference, Windows x86 compatibility or HLDS acceptance.

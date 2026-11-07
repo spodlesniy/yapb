@@ -883,3 +883,6 @@ These checks do not prove that ONNX model weights are loaded or that arbitrary-m
 D325 closes the outgoing D317 perception-event allowlist in the D322 Model I/O adapter before any independent external-model backend is attached.
 It rejects unsupported event kinds, invalid provenance/identity and latent hidden coordinates, and requires sighting events to match the current visible enemy; unit tests verify that invalid frames do not invoke the backend.
 No external transport, trained model, automatic gameplay behavior or new control mode is implemented; the D324 manual Windows x86/HLDS recovery gate and Movement Discovery acceptance gates remain open.
+D326 adds a transport-neutral external Model I/O wire v1 codec with a 2048-byte bound, canonical little-endian encoding, exact length/version validation, strict D325 event allowlisting and request/session/frame response matching.
+The codec and its unit tests do not install a network backend or affect original ONNX/Legacy execution; external transport, security, timeouts and real-model evaluation remain future work.
+The D324 manual Windows x86/HLDS lifecycle acceptance and independent Movement Discovery A–G gates remain open.

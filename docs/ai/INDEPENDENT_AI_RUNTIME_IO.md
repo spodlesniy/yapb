@@ -228,3 +228,15 @@ The existing authenticated self snapshot, session/request correlation, action de
 This is a defensive prerequisite for future external model transport, not a transport implementation or proof of trained-model execution.
 Unit tests cover each permitted event family, forbidden coordinates, identity mismatch and actual ModelIOAdapter dispatch prevention.
 Manual Windows x86/HLDS D324 lifecycle recovery acceptance remains open.
+
+## D326 — External Model I/O binary envelope v1
+
+`inc/ai/ai_model_io_wire.h` defines a bounded, deterministic byte-level request/response codec for a future external backend without changing D322 ModelIOBackend.
+Every message starts with ASCII `AIPB`, little-endian 16-bit wire version (1), little-endian 16-bit kind (request 1, response 2), and a little-endian 32-bit payload size excluding the 12-byte header.
+The declared payload must equal the exact received bytes, and a full message may not exceed 2048 bytes.
+Every integer is encoded little-endian, booleans as 0 or 1, signed 32-bit values by their bit representation, and finite IEEE-754 binary32 values; there is no native-struct serialization, native alignment, implicit padding or transport checksum.
+A request body contains Model I/O schema version, request ID, D316 FrameStamp and self state, visible-enemy evidence, up to four D317 events with inherited enclosing frame identity, optional D319 feedback, and all feature schema v7 values with their exact declared count.
+A response body contains Model I/O schema version, request/session/observation-frame identifiers, inference status and action schema v2 primitive output fields.
+Decoders reject unsupported versions, incorrect length/type, truncated or extra data, invalid event evidence, malformed flags/nonfinite values and mismatched response identity before mutating the output object.
+This codec does not open sockets, choose a remote process, define delivery/timeout behavior, provide authentication or replace the existing ONNX/default runtime.
+A subsequent separately reviewed step must implement any transport and safety limits; D324 Windows x86/HLDS recovery acceptance remains open.
