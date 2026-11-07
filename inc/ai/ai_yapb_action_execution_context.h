@@ -12,6 +12,7 @@
 #include <ai/ai_action_result.h>
 #include <ai/ai_controller.h>
 #include <ai/ai_model_io.h>
+#include <ai/ai_model_io_recovery.h>
 
 class Bot;
 
@@ -72,7 +73,8 @@ public:
   static void cancelMockRuntimeMove(Bot &bot);
   static ActionResult stepMockRuntime(Bot &bot, const Observation &observation);
   static bool armModelIOTrial(Bot &bot, const runtime_io::ModelIOBackend *backend, const Vec3 &target);
-  static void stopModelIOTrial(Bot &bot);
+  static runtime_io::ModelIORecoveryReport stopModelIOTrial(Bot &bot);
+  static runtime_io::ModelIORecoveryReport lastModelIORecovery(const Bot &bot);
   static bool modelIOTrialActive(const Bot &bot);
   static ActionResult stepModelIOTrial(Bot &bot, const Observation &observation);
   static ActionResult modelIOTrialResult(const Bot &bot);

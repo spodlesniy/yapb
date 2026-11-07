@@ -16,10 +16,13 @@
 #include <ai/ai_bot_adapter.h>
 #include <ai/ai_observation_builder.h>
 #include <ai/ai_mock_motion.h>
+#include <ai/ai_model_io_recovery.h>
 
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
+
+extern ConVar cv_ai_mode;
 
 namespace ai::model_io_trial {
 namespace {
@@ -44,6 +47,10 @@ float lastElapsed {};
 uint32_t lastRequests {};
 uint64_t lastDecisionFrame {};
 uint64_t lastFeedbackFrame {};
+ai::runtime_io::ModelIOTrialStopReason lastStopReason {
+    ai::runtime_io::ModelIOTrialStopReason::None
+};
+ai::runtime_io::ModelIORecoveryReport lastRecovery {};
 
 const char *name(ai::ActionResultType type) {
   switch (type) {
@@ -58,10 +65,28 @@ const char *name(ai::ActionResultType type) {
   return "Unknown";
 }
 
-void clear(Bot *bot) {
+void clear(Bot *bot, ai::runtime_io::ModelIOTrialStopReason reason) {
+  ai::runtime_io::ModelIORecoveryReport recovery {};
+  const bool hadRuntime = running;
   if (bot != nullptr && running) {
-    ai::YaPBActionExecutionContext::stopModelIOTrial(*bot);
+    recovery = ai::YaPBActionExecutionContext::stopModelIOTrial(*bot);
   }
+  else if (!running) {
+    recovery = ai::runtime_io::verifyModelIORecovery(nullptr, nullptr,
+        false, false, false, false, false);
+  }
+  // Disconnect may have already destroyed its bot. Never keep a backend
+  // pointer owned by a deleted BotRuntime; it is reinitialized on next run.
+  if (hadRuntime && !recovery.verified() &&
+      reason != ai::runtime_io::ModelIOTrialStopReason::BotDisconnected &&
+      reason != ai::runtime_io::ModelIOTrialStopReason::MapReset) {
+    game.print("AiPB modelio: recovery FAILED; provider=%d; fallback=%d; backend=%d; idle=%d; owner=%d.",
+        recovery.providerRestored, recovery.fallbackRestored, recovery.backendReleased,
+        recovery.actionIdle, recovery.trialReleased);
+    reason = ai::runtime_io::ModelIOTrialStopReason::RecoveryFailed;
+  }
+  lastRecovery = recovery;
+  lastStopReason = reason;
   selected = -1;
   pending = false;
   running = false;
@@ -70,12 +95,16 @@ void clear(Bot *bot) {
   backend.reset();
 }
 
-void fail(Bot *bot, const char *reason) {
-  game.print("AiPB modelio: failed (%s); requests=%u; decision_frame=%llu; feedback_frame=%llu.",
-      reason, backend.requests(),
-      static_cast<unsigned long long>(backend.decisionFrame()),
-      static_cast<unsigned long long>(backend.feedbackFrame()));
-  clear(bot);
+void fail(Bot *bot, ai::runtime_io::ModelIOTrialStopReason reason, const char *detail) {
+  const uint32_t count = backend.requests();
+  const auto decision = backend.decisionFrame();
+  const auto feedback = backend.feedbackFrame();
+  lastCompleted = false;
+  clear(bot, reason);
+  game.print("AiPB modelio: stopped (%s, %s); requests=%u; decision_frame=%llu; feedback_frame=%llu; recovered=%d.",
+      ai::runtime_io::modelIOTrialStopReasonName(lastStopReason), detail, count,
+      static_cast<unsigned long long>(decision),
+      static_cast<unsigned long long>(feedback), lastRecovery.verified());
 }
 
 } // namespace
@@ -91,18 +120,27 @@ bool handleServer() {
   const int argc = engfuncs.pfnCmd_Argc();
   const char *cmd = argc >= 3 ? engfuncs.pfnCmd_Argv(2) : "";
   if (argc == 3 && std::strcmp(cmd, "status") == 0) {
-    game.print("AiPB modelio: %s; selected_bot=%d; last=%s; requests=%u; decision_frame=%llu; feedback_frame=%llu; moved=%.2f; remaining=%.2f; elapsed=%.3f.",
+    game.print("AiPB modelio: %s; selected_bot=%d; last=%s; stop_reason=%s; recovered=%d; provider=%d; fallback=%d; backend=%d; idle=%d; owner=%d; requests=%u; decision_frame=%llu; feedback_frame=%llu; moved=%.2f; remaining=%.2f; elapsed=%.3f.",
         pending ? "Pending" : running ? (awaitingFeedback ? "Feedback" : "Executing") : "Idle",
-        selected, lastCompleted ? "PASS" : "None/Failed", lastRequests,
-        static_cast<unsigned long long>(lastDecisionFrame),
+        selected, lastCompleted ? "PASS" : "None/Failed",
+        ai::runtime_io::modelIOTrialStopReasonName(lastStopReason),
+        lastRecovery.verified(), lastRecovery.providerRestored,
+        lastRecovery.fallbackRestored, lastRecovery.backendReleased,
+        lastRecovery.actionIdle, lastRecovery.trialReleased,
+        lastRequests, static_cast<unsigned long long>(lastDecisionFrame),
         static_cast<unsigned long long>(lastFeedbackFrame),
         lastMoved, lastRemaining, lastElapsed);
     return true;
   }
   if (argc == 3 && std::strcmp(cmd, "stop") == 0) {
     auto *bot = selected >= 0 ? bots.findBotByIndex(selected) : nullptr;
-    clear(bot);
-    game.print("AiPB modelio: stopped.");
+    if (active()) {
+      clear(bot, ai::runtime_io::ModelIOTrialStopReason::Requested);
+      lastCompleted = false;
+    }
+    game.print("AiPB modelio: stopped; reason=%s; recovered=%d.",
+        ai::runtime_io::modelIOTrialStopReasonName(lastStopReason),
+        lastRecovery.verified());
     return true;
   }
   if (argc != 4 || std::strcmp(cmd, "run") != 0) {
@@ -130,6 +168,8 @@ bool handleServer() {
   lastMoved = lastRemaining = lastElapsed = 0.0f;
   lastRequests = 0;
   lastDecisionFrame = lastFeedbackFrame = 0;
+  lastStopReason = ai::runtime_io::ModelIOTrialStopReason::None;
+  lastRecovery = {};
   game.print("AiPB modelio: requested for bot #%d.", selected);
   return true;
 }
@@ -140,19 +180,22 @@ bool frame(Bot &bot) {
   }
 
   ai::runtime_io::ServerBotSnapshot state {};
-  if (!ai::runtime_io::readServerBotSnapshot(selected, state) ||
-      !state.self.alive || !std::isfinite(state.self.maxSpeed) ||
-      state.self.maxSpeed < 10.0f || gameState.isRoundOver() ||
-      ai::explore::active() || ai::mock::active() ||
-      ai::YaPBActionExecutionContext::runtimeMode(bot) != ai::ControlMode::Neural ||
-      (running && state.stamp.sessionId != sessionId)) {
-    fail(&bot, "invalid session, mode or ownership");
+  const bool stateAvailable = ai::runtime_io::readServerBotSnapshot(selected, state);
+  const bool botAvailable = stateAvailable && state.self.alive &&
+      std::isfinite(state.self.maxSpeed) && state.self.maxSpeed >= 10.0f;
+  const auto invalid = ai::runtime_io::modelIOTrialInvalidation(
+      botAvailable, gameState.isRoundOver(), ai::explore::active() || ai::mock::active(),
+      cv_ai_mode.as<int>() == 1,
+      ai::YaPBActionExecutionContext::runtimeMode(bot) == ai::ControlMode::Neural,
+      !running || (stateAvailable && state.stamp.sessionId == sessionId));
+  if (invalid != ai::runtime_io::ModelIOTrialStopReason::None) {
+    fail(&bot, invalid, "lifecycle gate");
     return true;
   }
 
   if (pending) {
     if (!state.self.onGround) {
-      fail(&bot, "not grounded");
+      fail(&bot, ai::runtime_io::ModelIOTrialStopReason::BotUnavailable, "not grounded");
       return true;
     }
     ai::runtime_io::WorldQueryRequest request {};
@@ -171,7 +214,7 @@ bool frame(Bot &bot) {
     if (!ai::runtime_io::isCompleted(request, result) || result.startSolid ||
         result.fraction < 0.999f || (backend.reset(), !backend.arm(request.end)) ||
         !ai::YaPBActionExecutionContext::armModelIOTrial(bot, &backend, request.end)) {
-      fail(&bot, "unsafe trace or unable to arm backend");
+      fail(&bot, ai::runtime_io::ModelIOTrialStopReason::InvalidAction, "unsafe trace or unable to arm backend");
       return true;
     }
 
@@ -188,7 +231,7 @@ bool frame(Bot &bot) {
   }
 
   if (state.stamp.gameTime - started > kTimeout) {
-    fail(&bot, "timeout");
+    fail(&bot, ai::runtime_io::ModelIOTrialStopReason::Timeout, "timeout");
     return true;
   }
   const auto observation = ai::buildObservation(ai::buildObservationInput(bot));
@@ -199,7 +242,7 @@ bool frame(Bot &bot) {
         backend.feedbackResult() != ai::ActionResultType::Completed ||
         backend.sessionId() != sessionId ||
         backend.feedbackFrame() <= backend.decisionFrame()) {
-      fail(&bot, "missing or invalid terminal feedback");
+      fail(&bot, ai::runtime_io::ModelIOTrialStopReason::InvalidAction, "missing or invalid terminal feedback");
       return true;
     }
     lastRequests = backend.requests();
@@ -208,14 +251,21 @@ bool frame(Bot &bot) {
     lastElapsed = state.stamp.gameTime - started;
     lastMoved = ai::mockDistanceToTarget(origin, state.self.origin);
     lastRemaining = ai::mockDistanceToTarget(state.self.origin, destination);
-    lastCompleted = ai::mockReachedTarget(state.self.origin, destination);
-    game.print("AiPB modelio: %s; result=Completed; requests=%u; decision_frame=%llu; feedback_frame=%llu; moved=%.2f; remaining=%.2f; elapsed=%.3f; session=%llu.",
-        lastCompleted ? "PASS" : "FAIL", lastRequests,
+    const auto completedSession = sessionId;
+    const bool physicallyReached = ai::mockReachedTarget(state.self.origin, destination);
+    clear(&bot, ai::runtime_io::ModelIOTrialStopReason::Completed);
+    lastCompleted = physicallyReached && lastRecovery.verified();
+    game.print("AiPB modelio: %s; result=Completed; recovered=%d; requests=%u; decision_frame=%llu; feedback_frame=%llu; moved=%.2f; remaining=%.2f; elapsed=%.3f; session=%llu.",
+        lastCompleted ? "PASS" : "FAIL", lastRecovery.verified(), lastRequests,
         static_cast<unsigned long long>(lastDecisionFrame),
         static_cast<unsigned long long>(lastFeedbackFrame),
         lastMoved, lastRemaining, lastElapsed,
-        static_cast<unsigned long long>(sessionId));
-    clear(&bot);
+        static_cast<unsigned long long>(completedSession));
+    game.print("AiPB modelio: recovery=%s; provider=%d; fallback=%d; backend=%d; idle=%d; owner=%d.",
+        lastRecovery.verified() ? "PASS" : "FAIL",
+        lastRecovery.providerRestored, lastRecovery.fallbackRestored,
+        lastRecovery.backendReleased, lastRecovery.actionIdle,
+        lastRecovery.trialReleased);
     return true;
   }
 
@@ -223,7 +273,7 @@ bool frame(Bot &bot) {
     if (result.action != ai::ActionType::MoveToPosition ||
         result.type != ai::ActionResultType::Completed ||
         !ai::mockReachedTarget(state.self.origin, destination)) {
-      fail(&bot, "terminal result without physical completion");
+      fail(&bot, ai::runtime_io::ModelIOTrialStopReason::InvalidAction, "terminal without physical completion");
       return true;
     }
     awaitingFeedback = true;
@@ -231,14 +281,14 @@ bool frame(Bot &bot) {
   }
   if (result.type != ai::ActionResultType::Accepted || !backend.decided() ||
       result.action != ai::ActionType::MoveToPosition || !state.self.onGround) {
-    fail(&bot, "model decision not accepted or movement state invalid");
+    fail(&bot, ai::runtime_io::ModelIOTrialStopReason::InvalidAction, "decision or movement state invalid");
     return true;
   }
 
   const float dt = state.stamp.gameTime - lastTime;
   lastTime = state.stamp.gameTime;
   if (!std::isfinite(dt) || dt <= 0.0f) {
-    fail(&bot, "non-monotonic engine time");
+    fail(&bot, ai::runtime_io::ModelIOTrialStopReason::InvalidAction, "non-monotonic engine time");
     return true;
   }
   const float yaw = std::atan2(destination.y - state.self.origin.y,
@@ -260,14 +310,14 @@ bool frame(Bot &bot) {
 void cancelBot(int botIndex) {
   if (selected == botIndex) {
     auto *bot = bots.findBotByIndex(selected);
-    clear(bot);
+    lastCompleted = false;
+    clear(bot, ai::runtime_io::ModelIOTrialStopReason::BotDisconnected);
   }
 }
 
 void reset() {
   auto *bot = selected >= 0 ? bots.findBotByIndex(selected) : nullptr;
-  clear(bot);
-  backend.reset();
+  clear(bot, ai::runtime_io::ModelIOTrialStopReason::MapReset);
   lastCompleted = false;
 }
 

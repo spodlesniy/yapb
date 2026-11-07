@@ -4024,3 +4024,13 @@ Suppress the configured inference fallback while this test backend is active and
 Require the backend to receive a later stamped Model I/O request containing matching terminal D319 ActionFeedback for the first action's decision frame before reporting PASS.
 Expose `aipb modelio status` and `aipb modelio stop`; reset on bot deletion and map shutdown.
 No automatic activation or claim of arbitrary-map traversal follows from this single short direct-motion test.
+
+## D324 — Verify Model I/O trial lifecycle and recovery
+
+Retain the original provider pointer and fallback setting before explicitly arming a Model I/O trial; prevent ordinary inference configuration setters from replacing either choice while this isolated owner is active.
+On completion, explicit stop, timeout, invalid action, session change or owner conflict, cancel any active semantic action, detach the test backend, restore provider and fallback, and inspect all five release invariants.
+An explicit recovery report checks provider identity, fallback setting, absence of the test backend, absence of an active action, and release of trial ownership; this does not assert that external ONNX weights are available.
+Detect yb_ai_mode changes from the server cvar as well as the per-bot runtime because the isolated trial intentionally skips the normal Bot::update control loop.
+Track a distinct terminal reason for explicit stop, mode change, round end, conflicting owner, invalid bot, session mismatch, timeout, disconnect and map shutdown; do not retain a pointer to a removed bot.
+Mark the trial PASS only after both physical completion and valid terminal D319 feedback plus successful provider restoration.
+Preserve one-shot deterministic backend semantics, original ONNX/Legacy behavior, feature schemas and the user's responsibility for manual Windows x86/HLDS validation.

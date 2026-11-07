@@ -14,6 +14,7 @@
 #include <ai/ai_goal_navigation_policy.h>
 #include <ai/ai_inference_policy.h>
 #include <ai/ai_model_io.h>
+#include <ai/ai_model_io_recovery.h>
 #include <ai/ai_server_state_adapter.h>
 #include <ai/ai_perception_adapter.h>
 #include <ai/ai_mock_policy.h>
@@ -37,6 +38,8 @@ private:
   bool m_mockMoveActive {};
   bool m_modelIOTrialActive {};
   bool m_modelIOTrialFallbackEnabled {};
+  const InferenceProvider *m_modelIOTrialOriginalProvider {};
+  runtime_io::ModelIORecoveryReport m_lastModelIORecovery {};
   Vec3 m_modelIOTrialTarget {};
   ActionResult m_mockMoveResult {};
   Vec3 m_mockTarget {};
@@ -173,15 +176,17 @@ public:
       return false;
     }
     m_modelIOTrialFallbackEnabled = isInferenceFallbackEnabled();
+    m_modelIOTrialOriginalProvider = m_standardInferenceProvider;
+    m_lastModelIORecovery = {};
     setInferenceFallbackEnabled(false);
     m_modelIOTrialActive = true;
     m_modelIOTrialTarget = target;
     return true;
   }
 
-  void stopModelIOTrial() {
+  runtime_io::ModelIORecoveryReport stopModelIOTrial() {
     if (!m_modelIOTrialActive) {
-      return;
+      return m_lastModelIORecovery;
     }
     if (m_runtime.isActive() && m_trainingCollector.cancel(m_runtime)) {
       if (m_bot != nullptr) {
@@ -191,8 +196,23 @@ public:
     }
     m_modelIOTrialActive = false;
     m_modelIOTrialTarget = {};
-    setModelIOBackend(nullptr);
+    // Detach the trial while the policy is idle. Do not count the model's
+    // own availability as recovery: this verifies only provider identity.
+    const bool detached = setModelIOBackend(nullptr);
     setInferenceFallbackEnabled(m_modelIOTrialFallbackEnabled);
+    m_lastModelIORecovery = runtime_io::verifyModelIORecovery(
+        m_modelIOTrialOriginalProvider, m_inferencePolicy.getProvider(),
+        m_modelIOTrialFallbackEnabled, isInferenceFallbackEnabled(),
+        getModelIOBackend() != nullptr, m_runtime.isActive(), m_modelIOTrialActive);
+    if (!detached) {
+      m_lastModelIORecovery.backendReleased = false;
+    }
+    m_modelIOTrialOriginalProvider = nullptr;
+    return m_lastModelIORecovery;
+  }
+
+  runtime_io::ModelIORecoveryReport lastModelIORecovery() const {
+    return m_lastModelIORecovery;
   }
 
   Vec3 mockMoveTarget() const {
@@ -256,6 +276,9 @@ public:
   }
 
   void setInferenceProvider(const InferenceProvider *provider) {
+    if (m_modelIOTrialActive) {
+      return;
+    }
     m_standardInferenceProvider = provider;
     m_inferencePolicy.setProvider(m_modelIOAdapter.getBackend() != nullptr
         ? static_cast<const InferenceProvider *>(&m_modelIOAdapter) : provider);
@@ -265,6 +288,9 @@ public:
   }
 
   void setInferenceFallbackEnabled(bool enabled) {
+    if (m_modelIOTrialActive) {
+      return;
+    }
     m_inferencePolicy.setFallbackPolicy(enabled ? static_cast<const Policy *>(&m_goalNavigationPolicy) : nullptr);
     if (m_runtime.getMode() == ControlMode::Neural && !m_mockMoveActive) {
       restoreNeuralPolicy();

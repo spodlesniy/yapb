@@ -205,3 +205,16 @@ Its terminal PASS requires actual position tolerance and a subsequent model requ
 Stop, disconnect, invalid mode and map shutdown release the test provider and restore the previously configured ONNX source and fallback setting.
 This is a deterministic local model-backend acceptance probe, not a trained model and not a network client; no new ONNX tensor formats or other player information are introduced.
 Windows x86/HLDS manual validation and independent map safety are separate acceptance gates.
+
+## D324 — Model I/O lifecycle recovery
+
+D324 adds an engine-neutral ModelIORecoveryReport with explicit booleans for restored original inference provider identity, fallback setting, detached test backend, idle action runtime and released trial ownership.
+The Model I/O trial snapshots its original provider and fallback before arm, ignores conflicting provider/fallback changes while isolated, and restores the saved configuration after cancelling any active action.
+The server checks both the global yb_ai_mode cvar and the selected bot's runtime mode, stopping as ModeChanged on either divergence from Neural before another movement step is issued.
+Bot death or unavailability, changed D316 session, round end, Explorer/Mock conflict, timeout, explicit stop, disconnect and map shutdown terminate the trial with a recorded reason.
+The `aipb modelio status` output now includes `stop_reason`, `recovered`, `provider`, `fallback`, `backend`, `idle` and `owner` fields.
+A completed movement reports PASS only if physical completion and correlated terminal feedback were verified and all restoration checks pass.
+An explicit `aipb modelio stop` cancels the selected trial and reports recovery; it does not count as a completed movement.
+Map shutdown clears prior PASS and marks the trial MapReset; disconnected bot instances are never retained.
+The checks establish lifecycle identity and release, not actual ONNX weight readiness or generic movement safety.
+Run unit CI first, then manually build Windows x86 and exercise completed, early-stop, mode-switch and repeat-run cases on HLDS.

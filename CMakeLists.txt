@@ -211,6 +211,7 @@ if(YAPB_BUILD_TESTS)
       "tests/unit/ai_mock_telemetry_tests.cpp"
       "tests/unit/ai_model_io_tests.cpp"
       "tests/unit/ai_model_io_trial_tests.cpp"
+      "tests/unit/ai_model_io_recovery_tests.cpp"
       "tests/unit/ai_controller_tests.cpp"
       "tests/unit/ai_action_validation_tests.cpp"
       "tests/unit/ai_action_runtime_tests.cpp"

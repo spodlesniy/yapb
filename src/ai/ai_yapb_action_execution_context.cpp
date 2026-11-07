@@ -57,8 +57,12 @@ bool YaPBActionExecutionContext::armModelIOTrial(
   return bot.m_aiRuntime.armModelIOTrial(backend, target);
 }
 
-void YaPBActionExecutionContext::stopModelIOTrial(Bot &bot) {
-  bot.m_aiRuntime.stopModelIOTrial();
+runtime_io::ModelIORecoveryReport YaPBActionExecutionContext::stopModelIOTrial(Bot &bot) {
+  return bot.m_aiRuntime.stopModelIOTrial();
+}
+
+runtime_io::ModelIORecoveryReport YaPBActionExecutionContext::lastModelIORecovery(const Bot &bot) {
+  return bot.m_aiRuntime.lastModelIORecovery();
 }
 
 bool YaPBActionExecutionContext::modelIOTrialActive(const Bot &bot) {
