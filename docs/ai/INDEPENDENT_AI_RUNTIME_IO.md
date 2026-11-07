@@ -168,3 +168,15 @@ Only the last accepted Mock trial is retained in memory, including after `aipb m
 The server-console commands `aipb mock trace status`, `aipb mock trace replay`, and paginated `aipb mock trace dump [start]` inspect that trace with no side effects; each dump prints at most 16 records.
 Read-only replay and trace schema do not replace Explorer's real movement scenarios or historical training transition records.
 D321 unit tests verify acceptance, replay determinism, stale frames, incorrect feedback, premature completion, cancellation and capacity limits; Windows x86/HLDS acceptance remains user-run.
+
+## D321.1 — High-frequency telemetry sampling
+
+D321.1 keeps the 512-record bounded Mock trace while sampling ordinary Accepted-state frames by elapsed game time.
+The default interval is 25 ms (40 Hz); a new server-console `aipb mock trace interval <20-50>` command configures the interval in milliseconds before a trial begins.
+It refuses changes while a Mock trial is pending or executing.
+The trace always preserves the initial snapshot, first policy decision, action-result state changes and terminal action, and keeps one free slot for terminal evidence even after sustained high-frequency sampling.
+Every source frame is checked for session, round, bot identity, clock and monotonic frame ID against the last observed frame before it can be skipped.
+Original timestamps and frame IDs are never replaced with sample indices.
+`aipb mock trace status` and `aipb mock trace replay` now report `observed_frames`, `saved_frames`, `skipped_frames`, `capacity_skipped`, and `interval_ms` alongside the existing result.
+A PASS validates the retained deterministic decision, feedback and physical completion; skipped intermediate physics frames are not reconstructed.
+Tests cover high frame rates, reserved terminal capacity, invalid unsampled frames, interval limits and sample counting.

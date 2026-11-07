@@ -859,3 +859,7 @@ D320.2 automatic Build CI succeeded at 02e273c (run 41317656635), and the user-r
 D321 adds bounded self-only telemetry to opt-in Neural Mock runs and read-only deterministic audit replay, retaining one last trace in memory until the next accepted run or map shutdown.
 The replay verifies a reproducible Mock policy intent, D316 monotonic self frames, D319 correlated ActionFeedback and actual physical target completion without executing GoldSrc movement.
 Trace records intentionally omit other players and do not persist to disk; full-model policy replay, arbitrary-map movement evidence, file-based export, and independent training remain future steps.
+D321 automatic Build CI passed at f5fa109 (run 42364494477); the user's HLDS run reported PASS and Completed after 0.931 seconds with 84.12 units of movement and 11.88 units remaining, but exactly filled the previous 512-record buffer at approximately 550 observed frames per second.
+D321.1 samples intermediate Mock telemetry at a default 25 ms interval (configurable 20-50 ms), retains the initial, first-decision, result-transition and terminal frames, and reserves storage for terminal feedback.
+Original D316 frame IDs, session and timestamps remain intact; processed, stored and skipped frame counts are surfaced by trace status/replay, including recording capacity pressure.
+The read-only replay still verifies each stored frame and D319 feedback, and invalid frame identities are detected before decimation; unit CI and user-run Windows x86/HLDS acceptance remain required.

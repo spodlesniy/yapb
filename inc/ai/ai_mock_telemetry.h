@@ -17,6 +17,9 @@
 namespace ai::mock {
 
 constexpr size_t kMockTraceCapacity = 512;
+constexpr float kMockTraceDefaultIntervalSeconds = 0.025f;
+constexpr float kMockTraceMinIntervalSeconds = 0.020f;
+constexpr float kMockTraceMaxIntervalSeconds = 0.050f;
 
 enum class ReplayStatus : uint8_t {
   Pass,
@@ -57,6 +60,10 @@ struct TraceRecord {
 struct ReplayReport {
   ReplayStatus status { ReplayStatus::Empty };
   size_t frames {};
+  uint64_t observedFrames {};
+  size_t skippedFrames {};
+  size_t capacitySkipped {};
+  float sampleIntervalSeconds {};
   uint64_t decisionFrameId {};
   uint64_t terminalFrameId {};
   float elapsedSeconds {};
@@ -71,6 +78,11 @@ class MockTrace final {
 private:
   TraceRecord m_records[kMockTraceCapacity] {};
   size_t m_count {};
+  uint64_t m_observedFrames {};
+  size_t m_capacitySkipped {};
+  float m_sampleInterval { kMockTraceDefaultIntervalSeconds };
+  runtime_io::FrameStamp m_lastObservedStamp {};
+  ActionResultType m_lastObservedResult { ActionResultType::None };
   Vec3 m_target {};
   runtime_io::QueryStatus m_preflight { runtime_io::QueryStatus::Unknown };
   bool m_finished {};
@@ -83,8 +95,34 @@ private:
   }
 
 public:
+  // Configuration is per MockTrace instance and persists across run resets.
+  bool setSampleIntervalSeconds(float seconds) {
+    if (!std::isfinite(seconds) || seconds < kMockTraceMinIntervalSeconds ||
+        seconds > kMockTraceMaxIntervalSeconds || (m_count != 0 && !m_finished)) {
+      return false;
+    }
+    m_sampleInterval = seconds;
+    return true;
+  }
+
+  float sampleIntervalSeconds() const {
+    return m_sampleInterval;
+  }
+
+  uint64_t observedFrames() const {
+    return m_observedFrames;
+  }
+
+  size_t capacitySkipped() const {
+    return m_capacitySkipped;
+  }
+
   void reset() {
     m_count = 0;
+    m_observedFrames = 0;
+    m_capacitySkipped = 0;
+    m_lastObservedStamp = {};
+    m_lastObservedResult = ActionResultType::None;
     m_target = {};
     m_preflight = runtime_io::QueryStatus::Unknown;
     m_finished = false;
@@ -107,6 +145,8 @@ public:
     m_records[0] = {};
     m_records[0].observed = self;
     m_count = 1;
+    m_observedFrames = 1;
+    m_lastObservedStamp = self.stamp;
     return true;
   }
 
@@ -115,20 +155,59 @@ public:
     if (m_count == 0 || m_finished || m_invalid || m_overflow) {
       return false;
     }
-    if (m_count == kMockTraceCapacity) {
-      m_overflow = true;
-      return false;
-    }
     const auto &first = m_records[0].observed.stamp;
-    const auto &last = m_records[m_count - 1].observed.stamp;
     if (self.stamp.sessionId != first.sessionId ||
         self.stamp.roundId != first.roundId ||
         self.stamp.botEntityIndex != first.botEntityIndex ||
-        runtime_io::validateFrame(self.stamp, &last) != runtime_io::FrameValidation::Valid ||
+        runtime_io::validateFrame(self.stamp, &m_lastObservedStamp) != runtime_io::FrameValidation::Valid ||
         !runtime_io::validSelfState(self.self)) {
       m_invalid = true;
       return false;
     }
+
+    ++m_observedFrames;
+    m_lastObservedStamp = self.stamp;
+    const bool firstDecision = m_lastObservedResult == ActionResultType::None;
+    const bool transition = result.type != m_lastObservedResult;
+    const bool terminal = result.isTerminal();
+    m_lastObservedResult = result.type;
+
+    // Validate every observed action and feedback, including unsampled frames.
+    if (result.action != ActionType::MoveToPosition ||
+        (result.type != ActionResultType::Accepted && !terminal) ||
+        feedback == nullptr || feedback->sessionId != self.stamp.sessionId ||
+        feedback->observedFrameId != self.stamp.frameId ||
+        feedback->result.action != result.action ||
+        feedback->result.type != result.type ||
+        !std::isfinite(feedback->result.elapsedTime) ||
+        !std::isfinite(result.elapsedTime) ||
+        std::abs(feedback->result.elapsedTime - result.elapsedTime) > 0.0001f) {
+      // Keep missing feedback in the first decision record to diagnose replay.
+      if (!firstDecision || feedback != nullptr || result.action != ActionType::MoveToPosition) {
+        m_invalid = true;
+        return false;
+      }
+    }
+
+    const auto &latestStored = m_records[m_count - 1].observed.stamp;
+    const bool intervalDue = self.stamp.gameTime - latestStored.gameTime >= m_sampleInterval;
+    const bool store = firstDecision || transition || terminal || intervalDue;
+    if (!store) {
+      return true;
+    }
+
+    // Reserve one record for the terminal result even on high-FPS servers.
+    if (m_count >= kMockTraceCapacity - (terminal ? 0u : 1u)) {
+      if (!terminal) {
+        ++m_capacitySkipped;
+        return true;
+      }
+      if (m_count == kMockTraceCapacity) {
+        m_overflow = true;
+        return false;
+      }
+    }
+
     TraceRecord next {};
     next.observed = self;
     next.result = result;
@@ -137,7 +216,7 @@ public:
       next.hasFeedback = true;
     }
     m_records[m_count++] = next;
-    if (result.isTerminal()) {
+    if (terminal) {
       m_finished = true;
     }
     return true;
@@ -169,6 +248,10 @@ public:
   ReplayReport replay() const {
     ReplayReport report {};
     report.frames = m_count;
+    report.observedFrames = m_observedFrames;
+    report.skippedFrames = m_observedFrames >= m_count ? static_cast<size_t>(m_observedFrames - m_count) : 0;
+    report.capacitySkipped = m_capacitySkipped;
+    report.sampleIntervalSeconds = m_sampleInterval;
     if (m_count == 0) {
       return report;
     }

@@ -3987,3 +3987,13 @@ Fail closed if frames are stale or out of order, feedback correlation is absent,
 The read-only `aipb mock trace replay` command re-evaluates the one-shot deterministic policy target and audits physical completion, never calls any movement engine function, and is not a simulation of GoldSrc physics.
 The `aipb mock trace dump [start]` command prints at most 16 consecutive recorded frames to the server console; no file I/O or additional networking is introduced.
 Do not alter normal Legacy/Neural inference behavior, ONNX feature contracts, or previously collected Movement Discovery evidence.
+
+## D321.1 — Sample high-frequency Mock telemetry and reserve terminal evidence
+
+The D321 user-run HLDS trace reached its 512-record limit in 0.931 seconds despite an otherwise successful deterministic audit.
+Decimate ordinary Accepted-state samples using server game time at 25 ms by default, with an explicit server-console interval setting from 20 to 50 ms; do not alter gameplay cadence or the Mock action executor.
+Always store initial state, first policy decision, action status transitions and terminal outcome; reserve at least one terminal record so high frame rates do not invalidate otherwise valid short trials.
+Validate every incoming D316 frame against the preceding observed frame, even when it is not retained, to avoid masking frame or clock regressions.
+Count all observed frames, retained records, skipped records and storage-pressure skips, preserving original session/frame IDs and game timestamps without renumbering.
+The replay continues to audit retained evidence and explicitly does not assert reconstruction of discarded physical intermediate frames.
+No disk recording, new model interface, Legacy movement changes or upstream YaPB edits are introduced.

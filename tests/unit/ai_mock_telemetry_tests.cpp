@@ -128,19 +128,25 @@ AI_TEST(testMockReplayFailsClosedOnStaleFrameAndOverflow) {
   trace.reset();
   expect(trace.begin(state(1, 0.1f), { 96.0f, 0.0f, 132.0f }, io::QueryStatus::Completed),
          "new capture starts");
-  for (size_t i = 1; i < mock::kMockTraceCapacity; ++i) {
+  for (size_t i = 1; i < mock::kMockTraceCapacity + 120; ++i) {
     const auto frame = static_cast<uint64_t>(i + 1);
     const auto current = feedback(frame, 2, ai::ActionResultType::Accepted);
     expect(trace.append(state(frame, static_cast<float>(frame) * 0.1f),
                         outcome(ai::ActionResultType::Accepted), &current),
-           "frame fits bounded capacity");
+           "continuous frames do not exhaust reserved terminal slot");
   }
-  const auto extra = feedback(mock::kMockTraceCapacity + 1, 2, ai::ActionResultType::Accepted);
-  expect(!trace.append(state(mock::kMockTraceCapacity + 1, 60.0f),
-                       outcome(ai::ActionResultType::Accepted), &extra),
-         "trace cannot overwrite evidence on overflow");
-  expect(trace.replay().status == mock::ReplayStatus::Overflow,
-         "overflow explicitly reported as non-replayable");
+  const auto finalFrame = static_cast<uint64_t>(mock::kMockTraceCapacity + 121);
+  const auto completed = feedback(finalFrame, 2, ai::ActionResultType::Completed);
+  expect(trace.append(state(finalFrame, static_cast<float>(finalFrame) * 0.1f, 90.0f),
+                      outcome(ai::ActionResultType::Completed), &completed),
+         "terminal frame remains available after trace saturation");
+  const auto report = trace.replay();
+  expect(report.status == mock::ReplayStatus::Pass, "reserved terminal frame remains replayable");
+  expect(report.frames == mock::kMockTraceCapacity, "trace capacity cannot be exceeded");
+  expect(report.capacitySkipped > 0 && report.skippedFrames > 0,
+         "capacity pressure explicitly reported");
+  expect(report.observedFrames > report.frames, "processed and saved counters differ");
+
 }
 
 AI_TEST(testMockReplayIncompleteAndCancelledNeverPass) {
@@ -155,4 +161,57 @@ AI_TEST(testMockReplayIncompleteAndCancelledNeverPass) {
   expect(trace.replay().status == mock::ReplayStatus::Cancelled, "cancel recorded distinctly");
   expect(!trace.append(state(12, 1.2f), outcome(ai::ActionResultType::Completed), &f11),
          "no appends after cancellation");
+}
+
+AI_TEST(testMockTelemetryHighFpsSamplingPreservesDecisionAndTerminal) {
+  mock::MockTrace trace {};
+  expect(trace.setSampleIntervalSeconds(0.025f), "25 millisecond sampling supported");
+  expect(trace.begin(state(1, 0.0f), { 96.0f, 0.0f, 132.0f }, io::QueryStatus::Completed),
+         "initial self state retained");
+  for (uint64_t frame = 2; frame < 802; ++frame) {
+    const float x = static_cast<float>(frame - 1) * 0.1f;
+    const auto item = feedback(frame, 2, ai::ActionResultType::Accepted);
+    expect(trace.append(state(frame, static_cast<float>(frame - 1) * 0.002f, x),
+                        outcome(ai::ActionResultType::Accepted), &item),
+           "high-frequency frame admitted even when not retained");
+  }
+  const auto terminal = feedback(802, 2, ai::ActionResultType::Completed);
+  expect(trace.append(state(802, 1.602f, 88.0f),
+                      outcome(ai::ActionResultType::Completed), &terminal),
+         "terminal frame always recorded independently of interval");
+  const auto report = trace.replay();
+  expect(report.status == mock::ReplayStatus::Pass, "sampled replay passes");
+  expect(report.observedFrames == 802 && report.frames < 100 && report.frames > 30,
+         "800 high-frequency frames reduce to bounded recorded samples");
+  expect(report.skippedFrames == report.observedFrames - report.frames, "skip accounting matches");
+  expect(report.decisionFrameId == 2 && report.terminalFrameId == 802,
+         "original frame IDs preserved across sampling");
+  expect(report.capacitySkipped == 0, "normal high-FPS sampling does not saturate capacity");
+  const auto *last = trace.record(trace.size() - 1);
+  expect(last && last->result.type == ai::ActionResultType::Completed,
+         "terminal result not lost while sampling");
+}
+
+AI_TEST(testMockTelemetryRejectsStaleUnsampledFrameAndInvalidInterval) {
+  mock::MockTrace trace {};
+  expect(!trace.setSampleIntervalSeconds(0.01f), "below 20 ms rejected");
+  expect(!trace.setSampleIntervalSeconds(0.06f), "above 50 ms rejected");
+  expect(trace.setSampleIntervalSeconds(0.05f), "50 ms accepted");
+  expect(trace.begin(state(1, 1.0f), { 96.0f, 0.0f, 132.0f }, io::QueryStatus::Completed),
+         "begin recording");
+  expect(!trace.setSampleIntervalSeconds(0.02f), "cannot change rate during running capture");
+  const auto first = feedback(2, 2, ai::ActionResultType::Accepted);
+  expect(trace.append(state(2, 1.001f, 2.0f),
+                      outcome(ai::ActionResultType::Accepted), &first), "first decision stored");
+  const auto second = feedback(3, 2, ai::ActionResultType::Accepted);
+  expect(trace.append(state(3, 1.002f, 4.0f),
+                      outcome(ai::ActionResultType::Accepted), &second), "short interval skipped");
+  expect(trace.size() == 2 && trace.observedFrames() == 3, "skipped sample counted");
+  expect(!trace.append(state(3, 1.003f, 4.0f),
+                       outcome(ai::ActionResultType::Accepted), &second),
+         "repeated unsampled frame is still rejected");
+  expect(trace.replay().status == mock::ReplayStatus::InvalidFrame,
+         "invalid intermediate frame cannot be hidden by sampling");
+  trace.reset();
+  expect(trace.sampleIntervalSeconds() == 0.05f, "rate persists across run reset");
 }

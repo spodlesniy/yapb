@@ -88,11 +88,28 @@ bool handleServer() {
   const char *operation = argc >= 3 ? engfuncs.pfnCmd_Argv(2) : "";
   if (argc >= 4 && std::strcmp(operation, "trace") == 0) {
     const char *traceCommand = engfuncs.pfnCmd_Argv(3);
+    if (argc == 5 && std::strcmp(traceCommand, "interval") == 0) {
+      const char *value = engfuncs.pfnCmd_Argv(4);
+      char *end {};
+      const long milliseconds = std::strtol(value, &end, 10);
+      if (value == end || *end != '\0' || milliseconds < 20 || milliseconds > 50 ||
+          pending || executing ||
+          !g_trace.setSampleIntervalSeconds(static_cast<float>(milliseconds) * 0.001f)) {
+        game.print("AiPB mock trace: invalid interval or active trial (allowed: 20-50 ms).");
+      }
+      else {
+        game.print("AiPB mock trace: interval=%d ms.", static_cast<int>(milliseconds));
+      }
+      return true;
+    }
     if (argc == 4 && (std::strcmp(traceCommand, "status") == 0 ||
                       std::strcmp(traceCommand, "replay") == 0)) {
       const auto report = g_trace.replay();
-      game.print("AiPB mock trace: %s; result=%s; frames=%d; decision_frame=%llu; terminal_frame=%llu; elapsed=%.3f; moved=%.2f; remaining=%.2f.",
+      game.print("AiPB mock trace: %s; result=%s; frames=%d; observed_frames=%llu; saved_frames=%d; skipped_frames=%d; capacity_skipped=%d; interval_ms=%.0f; decision_frame=%llu; terminal_frame=%llu; elapsed=%.3f; moved=%.2f; remaining=%.2f.",
                  replayStatusName(report.status), resultName(report.terminalResult), static_cast<int>(report.frames),
+                 static_cast<unsigned long long>(report.observedFrames),
+                 static_cast<int>(report.frames), static_cast<int>(report.skippedFrames),
+                 static_cast<int>(report.capacitySkipped), report.sampleIntervalSeconds * 1000.0f,
                  static_cast<unsigned long long>(report.decisionFrameId),
                  static_cast<unsigned long long>(report.terminalFrameId),
                  report.elapsedSeconds, report.displacement, report.remainingDistance);
@@ -136,7 +153,7 @@ bool handleServer() {
       }
       return true;
     }
-    game.print("Usage: aipb mock trace status | replay | dump [start]");
+    game.print("Usage: aipb mock trace status | replay | dump [start] | interval <20-50 ms>");
     return true;
   }
   if (argc == 3 && std::strcmp(operation, "status") == 0) {
@@ -150,7 +167,7 @@ bool handleServer() {
     return true;
   }
   if (argc != 4 || std::strcmp(operation, "run") != 0) {
-    game.print("Usage: aipb mock run <bot-index> | status | stop | trace status/replay/dump [start]");
+    game.print("Usage: aipb mock run <bot-index> | status | stop | trace status/replay/dump/interval");
     return true;
   }
   const char *argument = engfuncs.pfnCmd_Argv(3);
