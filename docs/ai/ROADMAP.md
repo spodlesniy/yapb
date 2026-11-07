@@ -880,3 +880,6 @@ D324 adds explicit Model I/O trial lifecycle/recovery reporting and fail-closed 
 The per-bot runtime preserves its pretrial provider identity and fallback choice, blocks their replacement while the test is active, and verifies that no backend, action or trial ownership remains after release.
 The server status exposes the last stop reason and individual provider/fallback/backend/action/owner recovery checks; successful movement alone no longer reports PASS unless recovery verification also succeeds.
 These checks do not prove that ONNX model weights are loaded or that arbitrary-map movement is safe; automatic C++17 CI and user-started Windows x86/HLDS recovery tests are separate acceptance gates.
+D325 closes the outgoing D317 perception-event allowlist in the D322 Model I/O adapter before any independent external-model backend is attached.
+It rejects unsupported event kinds, invalid provenance/identity and latent hidden coordinates, and requires sighting events to match the current visible enemy; unit tests verify that invalid frames do not invoke the backend.
+No external transport, trained model, automatic gameplay behavior or new control mode is implemented; the D324 manual Windows x86/HLDS recovery gate and Movement Discovery acceptance gates remain open.

@@ -218,3 +218,13 @@ An explicit `aipb modelio stop` cancels the selected trial and reports recovery;
 Map shutdown clears prior PASS and marks the trial MapReset; disconnected bot instances are never retained.
 The checks establish lifecycle identity and release, not actual ONNX weight readiness or generic movement safety.
 Run unit CI first, then manually build Windows x86 and exercise completed, early-stop, mode-switch and repeat-run cases on HLDS.
+
+## D325 — Closed Model I/O perception allowlist
+
+The D322 ModelIOAdapter now validates every outgoing D317 event against an explicit set of authorized kinds, evidence, identities and position rules before issuing a backend request.
+Public round transitions and remembered entity disappearance cannot carry position data; sound positions must remain anonymous; an entity appearance must match the currently visible authorized entity and coordinates.
+Unrecognized event kinds, latent coordinates behind false position or sighting flags, and mismatching sightings fail closed, leaving the backend uncalled for that frame.
+The existing authenticated self snapshot, session/request correlation, action decoder, default ONNX path and D323 deterministic trial are unchanged.
+This is a defensive prerequisite for future external model transport, not a transport implementation or proof of trained-model execution.
+Unit tests cover each permitted event family, forbidden coordinates, identity mismatch and actual ModelIOAdapter dispatch prevention.
+Manual Windows x86/HLDS D324 lifecycle recovery acceptance remains open.

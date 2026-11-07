@@ -64,6 +64,64 @@ inline bool modelIOResponseMatches(const ModelIORequest &request, const ModelIOR
       response.observationFrameId == request.stamp.frameId;
 }
 
+// Fail closed on any event not exported by D317 before an external backend
+// can see it. An absent position must not carry a latent hidden coordinate.
+inline bool validModelIOPerception(const PerceptionFrame &perception, const FrameStamp &stamp) {
+  const auto &seen = perception.visibleEnemy;
+  if (perception.eventCount > kPerceptionEventsPerFrame ||
+      (seen.valid
+          ? (seen.entityIndex <= 0 || seen.entityIndex == stamp.botEntityIndex ||
+             !finiteVector(seen.position))
+          : (seen.entityIndex != -1 || seen.position.x != 0.0f ||
+             seen.position.y != 0.0f || seen.position.z != 0.0f))) {
+    return false;
+  }
+
+  for (uint8_t i = 0; i < perception.eventCount; ++i) {
+    const auto &entry = perception.events[i];
+    const auto &event = entry.event;
+    if (!sameModelIOFrame(event.stamp, stamp) || !finiteVector(event.position) ||
+        (!entry.hasPosition && (event.position.x != 0.0f ||
+          event.position.y != 0.0f || event.position.z != 0.0f))) {
+      return false;
+    }
+
+    switch (event.kind) {
+    case EventKind::RoundStarted:
+    case EventKind::RoundEnded:
+      if (event.evidence != Evidence::PublicEvent ||
+          event.subjectEntityIndex != -1 || entry.hasPosition) {
+        return false;
+      }
+      break;
+    case EventKind::EntityDisappeared:
+      if (event.evidence != Evidence::Remembered ||
+          event.subjectEntityIndex <= 0 ||
+          event.subjectEntityIndex == stamp.botEntityIndex || entry.hasPosition) {
+        return false;
+      }
+      break;
+    case EventKind::EntityAppeared:
+      if (event.evidence != Evidence::Seen || !seen.valid ||
+          event.subjectEntityIndex != seen.entityIndex || !entry.hasPosition ||
+          event.position.x != seen.position.x || event.position.y != seen.position.y ||
+          event.position.z != seen.position.z) {
+        return false;
+      }
+      break;
+    case EventKind::Sound:
+      if (event.evidence != Evidence::Heard ||
+          event.subjectEntityIndex != -1 || !entry.hasPosition) {
+        return false;
+      }
+      break;
+    default:
+      return false;
+    }
+  }
+  return true;
+}
+
 // Adapts a stamped independent model backend to the existing InferencePolicy.
 // The latter remains responsible for action decoding and ActionValidator.
 // All state is per-bot: do not share an instance across multiple bot runtimes.
@@ -123,29 +181,11 @@ public:
     if (m_backend == nullptr || validateFrame(stamp) != FrameValidation::Valid ||
         !validSelfState(self.self) || !sameModelIOFrame(perception.self.stamp, stamp) ||
         !sameModelIOFrame(control.stamp, stamp) || control.owner != ControlOwner::Neural ||
-        perception.eventCount > kPerceptionEventsPerFrame ||
+        !validModelIOPerception(perception, stamp) ||
         (m_haveLastBound && (stamp.sessionId < m_lastBound.sessionId ||
             (stamp.sessionId == m_lastBound.sessionId &&
              validateFrame(stamp, &m_lastBound) != FrameValidation::Valid)))) {
       return false;
-    }
-
-    if (perception.visibleEnemy.valid &&
-        (perception.visibleEnemy.entityIndex <= 0 ||
-         perception.visibleEnemy.entityIndex == stamp.botEntityIndex ||
-         !finiteVector(perception.visibleEnemy.position))) {
-      return false;
-    }
-
-    for (uint8_t i = 0; i < perception.eventCount; ++i) {
-      const auto &event = perception.events[i];
-      if (!sameModelIOFrame(event.event.stamp, stamp) ||
-          (event.hasPosition && !finiteVector(event.event.position)) ||
-          (event.event.kind == EventKind::Sound &&
-           (event.event.evidence != Evidence::Heard ||
-            event.event.subjectEntityIndex != -1))) {
-        return false;
-      }
     }
 
     // An old feedback may remain in D319's ledger across multiple frames:

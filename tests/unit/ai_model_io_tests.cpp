@@ -155,6 +155,76 @@ AI_TEST(testModelIORejectsBadResponseIdentityAndOutput) {
   expect(backend.calls == 6, "each test attempted exactly one model call");
 }
 
+
+AI_TEST(testModelIOPerceptionAllowlistBlocksHiddenData) {
+  TestBackend backend {};
+  io::ModelIOAdapter adapter {};
+  adapter.setBackend(&backend);
+  ai::InferencePolicy policy { &adapter };
+  const auto self = makeSelf(20, 30, 3.0f);
+  const auto owner = makeOwnership(self);
+  auto perception = makePerception(self);
+
+  perception.events[0].event.kind = io::EventKind::Damage;
+  expect(!adapter.bindFrame(self, perception, owner), "unsupported event kind rejected");
+  expect(policy.decide(makeObservation(3.0f)).type == ai::ActionType::None,
+         "rejected perception cannot dispatch a backend request");
+  expect(backend.calls == 0, "no backend call after unsafe event");
+
+  perception = makePerception(self);
+  perception.events[0].event.subjectEntityIndex = 4;
+  expect(!io::validModelIOPerception(perception, self.stamp),
+         "anonymous sound cannot reveal emitter identity");
+  perception = makePerception(self);
+  perception.events[0].event.kind = io::EventKind::RoundEnded;
+  perception.events[0].event.evidence = io::Evidence::PublicEvent;
+  expect(!io::validModelIOPerception(perception, self.stamp),
+         "public event cannot contain sound position");
+  perception.events[0].hasPosition = false;
+  expect(!io::validModelIOPerception(perception, self.stamp),
+         "absent position cannot retain hidden coordinates");
+  perception.events[0].event.position = {};
+  expect(io::validModelIOPerception(perception, self.stamp),
+         "position-free public round event accepted");
+
+  perception = makePerception(self);
+  perception.events[0].event.kind = io::EventKind::EntityDisappeared;
+  perception.events[0].event.evidence = io::Evidence::Remembered;
+  perception.events[0].event.subjectEntityIndex = 4;
+  expect(!io::validModelIOPerception(perception, self.stamp),
+         "disappearance must not include a hidden last-known position");
+  perception.events[0].hasPosition = false;
+  perception.events[0].event.position = {};
+  expect(io::validModelIOPerception(perception, self.stamp),
+         "position-free disappearance with remembered identity accepted");
+
+  perception = makePerception(self);
+  perception.visibleEnemy.position = { 5.0f, 6.0f, 7.0f };
+  expect(!io::validModelIOPerception(perception, self.stamp),
+         "invalid sighting must not carry stale coordinates");
+  perception.visibleEnemy.valid = true;
+  perception.visibleEnemy.entityIndex = 4;
+  perception.events[0].event.kind = io::EventKind::EntityAppeared;
+  perception.events[0].event.evidence = io::Evidence::Seen;
+  perception.events[0].event.subjectEntityIndex = 4;
+  perception.events[0].event.position = perception.visibleEnemy.position;
+  expect(io::validModelIOPerception(perception, self.stamp),
+         "fresh visible target and matching appearance accepted");
+  perception.events[0].event.position.x += 1.0f;
+  expect(!io::validModelIOPerception(perception, self.stamp),
+         "appearance cannot disagree with authorized sighting");
+  perception.events[0].event.position = perception.visibleEnemy.position;
+  perception.events[0].event.subjectEntityIndex = 5;
+  expect(!io::validModelIOPerception(perception, self.stamp),
+         "appearance cannot identify a different unseen entity");
+  perception.events[0].event.subjectEntityIndex = 4;
+  expect(adapter.bindFrame(self, perception, owner),
+         "valid sighting still passes through normal Model I/O adapter");
+  expect(policy.decide(makeObservation(3.0f)).type == ai::ActionType::MoveToPosition,
+         "valid perception permits one backend decision");
+  expect(backend.calls == 1, "exactly one authorized model request");
+}
+
 AI_TEST(testModelIORejectsStaleAndConflictingOwnership) {
   TestBackend backend {};
   io::ModelIOAdapter adapter {};
