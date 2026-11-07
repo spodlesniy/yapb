@@ -9,6 +9,8 @@
 #include <ai/ai_model_io_trial.h>
 #include <ai/ai_mock_trial.h>
 #include <ai/ai_model_io_test_backend.h>
+#include <ai/ai_model_io_loopback.h>
+#include <ai/ai_model_io_external_trial_backend.h>
 #include <ai/ai_exploration_probe.h>
 #include <ai/ai_server_state_adapter.h>
 #include <ai/ai_world_query_adapter.h>
@@ -39,6 +41,12 @@ ai::Vec3 origin {};
 ai::Vec3 destination {};
 uint64_t sessionId {};
 ai::runtime_io::ModelIOTestBackend backend {};
+ai::runtime_io::ModelIOSteadyClock externalClock {};
+ai::runtime_io::ModelIOLoopbackTcpTransport externalTransport { 0 };
+ai::runtime_io::ModelIOTransportBackend transportBackend { externalTransport, externalClock };
+ai::runtime_io::ModelIOExternalTrialBackend externalBackend { transportBackend };
+bool externalMode {};
+uint16_t externalPort {};
 
 bool lastCompleted {};
 float lastMoved {};
@@ -93,12 +101,15 @@ void clear(Bot *bot, ai::runtime_io::ModelIOTrialStopReason reason) {
   awaitingFeedback = false;
   sessionId = 0;
   backend.reset();
+  externalBackend.reset();
+  externalMode = false;
+  externalPort = 0;
 }
 
 void fail(Bot *bot, ai::runtime_io::ModelIOTrialStopReason reason, const char *detail) {
-  const uint32_t count = backend.requests();
-  const auto decision = backend.decisionFrame();
-  const auto feedback = backend.feedbackFrame();
+  const uint32_t count = externalMode ? externalBackend.requests() : backend.requests();
+  const auto decision = externalMode ? externalBackend.decisionFrame() : backend.decisionFrame();
+  const auto feedback = externalMode ? externalBackend.feedbackFrame() : backend.feedbackFrame();
   lastCompleted = false;
   clear(bot, reason);
   game.print("AiPB modelio: stopped (%s, %s); requests=%u; decision_frame=%llu; feedback_frame=%llu; recovered=%d.",
@@ -143,9 +154,22 @@ bool handleServer() {
         lastRecovery.verified());
     return true;
   }
-  if (argc != 4 || std::strcmp(cmd, "run") != 0) {
-    game.print("Usage: aipb modelio run <bot-index> | status | stop");
+  const bool useExternal = std::strcmp(cmd, "external") == 0;
+  if ((std::strcmp(cmd, "run") != 0 || argc != 4) &&
+      (!useExternal || argc != 5)) {
+    game.print("Usage: aipb modelio run <bot-index> | external <bot-index> <port> | status | stop");
     return true;
+  }
+  uint16_t requestedPort {};
+  if (useExternal) {
+    const char *portArg = engfuncs.pfnCmd_Argv(4);
+    char *portEnd {};
+    const long parsed = std::strtol(portArg, &portEnd, 10);
+    if (portArg == portEnd || *portEnd != '\0' || parsed <= 0 || parsed > 65535) {
+      game.print("AiPB modelio: rejected (InvalidLoopbackPort).");
+      return true;
+    }
+    requestedPort = static_cast<uint16_t>(parsed);
   }
   const char *arg = engfuncs.pfnCmd_Argv(3);
   char *end {};
@@ -163,6 +187,8 @@ bool handleServer() {
     return true;
   }
   selected = static_cast<int>(index);
+  externalMode = useExternal;
+  externalPort = requestedPort;
   pending = true;
   lastCompleted = false;
   lastMoved = lastRemaining = lastElapsed = 0.0f;
@@ -170,7 +196,8 @@ bool handleServer() {
   lastDecisionFrame = lastFeedbackFrame = 0;
   lastStopReason = ai::runtime_io::ModelIOTrialStopReason::None;
   lastRecovery = {};
-  game.print("AiPB modelio: requested for bot #%d.", selected);
+  game.print("AiPB modelio: requested for bot #%d; backend=%s; port=%u.",
+       selected, externalMode ? "ExternalLoopback" : "Deterministic", externalPort);
   return true;
 }
 
@@ -211,9 +238,22 @@ bool frame(Bot &bot) {
                     request.start.y + std::sin(yaw) * kTravel,
                     request.start.z };
     const auto result = ai::runtime_io::queryBotWorld(selected, request);
+    backend.reset();
+    externalBackend.reset();
+    const ai::runtime_io::ModelIOBackend *trialBackend {};
+    bool armed {};
+    if (externalMode) {
+      externalTransport = ai::runtime_io::ModelIOLoopbackTcpTransport(externalPort);
+      armed = externalBackend.arm(request.end);
+      trialBackend = &externalBackend;
+    }
+    else {
+      armed = backend.arm(request.end);
+      trialBackend = &backend;
+    }
     if (!ai::runtime_io::isCompleted(request, result) || result.startSolid ||
-        result.fraction < 0.999f || (backend.reset(), !backend.arm(request.end)) ||
-        !ai::YaPBActionExecutionContext::armModelIOTrial(bot, &backend, request.end)) {
+        result.fraction < 0.999f || !armed ||
+        !ai::YaPBActionExecutionContext::armModelIOTrial(bot, trialBackend, request.end)) {
       fail(&bot, ai::runtime_io::ModelIOTrialStopReason::InvalidAction, "unsafe trace or unable to arm backend");
       return true;
     }
@@ -224,8 +264,9 @@ bool frame(Bot &bot) {
     started = lastTime = state.stamp.gameTime;
     pending = false;
     running = true;
-    game.print("AiPB modelio: armed; bot=%d; from=(%.1f,%.1f,%.1f); to=(%.1f,%.1f,%.1f).",
-        selected, origin.x, origin.y, origin.z,
+    game.print("AiPB modelio: armed; bot=%d; backend=%s; port=%u; from=(%.1f,%.1f,%.1f); to=(%.1f,%.1f,%.1f).",
+        selected, externalMode ? "ExternalLoopback" : "Deterministic", externalPort,
+        origin.x, origin.y, origin.z,
         destination.x, destination.y, destination.z);
     return true;
   }
@@ -238,16 +279,20 @@ bool frame(Bot &bot) {
   const auto result = ai::YaPBActionExecutionContext::stepModelIOTrial(bot, observation);
 
   if (awaitingFeedback) {
-    if (!backend.terminalFeedbackObserved() ||
-        backend.feedbackResult() != ai::ActionResultType::Completed ||
-        backend.sessionId() != sessionId ||
-        backend.feedbackFrame() <= backend.decisionFrame()) {
+    const bool observed = externalMode ? externalBackend.terminalFeedbackObserved() :
+        backend.terminalFeedbackObserved();
+    const auto feedbackResult = externalMode ? externalBackend.feedbackResult() : backend.feedbackResult();
+    const auto feedbackSession = externalMode ? externalBackend.sessionId() : backend.sessionId();
+    const auto feedbackFrame = externalMode ? externalBackend.feedbackFrame() : backend.feedbackFrame();
+    const auto decisionFrame = externalMode ? externalBackend.decisionFrame() : backend.decisionFrame();
+    if (!observed || feedbackResult != ai::ActionResultType::Completed ||
+        feedbackSession != sessionId || feedbackFrame <= decisionFrame) {
       fail(&bot, ai::runtime_io::ModelIOTrialStopReason::InvalidAction, "missing or invalid terminal feedback");
       return true;
     }
-    lastRequests = backend.requests();
-    lastDecisionFrame = backend.decisionFrame();
-    lastFeedbackFrame = backend.feedbackFrame();
+    lastRequests = externalMode ? externalBackend.requests() : backend.requests();
+    lastDecisionFrame = decisionFrame;
+    lastFeedbackFrame = feedbackFrame;
     lastElapsed = state.stamp.gameTime - started;
     lastMoved = ai::mockDistanceToTarget(origin, state.self.origin);
     lastRemaining = ai::mockDistanceToTarget(state.self.origin, destination);
@@ -279,7 +324,8 @@ bool frame(Bot &bot) {
     awaitingFeedback = true;
     return true;
   }
-  if (result.type != ai::ActionResultType::Accepted || !backend.decided() ||
+  if (result.type != ai::ActionResultType::Accepted ||
+      !(externalMode ? externalBackend.decided() : backend.decided()) ||
       result.action != ai::ActionType::MoveToPosition || !state.self.onGround) {
     fail(&bot, ai::runtime_io::ModelIOTrialStopReason::InvalidAction, "decision or movement state invalid");
     return true;

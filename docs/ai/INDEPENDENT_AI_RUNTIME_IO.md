@@ -290,3 +290,16 @@ Listening sockets now poll at 200 ms with an independent thirty-second idle dead
 In-flight client reads retain their existing 500 ms timeout and are allowed to complete before observing the stop event.
 Regression coverage includes a stop event on all platforms and a real subprocess SIGINT on POSIX; Windows console Ctrl+C still needs manual acceptance.
 No HLDS integration, model weights, externally exposed listener or changes to protocol v1 are introduced.
+
+## D330 — Explicit external Model I/O movement trial
+
+Run the local Python server separately in `--mode move-once` with `--max-connections 2` or higher.
+In the HLDS server console, use `aipb modelio external <bot-index> <port>` to select exactly one currently live Neural bot and the test server's localhost TCP port.
+The original `aipb modelio run <bot-index>` still exercises the deterministic in-process backend, while `aipb modelio status` and `aipb modelio stop` retain their previous lifecycle roles.
+The external option inherits the D318 standing/crouching TraceHull check, one 96-unit forward target, D324 exclusive trial ownership, mode/session/round invalidation and provider/fallback recovery.
+`ModelIOExternalTrialBackend` verifies the remote first decision is only MoveToPosition within 0.75 units of the preflight target and replaces any rounded remote target with the exact validated target.
+It admits no second movement action and requires a later correlated NoDecision reply carrying successful terminal D319 feedback before the physical PASS and recovery check.
+The transport uses the hardcoded 127.0.0.1 endpoint and D327 default five-millisecond budget; timeout, malformed response or incorrect action fail the isolated trial without a remote movement command.
+Do not expose the Python service to untrusted local users: TCP loopback is not authenticated; the command is intended for deliberate operator-controlled single-bot testing only.
+The tested target is not general navigation and a completed trial does not imply safe external AI control or Windows x86 compatibility.
+Manual Windows x86/HLDS acceptance and D324 recovery gates remain separate.

@@ -4090,3 +4090,14 @@ Handle SIGINT in the standalone Python server by setting a stop event, polling t
 Retain the existing bounded listener idle lifetime and accepted connection count; a signal received while a client is being handled is honored after the bounded client I/O finishes.
 Add a cross-platform idle stop-event test and a POSIX subprocess SIGINT regression test; Windows Ctrl+C is supported by the same signal handler but still requires manual Windows-console validation.
 Do not change wire schemas, model behavior, gameplay control, ONNX or the default HLDS policy.
+
+## D330 — Opt-in single-bot external Model I/O movement trial
+
+Extend the existing isolated D323/D324 Model I/O server-console trial with an explicit external subcommand accepting one Neural bot index and one local TCP port.
+Reuse the D328 nonblocking loopback transport and D327 bounded request/response adapter; do not spawn or configure the Python service automatically.
+Keep the original D318 forward TraceHull preflight and D324 ownership/lifecycle recovery before installing the external backend, with an enforced five-millisecond I/O budget.
+Allow only the first successful remote MoveToPosition whose destination matches the locally prevalidated 96-unit forward trace, with a narrow 0.75-unit floating-point tolerance and the traced destination remaining authoritative.
+Reject any other remote action, changed target, foreign session/frame response, subsequent movement command, missing terminal feedback, transport error or timeout; do not delegate free navigation or combat to the external process.
+Keep the existing D323 deterministic `aipb modelio run` command, `status` and `stop` semantics, provider/fallback restoration and exclusive owner unchanged.
+Add unit tests for the restricted external decision envelope, forbidden actions and destinations, feedback correlation and reset behavior.
+This tests an external decision only under the same short safe-movement physical gate, not full neural independence, arbitrary-map navigation or proof of Windows x86/HLDS readiness.

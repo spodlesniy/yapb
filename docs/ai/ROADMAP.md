@@ -901,3 +901,7 @@ D324 manual Windows x86/HLDS recovery and independent Movement Discovery accepta
 D329 automatic AI unit-test CI failed at af978e1 (run 42378109065): the ordinary AI suite passed 449 tests, but the cross-process test failed before running because Meson had not built its C++ client from a string-only full_path argument.
 D329.1 passes the executable target itself to the Meson test and adds clean Python server Ctrl+C exit via SIGINT stop event and 200 ms accept polling, retaining the thirty-second idle deadline and bounded client reads.
 Dedicated tests check idle shutdown and POSIX subprocess SIGINT; automatic CI and manual Windows console validation are distinct gates, and D324 HLDS recovery and Movement Discovery acceptance remain open.
+D330 adds a manual server-only `aipb modelio external <bot-index> <port>` path to the existing D323/D324 isolated Neural trial with the D328 local TCP transport and a five-millisecond I/O budget.
+Only a single MoveToPosition matching the traced 96-unit forward destination within 0.75 units is admitted; a later correlated NoDecision with terminal feedback and full provider/fallback recovery are required for PASS.
+Unit tests cover the external guard, unsafe action/target rejection, request identity and one-shot lifecycle; deterministic `aipb modelio run`, Legacy and ordinary ONNX defaults remain unchanged.
+No general gameplay model integration, peer authentication or arbitrary-map movement safety is claimed; CI and user-run Windows x86/HLDS acceptance are independent gates.
