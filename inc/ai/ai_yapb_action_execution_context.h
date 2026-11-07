@@ -63,6 +63,7 @@ public:
 
   // Narrow access for independent runtime adapters; Bot grants this class friendship.
   static bool runtimeActive(const Bot &bot);
+  int botIndex() const;
   static ControlMode runtimeMode(const Bot &bot);
   static void cancelRuntimeAction(Bot &bot);
   static bool armMockRuntimeMove(Bot &bot, const Vec3 &target);

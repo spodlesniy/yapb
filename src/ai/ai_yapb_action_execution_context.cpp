@@ -20,6 +20,10 @@
 
 namespace ai {
 
+int YaPBActionExecutionContext::botIndex() const {
+  return m_bot != nullptr ? m_bot->index() : -1;
+}
+
 bool YaPBActionExecutionContext::runtimeActive(const Bot &bot) {
   return bot.m_aiRuntime.isActive();
 }

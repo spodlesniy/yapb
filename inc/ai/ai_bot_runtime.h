@@ -13,6 +13,9 @@
 #include <ai/ai_yapb_action_execution_context.h>
 #include <ai/ai_goal_navigation_policy.h>
 #include <ai/ai_inference_policy.h>
+#include <ai/ai_model_io.h>
+#include <ai/ai_server_state_adapter.h>
+#include <ai/ai_perception_adapter.h>
 #include <ai/ai_mock_policy.h>
 #include <ai/ai_mock_motion.h>
 #include <ai/ai_execution_ownership_adapter.h>
@@ -36,6 +39,8 @@ private:
   Vec3 m_mockTarget {};
   float m_mockStartedAt { -1.0f };
   InferencePolicy m_inferencePolicy {};
+  runtime_io::ModelIOAdapter m_modelIOAdapter {};
+  const InferenceProvider *m_standardInferenceProvider {};
   TrainingRecorder m_trainingRecorder {};
   ActionOutcomeRewardProvider m_defaultRewardProvider {};
   ZeroRewardProvider m_zeroRewardProvider {};
@@ -47,6 +52,7 @@ private:
   ActionRuntime m_runtime;
 
   Observation captureObservation() const;
+  int botSlot() const;
 
 public:
   explicit BotRuntime(Bot &bot);
@@ -176,22 +182,38 @@ public:
     return m_runtime.getPolicy();
   }
 
-  void setInferenceProvider(const InferenceProvider *provider) {
-    m_inferencePolicy.setProvider(provider);
+  // Backend overrides the Neural inference source only when explicitly set;
+  // normal ONNX and fallback selection continue to work unchanged by default.
+  bool setModelIOBackend(const runtime_io::ModelIOBackend *backend) {
+    if (m_runtime.isActive() || m_mockMoveActive) {
+      return false;
+    }
+    m_modelIOAdapter.setBackend(backend);
+    m_inferencePolicy.setProvider(backend != nullptr
+        ? static_cast<const InferenceProvider *>(&m_modelIOAdapter) : m_standardInferenceProvider);
+    if (m_runtime.getMode() == ControlMode::Neural) {
+      restoreNeuralPolicy();
+    }
+    return true;
+  }
 
+  const runtime_io::ModelIOBackend *getModelIOBackend() const {
+    return m_modelIOAdapter.getBackend();
+  }
+
+  void setInferenceProvider(const InferenceProvider *provider) {
+    m_standardInferenceProvider = provider;
+    m_inferencePolicy.setProvider(m_modelIOAdapter.getBackend() != nullptr
+        ? static_cast<const InferenceProvider *>(&m_modelIOAdapter) : provider);
     if (m_runtime.getMode() == ControlMode::Neural && !m_mockMoveActive) {
-      m_runtime.setPolicy(provider != nullptr || m_inferencePolicy.getFallbackPolicy() != nullptr
-                              ? static_cast<const Policy *>(&m_inferencePolicy)
-                              : nullptr);
+      restoreNeuralPolicy();
     }
   }
 
   void setInferenceFallbackEnabled(bool enabled) {
     m_inferencePolicy.setFallbackPolicy(enabled ? static_cast<const Policy *>(&m_goalNavigationPolicy) : nullptr);
-
     if (m_runtime.getMode() == ControlMode::Neural && !m_mockMoveActive) {
-      const bool inferenceAvailable = m_inferencePolicy.getProvider() != nullptr;
-      m_runtime.setPolicy(inferenceAvailable || enabled ? static_cast<const Policy *>(&m_inferencePolicy) : nullptr);
+      restoreNeuralPolicy();
     }
   }
 
@@ -267,6 +289,22 @@ public:
   }
 
   ActionResult step(const Observation &observation, bool allowDecision = true) {
+    if (m_runtime.getMode() == ControlMode::Neural &&
+        !m_mockMoveActive && m_modelIOAdapter.getBackend() != nullptr) {
+      runtime_io::ServerBotSnapshot self {};
+      runtime_io::PerceptionFrame perception {};
+      runtime_io::ControlFrame ownership {};
+      const bool available = m_bot != nullptr &&
+          runtime_io::readServerBotSnapshot(botSlot(), self) &&
+          runtime_io::readPerceptionFrame(botSlot(), perception) &&
+          runtime_io::readControlFrame(botSlot(), ownership);
+      // Invalid frames cannot be reused: explicitly make the adapter unready.
+      if (!available || !m_modelIOAdapter.bindFrame(self, perception, ownership)) {
+        m_modelIOAdapter.invalidateFrame();
+        // An invalid frame cannot authorize another model or fallback decision.
+        allowDecision = false;
+      }
+    }
     ActionResult result = m_trainingCollector.step(m_runtime, observation, allowDecision);
     if (m_mockMoveActive && result.action == ActionType::MoveToPosition &&
         (result.type == ActionResultType::Accepted || result.isTerminal())) {
@@ -315,6 +353,7 @@ public:
 
     m_runtime.reset();
     m_trainingCollector.reset();
+    m_modelIOAdapter.reset();
   }
 
   bool isActive() const {

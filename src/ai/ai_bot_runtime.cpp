@@ -17,6 +17,10 @@ BotRuntime::BotRuntime(Bot &bot)
   m_runtime.setPolicy(&m_goalNavigationPolicy);
 }
 
+int BotRuntime::botSlot() const {
+  return m_executionContext.botIndex();
+}
+
 Observation BotRuntime::captureObservation() const {
   if (m_bot == nullptr) {
     return {};

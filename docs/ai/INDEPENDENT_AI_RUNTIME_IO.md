@@ -180,3 +180,16 @@ Original timestamps and frame IDs are never replaced with sample indices.
 `aipb mock trace status` and `aipb mock trace replay` now report `observed_frames`, `saved_frames`, `skipped_frames`, `capacity_skipped`, and `interval_ms` alongside the existing result.
 A PASS validates the retained deterministic decision, feedback and physical completion; skipped intermediate physics frames are not reconstructed.
 Tests cover high frame rates, reserved terminal capacity, invalid unsampled frames, interval limits and sample counting.
+
+## D322 — Optional stamped Model I/O adapter
+
+D322 provides an explicit `ModelIOBackend` interface in `inc/ai/ai_model_io.h` over the existing synchronous `InferenceProvider` contract.
+A `ModelIORequest` has an independent schema version, per-bot monotonic request ID, D316 `FrameStamp` and finite self state, authorized D317 visible and anonymous sound events, once-only D319 `ActionFeedback`, and existing sanitized `InferenceFeatures`.
+The established feature schema (version 7), inference input schema (version 1), and model action schema (version 2) are unchanged.
+An echoed `ModelIOResponse` must match schema, request ID, session ID and observation frame ID before returning model output.
+The existing `InferencePolicy` decodes and validates returned `InferenceActionOutput`; unsupported or invalid outputs become a no-op or explicit configured fallback.
+The per-bot `BotRuntime::setModelIOBackend` API makes the bridge opt-in, refuses hot-switching while an action or Mock trial is active, and preserves the original ONNX provider when the backend is detached.
+An invalid current self/perception/control frame disables new decisions for that step instead of authorizing model output or the fallback policy.
+The adapter has no live engine pointers and no extra threads, transport, file or socket I/O; a future concrete model backend must provide these capabilities separately.
+No `aipb` server command is introduced by D322 because no external-model backend is installed or enabled.
+Unit tests exercise matching/stale responses, per-session feedback, anonymous sensory evidence, hidden player masking and the existing policy decoder; Windows x86 and real backend movement remain separate acceptance gates.

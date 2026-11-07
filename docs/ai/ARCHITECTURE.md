@@ -561,3 +561,11 @@ This changes movement choice only: it does not turn a clear trace into an IN_USE
 The [Runtime I/O v1 contract](INDEPENDENT_AI_RUNTIME_IO.md) defines the engine-neutral stamp, event, world query and feedback envelopes for a future independent-model integration.
 It reuses the existing `Observation`, `Policy`, `ActionResult` and engine execution abstractions, without adding hooks or changing the legacy model tensor schema.
 Engine-only authoritative state and debug truth must not cross the model-facing perception boundary.
+
+## Optional stamped Model I/O (D322)
+
+The existing ONNX inference pipeline remains the default Neural source: InferencePolicy / InferenceProvider / versioned feature encoder / action decoder.
+When explicitly configured per bot, ModelIOAdapter implements InferenceProvider, synchronously forwards a verified versioned ModelIORequest to a ModelIOBackend and validates correlated responses before reusing the existing decoder and action executor.
+Requests carry D316 self state, D317 authorized sensory evidence, D319 one-time feedback, and inference features with hidden-opponent masking; they do not carry engine pointers or unauthenticated entity state.
+Backend choice is not a new ControlMode and does not alter Legacy, Training, Mock ownership or the original ONNX model tensors.
+The external backend/transport remains intentionally unimplemented; invalid current frames suppress new decisions even if Neural fallback is enabled.

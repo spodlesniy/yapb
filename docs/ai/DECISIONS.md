@@ -3997,3 +3997,14 @@ Validate every incoming D316 frame against the preceding observed frame, even wh
 Count all observed frames, retained records, skipped records and storage-pressure skips, preserving original session/frame IDs and game timestamps without renumbering.
 The replay continues to audit retained evidence and explicitly does not assert reconstruction of discarded physical intermediate frames.
 No disk recording, new model interface, Legacy movement changes or upstream YaPB edits are introduced.
+
+## D322 — Add explicit stamped Model I/O over existing Neural inference
+
+Preserve the established InferenceProvider, InferencePolicy, ONNX feature-schema version 7 and action-schema version 2, and the existing ActionValidator/ActionRuntime execution path.
+Introduce a backend-neutral, synchronous per-bot ModelIOBackend request/response interface with a separate versioned transport envelope, monotonically increasing request identity, and validated D316 session/frame correlation.
+Only self state, D317-permitted visible and heard events, D319 control/feedback, and the existing sanitized inference feature array cross the new boundary; model backends receive neither raw Bot/GoldSrc entities nor hidden enemy coordinates.
+Reject stale, replayed, out-of-session or out-of-frame model responses, unsupported action schemas, malformed sensory events and mismatched feedback before accepting a decision.
+Forward each observed ActionFeedback to the model at most once and reset that watermark at session boundaries.
+Make ModelIOAdapter an optional, explicitly selected provider in BotRuntime; preserve ordinary ONNX inference by default, keep Mock ownership exclusive, and disable new model/fallback decisions when the current stamped frame is unavailable.
+Delegate inference output decoding and action validation to the existing InferencePolicy and ActionValidator instead of implementing a second executor or controller.
+Do not add networking, worker threads, model installations, new runtime modes, or automatic backend activation in D322.
