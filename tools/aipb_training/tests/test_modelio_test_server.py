@@ -111,6 +111,33 @@ class ServerProtocolTests(unittest.TestCase):
         with self.assertRaises(server.ProtocolError):
             server.choose_sequence_action(server.parse_frame(fixture(frame=17)), state, 2)
 
+    def test_d332_fault_payloads_are_bounded_and_deterministic(self):
+        request = server.parse_frame(fixture())
+        good = server.response_frame(request, move=True)
+        self.assertEqual(server.fault_response(request, good, "none"), good)
+        for fault in ("bad-magic", "bad-version", "oversized",
+                      "foreign-request", "foreign-session", "foreign-frame",
+                      "nonfinite", "unsafe-target", "unsafe-action"):
+            corrupt = server.fault_response(request, good, fault)
+            self.assertEqual(len(corrupt), len(good), fault)
+            self.assertNotEqual(corrupt, good, fault)
+        self.assertEqual(server.fault_response(request, good, "no-decision")[40], 1)
+        self.assertEqual(server.fault_response(request, good, "duplicate-move")[45], 2)
+        with self.assertRaises(ValueError):
+            server.fault_response(request, good, "unsupported")
+
+    def test_d332_fault_endpoint_limits(self):
+        with self.assertRaises(ValueError):
+            server.serve(0, 2, "move-once", fault="bad-magic",
+                         fault_on_request=3)
+        with self.assertRaises(ValueError):
+            server.serve(0, 2, "move-once", fault="bad-magic",
+                         fault_on_request=0)
+        with self.assertRaises(ValueError):
+            server.serve(0, 2, "no-decision", fault="bad-magic")
+        with self.assertRaises(ValueError):
+            server.serve(0, 2, "move-once", fault="unknown")
+
     def test_cli_limits(self):
         with self.assertRaises(ValueError):
             server.serve(70000, 1, "no-decision")

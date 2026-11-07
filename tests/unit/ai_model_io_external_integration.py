@@ -8,10 +8,12 @@ import sys
 from pathlib import Path
 
 
-def run_server(server: Path, client: Path, mode: str, frames: tuple[tuple[int, str], ...]):
+def run_server(server: Path, client: Path, mode: str, frames: tuple[tuple[int, str], ...],
+               *, fault: str = "none", fault_on_request: int = 1):
     process = subprocess.Popen(
         [sys.executable, str(server), "--port", "0", "--max-connections",
-         str(len(frames)), "--mode", mode],
+         str(len(frames)), "--mode", mode, "--fault", fault,
+         "--fault-on-request", str(fault_on_request)],
         stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
     )
     try:
@@ -58,7 +60,15 @@ def main() -> int:
     # backend all execute here; the C++ client is independent of Python.
     run_server(server, client, "no-decision", ((12, "none"),))
     run_server(server, client, "move-once", ((12, "move"), (13, "none")))
-    print("PASS: C++ Model I/O client to Python server across three TCP exchanges")
+    for fault in ("disconnect", "timeout", "truncated", "bad-magic",
+                  "bad-version", "oversized", "foreign-request",
+                  "foreign-session", "foreign-frame", "nonfinite"):
+        run_server(server, client, "move-once", ((12, "transport-error"),),
+                   fault=fault)
+    for fault in ("unsafe-target", "unsafe-action", "no-decision"):
+        run_server(server, client, "move-once", ((12, "guard-error"),),
+                   fault=fault)
+    print("PASS: C++ Model I/O client to Python server, plus 13 fail-closed fault scenarios")
     return 0
 
 

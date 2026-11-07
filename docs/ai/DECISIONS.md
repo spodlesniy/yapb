@@ -4135,3 +4135,14 @@ D331 physical HLDS acceptance passed two consecutive external moves with four re
 The automatic Training tools CI failed only because the original D329 Python fixture assertion expected a fixed request ID 9 while D331's frame-scoped fixture now deliberately assigns request ID equal to its frame ID.
 Update the assertion to expect request ID 12 in frame 12 and add a regression check that frame 13 uses a distinct request ID 13.
 Do not modify Model I/O protocol, runtime movement, server decision logic, safety gates, or the D331 sequence limit.
+
+## D332 — Explicit negative-fault injection for external Model I/O trials
+
+Accept D331.1 automatic CI as green, and preserve the user-confirmed D331 two-leg physical HLDS PASS as baseline evidence.
+Add explicit, one-shot, 1-based connection fault selection to the standalone Python localhost Model I/O test server; do not expose new game commands or change default server behavior.
+Exercise unavailable peer, immediate disconnect, delayed response beyond the 20-ms bound, truncated/oversized frames, bad magic/version, mismatched request/session/frame, nonfinite output, unsafe destination, forbidden action, missing first decision and duplicate movement at the feedback stage.
+Keep all injection modes disabled unless the operator specifies a `--fault`, apply the fault only on one specified accepted connection, and retain the bounded maximum connection count and Ctrl+C shutdown behavior.
+Extend the independent C++ cross-process acceptance runner with cases that expect a fail-closed transport `Error` or D330 external guard rejection and never treat an invalid remote reply as a completed inference decision.
+Add Python tests for precise byte mutation and invalid option bounds, and document each manual HLDS command plus expected recovery fields in `MODEL_IO_NEGATIVE_SCENARIOS.md`.
+Lifecycle interventions, such as explicit stop, global mode change, round/map reset, bot removal and Python process shutdown, remain deliberate manual HLDS acceptance gates using the existing D324 cancellation paths.
+No general gameplay AI, arbitrary navigation, untrusted network transport or autonomous reconnect is introduced.

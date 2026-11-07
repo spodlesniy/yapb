@@ -5,6 +5,7 @@
 //
 
 #include <ai/ai_model_io_loopback.h>
+#include <ai/ai_model_io_external_trial_backend.h>
 
 #include <cerrno>
 #include <climits>
@@ -14,7 +15,7 @@
 
 int main(int argc, char **argv) {
   if (argc != 5) {
-    std::fprintf(stderr, "usage: modelio_external_client PORT FRAME EXPECTED TARGET_X\n");
+    std::fprintf(stderr, "usage: modelio_external_client PORT FRAME (move|none|transport-error|guard-error) TARGET_X\n");
     return 2;
   }
   char *end {};
@@ -33,7 +34,9 @@ int main(int argc, char **argv) {
   }
   const bool expectMove = std::strcmp(argv[3], "move") == 0;
   const bool expectNoDecision = std::strcmp(argv[3], "none") == 0;
-  if (!expectMove && !expectNoDecision) {
+  const bool expectTransportError = std::strcmp(argv[3], "transport-error") == 0;
+  const bool expectGuardError = std::strcmp(argv[3], "guard-error") == 0;
+  if (!expectMove && !expectNoDecision && !expectTransportError && !expectGuardError) {
     return 2;
   }
   end = nullptr;
@@ -65,11 +68,36 @@ int main(int argc, char **argv) {
   if (!backend.setTimeoutMs(20)) {
     return 3;
   }
-  const auto response = backend.infer(request);
+  ai::runtime_io::ModelIOExternalTrialBackend guard(backend);
+  if (expectGuardError && !guard.arm({ targetX, 20.0f, 30.0f })) {
+    return 3;
+  }
+  const auto response = expectGuardError ? guard.infer(request) : backend.infer(request);
   const auto &output = response.inference.output;
   if (!ai::runtime_io::modelIOResponseMatches(request, response) ||
-      backend.lastStatus() != ai::runtime_io::ModelIOTransportStatus::Completed ||
-      backend.attempts() != 1 || backend.completed() != 1) {
+      backend.attempts() != 1) {
+    std::fprintf(stderr, "missing correlation or attempt\n");
+    return 1;
+  }
+  if (expectTransportError || expectGuardError) {
+    const bool transportFailed = backend.lastStatus() !=
+        ai::runtime_io::ModelIOTransportStatus::Completed && backend.completed() == 0;
+    const bool guarded = backend.lastStatus() ==
+        ai::runtime_io::ModelIOTransportStatus::Completed &&
+        backend.completed() == 1 && !guard.decided();
+    if (response.inference.status != ai::InferenceStatus::Error ||
+        (expectTransportError && !transportFailed) ||
+        (expectGuardError && !guarded)) {
+      std::fprintf(stderr, "unsafe reply accepted status=%u inference=%u\n",
+          static_cast<unsigned>(backend.lastStatus()),
+          static_cast<unsigned>(response.inference.status));
+      return 1;
+    }
+    std::puts("PASS: unsafe external reply rejected by C++ Model I/O");
+    return 0;
+  }
+  if (backend.lastStatus() != ai::runtime_io::ModelIOTransportStatus::Completed ||
+      backend.completed() != 1) {
     std::fprintf(stderr, "transport failed status=%u inference=%u\n",
         static_cast<unsigned>(backend.lastStatus()),
         static_cast<unsigned>(response.inference.status));

@@ -920,3 +920,8 @@ The default NoDecision, `move-once`, ordinary ONNX/Legacy and deterministic sing
 D331 manual HLDS acceptance passed 2/2 external movement legs with four total requests, 168.20 combined movement units, physical completion, correlated feedback and successful runtime recovery after each leg.
 Automatic D331 Training tools CI failed a stale Python fixture expectation: frame 12 now has request ID 12, not the old constant ID 9.
 D331.1 corrects only this assertion and verifies distinct request IDs across frames; runtime behavior and pending Windows x86/general-navigation acceptance constraints remain unchanged.
+
+D332 introduces opt-in one-shot negative fault injection in the bounded Python Model I/O test server, with a 1-based connection selector and deterministic cases for disconnect, deadline, framing corruption, cross-session/frame replay, nonfinite data and forbidden semantic actions.
+The independent cross-process C++ test client now checks that malformed remote responses fail at the transport boundary and well-formed unauthorized actions fail at D330's guard; Python tests cover injected byte differences and argument bounds.
+The full N01–N23 manual HLDS acceptance matrix, including exact Python/HLDS commands, late feedback failures, second-leg abort, explicit stop, mode change, bot removal and map/server shutdown, is documented in docs/ai/MODEL_IO_NEGATIVE_SCENARIOS.md.
+D331 positive physical acceptance is retained, but D332 is not accepted until automatic CI and the user-run Windows x86/HLDS negative recovery checks pass; trained-model, arbitrary-navigation and peer-authentication gates remain open.

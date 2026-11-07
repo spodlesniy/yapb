@@ -326,3 +326,15 @@ The Python `move-sequence` mode similarly enforces two or three maximum action l
 `aipb modelio status` reports completed/total legs and aggregate request count, while stop, mode changes, round end, bot disconnect, invalid remote reply, missing feedback, or unsafe geometry abort the remaining legs.
 A user must start the Python server independently; no model weights, new navigation planner, persistent external trust or default ONNX behavior is changed.
 Python subprocess and C++ ledger unit tests cover finite sequencing, feedback gating and failure cases; actual Windows x86/HLDS two-or-three-leg movement still needs manual acceptance.
+
+## D332 — Negative Model I/O acceptance matrix
+
+The standalone D329 Python test server now supports `--fault` and `--fault-on-request` (one-based accepted TCP connection).
+The default `--fault none` keeps all D329–D331 tests unchanged; non-default fault injection is opt-in, bound to `move-once` or `move-sequence` mode, and cannot target a connection outside the configured `--max-connections` cap.
+Supported injections include disconnect, timeout, truncated response, bad magic/version, excessive declared frame size, mismatched request/session/frame IDs, nonfinite confidence, unsafe target, forbidden action, a first-response NoDecision and a duplicate movement decision.
+The delayed response lasts 100 ms, exceeding the manually selected D330 20-ms limit; no model action should be accepted after the caller's deadline.
+A malformed wire frame must be rejected by D326/D327/D328, whereas a well-formed but forbidden action/target must be rejected by D330's independent target guard.
+The cross-process C++ client verifies expected failure categories with the actual TCP transport and guard; Python tests validate fault byte mutations and invalid configuration.
+The complete operator-oriented N01–N23 manual scenario matrix, commands and expected outcomes is maintained in [MODEL_IO_NEGATIVE_SCENARIOS.md](MODEL_IO_NEGATIVE_SCENARIOS.md).
+Manual fault injection must never be used as proof of successful movement; pass criteria are absence of subsequent unwanted actions and full D324 provider/fallback/backend/action/owner recovery.
+Actual Windows x86/HLDS negative acceptance remains user-run; the D331 multi-leg positive result and default ONNX/Legacy behavior are retained.

@@ -32,6 +32,12 @@ MAX_CONNECTIONS = 64
 READ_TIMEOUT = 0.5
 ACCEPT_POLL_INTERVAL = 0.2
 LISTENER_IDLE_TIMEOUT = 30.0
+FAULT_SLEEP_SECONDS = 0.1  # Exceeds D330's 20-ms external deadline.
+FAULT_CHOICES = ("none", "disconnect", "timeout", "truncated",
+                 "bad-magic", "bad-version", "oversized",
+                 "foreign-request", "foreign-session", "foreign-frame",
+                 "nonfinite", "unsafe-target", "unsafe-action",
+                 "no-decision", "duplicate-move")
 
 
 class ProtocolError(ValueError):
@@ -252,9 +258,51 @@ def choose_sequence_action(request: Request, state: SequenceState, legs: int) ->
     return True
 
 
+def fault_response(request: Request, frame: bytes, fault: str) -> bytes:
+    """Apply an explicitly selected wire fault to one outbound test response."""
+    if fault not in FAULT_CHOICES:
+        raise ValueError("unknown fault")
+    if fault == "no-decision":
+        return response_frame(request, move=False)
+    if fault == "duplicate-move":
+        return response_frame(request, move=True)
+    damaged = bytearray(frame)
+    if fault == "bad-magic":
+        damaged[0] = ord("X")
+    elif fault == "bad-version":
+        struct.pack_into("<H", damaged, 4, WIRE_VERSION + 1)
+    elif fault == "oversized":
+        struct.pack_into("<I", damaged, 8, MAX_MESSAGE)
+    elif fault == "foreign-request":
+        struct.pack_into("<Q", damaged, 16, request.request_id + 1)
+    elif fault == "foreign-session":
+        struct.pack_into("<Q", damaged, 24, request.session_id + 1)
+    elif fault == "foreign-frame":
+        struct.pack_into("<Q", damaged, 32, request.frame_id + 1)
+    elif fault == "nonfinite":
+        struct.pack_into("<f", damaged, 72, float("nan"))
+    elif fault == "unsafe-target":
+        struct.pack_into("<f", damaged, 54, request.origin[0] + 512.0)
+    elif fault == "unsafe-action":
+        damaged[45] = 11  # InferenceActionId::Fire; never authorized by D330.
+    return bytes(damaged)
+
+
+def send_fault_response(client: socket.socket, frame: bytes, fault: str) -> None:
+    if fault == "disconnect":
+        return  # Scoped client is closed immediately after dispatch.
+    if fault == "timeout":
+        time.sleep(FAULT_SLEEP_SECONDS)
+        return
+    if fault == "truncated":
+        client.sendall(frame[:HEADER.size + 4])
+        return
+    client.sendall(frame)
+
+
 def handle_client(client: socket.socket, mode: str, emitted: set[tuple[int, int]],
                   sequences: dict[tuple[int, int], SequenceState] | None = None,
-                  legs: int = 2):
+                  legs: int = 2, fault: str = "none"):
     client.settimeout(READ_TIMEOUT)
     try:
         header = recv_exact(client, HEADER.size)
@@ -272,8 +320,10 @@ def handle_client(client: socket.socket, mode: str, emitted: set[tuple[int, int]
         else:
             move = mode == "move-once" and key not in emitted
         reply = response_frame(request, move=move)
-        client.sendall(reply)
-        if move and reply[45] == 2 and mode == "move-once":
+        if fault != "none":
+            reply = fault_response(request, reply, fault)
+        send_fault_response(client, reply, fault)
+        if fault == "none" and move and reply[45] == 2 and mode == "move-once":
             emitted.add(key)
     except (ProtocolError, OSError, struct.error, OverflowError):
         # Invalid clients are disconnected without a success response.
@@ -281,11 +331,16 @@ def handle_client(client: socket.socket, mode: str, emitted: set[tuple[int, int]
 
 
 def serve(port: int, max_connections: int, mode: str,
-          stop_event: threading.Event | None = None, legs: int = 2) -> int:
+          stop_event: threading.Event | None = None, legs: int = 2,
+          fault: str = "none", fault_on_request: int = 1) -> int:
     if not 0 <= port <= 65535 or not 1 <= max_connections <= MAX_CONNECTIONS:
         raise ValueError("port or max-connections outside limits")
     if legs not in (2, 3):
         raise ValueError("sequence legs must be 2 or 3")
+    if fault not in FAULT_CHOICES or not 1 <= fault_on_request <= max_connections:
+        raise ValueError("unknown fault or fault-on-request outside connection limit")
+    if fault != "none" and mode == "no-decision":
+        raise ValueError("fault injection requires move-once or move-sequence mode")
     if mode == "move-sequence" and max_connections < 2 * legs:
         raise ValueError("move-sequence needs at least two connections per leg")
     if stop_event is None:
@@ -312,7 +367,8 @@ def serve(port: int, max_connections: int, mode: str,
             except socket.timeout:
                 continue
             with client:
-                handle_client(client, mode, emitted, sequences, legs)
+                current_fault = fault if accepted + 1 == fault_on_request else "none"
+                handle_client(client, mode, emitted, sequences, legs, current_fault)
             accepted += 1
             idle_deadline = time.monotonic() + LISTENER_IDLE_TIMEOUT
     return 0
@@ -328,6 +384,10 @@ def main(argv: Sequence[str] | None = None) -> int:
                         default="no-decision")
     parser.add_argument("--legs", type=int, choices=(2, 3), default=2,
                         help="number of verified movement legs in move-sequence mode")
+    parser.add_argument("--fault", choices=FAULT_CHOICES, default="none",
+                        help="inject one bounded failure into an explicit move trial")
+    parser.add_argument("--fault-on-request", type=int, default=1,
+                        help="1-based accepted TCP connection to inject the fault into")
     args = parser.parse_args(argv)
     stop_event = threading.Event()
 
@@ -336,7 +396,8 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     previous_handler = signal.signal(signal.SIGINT, request_stop)
     try:
-        return serve(args.port, args.max_connections, args.mode, stop_event, args.legs)
+        return serve(args.port, args.max_connections, args.mode, stop_event,
+                     args.legs, args.fault, args.fault_on_request)
     except KeyboardInterrupt:
         # Preserve a clean exit if an interrupt arrives outside socket polling.
         print("STOPPED", flush=True)
