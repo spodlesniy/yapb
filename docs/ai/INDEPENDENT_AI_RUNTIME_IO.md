@@ -267,3 +267,16 @@ WinSock initialization and linking are provided for Windows test builds, but aut
 This transport is not installed in the default Neural bot runtime, does not spawn an external model process, and does not authenticate a same-host peer.
 Loopback restricts network reachability, not access by other local users/processes; endpoint management, peer authentication/authorization, process orchestration and in-game opt-in remain future work.
 The ONNX default, existing deterministic D323 trial and D324 recovery remain unchanged.
+
+## D329 — Local deterministic model server and cross-process acceptance
+
+`tools/aipb_training/modelio_test_server.py` is a standalone Python standard-library TCP service for D326 wire v1 and D328 loopback transport testing.
+It binds only to `127.0.0.1` with an explicit or ephemeral port, prints `READY <port>`, accepts a bounded 1–64 short-lived connections, applies finite per-connection and listener deadlines, and exits after the configured count.
+Each request is decoded field by field in canonical little-endian order; fixed feature-schema v7 input count, model schema v1, frame-schema v1, allowable D317 sensory events, self-state validity and D319 feedback are checked before creating a response.
+By default `--mode no-decision` returns a versioned NoDecision output without movement.
+Explicit `--mode move-once` emits one 96-unit XY forward MoveToPosition target based only on authorized self origin/yaw for each bot/session key, then responds NoDecision for that key.
+The service has no model weights, navigation geometry, external address binding, opponent inference, retry queue, engine pointer, worker thread or automatic HLDS activation.
+A C++ binary `aipb_modelio_external_client` uses the real `ModelIOLoopbackTcpTransport` and `ModelIOTransportBackend`; Meson runs `aipb_modelio_external_process` to launch the Python service as a separate process and verify the default and move-once paths through real TCP sockets.
+Independent Python tests cover frame parsing, malformed data, hidden fields, response bytes and standalone process behavior.
+This is a deterministic boundary-compatibility test, not proof of gameplay movement, trained-model quality, local peer authentication or Windows x86/HLDS runtime acceptance.
+Manual Windows x86/full builds remain user-controlled, and D324 lifecycle and Movement Discovery acceptance remain open.

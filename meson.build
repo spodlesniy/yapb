@@ -441,4 +441,24 @@ if get_option('tests')
    )
 
    test('yapb_ai_tests', ai_tests)
+
+   # D329 cross-process acceptance: Python TCP server and real C++ Model I/O client.
+   modelio_external_client = executable(
+      'aipb_modelio_external_client',
+      'tests/unit/ai_model_io_external_client.cpp',
+      include_directories: include_directories('inc'),
+      dependencies: os == 'windows' ? [compiler.find_library('ws2_32')] : [],
+   )
+   modelio_python = import('python').find_installation('python3')
+   test(
+      'aipb_modelio_external_process',
+      modelio_python,
+      args: [
+         meson.project_source_root() + '/tests/unit/ai_model_io_external_integration.py',
+         meson.project_source_root() + '/tools/aipb_training/modelio_test_server.py',
+         modelio_external_client.full_path(),
+      ],
+      timeout: 20,
+   )
+
 endif

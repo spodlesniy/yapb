@@ -894,3 +894,7 @@ D328 adds a concrete opt-in local-only TCP transport for D327, with hardcoded IP
 Standalone unit tests cover invalid configuration, real POSIX loopback and fragmented frames, oversized/truncated replies and silent peers; Windows x86/HLDS acceptance remains user-run.
 It is not activated in the default Neural runtime, does not start a model process and provides no peer authentication; future integration must add deliberate opt-in, local peer trust, controlled lifecycle and game-thread latency validation.
 The independent Movement Discovery and D324 HLDS recovery acceptance gates remain open.
+D329 adds a standalone Python local-loopback Model I/O wire v1 test server with strict bounded parsing, default NoDecision, explicit per-session/bot move-once deterministic action and controlled process lifetime.
+The Meson unit-test suite gains a separate-process acceptance test that runs the actual D328 C++ TCP client through D327 and verifies three model exchanges with the Python server; independent Python tests cover malformed protocol and request boundaries.
+This verifies local cross-language transport compatibility but does not install a real trained model, authenticate arbitrary local peers, activate HLDS networking or guarantee safe navigation.
+D324 manual Windows x86/HLDS recovery and independent Movement Discovery acceptance remain open.

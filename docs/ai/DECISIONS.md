@@ -4071,3 +4071,13 @@ Return explicit unavailable, timed-out or failed exchange status; do not automat
 Implement POSIX and WinSock paths with scoped socket cleanup and WinSock initialization, avoiding GoldSrc or YaPB runtime dependencies.
 Keep the transport opt-in and unregistered in HLDS; loopback binding alone is not a process-authentication mechanism, so deployment must add appropriate local peer trust and operator controls.
 Cover an in-process loopback server, fragmented response, malformed framing and silent-peer deadline in standalone tests; retain manual Windows x86 and HLDS acceptance as open.
+
+## D329 — Add a deterministic local Model I/O subprocess server and C++ integration acceptance
+
+Provide a standalone standard-library Python process listening only on IPv4 127.0.0.1 and speaking exactly the D326 little-endian Model I/O wire v1 request/response format over short-lived TCP connections.
+Default to NoDecision; permit a deliberate move-once test mode that derives a single 96-unit forward MoveToPosition target from authorized self origin/view yaw only, scoped to one bot/session identity.
+Reject malformed wire versions, lengths, schemas, nonfinite input, unauthorized perception evidence and invalid feedback without returning a successful model output.
+Limit accepted connections to one through sixty-four per server lifetime, use a finite per-connection read timeout and a finite listener idle timeout, and never accept a non-loopback bind address.
+Provide an independent Meson-built C++ probe that invokes the actual D328 TCP transport through D327 ModelIOTransportBackend and checks request identity, no-decision and one-shot move result against a separately launched Python process.
+Add Python protocol, subprocess, malformed-input and mode tests; avoid any import of game DLL or installed model weights.
+Do not register this test server with HLDS or change ONNX/Legacy defaults, start any manual Windows x86/full workflow, claim peer authentication or treat a fixed forward motion as arbitrary-map safe navigation.
