@@ -898,3 +898,6 @@ D329 adds a standalone Python local-loopback Model I/O wire v1 test server with 
 The Meson unit-test suite gains a separate-process acceptance test that runs the actual D328 C++ TCP client through D327 and verifies three model exchanges with the Python server; independent Python tests cover malformed protocol and request boundaries.
 This verifies local cross-language transport compatibility but does not install a real trained model, authenticate arbitrary local peers, activate HLDS networking or guarantee safe navigation.
 D324 manual Windows x86/HLDS recovery and independent Movement Discovery acceptance remain open.
+D329 automatic AI unit-test CI failed at af978e1 (run 42378109065): the ordinary AI suite passed 449 tests, but the cross-process test failed before running because Meson had not built its C++ client from a string-only full_path argument.
+D329.1 passes the executable target itself to the Meson test and adds clean Python server Ctrl+C exit via SIGINT stop event and 200 ms accept polling, retaining the thirty-second idle deadline and bounded client reads.
+Dedicated tests check idle shutdown and POSIX subprocess SIGINT; automatic CI and manual Windows console validation are distinct gates, and D324 HLDS recovery and Movement Discovery acceptance remain open.

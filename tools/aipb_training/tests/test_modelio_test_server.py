@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import signal
 import socket
 import struct
 import subprocess
 import sys
+import threading
+import time
 import unittest
 from pathlib import Path
 
@@ -88,6 +91,42 @@ class ServerProtocolTests(unittest.TestCase):
 
 
 class ServerProcessTests(unittest.TestCase):
+    def test_clean_stop_event_while_idle(self):
+        stop_event = threading.Event()
+        timer = threading.Timer(0.05, stop_event.set)
+        timer.start()
+        try:
+            started = time.monotonic()
+            result = server.serve(0, 1, "no-decision", stop_event)
+            self.assertEqual(result, 0)
+            self.assertLess(time.monotonic() - started, 2.0)
+        finally:
+            timer.join(timeout=2.0)
+
+    @unittest.skipIf(sys.platform == "win32",
+                     "Windows console Ctrl+C requires its own process group")
+    def test_subprocess_sigint_exits_cleanly(self):
+        process = subprocess.Popen(
+            [sys.executable, str(SCRIPT), "--port", "0",
+             "--max-connections", "10"],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+        )
+        try:
+            self.assertIsNotNone(process.stdout)
+            ready = process.stdout.readline().strip()
+            self.assertTrue(ready.startswith("READY "), ready)
+            process.send_signal(signal.SIGINT)
+            self.assertEqual(process.wait(timeout=3), 0)
+            self.assertEqual(process.stdout.readline().strip(), "STOPPED")
+        finally:
+            if process.poll() is None:
+                process.kill()
+                process.wait(timeout=3)
+            if process.stdout:
+                process.stdout.close()
+            if process.stderr:
+                process.stderr.close()
+
     def test_subprocess_tcp_no_decision(self):
         process = subprocess.Popen(
             [sys.executable, str(SCRIPT), "--port", "0", "--max-connections", "1"],

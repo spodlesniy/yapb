@@ -456,7 +456,7 @@ if get_option('tests')
       args: [
          meson.project_source_root() + '/tests/unit/ai_model_io_external_integration.py',
          meson.project_source_root() + '/tools/aipb_training/modelio_test_server.py',
-         modelio_external_client.full_path(),
+         modelio_external_client,
       ],
       timeout: 20,
    )

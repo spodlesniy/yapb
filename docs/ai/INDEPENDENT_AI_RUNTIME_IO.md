@@ -280,3 +280,13 @@ A C++ binary `aipb_modelio_external_client` uses the real `ModelIOLoopbackTcpTra
 Independent Python tests cover frame parsing, malformed data, hidden fields, response bytes and standalone process behavior.
 This is a deterministic boundary-compatibility test, not proof of gameplay movement, trained-model quality, local peer authentication or Windows x86/HLDS runtime acceptance.
 Manual Windows x86/full builds remain user-controlled, and D324 lifecycle and Movement Discovery acceptance remain open.
+
+## D329.1 — External test dependency and manual server shutdown
+
+D329's automatic Meson test failed before contacting Python: `aipb_modelio_external_client` was supplied through `full_path()`, which converted a build target into a string that did not cause Meson to build the client.
+The external-process test now passes the executable target itself as an argument, retaining the compiler/linker dependency before running Python.
+The test server installs a SIGINT handler that requests a clean stop rather than depending on a blocking thirty-second accept timeout.
+Listening sockets now poll at 200 ms with an independent thirty-second idle deadline; Ctrl+C prints STOPPED, closes the listener through its context manager and exits with status zero.
+In-flight client reads retain their existing 500 ms timeout and are allowed to complete before observing the stop event.
+Regression coverage includes a stop event on all platforms and a real subprocess SIGINT on POSIX; Windows console Ctrl+C still needs manual acceptance.
+No HLDS integration, model weights, externally exposed listener or changes to protocol v1 are introduced.

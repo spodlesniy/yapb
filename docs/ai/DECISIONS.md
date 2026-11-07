@@ -4081,3 +4081,12 @@ Limit accepted connections to one through sixty-four per server lifetime, use a 
 Provide an independent Meson-built C++ probe that invokes the actual D328 TCP transport through D327 ModelIOTransportBackend and checks request identity, no-decision and one-shot move result against a separately launched Python process.
 Add Python protocol, subprocess, malformed-input and mode tests; avoid any import of game DLL or installed model weights.
 Do not register this test server with HLDS or change ONNX/Legacy defaults, start any manual Windows x86/full workflow, claim peer authentication or treat a fixed forward motion as arbitrary-map safe navigation.
+
+## D329.1 — Restore external-process test dependency and Ctrl+C shutdown
+
+The D329 automatic AI unit-test CI failed because the external C++ client was passed to the Meson Python test as a resolved path string, so Meson did not build that executable as a test dependency.
+Pass the executable target itself as a test argument to create the build dependency while preserving the existing cross-process acceptance.
+Handle SIGINT in the standalone Python server by setting a stop event, polling the listener with a short finite timeout, and returning exit code zero with a STOPPED message after releasing the listening socket.
+Retain the existing bounded listener idle lifetime and accepted connection count; a signal received while a client is being handled is honored after the bounded client I/O finishes.
+Add a cross-platform idle stop-event test and a POSIX subprocess SIGINT regression test; Windows Ctrl+C is supported by the same signal handler but still requires manual Windows-console validation.
+Do not change wire schemas, model behavior, gameplay control, ONNX or the default HLDS policy.

@@ -7,8 +7,11 @@ from __future__ import annotations
 
 import argparse
 import math
+import signal
 import socket
 import struct
+import threading
+import time
 from dataclasses import dataclass
 from typing import Sequence
 
@@ -27,6 +30,8 @@ MAX_MESSAGE = 2048
 MAX_EVENTS = 4
 MAX_CONNECTIONS = 64
 READ_TIMEOUT = 0.5
+ACCEPT_POLL_INTERVAL = 0.2
+LISTENER_IDLE_TIMEOUT = 30.0
 
 
 class ProtocolError(ValueError):
@@ -229,24 +234,36 @@ def handle_client(client: socket.socket, mode: str, emitted: set[tuple[int, int]
         return
 
 
-def serve(port: int, max_connections: int, mode: str) -> int:
+def serve(port: int, max_connections: int, mode: str,
+          stop_event: threading.Event | None = None) -> int:
     if not 0 <= port <= 65535 or not 1 <= max_connections <= MAX_CONNECTIONS:
         raise ValueError("port or max-connections outside limits")
+    if stop_event is None:
+        stop_event = threading.Event()
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
         listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         listener.bind((HOST, port))
         listener.listen(4)
-        # An isolated test server must not wait forever for unused connections.
-        listener.settimeout(30.0)
+        # Polling is required for Ctrl+C responsiveness during accept on Windows.
+        listener.settimeout(ACCEPT_POLL_INTERVAL)
+        idle_deadline = time.monotonic() + LISTENER_IDLE_TIMEOUT
         print(f"READY {listener.getsockname()[1]}", flush=True)
         emitted: set[tuple[int, int]] = set()
-        for _ in range(max_connections):
+        accepted = 0
+        while accepted < max_connections:
+            if stop_event.is_set():
+                print("STOPPED", flush=True)
+                return 0
+            if time.monotonic() >= idle_deadline:
+                return 1
             try:
                 client, _ = listener.accept()
             except socket.timeout:
-                return 1
+                continue
             with client:
                 handle_client(client, mode, emitted)
+            accepted += 1
+            idle_deadline = time.monotonic() + LISTENER_IDLE_TIMEOUT
     return 0
 
 
@@ -259,10 +276,22 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--mode", choices=("no-decision", "move-once"),
                         default="no-decision")
     args = parser.parse_args(argv)
+    stop_event = threading.Event()
+
+    def request_stop(_signum: int, _frame: object) -> None:
+        stop_event.set()
+
+    previous_handler = signal.signal(signal.SIGINT, request_stop)
     try:
-        return serve(args.port, args.max_connections, args.mode)
+        return serve(args.port, args.max_connections, args.mode, stop_event)
+    except KeyboardInterrupt:
+        # Preserve a clean exit if an interrupt arrives outside socket polling.
+        print("STOPPED", flush=True)
+        return 0
     except (ValueError, OSError) as exc:
         parser.error(str(exc))
+    finally:
+        signal.signal(signal.SIGINT, previous_handler)
     return 2
 
 
