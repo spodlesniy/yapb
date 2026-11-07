@@ -931,3 +931,10 @@ D332.1 notifies the Model I/O trial before the bot's normal markStale cancellati
 D332.1 additionally clears only terminal feedback from the existing ownership ledger before arming each new opt-in Model I/O trial, preventing a newly reattached adapter from forwarding the previous trial's completed action after its watermark reset.
 Unit tests check active-action preservation, historical feedback removal and first-request isolation.
 D332.1 automatic CI and manual Windows x86/HLDS N22 plus a two-leg feedback-free first-request recheck are acceptance gates; general independent navigation and Movement Discovery remain separate.
+
+D332.1 automatic CI and user-reported Windows x86 HLDS retests passed: N22 now stops with BotDisconnected and all five recovery checks true, and a new failed trial carries no old ActionFeedback (request_has_feedback=0, decision/observed frames zero).
+D332's 23 negative checks and D332.1 corrections are accepted as safe finite-trial evidence only, not as a full independent navigation or trained model validation.
+D333 adds an opt-in extended Model I/O session capped at 4–8 physically verified actions and one monotonic 5–30-second total deadline, reusing D331's independent per-leg preflight, external action guard, terminal feedback, and provider/fallback recovery.
+The existing 2–3-leg `sequence` and single-leg `external` trials retain their previous bounds and behavior; the new Python server `move-session --actions 4..8` applies the same terminal-feedback gate and bounded localhost TCP connection count.
+C++ unit tests cover action cap, wall-clock expiration, backward clock and overflow; Python tests check four correlated movements, no fifth movement and invalid session limits.
+D333 automatic CI and user-run Windows x86/HLDS four-action, budget expiration and mid-session stop acceptance are required before closing this extended-session gate; general policy autonomy and Movement Discovery remain open.

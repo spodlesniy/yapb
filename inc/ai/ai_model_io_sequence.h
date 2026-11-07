@@ -14,6 +14,8 @@ namespace ai::runtime_io {
 
 constexpr uint8_t kModelIOSequenceMinLegs = 2;
 constexpr uint8_t kModelIOSequenceMaxLegs = 3;
+constexpr uint8_t kModelIOSessionMinActions = 4;
+constexpr uint8_t kModelIOSessionMaxActions = 8;
 
 // Tracks verified independent movement legs without owning an engine entity,
 // policy, backend or socket. A leg counts only after physical completion and
@@ -41,6 +43,15 @@ public:
     }
     reset();
     m_total = legs;
+    return true;
+  }
+
+  bool armSession(uint8_t actions) {
+    if (actions < kModelIOSessionMinActions || actions > kModelIOSessionMaxActions) {
+      return false;
+    }
+    reset();
+    m_total = actions;
     return true;
   }
 

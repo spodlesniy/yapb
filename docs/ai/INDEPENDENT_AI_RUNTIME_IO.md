@@ -349,3 +349,43 @@ Each new explicitly armed trial now calls the per-bot `clearFinishedControlFeedb
 The existing terminal feedback still flows through the original leg until its completion, and resetting the backend between legs cannot re-export the previous leg's terminal result.
 Automatic unit tests cover the ledger's active/finished states and the first external request after cleared feedback.
 User-run Windows x86 HLDS acceptance must repeat N22, check `stop_reason=BotDisconnected`, and verify the first request of each new leg no longer carries unrelated earlier feedback.
+
+## D333 — Extended operator-armed session with total deadline
+
+Use the new console command `aipb modelio session <bot-index> <port> <actions:4-8> <seconds:5-30>` to run a finite sequence of independently checked forward movements on one Neural bot.
+This is a separate command; the D331 `sequence` command still allows 2–3 actions only.
+The D333 session is explicitly operator-armed and has both a maximum number of completed actions and a single absolute monotonic wall-clock budget that never restarts between legs.
+Every action uses a fresh D318 TraceHull from the bot's current position, the same D330 96-unit target guard, D319 terminal feedback, D332.1 stale-feedback isolation and D324 five-flag recovery check before the next action is armed.
+D323's five-second per-leg game-time bound and D330's 20-ms individual localhost transport deadline remain in place.
+The session refuses any action beyond its configured cap and stops immediately once its total time budget expires, including when a deadline passes during synchronous external inference.
+The ordinary `aipb modelio stop` command cancels the entire active session; existing round/mode/session/ownership/bot/map invalidation rules also apply.
+The `status` command shows `sequence progress`, total successful leg requests, the configured session seconds, elapsed monotonic milliseconds, and whether the budget remains active.
+The localhost Python server supports `--mode move-session --actions 4..8`; set `--max-connections` to twice the number of actions, since each verified action requires one decision exchange and one terminal feedback exchange.
+Server `move-session` does not turn any model into an autonomous planner: it only proposes the same bounded forward target, then returns NoDecision until matching terminal feedback has arrived.
+
+### D333 manual HLDS acceptance
+
+Update the Windows x86 DLL to the D333 commit and use a live Neural bot on a safe level corridor with sufficient clear space for every 96-unit leg.
+For the minimum four-action positive case, launch the Python server separately from the repository root:
+
+```powershell
+python -m tools.aipb_training.modelio_test_server --port 8765 --mode move-session --actions 4 --max-connections 8
+```
+
+In the HLDS server console:
+
+```text
+aipb modelio session 1 8765 4 15
+aipb modelio status
+```
+
+Expected: `sequence leg=1/4 PASS` through `sequence leg=4/4 PASS`, `last=PASS`, `sequence progress=4/4`, `total_requests=8`, `session budget=15s`, `Idle`, and all five recovery flags equal 1.
+Each later leg requires another clear 96-unit segment; blocked terrain correctly aborts a session rather than overriding the trace check.
+For the eight-action cap check, run the Python server with `--actions 8 --max-connections 16`, then `aipb modelio session 1 8765 8 30` and `aipb modelio status`.
+Expected: at most eight completed actions, exactly 16 total requests on an uninterrupted PASS, and no ninth movement.
+For deadline acceptance, use `--actions 8 --max-connections 16` on the Python server and `aipb modelio session 1 8765 8 5` on HLDS.
+If the finite movement sequence lasts beyond the five-second budget, expect `stop_reason=Timeout`, `last=None/Failed`, `Idle`, all recovery flags equal 1 and no subsequent action.
+If all eight actions finish within five seconds, this run verifies the action cap but is inconclusive for deadline expiration; the deterministic C++ deadline boundary tests remain authoritative.
+For explicit stop acceptance, use the eight-action server and `aipb modelio session 1 8765 8 30`; during an active leg, enter `aipb modelio stop` followed by `aipb modelio status`.
+Expected: `Requested`, partial progress, no later movement and all recovery flags equal 1.
+The `session` command rejects action counts outside 4–8 and deadlines outside 5–30 seconds without arming a bot.

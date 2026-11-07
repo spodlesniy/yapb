@@ -29,6 +29,8 @@ FEATURE_COUNT = 252
 MAX_MESSAGE = 2048
 MAX_EVENTS = 4
 MAX_CONNECTIONS = 64
+SESSION_MIN_ACTIONS = 4
+SESSION_MAX_ACTIONS = 8
 READ_TIMEOUT = 0.5
 ACCEPT_POLL_INTERVAL = 0.2
 LISTENER_IDLE_TIMEOUT = 30.0
@@ -302,7 +304,7 @@ def send_fault_response(client: socket.socket, frame: bytes, fault: str) -> None
 
 def handle_client(client: socket.socket, mode: str, emitted: set[tuple[int, int]],
                   sequences: dict[tuple[int, int], SequenceState] | None = None,
-                  legs: int = 2, fault: str = "none"):
+                  legs: int = 2, fault: str = "none", actions: int = 4):
     client.settimeout(READ_TIMEOUT)
     try:
         header = recv_exact(client, HEADER.size)
@@ -312,11 +314,12 @@ def handle_client(client: socket.socket, mode: str, emitted: set[tuple[int, int]
             raise ProtocolError("invalid length or frame kind")
         request = parse_frame(header + recv_exact(client, payload_length))
         key = request.session_id, request.bot_index
-        if mode == "move-sequence":
+        if mode in ("move-sequence", "move-session"):
             if sequences is None:
                 raise ProtocolError("sequence store missing")
             state = sequences.setdefault(key, SequenceState())
-            move = choose_sequence_action(request, state, legs)
+            move = choose_sequence_action(
+                request, state, actions if mode == "move-session" else legs)
         else:
             move = mode == "move-once" and key not in emitted
         reply = response_frame(request, move=move)
@@ -332,17 +335,22 @@ def handle_client(client: socket.socket, mode: str, emitted: set[tuple[int, int]
 
 def serve(port: int, max_connections: int, mode: str,
           stop_event: threading.Event | None = None, legs: int = 2,
-          fault: str = "none", fault_on_request: int = 1) -> int:
+          fault: str = "none", fault_on_request: int = 1,
+          actions: int = 4) -> int:
     if not 0 <= port <= 65535 or not 1 <= max_connections <= MAX_CONNECTIONS:
         raise ValueError("port or max-connections outside limits")
     if legs not in (2, 3):
         raise ValueError("sequence legs must be 2 or 3")
+    if not SESSION_MIN_ACTIONS <= actions <= SESSION_MAX_ACTIONS:
+        raise ValueError("session actions must be 4..8")
     if fault not in FAULT_CHOICES or not 1 <= fault_on_request <= max_connections:
         raise ValueError("unknown fault or fault-on-request outside connection limit")
     if fault != "none" and mode == "no-decision":
         raise ValueError("fault injection requires move-once or move-sequence mode")
     if mode == "move-sequence" and max_connections < 2 * legs:
         raise ValueError("move-sequence needs at least two connections per leg")
+    if mode == "move-session" and max_connections < 2 * actions:
+        raise ValueError("move-session needs two connections per action")
     if stop_event is None:
         stop_event = threading.Event()
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
@@ -368,7 +376,7 @@ def serve(port: int, max_connections: int, mode: str,
                 continue
             with client:
                 current_fault = fault if accepted + 1 == fault_on_request else "none"
-                handle_client(client, mode, emitted, sequences, legs, current_fault)
+                handle_client(client, mode, emitted, sequences, legs, current_fault, actions)
             accepted += 1
             idle_deadline = time.monotonic() + LISTENER_IDLE_TIMEOUT
     return 0
@@ -380,10 +388,15 @@ def main(argv: Sequence[str] | None = None) -> int:
                         help="IPv4 loopback port; 0 selects an ephemeral test port")
     parser.add_argument("--max-connections", type=int, default=1,
                         help=f"bounded accepted connections (1..{MAX_CONNECTIONS})")
-    parser.add_argument("--mode", choices=("no-decision", "move-once", "move-sequence"),
+    parser.add_argument("--mode", choices=("no-decision", "move-once", "move-sequence",
+                                           "move-session"),
                         default="no-decision")
     parser.add_argument("--legs", type=int, choices=(2, 3), default=2,
                         help="number of verified movement legs in move-sequence mode")
+    parser.add_argument("--actions", type=int, choices=range(
+        SESSION_MIN_ACTIONS, SESSION_MAX_ACTIONS + 1), default=4,
+                        metavar="{4,5,6,7,8}",
+                        help="maximum verified actions for move-session mode")
     parser.add_argument("--fault", choices=FAULT_CHOICES, default="none",
                         help="inject one bounded failure into an explicit move trial")
     parser.add_argument("--fault-on-request", type=int, default=1,
@@ -397,7 +410,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     previous_handler = signal.signal(signal.SIGINT, request_stop)
     try:
         return serve(args.port, args.max_connections, args.mode, stop_event,
-                     args.legs, args.fault, args.fault_on_request)
+                     args.legs, args.fault, args.fault_on_request, args.actions)
     except KeyboardInterrupt:
         # Preserve a clean exit if an interrupt arrives outside socket polling.
         print("STOPPED", flush=True)

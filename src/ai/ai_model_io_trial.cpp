@@ -20,6 +20,7 @@
 #include <ai/ai_mock_motion.h>
 #include <ai/ai_model_io_recovery.h>
 #include <ai/ai_model_io_sequence.h>
+#include <ai/ai_model_io_session.h>
 
 #include <cmath>
 #include <cstdlib>
@@ -49,6 +50,10 @@ ai::runtime_io::ModelIOExternalTrialBackend externalBackend { transportBackend }
 bool externalMode {};
 uint16_t externalPort {};
 ai::runtime_io::ModelIOSequenceProgress sequence {};
+ai::runtime_io::ModelIOSessionBudget sessionBudget {};
+bool sessionMode {};
+uint32_t lastSessionSeconds {};
+uint64_t lastSessionElapsedMs {};
 uint8_t lastSequenceTotal {};
 uint8_t lastSequenceCompleted {};
 uint32_t lastSequenceRequests {};
@@ -114,6 +119,7 @@ void clear(Bot *bot, ai::runtime_io::ModelIOTrialStopReason reason) {
   externalBackend.reset();
   externalMode = false;
   externalPort = 0;
+  sessionMode = false;
 }
 
 void fail(Bot *bot, ai::runtime_io::ModelIOTrialStopReason reason, const char *detail) {
@@ -131,6 +137,10 @@ void fail(Bot *bot, ai::runtime_io::ModelIOTrialStopReason reason, const char *d
     lastTransportStatus = transportBackend.lastStatus();
   }
   lastCompleted = false;
+  if (sessionBudget.active()) {
+    lastSessionElapsedMs = sessionBudget.elapsed(externalClock.milliseconds());
+    sessionBudget.reset();
+  }
   if (sequence.total() > 0) {
     lastSequenceTotal = sequence.total();
     lastSequenceCompleted = sequence.completed();
@@ -181,11 +191,22 @@ bool handleServer() {
           static_cast<unsigned>(lastSequenceCompleted), static_cast<unsigned>(lastSequenceTotal),
           lastSequenceRequests);
     }
+    if (lastSessionSeconds != 0) {
+      game.print("AiPB modelio: session budget=%us; elapsed_ms=%llu; active=%d.",
+          lastSessionSeconds,
+          static_cast<unsigned long long>(sessionBudget.active()
+              ? sessionBudget.elapsed(externalClock.milliseconds()) : lastSessionElapsedMs),
+          sessionBudget.active());
+    }
     return true;
   }
   if (argc == 3 && std::strcmp(cmd, "stop") == 0) {
     auto *bot = selected >= 0 ? bots.findBotByIndex(selected) : nullptr;
     if (active()) {
+      if (sessionBudget.active()) {
+        lastSessionElapsedMs = sessionBudget.elapsed(externalClock.milliseconds());
+        sessionBudget.reset();
+      }
       clear(bot, ai::runtime_io::ModelIOTrialStopReason::Requested);
       lastCompleted = false;
     }
@@ -201,24 +222,40 @@ bool handleServer() {
     return true;
   }
   const bool useSequence = std::strcmp(cmd, "sequence") == 0;
-  const bool useExternal = useSequence || std::strcmp(cmd, "external") == 0;
+  const bool useSession = std::strcmp(cmd, "session") == 0;
+  const bool useExternal = useSession || useSequence || std::strcmp(cmd, "external") == 0;
   if ((std::strcmp(cmd, "run") != 0 || argc != 4) &&
-      (!useExternal || argc != (useSequence ? 6 : 5))) {
-    game.print("Usage: aipb modelio run <bot-index> | external <bot-index> <port> | sequence <bot-index> <port> <legs:2-3> | status | stop");
+      (!useExternal || argc != (useSession ? 7 : useSequence ? 6 : 5))) {
+    game.print("Usage: aipb modelio run <bot-index> | external <bot-index> <port> | sequence <bot-index> <port> <legs:2-3> | session <bot-index> <port> <actions:4-8> <seconds:5-30> | status | stop");
     return true;
   }
   uint8_t requestedLegs {};
-  if (useSequence) {
+  uint32_t requestedSeconds {};
+  if (useSequence || useSession) {
     const char *legArg = engfuncs.pfnCmd_Argv(5);
     char *legEnd {};
     const long parsed = std::strtol(legArg, &legEnd, 10);
-    if (legArg == legEnd || *legEnd != '\0' ||
-        parsed < ai::runtime_io::kModelIOSequenceMinLegs ||
-        parsed > ai::runtime_io::kModelIOSequenceMaxLegs) {
-      game.print("AiPB modelio: rejected (InvalidSequenceLength).");
+    const long minimum = useSession ? ai::runtime_io::kModelIOSessionMinActions
+                                    : ai::runtime_io::kModelIOSequenceMinLegs;
+    const long maximum = useSession ? ai::runtime_io::kModelIOSessionMaxActions
+                                    : ai::runtime_io::kModelIOSequenceMaxLegs;
+    if (legArg == legEnd || *legEnd != '\0' || parsed < minimum || parsed > maximum) {
+      game.print("AiPB modelio: rejected (%s).", useSession ? "InvalidActionCount" : "InvalidSequenceLength");
       return true;
     }
     requestedLegs = static_cast<uint8_t>(parsed);
+  }
+  if (useSession) {
+    const char *secondsArg = engfuncs.pfnCmd_Argv(6);
+    char *secondsEnd {};
+    const long seconds = std::strtol(secondsArg, &secondsEnd, 10);
+    if (secondsArg == secondsEnd || *secondsEnd != '\0' ||
+        seconds < ai::runtime_io::kModelIOSessionMinSeconds ||
+        seconds > ai::runtime_io::kModelIOSessionMaxSeconds) {
+      game.print("AiPB modelio: rejected (InvalidSessionDeadline).");
+      return true;
+    }
+    requestedSeconds = static_cast<uint32_t>(seconds);
   }
   uint16_t requestedPort {};
   if (useExternal) {
@@ -246,13 +283,21 @@ bool handleServer() {
     game.print("AiPB modelio: rejected (BotUnavailableOrMode).");
     return true;
   }
-  if (useSequence && !sequence.arm(requestedLegs)) {
+  if ((useSequence && !sequence.arm(requestedLegs)) ||
+      (useSession && !sequence.armSession(requestedLegs))) {
     game.print("AiPB modelio: rejected (UnableToArmSequence).");
     return true;
   }
-  if (!useSequence) {
+  if (!useSession && !useSequence) {
     sequence.reset();
   }
+  sessionBudget.reset();
+  if (useSession && !sessionBudget.arm(requestedSeconds, externalClock.milliseconds())) {
+    sequence.reset();
+    game.print("AiPB modelio: rejected (UnableToArmSessionBudget).");
+    return true;
+  }
+  sessionMode = useSession;
   selected = static_cast<int>(index);
   externalMode = useExternal;
   externalPort = requestedPort;
@@ -264,15 +309,18 @@ bool handleServer() {
   lastSequenceTotal = requestedLegs;
   lastSequenceCompleted = 0;
   lastSequenceRequests = 0;
+  lastSessionSeconds = requestedSeconds;
+  lastSessionElapsedMs = 0;
   lastRequestHadFeedback = false;
   lastRawDecisionFrame = lastRawObservedFrame = 0;
   lastSourceStatus = ai::InferenceStatus::NoDecision;
   lastTransportStatus = ai::runtime_io::ModelIOTransportStatus::Idle;
   lastStopReason = ai::runtime_io::ModelIOTrialStopReason::None;
   lastRecovery = {};
-  game.print("AiPB modelio: requested for bot #%d; backend=%s; port=%u; legs=%u.",
-       selected, useSequence ? "ExternalSequence" : externalMode ? "ExternalLoopback" : "Deterministic",
-       externalPort, useSequence ? requestedLegs : 1);
+  game.print("AiPB modelio: requested for bot #%d; backend=%s; port=%u; legs=%u; budget_seconds=%u.",
+       selected, useSession ? "ExternalSession" :
+       useSequence ? "ExternalSequence" : externalMode ? "ExternalLoopback" : "Deterministic",
+       externalPort, requestedLegs != 0 ? requestedLegs : 1, requestedSeconds);
   return true;
 }
 
@@ -292,6 +340,10 @@ bool frame(Bot &bot) {
       !running || (stateAvailable && state.stamp.sessionId == sessionId));
   if (invalid != ai::runtime_io::ModelIOTrialStopReason::None) {
     fail(&bot, invalid, "lifecycle gate");
+    return true;
+  }
+  if (sessionMode && sessionBudget.expired(externalClock.milliseconds())) {
+    fail(&bot, ai::runtime_io::ModelIOTrialStopReason::Timeout, "session wall-clock deadline");
     return true;
   }
 
@@ -357,6 +409,10 @@ bool frame(Bot &bot) {
   }
   const auto observation = ai::buildObservation(ai::buildObservationInput(bot));
   const auto result = ai::YaPBActionExecutionContext::stepModelIOTrial(bot, observation);
+  if (sessionMode && sessionBudget.expired(externalClock.milliseconds())) {
+    fail(&bot, ai::runtime_io::ModelIOTrialStopReason::Timeout, "session wall-clock deadline");
+    return true;
+  }
 
   if (awaitingFeedback) {
     const bool observed = externalMode ? externalBackend.terminalFeedbackObserved() :
@@ -379,6 +435,7 @@ bool frame(Bot &bot) {
     const auto completedSession = sessionId;
     const bool physicallyReached = ai::mockReachedTarget(state.self.origin, destination);
     const bool sequential = sequence.total() > 0;
+    const bool continuingSession = sessionMode;
     const int botIndex = selected;
     const uint16_t port = externalPort;
     clear(&bot, ai::runtime_io::ModelIOTrialStopReason::Completed);
@@ -394,6 +451,10 @@ bool frame(Bot &bot) {
         lastSequenceCompleted = sequence.completed();
         lastSequenceRequests = sequence.requests();
         sequence.reset();
+        if (sessionBudget.active()) {
+          lastSessionElapsedMs = sessionBudget.elapsed(externalClock.milliseconds());
+          sessionBudget.reset();
+        }
         game.print("AiPB modelio: sequence stopped; reason=%s; completed=%u/%u; recovered=%d.",
             ai::runtime_io::modelIOTrialStopReasonName(lastStopReason),
             static_cast<unsigned>(lastSequenceCompleted), static_cast<unsigned>(lastSequenceTotal),
@@ -410,6 +471,7 @@ bool frame(Bot &bot) {
         selected = botIndex;
         externalMode = true;
         externalPort = port;
+        sessionMode = continuingSession;
         pending = true;
         running = false;
         awaitingFeedback = false;
@@ -418,6 +480,10 @@ bool frame(Bot &bot) {
         return true;
       }
       sequence.reset();
+    }
+    if (sessionBudget.active()) {
+      lastSessionElapsedMs = sessionBudget.elapsed(externalClock.milliseconds());
+      sessionBudget.reset();
     }
     lastCompleted = reachedAndRecovered;
     game.print("AiPB modelio: %s; result=Completed; recovered=%d; requests=%u; decision_frame=%llu; feedback_frame=%llu; moved=%.2f; remaining=%.2f; elapsed=%.3f; session=%llu.",
@@ -477,6 +543,10 @@ void cancelBot(int botIndex) {
   if (selected == botIndex) {
     auto *bot = bots.findBotByIndex(selected);
     lastCompleted = false;
+    if (sessionBudget.active()) {
+      lastSessionElapsedMs = sessionBudget.elapsed(externalClock.milliseconds());
+      sessionBudget.reset();
+    }
     if (sequence.total() > 0) {
       lastSequenceTotal = sequence.total();
       lastSequenceCompleted = sequence.completed();
@@ -489,6 +559,10 @@ void cancelBot(int botIndex) {
 
 void reset() {
   auto *bot = selected >= 0 ? bots.findBotByIndex(selected) : nullptr;
+  if (sessionBudget.active()) {
+    lastSessionElapsedMs = sessionBudget.elapsed(externalClock.milliseconds());
+    sessionBudget.reset();
+  }
   if (sequence.total() > 0) {
     lastSequenceTotal = sequence.total();
     lastSequenceCompleted = sequence.completed();

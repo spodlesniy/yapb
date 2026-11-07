@@ -138,6 +138,26 @@ class ServerProtocolTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             server.serve(0, 2, "move-once", fault="unknown")
 
+    def test_d333_session_action_cap_and_identity(self):
+        state = server.SequenceState()
+        for i in range(4):
+            decision = server.parse_frame(fixture(frame=12 + 2 * i))
+            self.assertTrue(server.choose_sequence_action(decision, state, 4))
+            feedback = server.parse_frame(
+                fixture(frame=13 + 2 * i, feedback_decision=12 + 2 * i))
+            self.assertFalse(server.choose_sequence_action(feedback, state, 4))
+            self.assertEqual(state.completed, i + 1)
+        self.assertFalse(server.choose_sequence_action(
+            server.parse_frame(fixture(frame=20)), state, 4))
+
+    def test_d333_session_validation_bounds(self):
+        with self.assertRaises(ValueError):
+            server.serve(0, 7, "move-session", actions=4)
+        with self.assertRaises(ValueError):
+            server.serve(0, 16, "move-session", actions=9)
+        with self.assertRaises(ValueError):
+            server.serve(0, 16, "move-session", actions=3)
+
     def test_cli_limits(self):
         with self.assertRaises(ValueError):
             server.serve(70000, 1, "no-decision")
@@ -208,6 +228,39 @@ class ServerProcessTests(unittest.TestCase):
                     size = server.HEADER.unpack(header)[3]
                     reply = header + server.recv_exact(client, size)
                 self.assertEqual(reply[45], action)
+            self.assertEqual(process.wait(timeout=3), 0)
+        finally:
+            if process.poll() is None:
+                process.kill()
+                process.wait(timeout=3)
+            if process.stdout:
+                process.stdout.close()
+            if process.stderr:
+                process.stderr.close()
+
+    def test_subprocess_session_four_verified_actions(self):
+        process = subprocess.Popen(
+            [sys.executable, str(SCRIPT), "--port", "0",
+             "--max-connections", "9", "--mode", "move-session",
+             "--actions", "4"],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+        )
+        try:
+            self.assertIsNotNone(process.stdout)
+            ready = process.stdout.readline().strip()
+            self.assertTrue(ready.startswith("READY "), ready)
+            port = int(ready.split()[1])
+            for i in range(9):
+                feedback = 12 + i - 1 if i % 2 else None
+                with socket.create_connection((server.HOST, port), timeout=2) as client:
+                    client.settimeout(2)
+                    client.sendall(fixture(frame=12 + i,
+                                           feedback_decision=feedback))
+                    header = server.recv_exact(client, server.HEADER.size)
+                    size = server.HEADER.unpack(header)[3]
+                    reply = header + server.recv_exact(client, size)
+                expected = 2 if i % 2 == 0 and i < 8 else 0
+                self.assertEqual(reply[45], expected)
             self.assertEqual(process.wait(timeout=3), 0)
         finally:
             if process.poll() is None:

@@ -4157,3 +4157,15 @@ Investigate repeated D319 ActionFeedback observed in new Model I/O requests afte
 At the new trial arm boundary, drop only finished feedback in the existing per-bot ownership ledger; refuse to clear while an action is pending, and preserve session, stamp and owner.
 Do not globally erase feedback on every new frame or change the existing once-per-result feedback contract in an ongoing trial.
 Add ownership and Model I/O adapter regression tests covering prior terminal feedback removal and refusal to clear a live action, and require a new user-run Windows x86 HLDS N22 and sequence feedback acceptance after CI.
+
+## D333 — Bounded extended Model I/O action session
+
+Following the user-confirmed D332.1 HLDS N22 and stale-feedback acceptance and its successful automatic CI, add a separate explicit `aipb modelio session <bot-index> <port> <actions> <seconds>` test command.
+An operator may arm only 4–8 independently preflighted forward movement actions and a single 5–30-second monotonic wall-clock deadline, never an unlimited loop or automatically renewed timeout.
+Each leg must reuse D330 authorization of the locally traced 96-unit destination, D319 correlated terminal feedback, D332.1 new-trial feedback isolation, physical reach and all five D324 recovery checks before another leg can run.
+The global deadline is checked before and after any synchronous Model I/O execution and before each new preflight, while D323's original five-second per-leg timeout remains unchanged.
+An expired budget, invalid action, bad feedback, unsafe geometry, mode change, bot disconnect, map reset or explicit stop ends the complete operator session and restores provider, fallback, backend and action ownership without attempting another decision.
+Use a separate engine-neutral wall-clock budget and retain the existing bounded sequence ledger with a distinct 4–8-action arming method; the original `sequence` command remains limited to 2–3 legs and single-leg trials are unchanged.
+Extend the bounded Python localhost test server with explicit `move-session --actions 4..8`, reusing its feedback-correlated decision state and finite connection cap without changing the default mode.
+Add C++ budget/action-cap tests and Python unit/subprocess tests of four correlated actions and the final no-decision response; record manual Windows x86/HLDS positive, timeout and stop acceptance commands.
+This is a finite operator-armed movement diagnostic, not independent model training, general navigation or arbitrary external model control; automatic CI and manual target-platform acceptance remain separate gates.
