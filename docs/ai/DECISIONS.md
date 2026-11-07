@@ -4061,3 +4061,13 @@ Recheck elapsed monotonic time on return, reject late or malformed responses and
 Track per-instance attempted/completed requests and the last failure reason without retaining network payloads or opponent data.
 A synchronous adapter cannot abort a blocking callback: require a future concrete socket/IPC implementation to enforce operating-system I/O timeouts or nonblocking deadlines before enabling it in HLDS.
 Keep the default ONNX/Legacy behavior unchanged, do not install a production external connection or claim live model/HLDS acceptance.
+
+## D328 — Add local-only nonblocking TCP transport for independent Model I/O
+
+Provide one concrete IPv4 loopback-only implementation of the D327 byte-transport interface that connects exclusively to 127.0.0.1 at an explicitly supplied nonzero port.
+Use one short-lived socket per synchronous exchange with nonblocking connect, send and receive, partial-transfer handling, and one steady-clock deadline shared across all phases.
+Enforce the existing one-to-twenty-millisecond budget and D326 maximum message size, read exactly the twelve-byte header followed by its bounded declared payload, and reject early EOF, truncated, oversized, malformed and late responses without returning partial data as a completed model result.
+Return explicit unavailable, timed-out or failed exchange status; do not automatically retry, reconnect in the background, or fall back to external addresses.
+Implement POSIX and WinSock paths with scoped socket cleanup and WinSock initialization, avoiding GoldSrc or YaPB runtime dependencies.
+Keep the transport opt-in and unregistered in HLDS; loopback binding alone is not a process-authentication mechanism, so deployment must add appropriate local peer trust and operator controls.
+Cover an in-process loopback server, fragmented response, malformed framing and silent-peer deadline in standalone tests; retain manual Windows x86 and HLDS acceptance as open.

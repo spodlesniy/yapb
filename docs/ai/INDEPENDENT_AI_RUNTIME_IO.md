@@ -254,3 +254,16 @@ The per-bot instance exposes attempted/completed counts and a last-status enum f
 Unit tests use an in-process fake transport and model backend to verify successful decisions, `NoDecision`, timeouts, clock regressions, malformed/foreign/oversized replies, recovery and the existing InferencePolicy path.
 This is not a live TCP/IPC transport, and a blocking callback cannot be forcibly interrupted by the synchronous adapter; future nonblocking or OS-deadline I/O is an explicit requirement before any external connection is installed in HLDS.
 D324 Windows x86/HLDS recovery acceptance and Movement Discovery A–G remain open.
+
+## D328 — Local TCP Model I/O transport
+
+`inc/ai/ai_model_io_loopback.h` supplies `ModelIOLoopbackTcpTransport`, a concrete `ModelIOByteTransport` exchanging D326 binary frames over IPv4 TCP to the hardcoded loopback address 127.0.0.1.
+Its only endpoint configuration is a nonzero port, and each request opens a nonblocking socket, connects, sends the entire bounded request, receives the twelve-byte wire header and then exactly the declared bounded response body, and closes the socket.
+One monotonic steady-clock deadline spans connect, partial writes, partial reads, and cleanup; the caller supplies the D327 1–20 ms time budget and failures return explicit status without partial model response bytes.
+The implementation rejects zero ports, null buffers, invalid sizes, truncated frames, premature connection close, response payloads exceeding available capacity, expired deadlines and unavailable listeners.
+The platform socket wrapper supports WinSock 2 and POSIX and suppresses Unix SIGPIPE where supported; it neither allocates background workers nor retries a failed request.
+Unit tests exercise parameter rejection and, on POSIX, real loopback request/response exchange, fragmented responses, oversized/truncated framing and a silent-peer deadline.
+WinSock initialization and linking are provided for Windows test builds, but automatic Linux CI does not establish Windows x86 or HLDS acceptance.
+This transport is not installed in the default Neural bot runtime, does not spawn an external model process, and does not authenticate a same-host peer.
+Loopback restricts network reachability, not access by other local users/processes; endpoint management, peer authentication/authorization, process orchestration and in-game opt-in remain future work.
+The ONNX default, existing deterministic D323 trial and D324 recovery remain unchanged.

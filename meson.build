@@ -401,6 +401,7 @@ if get_option('tests')
       'tests/unit/ai_model_io_tests.cpp',
       'tests/unit/ai_model_io_wire_tests.cpp',
       'tests/unit/ai_model_io_transport_tests.cpp',
+      'tests/unit/ai_model_io_loopback_tests.cpp',
       'tests/unit/ai_model_io_trial_tests.cpp',
       'tests/unit/ai_model_io_recovery_tests.cpp',
       'tests/unit/ai_controller_tests.cpp',
@@ -435,7 +436,7 @@ if get_option('tests')
       'src/ai/ai_onnx_model_runner.cpp',
       'src/ai/ai_inference_model_service.cpp',
       include_directories: include_directories('inc', 'tests/unit', 'ext', 'ext/crlib', 'ext/linkage'),
-      dependencies: onnxruntime_dep,
+      dependencies: os == 'windows' ? [onnxruntime_dep, compiler.find_library('ws2_32')] : [onnxruntime_dep],
       cpp_args: onnx_cpp_args + ['-DAIPB_TEST_SOURCE_ROOT="' + meson.project_source_root () + '"'],
    )
 

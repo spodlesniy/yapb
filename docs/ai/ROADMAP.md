@@ -890,3 +890,7 @@ D327 adds an opt-in engine-neutral Model I/O byte-transport adapter that joins t
 Unit tests cover simulated transport faults, malformed and late responses, no retries, request counters and existing InferencePolicy integration.
 No actual socket/IPC client is installed: a future production transport must enforce a hard I/O deadline because synchronous code cannot interrupt a blocking callback.
 The default ONNX/Legacy gameplay, D324 manual Windows x86/HLDS recovery acceptance and independent Movement Discovery gates remain unchanged.
+D328 adds a concrete opt-in local-only TCP transport for D327, with hardcoded IPv4 loopback, single-use nonblocking sockets, a shared 1–20 ms steady-clock deadline and exact bounded D326 frame exchange.
+Standalone unit tests cover invalid configuration, real POSIX loopback and fragmented frames, oversized/truncated replies and silent peers; Windows x86/HLDS acceptance remains user-run.
+It is not activated in the default Neural runtime, does not start a model process and provides no peer authentication; future integration must add deliberate opt-in, local peer trust, controlled lifecycle and game-thread latency validation.
+The independent Movement Discovery and D324 HLDS recovery acceptance gates remain open.
