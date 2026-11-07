@@ -240,3 +240,17 @@ A response body contains Model I/O schema version, request/session/observation-f
 Decoders reject unsupported versions, incorrect length/type, truncated or extra data, invalid event evidence, malformed flags/nonfinite values and mismatched response identity before mutating the output object.
 This codec does not open sockets, choose a remote process, define delivery/timeout behavior, provide authentication or replace the existing ONNX/default runtime.
 A subsequent separately reviewed step must implement any transport and safety limits; D324 Windows x86/HLDS recovery acceptance remains open.
+
+## D327 — Synchronous Model I/O byte-transport adapter
+
+`inc/ai/ai_model_io_transport.h` implements `ModelIOTransportBackend` over the unchanged D322 ModelIOBackend and D326 wire v1 codec.
+A caller explicitly supplies a `ModelIOByteTransport` exchange callback and a monotonic-millisecond clock; the backend owns neither object and they must outlive it.
+Each valid request uses one fixed-size outgoing and incoming buffer bounded by `kModelIOWireMaxBytes`; there is no implicit connection, heap allocation, retry, cross-frame queue, background worker or engine call.
+The exchange receives the exact request bytes, the capacity of the response buffer and a timeout budget; the default is 5 ms and configured valid values are 1–20 ms.
+The callback contract requires the transport implementation itself to honor the supplied timeout and buffer capacity.
+After return, the adapter rejects a regressing clock, a response exceeding the elapsed-time budget, explicit timeout/unavailable/failure statuses, incorrect response length, bad wire data and foreign request/session/frame identifiers.
+A failure produces a correctly stamped ModelIOResponse carrying `InferenceStatus::Error`; only a fully validated response can provide an action or an explicit backend `NoDecision`.
+The per-bot instance exposes attempted/completed counts and a last-status enum for diagnosis without storing request contents.
+Unit tests use an in-process fake transport and model backend to verify successful decisions, `NoDecision`, timeouts, clock regressions, malformed/foreign/oversized replies, recovery and the existing InferencePolicy path.
+This is not a live TCP/IPC transport, and a blocking callback cannot be forcibly interrupted by the synchronous adapter; future nonblocking or OS-deadline I/O is an explicit requirement before any external connection is installed in HLDS.
+D324 Windows x86/HLDS recovery acceptance and Movement Discovery A–G remain open.

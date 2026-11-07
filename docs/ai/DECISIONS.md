@@ -4051,3 +4051,13 @@ Serialize only the D316 self state, D317 authorized visibility/events, D319 corr
 Validate versions, allowed event kinds, identities, enumerations, finite values and request/session/frame correlation before exposing a decoded message, and never mutate the caller's output on parse failure.
 Keep the codec transport-neutral and independent of GoldSrc, platform struct padding, sockets, background workers and new runtime controls.
 Do not install the codec as a production backend yet or claim tested networking, external-model inference, Windows x86 compatibility or HLDS acceptance.
+
+## D327 — Add an injectable, bounded Model I/O byte-transport backend
+
+Adapt the D326 wire codec to D322 ModelIOBackend using one synchronous caller-owned request/response exchange and an explicit monotonic clock interface.
+The engine-neutral transport callback must enforce a per-request I/O deadline and never write past the supplied response capacity; it must not implicitly connect or queue work.
+Default to a five-millisecond budget and permit an explicitly configured one-to-twenty-millisecond range, rejecting invalid settings without changing the existing budget.
+Recheck elapsed monotonic time on return, reject late or malformed responses and transport failures, preserve the originating request/session/frame envelope, and return InferenceStatus::Error instead of synthesizing an action or retrying.
+Track per-instance attempted/completed requests and the last failure reason without retaining network payloads or opponent data.
+A synchronous adapter cannot abort a blocking callback: require a future concrete socket/IPC implementation to enforce operating-system I/O timeouts or nonblocking deadlines before enabling it in HLDS.
+Keep the default ONNX/Legacy behavior unchanged, do not install a production external connection or claim live model/HLDS acceptance.

@@ -400,6 +400,7 @@ if get_option('tests')
       'tests/unit/ai_mock_telemetry_tests.cpp',
       'tests/unit/ai_model_io_tests.cpp',
       'tests/unit/ai_model_io_wire_tests.cpp',
+      'tests/unit/ai_model_io_transport_tests.cpp',
       'tests/unit/ai_model_io_trial_tests.cpp',
       'tests/unit/ai_model_io_recovery_tests.cpp',
       'tests/unit/ai_controller_tests.cpp',

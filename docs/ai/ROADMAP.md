@@ -886,3 +886,7 @@ No external transport, trained model, automatic gameplay behavior or new control
 D326 adds a transport-neutral external Model I/O wire v1 codec with a 2048-byte bound, canonical little-endian encoding, exact length/version validation, strict D325 event allowlisting and request/session/frame response matching.
 The codec and its unit tests do not install a network backend or affect original ONNX/Legacy execution; external transport, security, timeouts and real-model evaluation remain future work.
 The D324 manual Windows x86/HLDS lifecycle acceptance and independent Movement Discovery A–G gates remain open.
+D327 adds an opt-in engine-neutral Model I/O byte-transport adapter that joins the D326 codec to the D322 backend interface, with caller-supplied clock and synchronous exchange, fixed 2048-byte request/response buffers, configurable 1–20 ms cooperative timeout budget and fail-closed response correlation.
+Unit tests cover simulated transport faults, malformed and late responses, no retries, request counters and existing InferencePolicy integration.
+No actual socket/IPC client is installed: a future production transport must enforce a hard I/O deadline because synchronous code cannot interrupt a blocking callback.
+The default ONNX/Legacy gameplay, D324 manual Windows x86/HLDS recovery acceptance and independent Movement Discovery gates remain unchanged.
