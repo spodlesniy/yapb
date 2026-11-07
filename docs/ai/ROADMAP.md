@@ -916,3 +916,7 @@ D331 records the user-confirmed D330.2 HLDS one-shot external Model I/O PASS (2 
 D331 introduces an explicit bounded 2–3-leg `aipb modelio sequence` operator trial and matching Python `move-sequence` server mode, requiring per-leg fresh TraceHull, correlated terminal feedback, full provider/fallback recovery, and unchanged bot session identity before each next external decision.
 An engine-neutral sequence ledger, C++ tests and real Python subprocess tests enforce request/leg bounds and prohibit continuation without verified prior feedback.
 The default NoDecision, `move-once`, ordinary ONNX/Legacy and deterministic single-leg trial remain unchanged; this is not arbitrary-navigation or trained-model acceptance, and manual Windows x86/HLDS multi-leg acceptance remains open.
+
+D331 manual HLDS acceptance passed 2/2 external movement legs with four total requests, 168.20 combined movement units, physical completion, correlated feedback and successful runtime recovery after each leg.
+Automatic D331 Training tools CI failed a stale Python fixture expectation: frame 12 now has request ID 12, not the old constant ID 9.
+D331.1 corrects only this assertion and verifies distinct request IDs across frames; runtime behavior and pending Windows x86/general-navigation acceptance constraints remain unchanged.

@@ -47,7 +47,10 @@ def fixture(*, seen: bool = False, count: int = server.FEATURE_COUNT,
 class ServerProtocolTests(unittest.TestCase):
     def test_exact_wire_fixture_and_default_no_decision(self):
         request = server.parse_frame(fixture())
-        self.assertEqual((request.request_id, request.session_id, request.frame_id), (9, 7, 12))
+        self.assertEqual((request.request_id, request.session_id, request.frame_id), (12, 7, 12))
+        next_request = server.parse_frame(fixture(frame=13))
+        self.assertEqual(next_request.request_id, 13)
+        self.assertNotEqual(request.request_id, next_request.request_id)
         self.assertEqual(request.origin, (10.0, 20.0, 30.0))
         raw = server.response_frame(request, move=False)
         self.assertEqual(len(raw), 76)

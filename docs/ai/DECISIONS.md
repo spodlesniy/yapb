@@ -4128,3 +4128,10 @@ Extend the D329 standalone Python loopback server with an explicit `move-sequenc
 Keep default NoDecision and prior move-once behavior intact, and retain strict network bounds and per-request deadlines.
 Cover ledger bounds/recovery, feedback-gated Python sequence and real Python subprocess exchanges in dedicated tests.
 This is an operator-armed finite sequence rather than unrestricted autonomous inference; Windows x86/HLDS multi-leg physical acceptance remains user-run.
+
+## D331.1 — Align Python request-ID assertion with frame-scoped fixtures
+
+D331 physical HLDS acceptance passed two consecutive external moves with four requests and verified provider/fallback recovery.
+The automatic Training tools CI failed only because the original D329 Python fixture assertion expected a fixed request ID 9 while D331's frame-scoped fixture now deliberately assigns request ID equal to its frame ID.
+Update the assertion to expect request ID 12 in frame 12 and add a regression check that frame 13 uses a distinct request ID 13.
+Do not modify Model I/O protocol, runtime movement, server decision logic, safety gates, or the D331 sequence limit.
