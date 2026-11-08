@@ -970,3 +970,10 @@ No claim of superior loop avoidance is made until supported by comparable observ
 D337 published diagnostic-only Python telemetry and the trace comparison CLI, but first automatic CI failed in the new TCP recorder test because the test requested five connections while the existing four-action server contract requires at least eight.
 D337.1 corrects the test fixture to use eight exchanges and verify a trace after each correlated feedback, including four confirmed actions; server behavior, DLL and wire contracts remain unchanged.
 D337.1 requires successful automatic CI and the operator-run paired trace check before closing D337 diagnostic acceptance.
+
+D337.1 automatic build Training tools CI succeeded on commit f395ea3 (run 42455683176).
+The first user-run D337 paired de_dust2 traces completed eight avoid and eight memory legs with full recovery; the offline comparator measured avoid path 717.87 / displacement 348.81 / efficiency 0.4859 and memory path 672.89 / displacement 672.89 / efficiency 1.0000, with zero revisits and two-step loops for both.
+The comparator correctly reported identical_inputs=no: start poses and later obstacle masks were different, so this is verified diagnostic operation, not evidence of memory superiority.
+D338 introduces a separate read-only Python 2–10-pair matched-start evaluation, requiring equal start origins/yaw/first masks within explicit tolerances, equal fully completed action limits and consistent starts across repeated trials, while excluding duplicate trace files.
+The report aggregates D337 spatial metrics for eligible pairs only and explicitly refuses causal claims because the v1 trace omits map identity and full environmental state.
+D338's targeted Python tests, automatic Training tools CI and operator-run Windows x86/HLDS three-pair matched-start experiment documented in MODEL_IO_PAIRED_TRIALS.md are required before accepting this diagnostic capability; no DLL, live decision policy, wire protocol or engine-side safety changes occur.

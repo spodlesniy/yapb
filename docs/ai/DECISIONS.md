@@ -4238,3 +4238,14 @@ D337's first automatic Training tools CI run failed because the newly added reco
 Correct only the test input to eight connections, exercise four correlated action/feedback pairs, assert four confirmed records at completion and match intermediate trace sizes to feedback arrival rather than decision arrival.
 The test tolerates an in-progress diagnostic JSON rewrite while polling, without accepting uncorrelated records or altering the session protocol.
 This is a separate ordinary corrective commit preserving the original D337 commit, original runtime and Python server behavior, and operator-facing commands.
+
+## D338 — Bounded repeated matched-start comparison of local external policies
+
+The first user-run D337 avoid/memory recordings both completed eight legs with safe restoration, and D337.1 automatic CI passed, but the observed differing initial pose and direction masks made an efficiency ranking invalid.
+Introduce a separate Python read-only CLI to compare two through ten independent pairs of completed D337 JSON traces, without modifying the existing single-pair CLI, Python server, game DLL or wire v2 contract.
+Require matching completed 4–8-action limits; require the first recorded bot origins within 1 unit, yaw within 0.1 degree including angle wrap, and first engine-traced direction masks equal inside each pair.
+Also require consistent initial origin, yaw and mask across repeated pair starts; refuse duplicated whole JSON traces and do not silently count an incomplete or mismatched pair in the means.
+Report every pair's match reason and summarize eligible pairs' revisit, two-step loop, path length, displacement and efficiency metrics; return a nonzero exit status unless every requested pair meets the bounded matching gates.
+Matching the recorded start cannot establish equivalent hidden map, collision, equipment, opponent or later movement conditions, and different later per-leg masks are legitimate policy outcomes; present comparison results only as descriptive, not proof of causal superiority.
+Require focused Python tests, successful automatic Training tools CI and three operator-run Windows x86/HLDS matched-start pairs on de_dust2, with all eight actions and all five state-recovery checks successful per run, before claiming D338 target-platform acceptance.
+Document exact server/game/test commands and the operator's responsibility to restore the same verified start before every run; never authorize unattended teleport or broaden safety permissions.
