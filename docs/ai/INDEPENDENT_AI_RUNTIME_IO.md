@@ -427,3 +427,43 @@ A deliberately malformed remote target can also be tested with `--fault unsafe-t
 For explicit stop and global deadline checks, use eight actions and the same D333 commands with `steer` substituted for `session`; all existing time and lifecycle gates remain mandatory.
 A clear forward-only corridor is not sufficient for a four-action positive case because the external process intentionally tests perpendicular turns.
 No successful geometry probe here proves the ability to navigate around arbitrary obstacles, gaps, slopes or dynamic game objects.
+
+## D335 — Bounded local obstacle affordance and external selection
+
+Command: `aipb modelio avoid <bot-index> <port> <actions:4-8> <seconds:5-30>`.
+This opt-in mode preserves D333's absolute monotonic budget, per-leg five-second bound, 20-ms TCP limit, physical reach checks, correlated ActionFeedback, and D324 provider/fallback/backend/action/owner recovery.
+For each leg, the HLDS game thread traces up to three 96-unit hull segments from the bot's own origin and yaw: forward (bit 0), left (bit 1), and right (bit 2).
+Only fully clear, successfully correlated D318 traces enter the local authorization list.
+If all are blocked, the trial terminates without sending an external model decision.
+The existing wire-v1 frame remains unchanged for all earlier modes.
+In `avoid` only, the bounded request changes to wire v2 (header version 2) and appends exactly one byte, a nonzero safe-direction bitmask (1..7), after the same fixed 252 inference features; the reply echoes header version 2 and otherwise uses the original response payload.
+The v2 parser rejects invalid masks, malformed lengths and mismatched versions, and v1 responses cannot satisfy v2 requests.
+No raw contact locations, trace fractions, opponent positions beyond the existing D317 sensory allowlist, navigation graph data or world geometry is included in the affordance extension.
+The local Python server implements `--mode move-avoid --actions 4..8`; it rotates preferred directions across completed actions but skips any direction absent from the current mask.
+The receiving D330 external guard must still match the remote MoveToPosition endpoint to the exact engine-traced allowlist and rejects forbidden actions, stale frames and unauthorized positions.
+Status logs print `offered safe_directions_mask` with a forward/left/right bit breakdown and print each accepted `external direction`.
+This is only a proof of bounded local choice; it does not promise a safe drop, ground support outside the hull trace, obstacle avoidance beyond one leg, or arbitrary-map navigation.
+
+### D335 user-run Windows x86/HLDS acceptance
+
+Build the DLL from the D335 commit using the user-controlled `windows-x86` workflow and run with one Neural bot.
+Launch each Python test server from the repository root in a fresh process, stopping unused instances with Ctrl+C.
+
+For a four-action positive run:
+
+```powershell
+python -m tools.aipb_training.modelio_test_server --port 8765 --mode move-avoid --actions 4 --max-connections 8
+```
+
+```text
+aipb modelio avoid 1 8765 4 15
+aipb modelio status
+```
+
+On an open safe area, expect 4/4 legs and 8 requests with a direction log for each chosen movement, `Completed` and all five recovery flags true.
+For the distinguishing obstacle test, place the bot facing a wall within 96 units so that the forward hull trace fails but at least one side direction is clear; the log must show `forward=0` and `left=1` or `right=1`.
+The Python server should choose a permitted side direction, physically complete the first movement, receive correlated terminal feedback and continue while subsequent local options remain available.
+If a later segment is blocked in all directions, an `InvalidAction` without unauthorized movement is the expected safe result, not an overall positive 4/4 PASS.
+For a negative server response, restart the same server with `--fault unsafe-target --fault-on-request 1` and run the `avoid` command: expect `InvalidAction`, no accepted model movement, `Idle` and all five recovery flags equal to 1.
+For stop and deadline lifecycle regression, reuse D334's operator tests with `avoid` substituted for `steer`; repeat when local geometry permits enough movements for the deadline to be reached, and confirm `Requested` or `Timeout` plus complete recovery.
+Any malformed or v1 response to a v2 request must be rejected at the transport/codec gate rather than accepted as a model action.

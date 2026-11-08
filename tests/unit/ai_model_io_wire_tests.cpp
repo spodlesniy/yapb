@@ -237,3 +237,50 @@ AI_TEST(testModelIOWireNoDecisionAndUnchangedOutputOnFailure) {
          requestDecoded.requestId == 999,
          "malformed request does not partially mutate caller output");
 }
+
+AI_TEST(testModelIOWireV2SafeDirectionMaskAndVersionIsolation) {
+  auto request = makeWireRequest();
+  request.safeDirectionsMask = 0x05u; // Forward and right; left is not clear.
+  uint8_t buffer[io::kModelIOWireMaxBytes] {};
+  size_t written {};
+  expect(io::encodeModelIOWireRequest(request, buffer, sizeof(buffer), written) &&
+         buffer[4] == 2 && buffer[5] == 0 && buffer[written - 1] == 0x05u,
+         "v2 request explicitly carries the bounded three-bit direction mask");
+  io::ModelIORequest decoded {};
+  expect(io::decodeModelIOWireRequest(buffer, written, decoded) &&
+         decoded.safeDirectionsMask == 0x05u && decoded.requestId == request.requestId,
+         "v2 mask survives canonical encoding without altering request identity");
+  expect(!io::decodeModelIOWireRequest(buffer, written - 1, decoded),
+         "missing v2 affordance byte is rejected");
+  buffer[written - 1] = 0;
+  expect(!io::decodeModelIOWireRequest(buffer, written, decoded),
+         "v2 cannot advertise an empty safe-direction set");
+  buffer[written - 1] = 0x08u;
+  expect(!io::decodeModelIOWireRequest(buffer, written, decoded),
+         "v2 rejects any unauthorized direction bit");
+  request.safeDirectionsMask = 0x80u;
+  expect(!io::encodeModelIOWireRequest(request, buffer, sizeof(buffer), written),
+         "encoder rejects unsupported bits before I/O");
+  request.safeDirectionsMask = 0;
+  expect(io::encodeModelIOWireRequest(request, buffer, sizeof(buffer), written) &&
+         buffer[4] == 1 && io::decodeModelIOWireRequest(buffer, written, decoded) &&
+         decoded.safeDirectionsMask == 0,
+         "legacy v1 payload remains unchanged when no affordances are supplied");
+
+  request.safeDirectionsMask = 0x05u;
+  auto response = makeWireResponse(request);
+  response.wireVersion = io::kModelIOWireAffordanceVersion;
+  expect(io::encodeModelIOWireResponse(response, buffer, sizeof(buffer), written) &&
+         buffer[4] == 2, "v2 response echoes the new request's wire version");
+  io::ModelIOResponse received {};
+  expect(io::decodeModelIOWireResponse(buffer, written, request, received) &&
+         received.wireVersion == 2, "v2 response preserves existing correlation checks");
+  auto legacyRequest = request;
+  legacyRequest.safeDirectionsMask = 0;
+  expect(!io::decodeModelIOWireResponse(buffer, written, legacyRequest, received),
+         "legacy request cannot accept a v2 response");
+  response.wireVersion = io::kModelIOWireVersion;
+  expect(io::encodeModelIOWireResponse(response, buffer, sizeof(buffer), written) &&
+         !io::decodeModelIOWireResponse(buffer, written, request, received),
+         "v2 requester cannot accept a downgraded v1 response");
+}

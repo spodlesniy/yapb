@@ -83,6 +83,15 @@ public:
   }
 
   uint8_t count() const { return m_count; }
+  uint8_t mask() const {
+    uint8_t result {};
+    for (uint8_t i = 0; i < kModelIODirectionCount; ++i) {
+      if (m_allowed[i]) {
+        result = static_cast<uint8_t>(result | (1u << i));
+      }
+    }
+    return result;
+  }
   bool allowed(uint8_t direction) const {
     return direction < kModelIODirectionCount && m_allowed[direction];
   }

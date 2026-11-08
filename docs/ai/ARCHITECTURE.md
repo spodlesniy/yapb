@@ -584,3 +584,12 @@ The game engine performs three bounded hull traces per leg before authorizing ex
 A remote model can propose only one of the three nominal forward/left/right positions; the external trial guard rejects every proposal lacking a clear server-side trace and replaces accepted float-rounded coordinates with the actual traced target.
 The isolated runtime completion target is updated to the verified remote choice before physical movement, preventing false completion against the default forward destination.
 Per-leg recovery and feedback, overall action/time limits, cancel conditions and all existing ONNX/default-gameplay isolation remain unchanged.
+
+## D335 — Public local movement affordance extension
+
+Wire v2 is opt-in exclusively for the new bounded `avoid` trial.
+A validated engine TraceHull allowlist is reduced to one nonzero three-bit availability mask and appended after the existing 252 float features in the request; no other position, collision or tactical data is added.
+Existing wire-v1 requests and replies preserve their original byte layout and version header.
+A v2 response uses the same original inference payload with header version 2; the adapter rejects any cross-version response.
+The Python `move-avoid` peer chooses a present direction based on current self origin/yaw and the mask, and the original engine-side traced-target guard independently rejects any other target.
+The Model I/O safety, lifetime, ownership and recovery contracts remain intact.

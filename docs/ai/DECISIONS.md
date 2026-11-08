@@ -4185,3 +4185,19 @@ Do not change single-leg `run`/`external`, original two-or-three-leg `sequence`,
 Unit tests cover direction geometry and authorization, blocked proposals, only-one-decision enforcement and terminal-feedback linkage; Python tests cover steering byte targets and a four-action cross-process exchange.
 Require automatic CI and manual Windows x86/HLDS successful turns and blocked-direction recovery before claiming D334 target-platform acceptance.
 This is a narrow policy-controlled local steering demonstration, not arbitrary waypoint navigation, obstacle avoidance or autonomous general gameplay.
+
+## D335 — Allowlisted local obstacle affordances over wire v2
+
+D334's automatic CI and user-run HLDS S01–S05 acceptance passed physical forward, left and right steering, unsafe remote target rejection, blocked-direction fail-closed rejection, the five-second absolute deadline at seven completed actions, manual stop during the second action, and full D324 recovery across every scenario.
+D335 introduces a separate opt-in `aipb modelio avoid <bot-index> <port> <actions:4-8> <seconds:5-30>` command and `move-avoid` Python server mode.
+Each new action continues to have three candidate 96-unit horizontal directions produced only from the bot's own current origin and yaw and individually checked with an engine-side D318 TraceHull.
+A three-bit, nonzero mask of this leg's locally trace-authorized forward/left/right candidates is included only in the new wire-v2 request as a single byte after the fixed feature vector.
+Wire v1 remains byte-for-byte unchanged for `run`, `external`, `sequence`, `session` and `steer`; the v2 response retains the existing inference payload but echoes version 2 in its header, and the codec rejects downgrades, unsupported mask bits, zero masks, extra bytes and truncated messages.
+Do not send wall locations, hull trace fractions, contact points, private entities, or any arbitrary candidate coordinates as additional sensory evidence.
+The deterministic `move-avoid` server rotates a preferred direction after correlated terminal feedback and selects the first direction present in the advertised mask in cyclic forward/left/right order.
+The runtime still rejects any returned coordinate not matching an engine-authorized endpoint, rather than trusting the advertised bit mask or substituting a new target after response validation.
+If no candidate passes the independent local hull preflights, the session fails before any remote decision or physical movement; no synthetic safe option is created.
+Preserve D334's runtime target adoption, all D333 per-leg and overall time/action limits, terminal-feedback correlation, stop/mode/bot/map invalidation and five D324 restoration flags.
+Add C++ wire v2/v1 compatibility and downgrade tests, C++ advertised-mask and forbidden-target tests, and Python parsing, invalid-mask and actual localhost multi-action selection tests.
+Require automatic CI and manual Windows x86/HLDS blocked-forward alternative selection and recovery evidence before accepting D335.
+This implements bounded local obstacle-aware direction selection only, not path planning, movement-discovery traversal, general route search or autonomous combat.

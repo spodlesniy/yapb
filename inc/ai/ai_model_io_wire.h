@@ -17,6 +17,7 @@
 namespace ai::runtime_io {
 
 constexpr uint16_t kModelIOWireVersion = 1;
+constexpr uint16_t kModelIOWireAffordanceVersion = 2;
 constexpr size_t kModelIOWireMaxBytes = 2048;
 constexpr size_t kModelIOWireHeaderBytes = 12;
 
@@ -180,19 +181,22 @@ public:
     return f32(value.x) && f32(value.y) && f32(value.z);
   }
 
-  bool header(ModelIOWireKind kind) {
+  bool header(ModelIOWireKind kind, uint16_t &version) {
     uint32_t magic {}, payload {};
-    uint16_t version {}, actualKind {};
+    uint16_t actualKind {};
     return m_size >= kModelIOWireHeaderBytes && m_size <= kModelIOWireMaxBytes &&
            u32(magic) && u16(version) && u16(actualKind) && u32(payload) &&
-           magic == kMagic && version == kModelIOWireVersion &&
+           magic == kMagic &&
+           (version == kModelIOWireVersion || version == kModelIOWireAffordanceVersion) &&
            actualKind == static_cast<uint16_t>(kind) &&
            payload == m_size - kModelIOWireHeaderBytes;
   }
 };
 
-inline bool writeHeader(Writer &writer, ModelIOWireKind kind) {
-  return writer.u32(kMagic) && writer.u16(kModelIOWireVersion) &&
+inline bool writeHeader(Writer &writer, ModelIOWireKind kind,
+                        uint16_t version = kModelIOWireVersion) {
+  return (version == kModelIOWireVersion || version == kModelIOWireAffordanceVersion) &&
+         writer.u32(kMagic) && writer.u16(version) &&
          writer.u16(static_cast<uint16_t>(kind)) && writer.u32(0);
 }
 
@@ -240,7 +244,8 @@ inline bool validRequest(const ModelIORequest &request) {
       validateFrame(request.stamp) != FrameValidation::Valid ||
       !validSelfState(request.self) ||
       !request.features.hasSupportedSchema() ||
-      request.eventCount > kPerceptionEventsPerFrame) {
+      request.eventCount > kPerceptionEventsPerFrame ||
+      (request.safeDirectionsMask & 0xf8u) != 0) {
     return false;
   }
   PerceptionFrame perception {};
@@ -273,7 +278,9 @@ inline bool validRequest(const ModelIORequest &request) {
 
 inline bool validResponse(const ModelIOResponse &response) {
   const auto &output = response.inference.output;
-  return response.schemaVersion == kModelIOSchemaVersion &&
+  return (response.wireVersion == kModelIOWireVersion ||
+          response.wireVersion == kModelIOWireAffordanceVersion) &&
+         response.schemaVersion == kModelIOSchemaVersion &&
          response.requestId != 0 && response.sessionId != 0 &&
          response.observationFrameId != 0 &&
          static_cast<uint8_t>(response.inference.status) <=
@@ -295,7 +302,9 @@ inline bool encodeModelIOWireRequest(const ModelIORequest &request,
     return false;
   }
   model_io_wire_detail::Writer writer(buffer, capacity);
-  if (!model_io_wire_detail::writeHeader(writer, ModelIOWireKind::Request) ||
+  const uint16_t version = request.safeDirectionsMask != 0
+      ? kModelIOWireAffordanceVersion : kModelIOWireVersion;
+  if (!model_io_wire_detail::writeHeader(writer, ModelIOWireKind::Request, version) ||
       !writer.u32(request.schemaVersion) || !writer.u64(request.requestId) ||
       !model_io_wire_detail::writeStamp(writer, request.stamp) ||
       !model_io_wire_detail::writeSelf(writer, request.self) ||
@@ -338,6 +347,10 @@ inline bool encodeModelIOWireRequest(const ModelIORequest &request,
       return false;
     }
   }
+  if (version == kModelIOWireAffordanceVersion &&
+      !writer.u8(request.safeDirectionsMask)) {
+    return false;
+  }
   return writer.finish(written);
 }
 
@@ -345,7 +358,8 @@ inline bool decodeModelIOWireRequest(const uint8_t *buffer, size_t size,
                                     ModelIORequest &request) {
   model_io_wire_detail::Reader reader(buffer, size);
   ModelIORequest decoded {};
-  if (!reader.header(ModelIOWireKind::Request) ||
+  uint16_t version {};
+  if (!reader.header(ModelIOWireKind::Request, version) ||
       !reader.u32(decoded.schemaVersion) || !reader.u64(decoded.requestId) ||
       !model_io_wire_detail::readStamp(reader, decoded.stamp) ||
       !model_io_wire_detail::readSelf(reader, decoded.self) ||
@@ -396,6 +410,10 @@ inline bool decodeModelIOWireRequest(const uint8_t *buffer, size_t size,
       return false;
     }
   }
+  if (version == kModelIOWireAffordanceVersion &&
+      (!reader.u8(decoded.safeDirectionsMask) || decoded.safeDirectionsMask == 0)) {
+    return false;
+  }
   if (!reader.done() || !model_io_wire_detail::validRequest(decoded)) {
     return false;
   }
@@ -411,7 +429,8 @@ inline bool encodeModelIOWireResponse(const ModelIOResponse &response,
   }
   model_io_wire_detail::Writer writer(buffer, capacity);
   const auto &output = response.inference.output;
-  if (!model_io_wire_detail::writeHeader(writer, ModelIOWireKind::Response) ||
+  if (!model_io_wire_detail::writeHeader(writer, ModelIOWireKind::Response,
+                                         response.wireVersion) ||
       !writer.u32(response.schemaVersion) || !writer.u64(response.requestId) ||
       !writer.u64(response.sessionId) || !writer.u64(response.observationFrameId) ||
       !writer.u8(static_cast<uint8_t>(response.inference.status)) ||
@@ -431,8 +450,11 @@ inline bool decodeModelIOWireResponse(const uint8_t *buffer, size_t size,
   model_io_wire_detail::Reader reader(buffer, size);
   ModelIOResponse decoded {};
   uint8_t status {};
+  uint16_t version {};
   auto &output = decoded.inference.output;
-  if (!reader.header(ModelIOWireKind::Response) ||
+  if (!reader.header(ModelIOWireKind::Response, version) ||
+      version != (expected.safeDirectionsMask != 0
+          ? kModelIOWireAffordanceVersion : kModelIOWireVersion) ||
       !reader.u32(decoded.schemaVersion) || !reader.u64(decoded.requestId) ||
       !reader.u64(decoded.sessionId) || !reader.u64(decoded.observationFrameId) ||
       !reader.u8(status) || !reader.u32(output.schemaVersion) ||
@@ -443,6 +465,7 @@ inline bool decodeModelIOWireResponse(const uint8_t *buffer, size_t size,
       !reader.done()) {
     return false;
   }
+  decoded.wireVersion = version;
   decoded.inference.status = static_cast<InferenceStatus>(status);
   if (!model_io_wire_detail::validResponse(decoded) ||
       !modelIOResponseMatches(expected, decoded)) {

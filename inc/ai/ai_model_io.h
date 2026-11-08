@@ -32,9 +32,13 @@ struct ModelIORequest {
   bool hasFeedback {};
   ActionFeedback feedback {};
   InferenceFeatures features {};
+  // D335 local affordances are only advertised in the opt-in wire-v2 request.
+  uint8_t safeDirectionsMask {};
 };
 
 struct ModelIOResponse {
+  // Wire v1 remains the default for existing trial modes.
+  uint16_t wireVersion { 1 };
   uint32_t schemaVersion { kModelIOSchemaVersion };
   uint64_t requestId {};
   uint64_t sessionId {};

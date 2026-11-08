@@ -1,4 +1,4 @@
-"""Local, deterministic Model I/O wire-v1 server for standalone integration tests.
+"""Local, deterministic Model I/O wire-v1/v2 server for standalone integration tests.
 
 This is not a trained model, a public network service, or an HLDS plugin.
 """
@@ -19,6 +19,7 @@ HOST = "127.0.0.1"
 HEADER = struct.Struct("<4sHHI")
 MAGIC = b"AIPB"
 WIRE_VERSION = 1
+AFFORDANCE_WIRE_VERSION = 2
 REQUEST_KIND = 1
 RESPONSE_KIND = 2
 MODEL_SCHEMA = 1
@@ -59,6 +60,8 @@ class Request:
     feedback_decision: int | None = None
     feedback_observed: int = 0
     feedback_completed: bool = False
+    wire_version: int = WIRE_VERSION
+    safe_directions_mask: int = 0
 
 
 @dataclass
@@ -106,8 +109,8 @@ def parse_frame(frame: bytes) -> Request:
     if len(frame) < HEADER.size or len(frame) > MAX_MESSAGE:
         raise ProtocolError("message size outside limits")
     magic, version, kind, length = HEADER.unpack_from(frame)
-    if (magic != MAGIC or version != WIRE_VERSION or kind != REQUEST_KIND
-            or length != len(frame) - HEADER.size):
+    if (magic != MAGIC or version not in (WIRE_VERSION, AFFORDANCE_WIRE_VERSION)
+            or kind != REQUEST_KIND or length != len(frame) - HEADER.size):
         raise ProtocolError("invalid wire header")
 
     reader = Reader(frame[HEADER.size:])
@@ -196,10 +199,16 @@ def parse_frame(frame: bytes) -> Request:
         raise ProtocolError("unsupported feature vector")
     for _ in range(count):
         reader.f32()
+    safe_directions_mask = 0
+    if version == AFFORDANCE_WIRE_VERSION:
+        safe_directions_mask = reader.read("B")
+        if not 1 <= safe_directions_mask <= 7:
+            raise ProtocolError("invalid safe-direction mask")
     reader.finish()
     return Request(request_id, session_id, frame_id, bot_index,
                    origin, view[1], alive, on_ground,
-                   feedback_decision, feedback_observed, feedback_completed)
+                   feedback_decision, feedback_observed, feedback_completed,
+                   version, safe_directions_mask)
 
 
 def response_frame(request: Request, *, move: bool, direction: int = 0) -> bytes:
@@ -228,7 +237,7 @@ def response_frame(request: Request, *, move: bool, direction: int = 0) -> bytes
                           request.frame_id, 0 if action_id else 1,
                           ACTION_SCHEMA, action_id, -1, -1,
                           *target, 0, 0, 0.0, confidence)
-    frame = HEADER.pack(MAGIC, WIRE_VERSION, RESPONSE_KIND, len(payload)) + payload
+    frame = HEADER.pack(MAGIC, request.wire_version, RESPONSE_KIND, len(payload)) + payload
     if len(frame) > MAX_MESSAGE:
         raise ProtocolError("response too large")
     return frame
@@ -277,7 +286,7 @@ def fault_response(request: Request, frame: bytes, fault: str) -> bytes:
     if fault == "bad-magic":
         damaged[0] = ord("X")
     elif fault == "bad-version":
-        struct.pack_into("<H", damaged, 4, WIRE_VERSION + 1)
+        struct.pack_into("<H", damaged, 4, request.wire_version + 1)
     elif fault == "oversized":
         struct.pack_into("<I", damaged, 8, MAX_MESSAGE)
     elif fault == "foreign-request":
@@ -314,13 +323,14 @@ def handle_client(client: socket.socket, mode: str, emitted: set[tuple[int, int]
     try:
         header = recv_exact(client, HEADER.size)
         magic, version, kind, payload_length = HEADER.unpack(header)
-        if (magic != MAGIC or version != WIRE_VERSION or kind != REQUEST_KIND
+        if (magic != MAGIC or version not in (WIRE_VERSION, AFFORDANCE_WIRE_VERSION)
+                or kind != REQUEST_KIND
                 or payload_length == 0 or payload_length > MAX_MESSAGE - HEADER.size):
             raise ProtocolError("invalid length or frame kind")
         request = parse_frame(header + recv_exact(client, payload_length))
         key = request.session_id, request.bot_index
         direction = 0
-        if mode in ("move-sequence", "move-session", "move-steer"):
+        if mode in ("move-sequence", "move-session", "move-steer", "move-avoid"):
             if sequences is None:
                 raise ProtocolError("sequence store missing")
             state = sequences.setdefault(key, SequenceState())
@@ -328,6 +338,16 @@ def handle_client(client: socket.socket, mode: str, emitted: set[tuple[int, int]
                 request, state, actions if mode != "move-sequence" else legs)
             if mode == "move-steer":
                 direction = state.completed % 3
+            elif mode == "move-avoid":
+                if request.wire_version != AFFORDANCE_WIRE_VERSION:
+                    raise ProtocolError("move-avoid requires wire-v2 affordances")
+                preference = state.completed % 3
+                allowed = request.safe_directions_mask
+                direction = next(
+                    candidate for candidate in
+                    ((preference + offset) % 3 for offset in range(3))
+                    if allowed & (1 << candidate)
+                )
         else:
             move = mode == "move-once" and key not in emitted
         reply = response_frame(request, move=move, direction=direction)
@@ -357,8 +377,8 @@ def serve(port: int, max_connections: int, mode: str,
         raise ValueError("fault injection requires move-once or move-sequence mode")
     if mode == "move-sequence" and max_connections < 2 * legs:
         raise ValueError("move-sequence needs at least two connections per leg")
-    if mode in ("move-session", "move-steer") and max_connections < 2 * actions:
-        raise ValueError("move-session/move-steer needs two connections per action")
+    if mode in ("move-session", "move-steer", "move-avoid") and max_connections < 2 * actions:
+        raise ValueError("extended movement needs two connections per action")
     if stop_event is None:
         stop_event = threading.Event()
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
@@ -397,7 +417,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--max-connections", type=int, default=1,
                         help=f"bounded accepted connections (1..{MAX_CONNECTIONS})")
     parser.add_argument("--mode", choices=("no-decision", "move-once", "move-sequence",
-                                           "move-session", "move-steer"),
+                                           "move-session", "move-steer", "move-avoid"),
                         default="no-decision")
     parser.add_argument("--legs", type=int, choices=(2, 3), default=2,
                         help="number of verified movement legs in move-sequence mode")

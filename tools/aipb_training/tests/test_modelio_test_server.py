@@ -44,6 +44,15 @@ def fixture(*, seen: bool = False, count: int = server.FEATURE_COUNT,
     return server.HEADER.pack(server.MAGIC, 1, 1, len(payload)) + payload
 
 
+def fixture_v2(*, frame: int = 12, feedback_decision: int | None = None,
+               mask: int = 0x07) -> bytes:
+    data = bytearray(fixture(frame=frame, feedback_decision=feedback_decision))
+    data[4] = server.AFFORDANCE_WIRE_VERSION
+    data.append(mask)
+    struct.pack_into("<I", data, 8, len(data) - server.HEADER.size)
+    return bytes(data)
+
+
 class ServerProtocolTests(unittest.TestCase):
     def test_exact_wire_fixture_and_default_no_decision(self):
         request = server.parse_frame(fixture())
@@ -77,6 +86,26 @@ class ServerProtocolTests(unittest.TestCase):
                 self.assertAlmostEqual(observed, wanted, places=4)
         with self.assertRaises(ValueError):
             server.response_frame(request, move=True, direction=3)
+
+    def test_d335_wire_v2_mask_is_bounded_and_v1_is_unchanged(self):
+        original = server.parse_frame(fixture())
+        self.assertEqual(original.wire_version, server.WIRE_VERSION)
+        self.assertEqual(original.safe_directions_mask, 0)
+        for mask in (1, 3, 5, 6, 7):
+            request = server.parse_frame(fixture_v2(mask=mask))
+            self.assertEqual(request.safe_directions_mask, mask)
+            self.assertEqual(request.wire_version, server.AFFORDANCE_WIRE_VERSION)
+            reply = server.response_frame(request, move=True, direction=1)
+            self.assertEqual(server.HEADER.unpack_from(reply)[1], 2)
+        for mask in (0, 8, 255):
+            with self.assertRaises(server.ProtocolError):
+                server.parse_frame(fixture_v2(mask=mask))
+        with self.assertRaises(server.ProtocolError):
+            server.parse_frame(fixture_v2()[:-1])
+        with self.assertRaises(server.ProtocolError):
+            server.parse_frame(fixture_v2() + b"extra")
+        with self.assertRaises(server.ProtocolError):
+            server.parse_frame(fixture()[:4] + bytes([3]) + fixture()[5:])
 
     def test_corrupt_frame_and_schema_rejected(self):
         raw = fixture()
@@ -169,6 +198,12 @@ class ServerProtocolTests(unittest.TestCase):
             server.serve(0, 16, "move-session", actions=9)
         with self.assertRaises(ValueError):
             server.serve(0, 16, "move-session", actions=3)
+
+    def test_d335_avoid_requires_two_exchanges_per_action(self):
+        with self.assertRaises(ValueError):
+            server.serve(0, 7, "move-avoid", actions=4)
+        with self.assertRaises(ValueError):
+            server.serve(0, 16, "move-avoid", actions=9)
 
     def test_d334_steer_mode_requires_bounded_exchanges(self):
         with self.assertRaises(ValueError):
@@ -317,6 +352,51 @@ class ServerProcessTests(unittest.TestCase):
                     actual = struct.unpack_from("<3f", reply, 54)
                     for observed, wanted in zip(actual, targets[i // 2]):
                         self.assertAlmostEqual(observed, wanted, places=4)
+            self.assertEqual(process.wait(timeout=3), 0)
+        finally:
+            if process.poll() is None:
+                process.kill()
+                process.wait(timeout=3)
+            if process.stdout:
+                process.stdout.close()
+            if process.stderr:
+                process.stderr.close()
+
+    def test_subprocess_avoid_selects_only_available_alternatives(self):
+        process = subprocess.Popen(
+            [sys.executable, str(SCRIPT), "--port", "0",
+             "--max-connections", "9", "--mode", "move-avoid",
+             "--actions", "4"],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+        )
+        try:
+            self.assertIsNotNone(process.stdout)
+            ready = process.stdout.readline().strip()
+            self.assertTrue(ready.startswith("READY "), ready)
+            port = int(ready.split()[1])
+            # Preference cycles forward/left/right/forward, skipping blocked
+            # choices without producing a forbidden coordinate.
+            masks = (0x06, 0x06, 0x03, 0x04)
+            chosen = (1, 1, 0, 2)
+            for i in range(9):
+                feedback = 12 + i - 1 if i % 2 else None
+                index = min(i // 2, 3)
+                with socket.create_connection((server.HOST, port), timeout=2) as client:
+                    client.settimeout(2)
+                    client.sendall(fixture_v2(frame=12 + i,
+                                            feedback_decision=feedback,
+                                            mask=masks[index]))
+                    header = server.recv_exact(client, server.HEADER.size)
+                    length = server.HEADER.unpack(header)[3]
+                    reply = header + server.recv_exact(client, length)
+                self.assertEqual(server.HEADER.unpack_from(reply)[1], 2)
+                self.assertEqual(reply[45], 2 if i % 2 == 0 and i < 8 else 0)
+                if i % 2 == 0 and i < 8:
+                    actual = struct.unpack_from("<3f", reply, 54)
+                    target = server.response_frame(
+                        server.parse_frame(fixture_v2(mask=masks[index])),
+                        move=True, direction=chosen[index])
+                    self.assertEqual(actual, struct.unpack_from("<3f", target, 54))
             self.assertEqual(process.wait(timeout=3), 0)
         finally:
             if process.poll() is None:

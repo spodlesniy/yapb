@@ -22,6 +22,7 @@ private:
   Vec3 m_expected {};
   ModelIODirectionCandidates m_choices {};
   bool m_choiceMode {};
+  bool m_advertiseChoices {};
   mutable int m_chosenDirection { -1 };
   mutable Vec3 m_chosenTarget {};
   bool m_armed {};
@@ -69,6 +70,7 @@ public:
     m_expected = {};
     m_choices = {};
     m_choiceMode = false;
+    m_advertiseChoices = false;
     m_chosenDirection = -1;
     m_chosenTarget = {};
     m_armed = false;
@@ -95,13 +97,14 @@ public:
     return true;
   }
 
-  bool armCandidates(const ModelIODirectionCandidates &choices) {
+  bool armCandidates(const ModelIODirectionCandidates &choices, bool advertiseChoices = false) {
     if (m_armed || choices.count() == 0 || choices.first() < 0) {
       return false;
     }
     reset();
     m_choices = choices;
     m_choiceMode = true;
+    m_advertiseChoices = advertiseChoices;
     m_armed = true;
     return true;
   }
@@ -117,7 +120,13 @@ public:
       return error(request);
     }
 
-    const auto response = m_source.infer(request);
+    // V2 exports only this leg's three-bit engine-authorized affordance.
+    // Trace fractions, hit entities and hidden geometry remain private.
+    auto offered = request;
+    if (m_advertiseChoices) {
+      offered.safeDirectionsMask = m_choices.mask();
+    }
+    const auto response = m_source.infer(offered);
     m_lastSourceStatus = response.inference.status;
     if (!modelIOResponseMatches(request, response)) {
       return error(request);

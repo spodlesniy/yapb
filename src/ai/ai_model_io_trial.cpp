@@ -54,6 +54,7 @@ ai::runtime_io::ModelIOSequenceProgress sequence {};
 ai::runtime_io::ModelIOSessionBudget sessionBudget {};
 bool sessionMode {};
 bool steerMode {};
+bool avoidMode {};
 int chosenDirection { -1 };
 uint32_t lastSessionSeconds {};
 uint64_t lastSessionElapsedMs {};
@@ -124,6 +125,7 @@ void clear(Bot *bot, ai::runtime_io::ModelIOTrialStopReason reason) {
   externalPort = 0;
   sessionMode = false;
   steerMode = false;
+  avoidMode = false;
 }
 
 void fail(Bot *bot, ai::runtime_io::ModelIOTrialStopReason reason, const char *detail) {
@@ -231,11 +233,12 @@ bool handleServer() {
   const bool useSequence = std::strcmp(cmd, "sequence") == 0;
   const bool useSession = std::strcmp(cmd, "session") == 0;
   const bool useSteer = std::strcmp(cmd, "steer") == 0;
-  const bool useExtended = useSession || useSteer;
+  const bool useAvoid = std::strcmp(cmd, "avoid") == 0;
+  const bool useExtended = useSession || useSteer || useAvoid;
   const bool useExternal = useExtended || useSequence || std::strcmp(cmd, "external") == 0;
   if ((std::strcmp(cmd, "run") != 0 || argc != 4) &&
       (!useExternal || argc != (useExtended ? 7 : useSequence ? 6 : 5))) {
-    game.print("Usage: aipb modelio run <bot-index> | external <bot-index> <port> | sequence <bot-index> <port> <legs:2-3> | session <bot-index> <port> <actions:4-8> <seconds:5-30> | steer <bot-index> <port> <actions:4-8> <seconds:5-30> | status | stop");
+    game.print("Usage: aipb modelio run <bot-index> | external <bot-index> <port> | sequence <bot-index> <port> <legs:2-3> | session <bot-index> <port> <actions:4-8> <seconds:5-30> | steer <bot-index> <port> <actions:4-8> <seconds:5-30> | avoid <bot-index> <port> <actions:4-8> <seconds:5-30> | status | stop");
     return true;
   }
   uint8_t requestedLegs {};
@@ -307,7 +310,8 @@ bool handleServer() {
     return true;
   }
   sessionMode = useExtended;
-  steerMode = useSteer;
+  steerMode = useSteer || useAvoid;
+  avoidMode = useAvoid;
   chosenDirection = -1;
   selected = static_cast<int>(index);
   externalMode = useExternal;
@@ -329,7 +333,7 @@ bool handleServer() {
   lastStopReason = ai::runtime_io::ModelIOTrialStopReason::None;
   lastRecovery = {};
   game.print("AiPB modelio: requested for bot #%d; backend=%s; port=%u; legs=%u; budget_seconds=%u.",
-       selected, useSteer ? "ExternalSteer" : useSession ? "ExternalSession" :
+       selected, useAvoid ? "ExternalAvoid" : useSteer ? "ExternalSteer" : useSession ? "ExternalSession" :
        useSequence ? "ExternalSequence" : externalMode ? "ExternalLoopback" : "Deterministic",
        externalPort, requestedLegs != 0 ? requestedLegs : 1, requestedSeconds);
   return true;
@@ -412,7 +416,8 @@ bool frame(Bot &bot) {
     if (externalMode) {
       externalTransport = ai::runtime_io::ModelIOLoopbackTcpTransport(externalPort);
       transportBackend.setTimeoutMs(ai::runtime_io::kModelIOTransportMaxTimeoutMs);
-      armed = steerMode ? externalBackend.armCandidates(choices) : externalBackend.arm(initialTarget);
+      armed = steerMode ? externalBackend.armCandidates(choices, avoidMode) :
+          externalBackend.arm(initialTarget);
       trialBackend = &externalBackend;
     }
     else {
@@ -425,6 +430,11 @@ bool frame(Bot &bot) {
       return true;
     }
 
+    if (avoidMode) {
+      game.print("AiPB modelio: offered safe_directions_mask=%u (forward=%d left=%d right=%d).",
+          static_cast<unsigned>(choices.mask()), choices.allowed(0), choices.allowed(1),
+          choices.allowed(2));
+    }
     chosenDirection = -1;
     destination = initialTarget;
     origin = state.self.origin;
@@ -473,6 +483,7 @@ bool frame(Bot &bot) {
     const bool sequential = sequence.total() > 0;
     const bool continuingSession = sessionMode;
     const bool continuingSteer = steerMode;
+    const bool continuingAvoid = avoidMode;
     const int botIndex = selected;
     const uint16_t port = externalPort;
     clear(&bot, ai::runtime_io::ModelIOTrialStopReason::Completed);
@@ -510,6 +521,7 @@ bool frame(Bot &bot) {
         externalPort = port;
         sessionMode = continuingSession;
         steerMode = continuingSteer;
+        avoidMode = continuingAvoid;
         pending = true;
         running = false;
         awaitingFeedback = false;

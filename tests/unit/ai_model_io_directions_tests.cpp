@@ -20,8 +20,10 @@ class DirectionSource final : public io::ModelIOBackend {
 public:
   ai::InferenceActionOutput output {};
   ai::InferenceStatus status { ai::InferenceStatus::Success };
+  mutable uint8_t observedMask {};
 
   io::ModelIOResponse infer(const io::ModelIORequest &request) const override {
+    observedMask = request.safeDirectionsMask;
     io::ModelIOResponse response {};
     response.requestId = request.requestId;
     response.sessionId = request.stamp.sessionId;
@@ -147,4 +149,28 @@ AI_TEST(testModelIOExternalSteerRejectsBlockedAndUnauthorizedTargets) {
   move(source, { 100.0f, 296.0f, 32.0f });
   expect(trial.infer(frame(11)).inference.status == ai::InferenceStatus::Error,
          "second movement decision remains forbidden");
+}
+
+AI_TEST(testModelIOAvoidAdvertisesOnlyTracedDirectionsAndRejectsBlocked) {
+  DirectionSource source {};
+  io::ModelIODirectionCandidates choices {};
+  expect(choices.allow(1, { 100.0f, 296.0f, 32.0f }) &&
+         choices.allow(2, { 100.0f, 104.0f, 32.0f }) &&
+         choices.mask() == 0x06u,
+         "blocked forward bit absent from trace-authorized affordance mask");
+  io::ModelIOExternalTrialBackend trial(source);
+  expect(trial.armCandidates(choices, true), "avoidance trial opts into advertised affordances");
+  move(source, { 196.0f, 200.0f, 32.0f });
+  expect(trial.infer(frame()).inference.status == ai::InferenceStatus::Error &&
+         source.observedMask == 0x06u && !trial.decided(),
+         "external backend exports exact mask, but still rejects blocked forward target");
+  move(source, { 100.0f, 104.0f, 32.0f });
+  expect(trial.infer(frame()).inference.status == ai::InferenceStatus::Success &&
+         trial.chosenDirection() == 2 && trial.chosenTarget().y == 104.0f,
+         "remote alternative is permitted only after matching a traced candidate");
+  trial.reset();
+  expect(trial.armCandidates(choices), "legacy steering trial remains armable");
+  move(source, { 100.0f, 296.0f, 32.0f });
+  expect(trial.infer(frame()).inference.status == ai::InferenceStatus::Success &&
+         source.observedMask == 0, "D334 steer does not leak the new affordance mask");
 }
