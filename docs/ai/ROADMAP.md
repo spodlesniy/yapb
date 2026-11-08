@@ -966,3 +966,7 @@ A bounded JSON trace captures up to eight correlated Completed actions with obse
 The comparison reports whether the per-leg origin, yaw and mask inputs match; different physical trajectories are descriptive comparisons, not controlled experimental evidence.
 D337 Python unit/subprocess tests, automatic CI, and user-run paired `avoid`/`memory` HLDS traces in the same map location are required to validate diagnostics on real movement.
 No claim of superior loop avoidance is made until supported by comparable observations.
+
+D337 published diagnostic-only Python telemetry and the trace comparison CLI, but first automatic CI failed in the new TCP recorder test because the test requested five connections while the existing four-action server contract requires at least eight.
+D337.1 corrects the test fixture to use eight exchanges and verify a trace after each correlated feedback, including four confirmed actions; server behavior, DLL and wire contracts remain unchanged.
+D337.1 requires successful automatic CI and the operator-run paired trace check before closing D337 diagnostic acceptance.

@@ -119,7 +119,7 @@ class CycleDiagnosticsTests(unittest.TestCase):
             path = Path(directory) / "run.json"
             process = subprocess.Popen(
                 [sys.executable, "-m", "tools.aipb_training.modelio_test_server",
-                 "--port", "0", "--max-connections", "5",
+                 "--port", "0", "--max-connections", "8",
                  "--mode", "move-avoid", "--actions", "4",
                  "--trace-file", str(path)],
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
@@ -129,7 +129,7 @@ class CycleDiagnosticsTests(unittest.TestCase):
                 line = process.stdout.readline().strip()
                 self.assertTrue(line.startswith("READY "), line)
                 port = int(line.split()[1])
-                for i in range(5):
+                for i in range(8):
                     with socket.create_connection((server.HOST, port), timeout=3) as client:
                         client.settimeout(3)
                         client.sendall(fixture_v2(
@@ -144,16 +144,16 @@ class CycleDiagnosticsTests(unittest.TestCase):
                     while True:
                         try:
                             report = diag.load_trace(path, "move-avoid")
-                            if len(report["records"]) == i // 2:
+                            if len(report["records"]) == (i + 1) // 2:
                                 break
-                        except FileNotFoundError:
+                        except (FileNotFoundError, json.JSONDecodeError):
                             pass
                         if time.monotonic() >= deadline:
                             self.fail("server trace did not commit the expected feedback")
                         time.sleep(0.01)
                 self.assertEqual(process.wait(timeout=4), 0)
                 records = diag.load_trace(path)["records"]
-                self.assertEqual(len(records), 2)
+                self.assertEqual(len(records), 4)
                 self.assertEqual(records[0]["decision_frame"], 12)
                 self.assertEqual(records[0]["feedback_frame"], 13)
                 self.assertEqual(records[0]["direction"], 0)

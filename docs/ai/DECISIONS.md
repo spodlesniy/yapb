@@ -4231,3 +4231,10 @@ The trace reader rejects oversized, nonfinite, out-of-order, cross-session, inva
 Add tests for spatial cycles, distance thresholds, closed-form metrics, input matching, malformed files, correlated feedback and local TCP persistence.
 Require automatic CI and operator-run paired HLDS traces before D337 target-platform acceptance.
 Do not claim that a particular algorithm has fewer loops from non-identical runs; this step establishes diagnostics, not a pathfinding policy improvement.
+
+## D337.1 — Correct the bounded TCP recorder test fixture
+
+D337's first automatic Training tools CI run failed because the newly added recorder subprocess test launched the existing four-action move-avoid server with five maximum connections, violating the mandatory minimum of two exchanges per action.
+Correct only the test input to eight connections, exercise four correlated action/feedback pairs, assert four confirmed records at completion and match intermediate trace sizes to feedback arrival rather than decision arrival.
+The test tolerates an in-progress diagnostic JSON rewrite while polling, without accepting uncorrelated records or altering the session protocol.
+This is a separate ordinary corrective commit preserving the original D337 commit, original runtime and Python server behavior, and operator-facing commands.
