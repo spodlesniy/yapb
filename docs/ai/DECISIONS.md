@@ -4201,3 +4201,17 @@ Preserve D334's runtime target adoption, all D333 per-leg and overall time/actio
 Add C++ wire v2/v1 compatibility and downgrade tests, C++ advertised-mask and forbidden-target tests, and Python parsing, invalid-mask and actual localhost multi-action selection tests.
 Require automatic CI and manual Windows x86/HLDS blocked-forward alternative selection and recovery evidence before accepting D335.
 This implements bounded local obstacle-aware direction selection only, not path planning, movement-discovery traversal, general route search or autonomous combat.
+
+## D336 — Bounded confirmed-movement memory for local external policy
+
+Following D335's successful automatic CI and user-provided HLDS S01–S03 logs, the external affordance protocol safely completed four actions in an unobstructed area, chose a side direction with forward blocked (mask 6) and later selected forward while right was blocked (mask 3), and rejected an unauthorized target with zero accepted actions and full recovery.
+Add a distinct opt-in `aipb modelio memory <bot-index> <port> <actions:4-8> <seconds:5-30>` command and deterministic Python `--mode move-memory` fixture.
+Preserve D335's wire-v2 one-byte engine-traced affordance mask and engine-side exact target validation without expanding the sensory contract, leaking geometry or adding a learned model.
+The Python peer keeps at most four previously completed local movement points, strictly scoped to an existing session/bot key, and adds a proposed target only after matching, later, correlated terminal Completed feedback.
+For each decision score only directions advertised in the current bounded mask using candidate distance from recently visited positions and previous displacement alignment; deterministically break ties in favor of forward and original direction order, and select a traced alternative even when every direction revisits history.
+The short-term memory is owned by the external test process, not by the game engine or global model policy.
+It never authorizes a new target, changes D335's trace results, or overrides feedback sequencing.
+Do not record requests that failed, were rejected, timed out or received mismatched feedback; preserve existing 4–8 completed action and 5–30 second absolute session limits, cancellation behavior and all five recovery checks.
+New Python tests exercise first-choice behavior, history-based rejection of returns, forced safe direction, pending-to-completed transition, capacity eviction, fresh-state reset, CLI bounds and real loopback subprocess interaction.
+D336 requires automatic CI and a user-run Windows x86/HLDS local-memory sequence plus invalid-target recovery before completion.
+This is a bounded local-memory policy demonstration, not arbitrary obstacle traversal, persistent navigation memory, general route planning or training.

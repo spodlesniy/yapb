@@ -234,11 +234,12 @@ bool handleServer() {
   const bool useSession = std::strcmp(cmd, "session") == 0;
   const bool useSteer = std::strcmp(cmd, "steer") == 0;
   const bool useAvoid = std::strcmp(cmd, "avoid") == 0;
-  const bool useExtended = useSession || useSteer || useAvoid;
+  const bool useMemory = std::strcmp(cmd, "memory") == 0;
+  const bool useExtended = useSession || useSteer || useAvoid || useMemory;
   const bool useExternal = useExtended || useSequence || std::strcmp(cmd, "external") == 0;
   if ((std::strcmp(cmd, "run") != 0 || argc != 4) &&
       (!useExternal || argc != (useExtended ? 7 : useSequence ? 6 : 5))) {
-    game.print("Usage: aipb modelio run <bot-index> | external <bot-index> <port> | sequence <bot-index> <port> <legs:2-3> | session <bot-index> <port> <actions:4-8> <seconds:5-30> | steer <bot-index> <port> <actions:4-8> <seconds:5-30> | avoid <bot-index> <port> <actions:4-8> <seconds:5-30> | status | stop");
+    game.print("Usage: aipb modelio run <bot-index> | external <bot-index> <port> | sequence <bot-index> <port> <legs:2-3> | session <bot-index> <port> <actions:4-8> <seconds:5-30> | steer <bot-index> <port> <actions:4-8> <seconds:5-30> | avoid <bot-index> <port> <actions:4-8> <seconds:5-30> | memory <bot-index> <port> <actions:4-8> <seconds:5-30> | status | stop");
     return true;
   }
   uint8_t requestedLegs {};
@@ -310,8 +311,8 @@ bool handleServer() {
     return true;
   }
   sessionMode = useExtended;
-  steerMode = useSteer || useAvoid;
-  avoidMode = useAvoid;
+  steerMode = useSteer || useAvoid || useMemory;
+  avoidMode = useAvoid || useMemory;
   chosenDirection = -1;
   selected = static_cast<int>(index);
   externalMode = useExternal;
@@ -333,7 +334,8 @@ bool handleServer() {
   lastStopReason = ai::runtime_io::ModelIOTrialStopReason::None;
   lastRecovery = {};
   game.print("AiPB modelio: requested for bot #%d; backend=%s; port=%u; legs=%u; budget_seconds=%u.",
-       selected, useAvoid ? "ExternalAvoid" : useSteer ? "ExternalSteer" : useSession ? "ExternalSession" :
+       selected, useMemory ? "ExternalMemory" : useAvoid ? "ExternalAvoid" :
+       useSteer ? "ExternalSteer" : useSession ? "ExternalSession" :
        useSequence ? "ExternalSequence" : externalMode ? "ExternalLoopback" : "Deterministic",
        externalPort, requestedLegs != 0 ? requestedLegs : 1, requestedSeconds);
   return true;

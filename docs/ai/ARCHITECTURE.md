@@ -593,3 +593,10 @@ Existing wire-v1 requests and replies preserve their original byte layout and ve
 A v2 response uses the same original inference payload with header version 2; the adapter rejects any cross-version response.
 The Python `move-avoid` peer chooses a present direction based on current self origin/yaw and the mask, and the original engine-side traced-target guard independently rejects any other target.
 The Model I/O safety, lifetime, ownership and recovery contracts remain intact.
+
+## D336 — Short history in the external local policy
+
+A new opt-in Model I/O `memory` mode has the same engine-preflight and action/timeout/recovery contract as the D335 `avoid` mode.
+Only the local deterministic Python fixture stores a four-point history keyed by session and bot, and updates it after correlated terminal Completed feedback.
+Its bounded novelty and direction-continuity scoring considers exclusively engine-supplied wire-v2 safe direction bits, retaining exact server-side action validation.
+No new wire field, game world query, default ONNX behavior, or general route planner is introduced.

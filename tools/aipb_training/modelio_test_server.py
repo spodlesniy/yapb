@@ -12,7 +12,7 @@ import socket
 import struct
 import threading
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Sequence
 
 HOST = "127.0.0.1"
@@ -32,6 +32,8 @@ MAX_EVENTS = 4
 MAX_CONNECTIONS = 64
 SESSION_MIN_ACTIONS = 4
 SESSION_MAX_ACTIONS = 8
+MEMORY_HISTORY_CAPACITY = 4
+MEMORY_STEP_DISTANCE = 96.0
 READ_TIMEOUT = 0.5
 ACCEPT_POLL_INTERVAL = 0.2
 LISTENER_IDLE_TIMEOUT = 30.0
@@ -69,6 +71,10 @@ class SequenceState:
     completed: int = 0
     pending_frame: int = 0
     last_frame: int = 0
+    # Stored only after correlated Completed feedback, never on proposal.
+    visited: list[tuple[float, float, float]] = field(default_factory=list)
+    pending_origin: tuple[float, float, float] | None = None
+    pending_target: tuple[float, float, float] | None = None
 
 
 class Reader:
@@ -211,6 +217,58 @@ def parse_frame(frame: bytes) -> Request:
                    version, safe_directions_mask)
 
 
+def local_direction_target(request: Request, direction: int) -> tuple[float, float, float]:
+    if direction not in (0, 1, 2):
+        raise ValueError("invalid local direction")
+    angle = math.radians(request.yaw + (90.0 if direction == 1
+                                       else -90.0 if direction == 2 else 0.0))
+    return (request.origin[0] + MEMORY_STEP_DISTANCE * math.cos(angle),
+            request.origin[1] + MEMORY_STEP_DISTANCE * math.sin(angle),
+            request.origin[2])
+
+
+def choose_memory_direction(request: Request, state: SequenceState) -> int:
+    """Pick a traced direction using only four verified recent locations.
+
+    Revisit avoidance dominates heading continuity; neither may override
+    the engine-supplied allowlist. Ties are deterministic, favoring forward.
+    """
+    if (request.wire_version != AFFORDANCE_WIRE_VERSION or
+            not 1 <= request.safe_directions_mask <= 7):
+        raise ProtocolError("memory policy requires wire-v2 affordances")
+    if any(not math.isfinite(value) for point in state.visited for value in point):
+        raise ProtocolError("nonfinite memory")
+    best_direction: int | None = None
+    best_score = -float("inf")
+    for direction in range(3):
+        if not request.safe_directions_mask & (1 << direction):
+            continue
+        target = local_direction_target(request, direction)
+        if not all(math.isfinite(v) and abs(v) <= 3.4e38 for v in target):
+            continue
+        # A return to a recent position is penalized even if the bot turns.
+        distance = min((
+            (target[0] - point[0]) ** 2 + (target[1] - point[1]) ** 2
+            for point in state.visited
+        ), default=MEMORY_STEP_DISTANCE ** 2)
+        novelty = min(distance / (MEMORY_STEP_DISTANCE ** 2), 1.0)
+        alignment = 0.0
+        if len(state.visited) >= 2:
+            prev = state.visited[-2]
+            last = state.visited[-1]
+            dx, dy = last[0] - prev[0], last[1] - prev[1]
+            norm = math.hypot(dx, dy)
+            if norm > 0.001:
+                vx, vy = target[0] - request.origin[0], target[1] - request.origin[1]
+                alignment = (dx * vx + dy * vy) / (norm * MEMORY_STEP_DISTANCE)
+        score = novelty + 0.30 * alignment + (0.03 if direction == 0 else 0.0)
+        if score > best_score:
+            best_score, best_direction = score, direction
+    if best_direction is None:
+        raise ProtocolError("no finite traced memory candidate")
+    return best_direction
+
+
 def response_frame(request: Request, *, move: bool, direction: int = 0) -> bytes:
     action_id = 0
     confidence = 0.0
@@ -218,13 +276,8 @@ def response_frame(request: Request, *, move: bool, direction: int = 0) -> bytes
     if direction not in (0, 1, 2):
         raise ValueError("invalid local direction")
     if move and request.alive and request.on_ground:
-        # Forward, left and right are nominal targets; the HLDS TraceHull
-        # allowlist is authoritative and rejects any blocked proposal.
-        angle = math.radians(request.yaw + (90.0 if direction == 1
-                                           else -90.0 if direction == 2 else 0.0))
-        target = (request.origin[0] + 96.0 * math.cos(angle),
-                  request.origin[1] + 96.0 * math.sin(angle),
-                  request.origin[2])
+        # The engine's traced allowlist remains the final authority.
+        target = local_direction_target(request, direction)
         if all(math.isfinite(v) and abs(v) <= 3.4e38 for v in target):
             action_id = 2  # InferenceActionId::MoveToPosition
             confidence = 1.0
@@ -265,6 +318,13 @@ def choose_sequence_action(request: Request, state: SequenceState, legs: int) ->
                 and request.feedback_observed < request.frame_id):
             state.pending_frame = 0
             state.completed += 1
+            if state.pending_target is not None and state.pending_origin is not None:
+                if not state.visited:
+                    state.visited.append(state.pending_origin)
+                state.visited.append(state.pending_target)
+                del state.visited[:-MEMORY_HISTORY_CAPACITY]
+            state.pending_origin = None
+            state.pending_target = None
         return False
     if state.completed >= legs:
         return False
@@ -330,7 +390,8 @@ def handle_client(client: socket.socket, mode: str, emitted: set[tuple[int, int]
         request = parse_frame(header + recv_exact(client, payload_length))
         key = request.session_id, request.bot_index
         direction = 0
-        if mode in ("move-sequence", "move-session", "move-steer", "move-avoid"):
+        if mode in ("move-sequence", "move-session", "move-steer", "move-avoid",
+                    "move-memory"):
             if sequences is None:
                 raise ProtocolError("sequence store missing")
             state = sequences.setdefault(key, SequenceState())
@@ -348,6 +409,13 @@ def handle_client(client: socket.socket, mode: str, emitted: set[tuple[int, int]
                     ((preference + offset) % 3 for offset in range(3))
                     if allowed & (1 << candidate)
                 )
+            elif mode == "move-memory":
+                if request.wire_version != AFFORDANCE_WIRE_VERSION:
+                    raise ProtocolError("move-memory requires wire-v2 affordances")
+                if move:
+                    direction = choose_memory_direction(request, state)
+                    state.pending_origin = request.origin
+                    state.pending_target = local_direction_target(request, direction)
         else:
             move = mode == "move-once" and key not in emitted
         reply = response_frame(request, move=move, direction=direction)
@@ -377,7 +445,7 @@ def serve(port: int, max_connections: int, mode: str,
         raise ValueError("fault injection requires move-once or move-sequence mode")
     if mode == "move-sequence" and max_connections < 2 * legs:
         raise ValueError("move-sequence needs at least two connections per leg")
-    if mode in ("move-session", "move-steer", "move-avoid") and max_connections < 2 * actions:
+    if mode in ("move-session", "move-steer", "move-avoid", "move-memory") and max_connections < 2 * actions:
         raise ValueError("extended movement needs two connections per action")
     if stop_event is None:
         stop_event = threading.Event()
@@ -417,7 +485,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--max-connections", type=int, default=1,
                         help=f"bounded accepted connections (1..{MAX_CONNECTIONS})")
     parser.add_argument("--mode", choices=("no-decision", "move-once", "move-sequence",
-                                           "move-session", "move-steer", "move-avoid"),
+                                           "move-session", "move-steer", "move-avoid",
+                                           "move-memory"),
                         default="no-decision")
     parser.add_argument("--legs", type=int, choices=(2, 3), default=2,
                         help="number of verified movement legs in move-sequence mode")

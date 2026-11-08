@@ -952,3 +952,10 @@ The new explicit request uses wire v2 with one appended direction-mask byte; all
 The `move-avoid` deterministic Python server chooses among the advertised safe directions rather than proposing a blocked choice, while the engine still validates the returned target against its original independently traced allowlist and retains feedback/recovery gates.
 C++ tests cover v1/v2 isolation and invalid masks; Python tests cover the request extension, version matching and four correlated obstacle-mask-dependent TCP actions.
 D335 automatic CI and user-run Windows x86/HLDS blocked-forward alternative movement and negative recovery are mandatory before closing this gate; broader geometry-supported movement, map routing and trained policies remain pending.
+
+D335 user-provided HLDS S01–S03 acceptance passed: four wire-v2 allowlist-driven actions in clear space, successful side movement and continued navigation with forward and later right blocked, and zero accepted actions on an invalid external target; all scenarios returned Idle and all five restoration flags true.
+D336 adds explicit `aipb modelio memory` mode with the same 4–8 action and 5–30 second limits and unchanged wire-v2 three-bit engine-traced availability mask.
+Its deterministic external Python peer uses a four-position FIFO of confirmed recent movements, selects the allowed direction that best avoids recent locations and continues the verified prior heading, and updates memory only on correlated terminal Completed feedback.
+The game engine still validates every proposed target against independently traced candidates and requires physical completion before each further action.
+Existing `avoid`, `steer`, `session` and all earlier commands remain unchanged.
+D336 Python protocol/unit/subprocess tests, automatic CI and user-run Windows x86/HLDS four-action history-aware movement and invalid response recovery are the acceptance gates before closing this step.

@@ -107,6 +107,47 @@ class ServerProtocolTests(unittest.TestCase):
         with self.assertRaises(server.ProtocolError):
             server.parse_frame(fixture()[:4] + bytes([3]) + fixture()[5:])
 
+    def test_d336_memory_avoids_recent_return_with_full_allowlist(self):
+        request = server.parse_frame(fixture_v2(mask=7))
+        state = server.SequenceState()
+        self.assertEqual(server.choose_memory_direction(request, state), 0)
+        state.visited = [(10.0, 20.0, 30.0), (106.0, 20.0, 30.0)]
+        self.assertEqual(server.choose_memory_direction(request, state), 1)
+        state.visited = [(10.0, 20.0, 30.0), (10.0, 116.0, 30.0)]
+        self.assertEqual(server.choose_memory_direction(request, state), 0)
+        restricted = server.parse_frame(fixture_v2(mask=4))
+        self.assertEqual(server.choose_memory_direction(restricted, state), 2)
+        with self.assertRaises(server.ProtocolError):
+            server.choose_memory_direction(server.parse_frame(fixture()), state)
+
+    def test_d336_memory_commits_only_verified_feedback_and_evicts_oldest(self):
+        state = server.SequenceState()
+        for i in range(4):
+            start = server.parse_frame(fixture_v2(frame=12 + 3 * i))
+            self.assertTrue(server.choose_sequence_action(start, state, 4))
+            direction = server.choose_memory_direction(start, state)
+            state.pending_origin = (float(i) * 100.0, 20.0, 30.0)
+            state.pending_target = server.local_direction_target(start, direction)
+            if i == 0:
+                self.assertEqual(state.visited, [])
+            rejected = server.parse_frame(fixture_v2(frame=13 + 3 * i))
+            self.assertFalse(server.choose_sequence_action(rejected, state, 4))
+            self.assertEqual(state.completed, i)
+            confirmed = server.parse_frame(
+                fixture_v2(frame=14 + 3 * i, feedback_decision=12 + 3 * i))
+            self.assertFalse(server.choose_sequence_action(confirmed, state, 4))
+            self.assertEqual(state.completed, i + 1)
+            self.assertLessEqual(len(state.visited), server.MEMORY_HISTORY_CAPACITY)
+            self.assertIsNone(state.pending_target)
+            self.assertIsNone(state.pending_origin)
+        self.assertEqual(len(state.visited), server.MEMORY_HISTORY_CAPACITY)
+        self.assertNotIn((0.0, 20.0, 30.0), state.visited)
+        self.assertFalse(server.choose_sequence_action(
+            server.parse_frame(fixture_v2(frame=24)), state, 4))
+        self.assertEqual(server.choose_memory_direction(
+            server.parse_frame(fixture_v2(mask=7)),
+            server.SequenceState()), 0)
+
     def test_corrupt_frame_and_schema_rejected(self):
         raw = fixture()
         with self.assertRaises(server.ProtocolError):
@@ -204,6 +245,12 @@ class ServerProtocolTests(unittest.TestCase):
             server.serve(0, 7, "move-avoid", actions=4)
         with self.assertRaises(ValueError):
             server.serve(0, 16, "move-avoid", actions=9)
+
+    def test_d336_memory_enforces_session_connection_limits(self):
+        with self.assertRaises(ValueError):
+            server.serve(0, 7, "move-memory", actions=4)
+        with self.assertRaises(ValueError):
+            server.serve(0, 16, "move-memory", actions=9)
 
     def test_d334_steer_mode_requires_bounded_exchanges(self):
         with self.assertRaises(ValueError):
@@ -397,6 +444,49 @@ class ServerProcessTests(unittest.TestCase):
                         server.parse_frame(fixture_v2(mask=masks[index])),
                         move=True, direction=chosen[index])
                     self.assertEqual(actual, struct.unpack_from("<3f", target, 54))
+            self.assertEqual(process.wait(timeout=3), 0)
+        finally:
+            if process.poll() is None:
+                process.kill()
+                process.wait(timeout=3)
+            if process.stdout:
+                process.stdout.close()
+            if process.stderr:
+                process.stderr.close()
+
+    def test_subprocess_memory_responds_after_correlated_feedback(self):
+        process = subprocess.Popen(
+            [sys.executable, str(SCRIPT), "--port", "0",
+             "--max-connections", "9", "--mode", "move-memory",
+             "--actions", "4"],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+        )
+        try:
+            self.assertIsNotNone(process.stdout)
+            ready = process.stdout.readline().strip()
+            self.assertTrue(ready.startswith("READY "), ready)
+            port = int(ready.split()[1])
+            directions = []
+            for i in range(9):
+                feedback = 12 + i - 1 if i % 2 else None
+                with socket.create_connection((server.HOST, port), timeout=2) as client:
+                    client.settimeout(2)
+                    client.sendall(fixture_v2(frame=12 + i,
+                                            feedback_decision=feedback,
+                                            mask=7))
+                    header = server.recv_exact(client, server.HEADER.size)
+                    length = server.HEADER.unpack(header)[3]
+                    reply = header + server.recv_exact(client, length)
+                self.assertEqual(server.HEADER.unpack_from(reply)[1], 2)
+                self.assertEqual(reply[45], 2 if i % 2 == 0 and i < 8 else 0)
+                if i % 2 == 0 and i < 8:
+                    xy = struct.unpack_from("<2f", reply, 54)
+                    targets = ((106.0, 20.0), (10.0, 116.0), (10.0, -76.0))
+                    self.assertIn(xy, targets)
+                    directions.append(targets.index(xy))
+            self.assertEqual(directions[0], 0)
+            self.assertEqual(directions[1], 1)
+            self.assertEqual(len(directions), 4)
             self.assertEqual(process.wait(timeout=3), 0)
         finally:
             if process.poll() is None:

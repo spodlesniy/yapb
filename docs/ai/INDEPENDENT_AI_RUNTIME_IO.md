@@ -467,3 +467,38 @@ If a later segment is blocked in all directions, an `InvalidAction` without unau
 For a negative server response, restart the same server with `--fault unsafe-target --fault-on-request 1` and run the `avoid` command: expect `InvalidAction`, no accepted model movement, `Idle` and all five recovery flags equal to 1.
 For stop and deadline lifecycle regression, reuse D334's operator tests with `avoid` substituted for `steer`; repeat when local geometry permits enough movements for the deadline to be reached, and confirm `Requested` or `Timeout` plus complete recovery.
 Any malformed or v1 response to a v2 request must be rejected at the transport/codec gate rather than accepted as a model action.
+
+## D336 — Memory-aware bounded local movement fixture
+
+Command: `aipb modelio memory <bot-index> <port> <actions:4-8> <seconds:5-30>`.
+The new mode preserves the D335 engine `TraceHull` allowlist, wire-v2 safe-direction mask, 96-unit forward/left/right candidate distance, independent target matching, per-action terminal feedback and D333 total duration/action limits.
+The Python fixture adds `--mode move-memory --actions 4..8` and stores at most four recent confirmed movement points per session/bot.
+It retains the start position and most recently confirmed endpoints, discarding the oldest when the bounded history fills.
+A pending decision alone never adds a point: only a correlated later `Completed` feedback commits a proposed target.
+When selecting, the peer ranks only directions in the current safe mask by distance from recent locations and alignment with its previously confirmed displacement, with a small forward tie preference.
+It chooses a permitted direction even if every option revisits known locations, never attempts an unavailable direction, and uses no wall geometry or hidden engine state.
+Starting a new Python server or a new session/bot key starts with empty policy memory.
+All existing commands and wire-v1 modes remain unchanged.
+
+### D336 manual HLDS acceptance
+
+Build the D336 Windows x86 DLL with the user-run `windows-x86` workflow and run one Neural bot on a broad, mostly clear ground surface.
+Start the Python server:
+
+```powershell
+python -m tools.aipb_training.modelio_test_server --port 8765 --mode move-memory --actions 4 --max-connections 8
+```
+
+In HLDS:
+
+```text
+aipb modelio memory 1 8765 4 15
+aipb modelio status
+```
+
+Expected: 4/4 complete actions, eight total Model I/O requests, `last=PASS`, `stop_reason=Completed`, recovery flags all 1.
+On a full mask, the external fixture should prefer keeping a confirmed course and not mechanically rotate through the D335 preferred forward/left/right sequence.
+A constrained mask must still force selection solely among available directions.
+To test bad output, restart the server with `--fault unsafe-target --fault-on-request 1` and re-run `aipb modelio memory 1 8765 4 15`, followed by `aipb modelio status`.
+Expect `InvalidAction`, zero completed actions, no accepted movement and all five restoration flags true.
+Explicit stop and five-second deadline remain available through `aipb modelio stop` and `aipb modelio memory 1 8765 8 5` (with `--actions 8 --max-connections 16`), and should retain the established D333 behavior when enough clear geometry is available.
