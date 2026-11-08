@@ -4169,3 +4169,19 @@ Use a separate engine-neutral wall-clock budget and retain the existing bounded 
 Extend the bounded Python localhost test server with explicit `move-session --actions 4..8`, reusing its feedback-correlated decision state and finite connection cap without changing the default mode.
 Add C++ budget/action-cap tests and Python unit/subprocess tests of four correlated actions and the final no-decision response; record manual Windows x86/HLDS positive, timeout and stop acceptance commands.
 This is a finite operator-armed movement diagnostic, not independent model training, general navigation or arbitrary external model control; automatic CI and manual target-platform acceptance remain separate gates.
+
+## D334 — Trace-authorized external choice of local steering direction
+
+User-run D333 HLDS acceptance completed S01–S05: a four-action PASS with eight requests, an eight-action PASS with sixteen requests, a precise five-second total timeout at 7/8 progress, a requested cancellation at 2/8 and fail-closed disconnection at 1/8; every scenario restored all five runtime invariants.
+Introduce separate opt-in `aipb modelio steer <bot-index> <port> <actions:4-8> <seconds:5-30>`, retaining the established bounded session and per-leg terminal-feedback lifecycle.
+For each leg, compute three simple 96-unit grounded horizontal targets from authorized self yaw and origin: forward, left (+90 degrees) and right (-90 degrees).
+Perform a separate existing D318 `TraceHull` per direction within the existing four-world-queries-per-bot-frame budget; store only individually verified clear endpoints in a per-leg allowlist.
+Expose no new hidden collision state, candidate mask or authoritative target through wire v1; the external process independently proposes an ordinary `MoveToPosition` based on authorized self origin/yaw.
+The constrained external backend admits only a target matching an engine-traced allowlisted candidate within the previous 0.75-unit float tolerance, rejects untraced or nonmovement actions, and maps accepted rounding back to the exact traced endpoint.
+When the first external decision becomes available, update both the isolated action-runtime completion target and the server-side physical destination before any direct `RunPlayerMove` is issued.
+The external Python test server's explicit `move-steer` mode rotates forward/left/right only after correlated terminal feedback, while retaining the bounded action count, connection count, loopback restriction and no-decision-after-decision rule.
+If the remotely proposed direction is blocked, the trial terminates safely instead of substituting another route; the external server is not told which directions are blocked.
+Do not change single-leg `run`/`external`, original two-or-three-leg `sequence`, the fixed-forward D333 `session`, ONNX default or Legacy/Training/Mock/Explorer control.
+Unit tests cover direction geometry and authorization, blocked proposals, only-one-decision enforcement and terminal-feedback linkage; Python tests cover steering byte targets and a four-action cross-process exchange.
+Require automatic CI and manual Windows x86/HLDS successful turns and blocked-direction recovery before claiming D334 target-platform acceptance.
+This is a narrow policy-controlled local steering demonstration, not arbitrary waypoint navigation, obstacle avoidance or autonomous general gameplay.

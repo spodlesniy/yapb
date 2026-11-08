@@ -406,6 +406,7 @@ if get_option('tests')
       'tests/unit/ai_model_io_external_trial_backend_tests.cpp',
       'tests/unit/ai_model_io_sequence_tests.cpp',
       'tests/unit/ai_model_io_session_tests.cpp',
+      'tests/unit/ai_model_io_directions_tests.cpp',
       'tests/unit/ai_model_io_recovery_tests.cpp',
       'tests/unit/ai_controller_tests.cpp',
       'tests/unit/ai_action_validation_tests.cpp',

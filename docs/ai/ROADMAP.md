@@ -938,3 +938,10 @@ D333 adds an opt-in extended Model I/O session capped at 4–8 physically verifi
 The existing 2–3-leg `sequence` and single-leg `external` trials retain their previous bounds and behavior; the new Python server `move-session --actions 4..8` applies the same terminal-feedback gate and bounded localhost TCP connection count.
 C++ unit tests cover action cap, wall-clock expiration, backward clock and overflow; Python tests check four correlated movements, no fifth movement and invalid session limits.
 D333 automatic CI and user-run Windows x86/HLDS four-action, budget expiration and mid-session stop acceptance are required before closing this extended-session gate; general policy autonomy and Movement Discovery remain open.
+
+D333 HLDS manual acceptance S01–S05 passed: 4/4 actions and 8 requests with recovery; 8/8 actions and 16 requests without a ninth; the five-second session deadline stopped the eighth leg at 7/8; manual stop ended at 2/8; and TCP disconnection ended at 1/8.
+All five runs returned Idle, recovered=1 and provider/fallback/backend/action/ownership checks equal to 1, completing the D333 finite-session acceptance gate.
+D334 adds a separate opt-in `steer` session with the same 4–8 action and 5–30 second limits, allowing the external process to choose among three independently traced local directions (forward, left or right) rather than always confirming the forward route.
+Every locally allowed choice is engine TraceHull-verified before dispatch; the constrained backend admits only a matching traced destination, adopts the verified target in the runtime completion guard and retains feedback/recovery checks between each leg.
+The Python `move-steer` test endpoint rotates among nominal forward/left/right self-state targets and must fail closed if any proposed direction is untraced or blocked, not silently choose an alternate route.
+D334 automatic CI and manual Windows x86/HLDS forward/turn success, blocked-direction refusal, budget expiration, explicit stop and recovery are the remaining acceptance gates; general navigation, Movement Discovery and trained policies remain separate.

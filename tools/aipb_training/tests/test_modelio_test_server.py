@@ -66,6 +66,18 @@ class ServerProtocolTests(unittest.TestCase):
         self.assertEqual(raw[45], 2)  # MoveToPosition
         self.assertEqual(struct.unpack_from("<3f", raw, 54), (106.0, 20.0, 30.0))
 
+    def test_d334_forward_left_right_targets(self):
+        request = server.parse_frame(fixture())
+        expected = ((106.0, 20.0, 30.0), (10.0, 116.0, 30.0),
+                    (10.0, -76.0, 30.0))
+        for direction, target in enumerate(expected):
+            response = server.response_frame(request, move=True, direction=direction)
+            actual = struct.unpack_from("<3f", response, 54)
+            for observed, wanted in zip(actual, target):
+                self.assertAlmostEqual(observed, wanted, places=4)
+        with self.assertRaises(ValueError):
+            server.response_frame(request, move=True, direction=3)
+
     def test_corrupt_frame_and_schema_rejected(self):
         raw = fixture()
         with self.assertRaises(server.ProtocolError):
@@ -157,6 +169,12 @@ class ServerProtocolTests(unittest.TestCase):
             server.serve(0, 16, "move-session", actions=9)
         with self.assertRaises(ValueError):
             server.serve(0, 16, "move-session", actions=3)
+
+    def test_d334_steer_mode_requires_bounded_exchanges(self):
+        with self.assertRaises(ValueError):
+            server.serve(0, 7, "move-steer", actions=4)
+        with self.assertRaises(ValueError):
+            server.serve(0, 16, "move-steer", actions=9)
 
     def test_cli_limits(self):
         with self.assertRaises(ValueError):
@@ -261,6 +279,44 @@ class ServerProcessTests(unittest.TestCase):
                     reply = header + server.recv_exact(client, size)
                 expected = 2 if i % 2 == 0 and i < 8 else 0
                 self.assertEqual(reply[45], expected)
+            self.assertEqual(process.wait(timeout=3), 0)
+        finally:
+            if process.poll() is None:
+                process.kill()
+                process.wait(timeout=3)
+            if process.stdout:
+                process.stdout.close()
+            if process.stderr:
+                process.stderr.close()
+
+    def test_subprocess_steer_rotates_only_after_terminal_feedback(self):
+        process = subprocess.Popen(
+            [sys.executable, str(SCRIPT), "--port", "0",
+             "--max-connections", "9", "--mode", "move-steer",
+             "--actions", "4"],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+        )
+        try:
+            self.assertIsNotNone(process.stdout)
+            ready = process.stdout.readline().strip()
+            self.assertTrue(ready.startswith("READY "), ready)
+            port = int(ready.split()[1])
+            targets = ((106.0, 20.0, 30.0), (10.0, 116.0, 30.0),
+                       (10.0, -76.0, 30.0), (106.0, 20.0, 30.0))
+            for i in range(9):
+                feedback = 12 + i - 1 if i % 2 else None
+                with socket.create_connection((server.HOST, port), timeout=2) as client:
+                    client.settimeout(2)
+                    client.sendall(fixture(frame=12 + i,
+                                           feedback_decision=feedback))
+                    header = server.recv_exact(client, server.HEADER.size)
+                    size = server.HEADER.unpack(header)[3]
+                    reply = header + server.recv_exact(client, size)
+                self.assertEqual(reply[45], 2 if i % 2 == 0 and i < 8 else 0)
+                if i % 2 == 0 and i < 8:
+                    actual = struct.unpack_from("<3f", reply, 54)
+                    for observed, wanted in zip(actual, targets[i // 2]):
+                        self.assertAlmostEqual(observed, wanted, places=4)
             self.assertEqual(process.wait(timeout=3), 0)
         finally:
             if process.poll() is None:

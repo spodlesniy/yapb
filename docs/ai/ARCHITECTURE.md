@@ -576,3 +576,11 @@ D323 supplies a concrete opt-in local backend for the previously abstract Model 
 Its one-shot decision exercises the same InferencePolicy, ActionRuntime and ActionFeedback as a later independent model; it does not change Neural ONNX default behavior.
 The `aipb modelio` test temporarily isolates one Neural bot from tactical Legacy tasks while using bounded direct GoldSrc movement, then verifies physical completion and feedback delivery on a later model request.
 This probe cannot substitute for map exploration, collision guarantees beyond the tested initial trace or a full independent policy execution scheduler.
+
+## D334 — Opt-in bounded direction selection
+
+The new steering-specific test path uses existing D316 self-state and existing wire-v1 Model I/O, not new hidden telemetry or a second inference policy.
+The game engine performs three bounded hull traces per leg before authorizing external candidate positions.
+A remote model can propose only one of the three nominal forward/left/right positions; the external trial guard rejects every proposal lacking a clear server-side trace and replaces accepted float-rounded coordinates with the actual traced target.
+The isolated runtime completion target is updated to the verified remote choice before physical movement, preventing false completion against the default forward destination.
+Per-leg recovery and feedback, overall action/time limits, cancel conditions and all existing ONNX/default-gameplay isolation remain unchanged.

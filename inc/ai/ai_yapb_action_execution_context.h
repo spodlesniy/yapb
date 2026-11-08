@@ -73,6 +73,7 @@ public:
   static void cancelMockRuntimeMove(Bot &bot);
   static ActionResult stepMockRuntime(Bot &bot, const Observation &observation);
   static bool armModelIOTrial(Bot &bot, const runtime_io::ModelIOBackend *backend, const Vec3 &target);
+  static bool setModelIOTrialTarget(Bot &bot, const Vec3 &target);
   static runtime_io::ModelIORecoveryReport stopModelIOTrial(Bot &bot);
   static runtime_io::ModelIORecoveryReport lastModelIORecovery(const Bot &bot);
   static bool modelIOTrialActive(const Bot &bot);

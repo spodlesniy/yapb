@@ -10,6 +10,7 @@
 #include <cstdint>
 
 #include <ai/ai_model_io.h>
+#include <ai/ai_model_io_directions.h>
 
 namespace ai::runtime_io {
 
@@ -19,6 +20,10 @@ class ModelIOExternalTrialBackend final : public ModelIOBackend {
 private:
   const ModelIOBackend &m_source;
   Vec3 m_expected {};
+  ModelIODirectionCandidates m_choices {};
+  bool m_choiceMode {};
+  mutable int m_chosenDirection { -1 };
+  mutable Vec3 m_chosenTarget {};
   bool m_armed {};
   mutable bool m_decided {};
   mutable bool m_terminalFeedback {};
@@ -51,9 +56,10 @@ private:
         action.duration == 0.0f && std::isfinite(action.confidence) &&
         action.confidence > 0.0f && action.confidence <= 1.0f &&
         finiteVector(action.targetPosition) &&
-        std::abs(action.targetPosition.x - m_expected.x) <= kPositionTolerance &&
-        std::abs(action.targetPosition.y - m_expected.y) <= kPositionTolerance &&
-        std::abs(action.targetPosition.z - m_expected.z) <= kPositionTolerance;
+        (m_choiceMode ? m_choices.match(action.targetPosition) >= 0
+                      : (std::abs(action.targetPosition.x - m_expected.x) <= kPositionTolerance &&
+                         std::abs(action.targetPosition.y - m_expected.y) <= kPositionTolerance &&
+                         std::abs(action.targetPosition.z - m_expected.z) <= kPositionTolerance));
   }
 
 public:
@@ -61,6 +67,10 @@ public:
 
   void reset() {
     m_expected = {};
+    m_choices = {};
+    m_choiceMode = false;
+    m_chosenDirection = -1;
+    m_chosenTarget = {};
     m_armed = false;
     m_decided = false;
     m_terminalFeedback = false;
@@ -81,6 +91,17 @@ public:
     }
     reset();
     m_expected = expectedTarget;
+    m_armed = true;
+    return true;
+  }
+
+  bool armCandidates(const ModelIODirectionCandidates &choices) {
+    if (m_armed || choices.count() == 0 || choices.first() < 0) {
+      return false;
+    }
+    reset();
+    m_choices = choices;
+    m_choiceMode = true;
     m_armed = true;
     return true;
   }
@@ -107,13 +128,15 @@ public:
           !safeDecision(response.inference.output)) {
         return error(request);
       }
+      const int index = m_choiceMode ? m_choices.match(response.inference.output.targetPosition) : -1;
+      m_chosenDirection = index;
+      m_chosenTarget = m_choiceMode ? m_choices.target(static_cast<uint8_t>(index)) : m_expected;
       m_decided = true;
       m_sessionId = request.stamp.sessionId;
       m_decisionFrame = request.stamp.frameId;
-      // Keep the original, traced destination authoritative even when
-      // the remote side rounds its single-precision trigonometry.
+      // Always use the exact engine-traced endpoint, not remote float rounding.
       auto verified = response;
-      verified.inference.output.targetPosition = m_expected;
+      verified.inference.output.targetPosition = m_chosenTarget;
       return verified;
     }
 
@@ -138,6 +161,8 @@ public:
   }
 
   bool decided() const { return m_decided; }
+  int chosenDirection() const { return m_decided ? m_chosenDirection : -1; }
+  Vec3 chosenTarget() const { return m_decided ? m_chosenTarget : Vec3 {}; }
   bool terminalFeedbackObserved() const { return m_terminalFeedback; }
   uint32_t requests() const { return m_requests; }
   uint64_t sessionId() const { return m_sessionId; }

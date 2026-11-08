@@ -202,12 +202,17 @@ def parse_frame(frame: bytes) -> Request:
                    feedback_decision, feedback_observed, feedback_completed)
 
 
-def response_frame(request: Request, *, move: bool) -> bytes:
+def response_frame(request: Request, *, move: bool, direction: int = 0) -> bytes:
     action_id = 0
     confidence = 0.0
     target = (0.0, 0.0, 0.0)
+    if direction not in (0, 1, 2):
+        raise ValueError("invalid local direction")
     if move and request.alive and request.on_ground:
-        angle = math.radians(request.yaw)
+        # Forward, left and right are nominal targets; the HLDS TraceHull
+        # allowlist is authoritative and rejects any blocked proposal.
+        angle = math.radians(request.yaw + (90.0 if direction == 1
+                                           else -90.0 if direction == 2 else 0.0))
         target = (request.origin[0] + 96.0 * math.cos(angle),
                   request.origin[1] + 96.0 * math.sin(angle),
                   request.origin[2])
@@ -314,15 +319,18 @@ def handle_client(client: socket.socket, mode: str, emitted: set[tuple[int, int]
             raise ProtocolError("invalid length or frame kind")
         request = parse_frame(header + recv_exact(client, payload_length))
         key = request.session_id, request.bot_index
-        if mode in ("move-sequence", "move-session"):
+        direction = 0
+        if mode in ("move-sequence", "move-session", "move-steer"):
             if sequences is None:
                 raise ProtocolError("sequence store missing")
             state = sequences.setdefault(key, SequenceState())
             move = choose_sequence_action(
-                request, state, actions if mode == "move-session" else legs)
+                request, state, actions if mode != "move-sequence" else legs)
+            if mode == "move-steer":
+                direction = state.completed % 3
         else:
             move = mode == "move-once" and key not in emitted
-        reply = response_frame(request, move=move)
+        reply = response_frame(request, move=move, direction=direction)
         if fault != "none":
             reply = fault_response(request, reply, fault)
         send_fault_response(client, reply, fault)
@@ -349,8 +357,8 @@ def serve(port: int, max_connections: int, mode: str,
         raise ValueError("fault injection requires move-once or move-sequence mode")
     if mode == "move-sequence" and max_connections < 2 * legs:
         raise ValueError("move-sequence needs at least two connections per leg")
-    if mode == "move-session" and max_connections < 2 * actions:
-        raise ValueError("move-session needs two connections per action")
+    if mode in ("move-session", "move-steer") and max_connections < 2 * actions:
+        raise ValueError("move-session/move-steer needs two connections per action")
     if stop_event is None:
         stop_event = threading.Event()
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
@@ -389,7 +397,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--max-connections", type=int, default=1,
                         help=f"bounded accepted connections (1..{MAX_CONNECTIONS})")
     parser.add_argument("--mode", choices=("no-decision", "move-once", "move-sequence",
-                                           "move-session"),
+                                           "move-session", "move-steer"),
                         default="no-decision")
     parser.add_argument("--legs", type=int, choices=(2, 3), default=2,
                         help="number of verified movement legs in move-sequence mode")

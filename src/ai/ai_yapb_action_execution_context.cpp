@@ -57,6 +57,10 @@ bool YaPBActionExecutionContext::armModelIOTrial(
   return bot.m_aiRuntime.armModelIOTrial(backend, target);
 }
 
+bool YaPBActionExecutionContext::setModelIOTrialTarget(Bot &bot, const Vec3 &target) {
+  return bot.m_aiRuntime.setModelIOTrialTarget(target);
+}
+
 runtime_io::ModelIORecoveryReport YaPBActionExecutionContext::stopModelIOTrial(Bot &bot) {
   return bot.m_aiRuntime.stopModelIOTrial();
 }

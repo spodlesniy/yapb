@@ -389,3 +389,41 @@ If all eight actions finish within five seconds, this run verifies the action ca
 For explicit stop acceptance, use the eight-action server and `aipb modelio session 1 8765 8 30`; during an active leg, enter `aipb modelio stop` followed by `aipb modelio status`.
 Expected: `Requested`, partial progress, no later movement and all recovery flags equal 1.
 The `session` command rejects action counts outside 4–8 and deadlines outside 5–30 seconds without arming a bot.
+
+## D334 — External choice among three traced local directions
+
+New explicit operator command: `aipb modelio steer <bot-index> <port> <actions:4-8> <seconds:5-30>`.
+The new `steer` mode shares D333's one-bot, four-to-eight-action and five-to-thirty-second absolute wall-clock limits and all D324 recovery gates.
+Before each new leg, HLDS independently executes at most three bounded D318 standing-or-crouching hull traces from the bot's current self origin to nominal 96-unit targets forward, 90 degrees left and 90 degrees right.
+Only entirely clear traces are admitted to the local candidate allowlist.
+The per-frame world-query budget remains four; the candidate computation does not use legacy waypoint paths or untrusted entity positions.
+The external process receives the unchanged wire-v1 self observation, not the candidate list or collision results, and may propose one ordinary `MoveToPosition` toward a direction reconstructed from that observation.
+The guarded D330 backend accepts an external proposal only if its position matches an authorized preflight target within 0.75 units, its action type and all unused fields are valid, and the request/session/frame identity matches.
+After choosing, the exact engine-traced target is adopted both by the isolated runtime's physical-completion test and the motion loop before execution; a blocked or mismatched remote decision fails closed instead of being redirected.
+The Python server now has optional `--mode move-steer --actions 4..8`, deliberately alternating forward, left, right, forward only after correlated terminal feedback.
+This deterministic diagnostic server has no geometric awareness, so a proposed blocked turn is expected to terminate the trial safely.
+The previous `run`, `external`, `sequence` and fixed-forward `session` behaviors are retained.
+
+### D334 manual Windows x86/HLDS checks
+
+Use a user-triggered Windows x86 build of the D334 commit, a Neural bot on clear ground and a fresh Python test server per run.
+For the four-action positive case, use an open sufficiently large area:
+
+```powershell
+python -m tools.aipb_training.modelio_test_server --port 8765 --mode move-steer --actions 4 --max-connections 8
+```
+
+Run:
+
+```text
+aipb modelio steer 1 8765 4 15
+aipb modelio status
+```
+
+Expected logs include `external direction=forward`, `external direction=left`, `external direction=right` and `external direction=forward`, each with a direction-specific target and terminal feedback; expect `sequence progress=4/4`, `total_requests=8`, `Idle`, `recovered=1` and all five recovery flags true.
+A blocked-direction test may place the bot on solid ground next to a wall in its leftward direction, then run the same test server and command; expect first forward leg PASS if clear and a later `InvalidAction` when the Python process proposes a blocked turn.
+The blocked direction must produce no movement toward the wall, no alternative unauthorized target and complete recovery.
+A deliberately malformed remote target can also be tested with `--fault unsafe-target --fault-on-request 3` in `move-steer` mode; expect the second action rejected and no later legs.
+For explicit stop and global deadline checks, use eight actions and the same D333 commands with `steer` substituted for `session`; all existing time and lifecycle gates remain mandatory.
+A clear forward-only corridor is not sufficient for a four-action positive case because the external process intentionally tests perpendicular turns.
+No successful geometry probe here proves the ability to navigate around arbitrary obstacles, gaps, slopes or dynamic game objects.

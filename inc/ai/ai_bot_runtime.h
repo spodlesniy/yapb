@@ -161,6 +161,15 @@ public:
     return m_modelIOTrialTarget;
   }
 
+  // Update the isolated completion target only after a verified remote choice.
+  bool setModelIOTrialTarget(const Vec3 &target) {
+    if (!m_modelIOTrialActive || !runtime_io::finiteVector(target)) {
+      return false;
+    }
+    m_modelIOTrialTarget = target;
+    return true;
+  }
+
   bool armModelIOTrial(const runtime_io::ModelIOBackend *backend, const Vec3 &target) {
     if (m_mockMoveActive || m_modelIOTrialActive || !mockTrialModeAllowed(m_runtime.getMode()) ||
         backend == nullptr || !runtime_io::finiteVector(target)) {

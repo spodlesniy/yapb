@@ -21,6 +21,7 @@
 #include <ai/ai_model_io_recovery.h>
 #include <ai/ai_model_io_sequence.h>
 #include <ai/ai_model_io_session.h>
+#include <ai/ai_model_io_directions.h>
 
 #include <cmath>
 #include <cstdlib>
@@ -52,6 +53,8 @@ uint16_t externalPort {};
 ai::runtime_io::ModelIOSequenceProgress sequence {};
 ai::runtime_io::ModelIOSessionBudget sessionBudget {};
 bool sessionMode {};
+bool steerMode {};
+int chosenDirection { -1 };
 uint32_t lastSessionSeconds {};
 uint64_t lastSessionElapsedMs {};
 uint8_t lastSequenceTotal {};
@@ -120,6 +123,7 @@ void clear(Bot *bot, ai::runtime_io::ModelIOTrialStopReason reason) {
   externalMode = false;
   externalPort = 0;
   sessionMode = false;
+  steerMode = false;
 }
 
 void fail(Bot *bot, ai::runtime_io::ModelIOTrialStopReason reason, const char *detail) {
@@ -198,6 +202,9 @@ bool handleServer() {
               ? sessionBudget.elapsed(externalClock.milliseconds()) : lastSessionElapsedMs),
           sessionBudget.active());
     }
+    if (chosenDirection >= 0) {
+      game.print("AiPB modelio: external direction=%s.", ai::runtime_io::modelIODirectionName(chosenDirection));
+    }
     return true;
   }
   if (argc == 3 && std::strcmp(cmd, "stop") == 0) {
@@ -223,29 +230,31 @@ bool handleServer() {
   }
   const bool useSequence = std::strcmp(cmd, "sequence") == 0;
   const bool useSession = std::strcmp(cmd, "session") == 0;
-  const bool useExternal = useSession || useSequence || std::strcmp(cmd, "external") == 0;
+  const bool useSteer = std::strcmp(cmd, "steer") == 0;
+  const bool useExtended = useSession || useSteer;
+  const bool useExternal = useExtended || useSequence || std::strcmp(cmd, "external") == 0;
   if ((std::strcmp(cmd, "run") != 0 || argc != 4) &&
-      (!useExternal || argc != (useSession ? 7 : useSequence ? 6 : 5))) {
-    game.print("Usage: aipb modelio run <bot-index> | external <bot-index> <port> | sequence <bot-index> <port> <legs:2-3> | session <bot-index> <port> <actions:4-8> <seconds:5-30> | status | stop");
+      (!useExternal || argc != (useExtended ? 7 : useSequence ? 6 : 5))) {
+    game.print("Usage: aipb modelio run <bot-index> | external <bot-index> <port> | sequence <bot-index> <port> <legs:2-3> | session <bot-index> <port> <actions:4-8> <seconds:5-30> | steer <bot-index> <port> <actions:4-8> <seconds:5-30> | status | stop");
     return true;
   }
   uint8_t requestedLegs {};
   uint32_t requestedSeconds {};
-  if (useSequence || useSession) {
+  if (useSequence || useExtended) {
     const char *legArg = engfuncs.pfnCmd_Argv(5);
     char *legEnd {};
     const long parsed = std::strtol(legArg, &legEnd, 10);
-    const long minimum = useSession ? ai::runtime_io::kModelIOSessionMinActions
-                                    : ai::runtime_io::kModelIOSequenceMinLegs;
-    const long maximum = useSession ? ai::runtime_io::kModelIOSessionMaxActions
-                                    : ai::runtime_io::kModelIOSequenceMaxLegs;
+    const long minimum = useExtended ? ai::runtime_io::kModelIOSessionMinActions
+                                     : ai::runtime_io::kModelIOSequenceMinLegs;
+    const long maximum = useExtended ? ai::runtime_io::kModelIOSessionMaxActions
+                                     : ai::runtime_io::kModelIOSequenceMaxLegs;
     if (legArg == legEnd || *legEnd != '\0' || parsed < minimum || parsed > maximum) {
-      game.print("AiPB modelio: rejected (%s).", useSession ? "InvalidActionCount" : "InvalidSequenceLength");
+      game.print("AiPB modelio: rejected (%s).", useExtended ? "InvalidActionCount" : "InvalidSequenceLength");
       return true;
     }
     requestedLegs = static_cast<uint8_t>(parsed);
   }
-  if (useSession) {
+  if (useExtended) {
     const char *secondsArg = engfuncs.pfnCmd_Argv(6);
     char *secondsEnd {};
     const long seconds = std::strtol(secondsArg, &secondsEnd, 10);
@@ -284,20 +293,22 @@ bool handleServer() {
     return true;
   }
   if ((useSequence && !sequence.arm(requestedLegs)) ||
-      (useSession && !sequence.armSession(requestedLegs))) {
+      (useExtended && !sequence.armSession(requestedLegs))) {
     game.print("AiPB modelio: rejected (UnableToArmSequence).");
     return true;
   }
-  if (!useSession && !useSequence) {
+  if (!useExtended && !useSequence) {
     sequence.reset();
   }
   sessionBudget.reset();
-  if (useSession && !sessionBudget.arm(requestedSeconds, externalClock.milliseconds())) {
+  if (useExtended && !sessionBudget.arm(requestedSeconds, externalClock.milliseconds())) {
     sequence.reset();
     game.print("AiPB modelio: rejected (UnableToArmSessionBudget).");
     return true;
   }
-  sessionMode = useSession;
+  sessionMode = useExtended;
+  steerMode = useSteer;
+  chosenDirection = -1;
   selected = static_cast<int>(index);
   externalMode = useExternal;
   externalPort = requestedPort;
@@ -318,7 +329,7 @@ bool handleServer() {
   lastStopReason = ai::runtime_io::ModelIOTrialStopReason::None;
   lastRecovery = {};
   game.print("AiPB modelio: requested for bot #%d; backend=%s; port=%u; legs=%u; budget_seconds=%u.",
-       selected, useSession ? "ExternalSession" :
+       selected, useSteer ? "ExternalSteer" : useSession ? "ExternalSession" :
        useSequence ? "ExternalSequence" : externalMode ? "ExternalLoopback" : "Deterministic",
        externalPort, requestedLegs != 0 ? requestedLegs : 1, requestedSeconds);
   return true;
@@ -357,18 +368,43 @@ bool frame(Bot &bot) {
       return true;
     }
     ai::runtime_io::WorldQueryRequest request {};
-    request.requestId = ai::mock::nextWorldQueryRequestId();
     request.sessionId = state.stamp.sessionId;
     request.observationFrameId = state.stamp.frameId;
     request.kind = ai::runtime_io::QueryKind::TraceHull;
     request.hull = state.self.crouching ? ai::runtime_io::kWorldQueryCrouchingHull :
         ai::runtime_io::kWorldQueryStandingHull;
-    const float yaw = state.self.viewAngles.y * 0.017453292519943295f;
     request.start = state.self.origin;
-    request.end = { request.start.x + std::cos(yaw) * kTravel,
-                    request.start.y + std::sin(yaw) * kTravel,
-                    request.start.z };
-    const auto result = ai::runtime_io::queryBotWorld(selected, request);
+    ai::runtime_io::ModelIODirectionCandidates choices {};
+    if (steerMode) {
+      for (uint8_t i = 0; i < ai::runtime_io::kModelIODirectionCount; ++i) {
+        request.requestId = ai::mock::nextWorldQueryRequestId();
+        request.end = ai::runtime_io::modelIODirectionTarget(
+            request.start, state.self.viewAngles.y, i);
+        const auto trace = ai::runtime_io::queryBotWorld(selected, request);
+        if (ai::runtime_io::isCompleted(request, trace) &&
+            !trace.startSolid && trace.fraction >= 0.999f) {
+          choices.allow(i, request.end);
+        }
+      }
+    }
+    else {
+      request.requestId = ai::mock::nextWorldQueryRequestId();
+      const float yaw = state.self.viewAngles.y * 0.017453292519943295f;
+      request.end = { request.start.x + std::cos(yaw) * kTravel,
+                      request.start.y + std::sin(yaw) * kTravel,
+                      request.start.z };
+      const auto trace = ai::runtime_io::queryBotWorld(selected, request);
+      if (ai::runtime_io::isCompleted(request, trace) &&
+          !trace.startSolid && trace.fraction >= 0.999f) {
+        choices.allow(0, request.end);
+      }
+    }
+    if (choices.count() == 0) {
+      fail(&bot, ai::runtime_io::ModelIOTrialStopReason::InvalidAction,
+          "no clear trace-authorized direction");
+      return true;
+    }
+    const auto initialTarget = choices.target(static_cast<uint8_t>(choices.first()));
     backend.reset();
     externalBackend.reset();
     const ai::runtime_io::ModelIOBackend *trialBackend {};
@@ -376,21 +412,21 @@ bool frame(Bot &bot) {
     if (externalMode) {
       externalTransport = ai::runtime_io::ModelIOLoopbackTcpTransport(externalPort);
       transportBackend.setTimeoutMs(ai::runtime_io::kModelIOTransportMaxTimeoutMs);
-      armed = externalBackend.arm(request.end);
+      armed = steerMode ? externalBackend.armCandidates(choices) : externalBackend.arm(initialTarget);
       trialBackend = &externalBackend;
     }
     else {
-      armed = backend.arm(request.end);
+      armed = backend.arm(initialTarget);
       trialBackend = &backend;
     }
-    if (!ai::runtime_io::isCompleted(request, result) || result.startSolid ||
-        result.fraction < 0.999f || !armed ||
-        !ai::YaPBActionExecutionContext::armModelIOTrial(bot, trialBackend, request.end)) {
-      fail(&bot, ai::runtime_io::ModelIOTrialStopReason::InvalidAction, "unsafe trace or unable to arm backend");
+    if (!armed || !ai::YaPBActionExecutionContext::armModelIOTrial(bot, trialBackend, initialTarget)) {
+      fail(&bot, ai::runtime_io::ModelIOTrialStopReason::InvalidAction,
+          "unable to arm bounded movement");
       return true;
     }
 
-    destination = request.end;
+    chosenDirection = -1;
+    destination = initialTarget;
     origin = state.self.origin;
     sessionId = state.stamp.sessionId;
     started = lastTime = state.stamp.gameTime;
@@ -436,6 +472,7 @@ bool frame(Bot &bot) {
     const bool physicallyReached = ai::mockReachedTarget(state.self.origin, destination);
     const bool sequential = sequence.total() > 0;
     const bool continuingSession = sessionMode;
+    const bool continuingSteer = steerMode;
     const int botIndex = selected;
     const uint16_t port = externalPort;
     clear(&bot, ai::runtime_io::ModelIOTrialStopReason::Completed);
@@ -472,6 +509,7 @@ bool frame(Bot &bot) {
         externalMode = true;
         externalPort = port;
         sessionMode = continuingSession;
+        steerMode = continuingSteer;
         pending = true;
         running = false;
         awaitingFeedback = false;
@@ -498,6 +536,20 @@ bool frame(Bot &bot) {
         lastRecovery.backendReleased, lastRecovery.actionIdle,
         lastRecovery.trialReleased);
     return true;
+  }
+
+  if (steerMode && chosenDirection < 0 && externalBackend.decided()) {
+    const int chosen = externalBackend.chosenDirection();
+    const auto traced = externalBackend.chosenTarget();
+    if (chosen < 0 || !ai::YaPBActionExecutionContext::setModelIOTrialTarget(bot, traced)) {
+      fail(&bot, ai::runtime_io::ModelIOTrialStopReason::InvalidAction,
+          "unable to adopt traced external direction");
+      return true;
+    }
+    chosenDirection = chosen;
+    destination = traced;
+    game.print("AiPB modelio: external direction=%s; target=(%.1f,%.1f,%.1f).",
+        ai::runtime_io::modelIODirectionName(chosen), traced.x, traced.y, traced.z);
   }
 
   if (result.isTerminal()) {
