@@ -4215,3 +4215,19 @@ Do not record requests that failed, were rejected, timed out or received mismatc
 New Python tests exercise first-choice behavior, history-based rejection of returns, forced safe direction, pending-to-completed transition, capacity eviction, fresh-state reset, CLI bounds and real loopback subprocess interaction.
 D336 requires automatic CI and a user-run Windows x86/HLDS local-memory sequence plus invalid-target recovery before completion.
 This is a bounded local-memory policy demonstration, not arbitrary obstacle traversal, persistent navigation memory, general route planning or training.
+
+## D337 — Bounded diagnostic traces of confirmed loops and revisits
+
+D336 user-run HLDS S01–S03 passed, including an eight-action run with successive direction masks 7, 7, 7, 7, 6, 7, 4, 5, changed external direction choice, 16 requests and full recovery.
+D337 is a diagnostic-only extension to the local deterministic Python endpoint; it does not change the server-side DLL, the engine's TraceHull authorization, the Model I/O v1/v2 protocol, model ownership, or production navigation.
+When explicitly requested via `--trace-file`, `move-avoid` and `move-memory` persist a small bounded JSON document containing only committed terminal Completed actions for one session/bot.
+Each record contains leg number, local session/bot identity, the three-bit public safe-direction mask, decision frame, feedback request frame, observed self origin/yaw, allowed chosen direction, nominal target, and feedback-time observed self position.
+The target remains a proposed endpoint and is not counted as a physical result; displacement and path metrics use feedback-time observed positions only.
+Pending, unsafe, disconnected, malformed and uncorrelated actions are never committed.
+The optional file is written locally by the Python process, is not sent over the network, and cannot alter the model decision or ActionFeedback lifecycle.
+A standalone bounded JSON diagnostics CLI reports visits within 24 units of an earlier observed position (excluding immediately previous position), two-step backtracking cycles, actual path length, start-to-final displacement and displacement/path efficiency.
+The CLI compares two independent traces and explicitly reports whether per-leg observed origins, yaw and safe masks coincide (1 unit and 0.1 degree comparison tolerances); unmatched logs are observational rather than randomized or causally controlled experiments.
+The trace reader rejects oversized, nonfinite, out-of-order, cross-session, invalid direction or unconfirmed-correlation records.
+Add tests for spatial cycles, distance thresholds, closed-form metrics, input matching, malformed files, correlated feedback and local TCP persistence.
+Require automatic CI and operator-run paired HLDS traces before D337 target-platform acceptance.
+Do not claim that a particular algorithm has fewer loops from non-identical runs; this step establishes diagnostics, not a pathfinding policy improvement.

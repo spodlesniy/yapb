@@ -600,3 +600,11 @@ A new opt-in Model I/O `memory` mode has the same engine-preflight and action/ti
 Only the local deterministic Python fixture stores a four-point history keyed by session and bot, and updates it after correlated terminal Completed feedback.
 Its bounded novelty and direction-continuity scoring considers exclusively engine-supplied wire-v2 safe direction bits, retaining exact server-side action validation.
 No new wire field, game world query, default ONNX behavior, or general route planner is introduced.
+
+## D337 — Optional local movement diagnostics
+
+The existing D335/D336 loopback Python test peer may write a bounded JSON trace of confirmed decisions when explicitly given `--trace-file`.
+The JSON remains entirely outside the game engine, has no Model I/O wire field, and is stored only after a correlated later Completed ActionFeedback.
+Cycle analysis reads actual feedback-observed self positions, not inferred nominal target endpoints.
+It computes a 24-unit revisit threshold, two-step returns, traveled displacement sum, net displacement and efficiency, and reports input equivalence when comparing two runs.
+The existing 96-unit direction candidates, three-bit authorization mask, action deadlines, lifecycle and safe fail-closed policy remain unchanged.

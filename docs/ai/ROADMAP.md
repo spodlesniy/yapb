@@ -959,3 +959,10 @@ Its deterministic external Python peer uses a four-position FIFO of confirmed re
 The game engine still validates every proposed target against independently traced candidates and requires physical completion before each further action.
 Existing `avoid`, `steer`, `session` and all earlier commands remain unchanged.
 D336 Python protocol/unit/subprocess tests, automatic CI and user-run Windows x86/HLDS four-action history-aware movement and invalid response recovery are the acceptance gates before closing this step.
+
+D336 automatic CI and user-run HLDS S01–S03 passed: four consecutive confirmed forward actions, zero accepted actions on unsafe response with complete recovery, and an eight-leg constrained-map run changing availability masks 7→6→7→4→5, with all eight actions complete, 16 total requests and five recovery flags true.
+D337 introduces opt-in confirmation-only cycle/revisit telemetry on the existing external test server, available to both `move-avoid` and `move-memory`, without changing any DLL, wire-v2 payload, action authorization or runtime owner.
+A bounded JSON trace captures up to eight correlated Completed actions with observed feedback-time bot origin and safe-direction mask, while a separate offline CLI computes revisits (24-unit threshold), two-step return cycles, actual displacement, path length and efficiency.
+The comparison reports whether the per-leg origin, yaw and mask inputs match; different physical trajectories are descriptive comparisons, not controlled experimental evidence.
+D337 Python unit/subprocess tests, automatic CI, and user-run paired `avoid`/`memory` HLDS traces in the same map location are required to validate diagnostics on real movement.
+No claim of superior loop avoidance is made until supported by comparable observations.

@@ -502,3 +502,42 @@ A constrained mask must still force selection solely among available directions.
 To test bad output, restart the server with `--fault unsafe-target --fault-on-request 1` and re-run `aipb modelio memory 1 8765 4 15`, followed by `aipb modelio status`.
 Expect `InvalidAction`, zero completed actions, no accepted movement and all five restoration flags true.
 Explicit stop and five-second deadline remain available through `aipb modelio stop` and `aipb modelio memory 1 8765 8 5` (with `--actions 8 --max-connections 16`), and should retain the established D333 behavior when enough clear geometry is available.
+
+## D337 — Cycle diagnostics for the local Model I/O policies
+
+Use the D336-compatible DLL; D337 adds only Python diagnostics.
+Start a new Python endpoint from the repository root for each run, preferably from the same bot start position, view yaw and map, with the same action count and deadline.
+First record the `avoid` baseline:
+
+```powershell
+python -m tools.aipb_training.modelio_test_server --port 8765 --mode move-avoid --actions 8 --max-connections 16 --trace-file avoid.json
+```
+
+```text
+aipb modelio avoid 1 8765 8 30
+aipb modelio status
+```
+
+Reset the bot to the same starting position/yaw, stop the old Python server and start `memory`:
+
+```powershell
+python -m tools.aipb_training.modelio_test_server --port 8765 --mode move-memory --actions 8 --max-connections 16 --trace-file memory.json
+```
+
+```text
+aipb modelio memory 1 8765 8 30
+aipb modelio status
+```
+
+Compare:
+
+```powershell
+python -m tools.aipb_training.modelio_cycle_diagnostics --avoid avoid.json --memory memory.json
+```
+
+Expected console: `completed`, `revisits`, `two_step_loops`, `path`, `displacement`, `efficiency` for each policy and `identical_inputs=yes/no`.
+The `--trace-file` option is strictly diagnostic and only accepted by the `move-avoid` and `move-memory` Python test server modes.
+The JSON file stores only movements acknowledged by correlated Completed feedback; a rejected or unconfirmed movement never appears as a complete leg.
+If `identical_inputs=no`, the two real-world trajectories are useful as observations, but differences in loop count do not prove a policy advantage under identical conditions.
+A four-action shorter run is also supported by changing both servers to `--actions 4 --max-connections 8` and HLDS commands to `... 4 15`.
+Malformed JSON, invalid movement direction, impossible feedback chronology and mixed session IDs are rejected by the offline diagnostics tool.

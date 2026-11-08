@@ -6,6 +6,7 @@ This is not a trained model, a public network service, or an HLDS plugin.
 from __future__ import annotations
 
 import argparse
+import json
 import math
 import signal
 import socket
@@ -13,6 +14,7 @@ import struct
 import threading
 import time
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Sequence
 
 HOST = "127.0.0.1"
@@ -75,6 +77,8 @@ class SequenceState:
     visited: list[tuple[float, float, float]] = field(default_factory=list)
     pending_origin: tuple[float, float, float] | None = None
     pending_target: tuple[float, float, float] | None = None
+    pending_trace: dict | None = None
+    trace_records: list[dict] = field(default_factory=list)
 
 
 class Reader:
@@ -325,6 +329,12 @@ def choose_sequence_action(request: Request, state: SequenceState, legs: int) ->
                 del state.visited[:-MEMORY_HISTORY_CAPACITY]
             state.pending_origin = None
             state.pending_target = None
+            if state.pending_trace is not None:
+                record = dict(state.pending_trace)
+                record["feedback_frame"] = request.frame_id
+                record["observed"] = list(request.origin)
+                state.trace_records.append(record)
+                state.pending_trace = None
         return False
     if state.completed >= legs:
         return False
@@ -418,6 +428,15 @@ def handle_client(client: socket.socket, mode: str, emitted: set[tuple[int, int]
                     state.pending_target = local_direction_target(request, direction)
         else:
             move = mode == "move-once" and key not in emitted
+        if move and mode in ("move-avoid", "move-memory"):
+            state.pending_trace = dict(
+                leg=state.completed + 1,
+                session=request.session_id, bot=request.bot_index,
+                mask=request.safe_directions_mask, direction=direction,
+                yaw=request.yaw, decision_frame=request.frame_id,
+                origin=list(request.origin),
+                target=list(local_direction_target(request, direction)),
+            )
         reply = response_frame(request, move=move, direction=direction)
         if fault != "none":
             reply = fault_response(request, reply, fault)
@@ -432,7 +451,7 @@ def handle_client(client: socket.socket, mode: str, emitted: set[tuple[int, int]
 def serve(port: int, max_connections: int, mode: str,
           stop_event: threading.Event | None = None, legs: int = 2,
           fault: str = "none", fault_on_request: int = 1,
-          actions: int = 4) -> int:
+          actions: int = 4, trace_file: str | None = None) -> int:
     if not 0 <= port <= 65535 or not 1 <= max_connections <= MAX_CONNECTIONS:
         raise ValueError("port or max-connections outside limits")
     if legs not in (2, 3):
@@ -441,6 +460,8 @@ def serve(port: int, max_connections: int, mode: str,
         raise ValueError("session actions must be 4..8")
     if fault not in FAULT_CHOICES or not 1 <= fault_on_request <= max_connections:
         raise ValueError("unknown fault or fault-on-request outside connection limit")
+    if trace_file is not None and mode not in ("move-avoid", "move-memory"):
+        raise ValueError("trace recording requires move-avoid or move-memory")
     if fault != "none" and mode == "no-decision":
         raise ValueError("fault injection requires move-once or move-sequence mode")
     if mode == "move-sequence" and max_connections < 2 * legs:
@@ -473,6 +494,14 @@ def serve(port: int, max_connections: int, mode: str,
             with client:
                 current_fault = fault if accepted + 1 == fault_on_request else "none"
                 handle_client(client, mode, emitted, sequences, legs, current_fault, actions)
+            if trace_file is not None:
+                if len(sequences) > 1:
+                    raise ValueError("trace output cannot mix session/bot identities")
+                rows = next(iter(sequences.values())).trace_records if sequences else []
+                # Persist only committed, correlated Completed feedback.
+                Path(trace_file).write_text(json.dumps(
+                    dict(schema=1, mode=mode, actions=actions, records=rows),
+                    indent=2) + "\n", encoding="utf-8")
             accepted += 1
             idle_deadline = time.monotonic() + LISTENER_IDLE_TIMEOUT
     return 0
@@ -494,6 +523,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         SESSION_MIN_ACTIONS, SESSION_MAX_ACTIONS + 1), default=4,
                         metavar="{4,5,6,7,8}",
                         help="maximum verified actions for move-session mode")
+    parser.add_argument("--trace-file", default=None,
+                        help="optional JSON trace of confirmed avoid/memory actions")
     parser.add_argument("--fault", choices=FAULT_CHOICES, default="none",
                         help="inject one bounded failure into an explicit move trial")
     parser.add_argument("--fault-on-request", type=int, default=1,
@@ -507,7 +538,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     previous_handler = signal.signal(signal.SIGINT, request_stop)
     try:
         return serve(args.port, args.max_connections, args.mode, stop_event,
-                     args.legs, args.fault, args.fault_on_request, args.actions)
+                     args.legs, args.fault, args.fault_on_request, args.actions,
+                     args.trace_file)
     except KeyboardInterrupt:
         # Preserve a clean exit if an interrupt arrives outside socket polling.
         print("STOPPED", flush=True)
