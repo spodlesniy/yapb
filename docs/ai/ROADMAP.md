@@ -983,3 +983,10 @@ All presented HLDS sequences finished 8/8 with all recovery flags true, but thes
 D339 adds a separate read-only Python coverage report for blocked-forward `move-memory` decisions, including mask 6 and single-side masks 2/4, full-action count, observed displacement at confirmed feedback and explicit missing-evidence reasons.
 Deterministic unit and localhost TCP tests exercise the bounded mask sequence 7→6→4→2 without changing the memory policy, server wire format, GoldSrc DLL or authorization boundary.
 D339 requires automatic Training tools CI and a later user-run Windows x86/HLDS memory trace with the required physical masks and successful recovery; D338's controlled paired comparison remains open.
+
+D339 automatic build Training tools CI passed (run 43428848560); the operator's subsequent de_dust2 HLDS memory trial completed 8/8 actions with masks 2,7,6,3,7,7,2,3 and recovery=PASS across all five fields.
+Its read-only D339 coverage report confirmed forward_available=5, blocked_forward=3, two_side=1, one_side=2, physical blocked-leg advances 84.12/91.32/86.49 units and `status=BLOCKED_MEMORY_COVERED`; D339's automatic and manual acceptance gates passed.
+D338 remains open pending three true matched-start avoidance/memory pairs.
+D340 adds an explicit opt-in, local-ground `aipb modelio goal` command targeting operator-specified absolute coordinates within 768 XY and 8 Z units, using at most eight independently traced, physically confirmed moves under the existing 5–30-second session budget.
+It retains the existing deterministic runtime backend, refuses untraced directions and reports observed goal reach within 16 units separately from completed individual legs; no Python wire protocol, remote provider, map routing or global pathfinding is added.
+D340 automatic C++ CI, user-run Windows x86 build and a supervised de_dust2 HLDS test with positive reach, blocked/unreachable targets, budget, explicit stop and restoration are required before accepting local-goal movement.

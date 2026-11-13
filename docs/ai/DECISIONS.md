@@ -4259,3 +4259,16 @@ Require at least one completed forward-available control leg, one mask-6 leg, on
 Report missing coverage and blocked-leg directions explicitly, fail the CLI's coverage gate when any requirement is absent, and never equate completed feedback with physical progress or causal superiority.
 Add deterministic memory choice and four-action TCP subprocess regressions with explicit safe-direction masks 7→6→4→2, terminal feedback correlation and trace persistence, while keeping production Python decision policy, fixed four-point memory, bounded run limits and DLL behavior byte-for-byte unchanged.
 Automatic CI validates the new tests; actual constrained-map, Windows x86/HLDS physical evidence and D338 matched-start comparisons remain operator-run follow-up gates.
+
+## D340 — Operator-specified bounded local-goal movement
+
+D339 provided real HLDS evidence that a four-position-memory policy can take verified lateral steps with blocked-forward masks, but no previous Model I/O mode aimed for an arbitrary operator-specified position.
+Add a separate `aipb modelio goal <bot-index> <actions:4-8> <seconds:5-30> <x> <y> <z>` server command, retaining the original exclusive owner, Neural-mode, session budget, physical completion and recovery infrastructure.
+Require finite absolute world coordinates, an initial horizontal separation of at most 768 units, an initial vertical difference at most 8 units and a target not already reached within a 16-unit three-dimensional radius.
+Construct up to three goal-bearing local steps at most 96 units long, with a shortened final step and two side directions.
+Only independently successful GoldSrc standing/crouching TraceHull results may authorize candidates; choose the closest authorized local endpoint, breaking equal-distance ties predictably.
+Use the existing internal deterministic test backend for each bounded leg, leaving external TCP wire v1/v2 behavior, memory heuristics, training mode and legacy path unchanged.
+Report goal reach only from the actual observed bot location after a physically reached, correlated-feedback Completed leg and verified provider/fallback recovery; terminate early on success or report `GoalNotReached` after the configured action count.
+Disallow success attribution for missing paths, unsafe height differences, blocked choices, nonfinite or remote coordinates, expired budgets and lifecycle invalidation.
+This is a first supervised goal-directed movement slice, not pathfinding or proof of safe navigation on arbitrary map geometry.
+Require C++ unit regressions, automatic CI and user-run Windows x86/HLDS validation on an attainable and an unattainable goal, with recovery verified separately.

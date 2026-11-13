@@ -22,6 +22,7 @@
 #include <ai/ai_model_io_sequence.h>
 #include <ai/ai_model_io_session.h>
 #include <ai/ai_model_io_directions.h>
+#include <ai/ai_model_io_goal.h>
 
 #include <cmath>
 #include <cstdlib>
@@ -55,6 +56,8 @@ ai::runtime_io::ModelIOSessionBudget sessionBudget {};
 bool sessionMode {};
 bool steerMode {};
 bool avoidMode {};
+bool goalMode {};
+ai::Vec3 goalPosition {};
 int chosenDirection { -1 };
 uint32_t lastSessionSeconds {};
 uint64_t lastSessionElapsedMs {};
@@ -126,6 +129,8 @@ void clear(Bot *bot, ai::runtime_io::ModelIOTrialStopReason reason) {
   sessionMode = false;
   steerMode = false;
   avoidMode = false;
+  goalMode = false;
+  goalPosition = {};
 }
 
 void fail(Bot *bot, ai::runtime_io::ModelIOTrialStopReason reason, const char *detail) {
@@ -235,17 +240,20 @@ bool handleServer() {
   const bool useSteer = std::strcmp(cmd, "steer") == 0;
   const bool useAvoid = std::strcmp(cmd, "avoid") == 0;
   const bool useMemory = std::strcmp(cmd, "memory") == 0;
-  const bool useExtended = useSession || useSteer || useAvoid || useMemory;
-  const bool useExternal = useExtended || useSequence || std::strcmp(cmd, "external") == 0;
+  const bool useGoal = std::strcmp(cmd, "goal") == 0;
+  const bool useExtended = useSession || useSteer || useAvoid || useMemory || useGoal;
+  const bool useExternal = (useExtended && !useGoal) || useSequence ||
+      std::strcmp(cmd, "external") == 0;
   if ((std::strcmp(cmd, "run") != 0 || argc != 4) &&
+      !(useGoal && argc == 9) &&
       (!useExternal || argc != (useExtended ? 7 : useSequence ? 6 : 5))) {
-    game.print("Usage: aipb modelio run <bot-index> | external <bot-index> <port> | sequence <bot-index> <port> <legs:2-3> | session <bot-index> <port> <actions:4-8> <seconds:5-30> | steer <bot-index> <port> <actions:4-8> <seconds:5-30> | avoid <bot-index> <port> <actions:4-8> <seconds:5-30> | memory <bot-index> <port> <actions:4-8> <seconds:5-30> | status | stop");
+    game.print("Usage: aipb modelio run <bot-index> | external <bot-index> <port> | sequence <bot-index> <port> <legs:2-3> | session <bot-index> <port> <actions:4-8> <seconds:5-30> | steer <bot-index> <port> <actions:4-8> <seconds:5-30> | avoid <bot-index> <port> <actions:4-8> <seconds:5-30> | memory <bot-index> <port> <actions:4-8> <seconds:5-30> | goal <bot-index> <actions:4-8> <seconds:5-30> <x> <y> <z> | status | stop");
     return true;
   }
   uint8_t requestedLegs {};
   uint32_t requestedSeconds {};
   if (useSequence || useExtended) {
-    const char *legArg = engfuncs.pfnCmd_Argv(5);
+    const char *legArg = engfuncs.pfnCmd_Argv(useGoal ? 4 : 5);
     char *legEnd {};
     const long parsed = std::strtol(legArg, &legEnd, 10);
     const long minimum = useExtended ? ai::runtime_io::kModelIOSessionMinActions
@@ -259,7 +267,7 @@ bool handleServer() {
     requestedLegs = static_cast<uint8_t>(parsed);
   }
   if (useExtended) {
-    const char *secondsArg = engfuncs.pfnCmd_Argv(6);
+    const char *secondsArg = engfuncs.pfnCmd_Argv(useGoal ? 5 : 6);
     char *secondsEnd {};
     const long seconds = std::strtol(secondsArg, &secondsEnd, 10);
     if (secondsArg == secondsEnd || *secondsEnd != '\0' ||
@@ -281,6 +289,21 @@ bool handleServer() {
     }
     requestedPort = static_cast<uint16_t>(parsed);
   }
+  ai::Vec3 requestedGoal {};
+  if (useGoal) {
+    float coordinates[3] {};
+    for (int i = 0; i < 3; ++i) {
+      const char *value = engfuncs.pfnCmd_Argv(6 + i);
+      char *coordinateEnd {};
+      coordinates[i] = std::strtof(value, &coordinateEnd);
+      if (value == coordinateEnd || *coordinateEnd != '\0' ||
+          !std::isfinite(coordinates[i])) {
+        game.print("AiPB modelio: rejected (InvalidGoalCoordinates).");
+        return true;
+      }
+    }
+    requestedGoal = { coordinates[0], coordinates[1], coordinates[2] };
+  }
   const char *arg = engfuncs.pfnCmd_Argv(3);
   char *end {};
   const long index = std::strtol(arg, &end, 10);
@@ -295,6 +318,18 @@ bool handleServer() {
       ai::YaPBActionExecutionContext::runtimeMode(*bot) != ai::ControlMode::Neural) {
     game.print("AiPB modelio: rejected (BotUnavailableOrMode).");
     return true;
+  }
+  if (useGoal) {
+    const ai::Vec3 start { bot->pev->origin.x, bot->pev->origin.y, bot->pev->origin.z };
+    if (ai::runtime_io::modelIOGoalReached(start, requestedGoal)) {
+      game.print("AiPB modelio: rejected (AlreadyWithinGoalRadius); no action executed.");
+      return true;
+    }
+    if (!ai::runtime_io::modelIOGoalCanArm(start, requestedGoal)) {
+      game.print("AiPB modelio: rejected (NonlocalOrUnsafeGoal); "
+                 "requires level ground, up to 768 XY units and <=8 Z units.");
+      return true;
+    }
   }
   if ((useSequence && !sequence.arm(requestedLegs)) ||
       (useExtended && !sequence.armSession(requestedLegs))) {
@@ -313,6 +348,8 @@ bool handleServer() {
   sessionMode = useExtended;
   steerMode = useSteer || useAvoid || useMemory;
   avoidMode = useAvoid || useMemory;
+  goalMode = useGoal;
+  goalPosition = requestedGoal;
   chosenDirection = -1;
   selected = static_cast<int>(index);
   externalMode = useExternal;
@@ -334,10 +371,16 @@ bool handleServer() {
   lastStopReason = ai::runtime_io::ModelIOTrialStopReason::None;
   lastRecovery = {};
   game.print("AiPB modelio: requested for bot #%d; backend=%s; port=%u; legs=%u; budget_seconds=%u.",
-       selected, useMemory ? "ExternalMemory" : useAvoid ? "ExternalAvoid" :
+       selected, useGoal ? "LocalGoal" : useMemory ? "ExternalMemory" : useAvoid ? "ExternalAvoid" :
        useSteer ? "ExternalSteer" : useSession ? "ExternalSession" :
        useSequence ? "ExternalSequence" : externalMode ? "ExternalLoopback" : "Deterministic",
        externalPort, requestedLegs != 0 ? requestedLegs : 1, requestedSeconds);
+  if (useGoal) {
+    game.print("AiPB modelio: goal=(%.1f,%.1f,%.1f); radius=%.1f; "
+               "local ground directions only, not a global route.",
+        requestedGoal.x, requestedGoal.y, requestedGoal.z,
+        ai::runtime_io::kModelIOGoalRadius);
+  }
   return true;
 }
 
@@ -373,6 +416,13 @@ bool frame(Bot &bot) {
       fail(&bot, ai::runtime_io::ModelIOTrialStopReason::BotUnavailable, "not grounded");
       return true;
     }
+    if (goalMode && (!ai::runtime_io::finiteVector(state.self.origin) ||
+        std::abs(state.self.origin.z - goalPosition.z) >
+            ai::runtime_io::kModelIOGoalVerticalTolerance)) {
+      fail(&bot, ai::runtime_io::ModelIOTrialStopReason::InvalidAction,
+          "goal height changed outside local-ground limit");
+      return true;
+    }
     ai::runtime_io::WorldQueryRequest request {};
     request.sessionId = state.stamp.sessionId;
     request.observationFrameId = state.stamp.frameId;
@@ -381,7 +431,22 @@ bool frame(Bot &bot) {
         ai::runtime_io::kWorldQueryStandingHull;
     request.start = state.self.origin;
     ai::runtime_io::ModelIODirectionCandidates choices {};
-    if (steerMode) {
+    if (goalMode) {
+      for (uint8_t i = 0; i < ai::runtime_io::kModelIODirectionCount; ++i) {
+        request.requestId = ai::mock::nextWorldQueryRequestId();
+        request.end = ai::runtime_io::modelIOGoalDirectionTarget(
+            request.start, goalPosition, i);
+        if (!ai::runtime_io::finiteVector(request.end)) {
+          continue;
+        }
+        const auto trace = ai::runtime_io::queryBotWorld(selected, request);
+        if (ai::runtime_io::isCompleted(request, trace) &&
+            !trace.startSolid && trace.fraction >= 0.999f) {
+          choices.allow(i, request.end);
+        }
+      }
+    }
+    else if (steerMode) {
       for (uint8_t i = 0; i < ai::runtime_io::kModelIODirectionCount; ++i) {
         request.requestId = ai::mock::nextWorldQueryRequestId();
         request.end = ai::runtime_io::modelIODirectionTarget(
@@ -410,7 +475,14 @@ bool frame(Bot &bot) {
           "no clear trace-authorized direction");
       return true;
     }
-    const auto initialTarget = choices.target(static_cast<uint8_t>(choices.first()));
+    const int initialDirection = goalMode ?
+        ai::runtime_io::modelIOGoalChooseDirection(choices, goalPosition) : choices.first();
+    if (initialDirection < 0) {
+      fail(&bot, ai::runtime_io::ModelIOTrialStopReason::InvalidAction,
+          "no valid goal direction");
+      return true;
+    }
+    const auto initialTarget = choices.target(static_cast<uint8_t>(initialDirection));
     backend.reset();
     externalBackend.reset();
     const ai::runtime_io::ModelIOBackend *trialBackend {};
@@ -432,12 +504,17 @@ bool frame(Bot &bot) {
       return true;
     }
 
-    if (avoidMode) {
+    if (avoidMode || goalMode) {
       game.print("AiPB modelio: offered safe_directions_mask=%u (forward=%d left=%d right=%d).",
           static_cast<unsigned>(choices.mask()), choices.allowed(0), choices.allowed(1),
           choices.allowed(2));
     }
-    chosenDirection = -1;
+    chosenDirection = goalMode ? initialDirection : -1;
+    if (goalMode) {
+      game.print("AiPB modelio: goal local direction=%s; target=(%.1f,%.1f,%.1f).",
+          ai::runtime_io::modelIODirectionName(initialDirection),
+          initialTarget.x, initialTarget.y, initialTarget.z);
+    }
     destination = initialTarget;
     origin = state.self.origin;
     sessionId = state.stamp.sessionId;
@@ -486,6 +563,14 @@ bool frame(Bot &bot) {
     const bool continuingSession = sessionMode;
     const bool continuingSteer = steerMode;
     const bool continuingAvoid = avoidMode;
+    const bool continuingGoal = goalMode;
+    const ai::Vec3 activeGoal = goalPosition;
+    const bool continuingExternal = externalMode;
+    const bool goalReached = continuingGoal &&
+        ai::runtime_io::modelIOGoalReached(state.self.origin, activeGoal);
+    if (continuingGoal) {
+      lastRemaining = ai::runtime_io::modelIOGoalDistance(state.self.origin, activeGoal);
+    }
     const int botIndex = selected;
     const uint16_t port = externalPort;
     clear(&bot, ai::runtime_io::ModelIOTrialStopReason::Completed);
@@ -517,13 +602,15 @@ bool frame(Bot &bot) {
       game.print("AiPB modelio: sequence leg=%u/%u PASS; requests=%u; moved=%.2f; recovered=%d.",
           static_cast<unsigned>(sequence.completed()), static_cast<unsigned>(sequence.total()),
           lastRequests, lastMoved, lastRecovery.verified());
-      if (sequence.hasNext()) {
+      if (sequence.hasNext() && !(continuingGoal && goalReached)) {
         selected = botIndex;
-        externalMode = true;
+        externalMode = continuingExternal;
         externalPort = port;
         sessionMode = continuingSession;
         steerMode = continuingSteer;
         avoidMode = continuingAvoid;
+        goalMode = continuingGoal;
+        goalPosition = activeGoal;
         pending = true;
         running = false;
         awaitingFeedback = false;
@@ -536,6 +623,24 @@ bool frame(Bot &bot) {
     if (sessionBudget.active()) {
       lastSessionElapsedMs = sessionBudget.elapsed(externalClock.milliseconds());
       sessionBudget.reset();
+    }
+    if (continuingGoal) {
+      lastCompleted = reachedAndRecovered && goalReached;
+      if (!goalReached) {
+        lastStopReason = ai::runtime_io::ModelIOTrialStopReason::GoalNotReached;
+      }
+      game.print("AiPB modelio: goal %s; reached=%d; completed=%u/%u; "
+                 "total_requests=%u; remaining=%.2f; recovered=%d.",
+          lastCompleted ? "PASS" : "NOT_REACHED", goalReached,
+          static_cast<unsigned>(lastSequenceCompleted),
+          static_cast<unsigned>(lastSequenceTotal),
+          lastSequenceRequests, lastRemaining, lastRecovery.verified());
+      game.print("AiPB modelio: recovery=%s; provider=%d; fallback=%d; backend=%d; idle=%d; owner=%d.",
+          lastRecovery.verified() ? "PASS" : "FAIL",
+          lastRecovery.providerRestored, lastRecovery.fallbackRestored,
+          lastRecovery.backendReleased, lastRecovery.actionIdle,
+          lastRecovery.trialReleased);
+      return true;
     }
     lastCompleted = reachedAndRecovered;
     game.print("AiPB modelio: %s; result=Completed; recovered=%d; requests=%u; decision_frame=%llu; feedback_frame=%llu; moved=%.2f; remaining=%.2f; elapsed=%.3f; session=%llu.",

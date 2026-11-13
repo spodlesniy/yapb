@@ -9,6 +9,7 @@
 #include <limits>
 
 #include <ai/ai_model_io_directions.h>
+#include <ai/ai_model_io_goal.h>
 #include <ai/ai_model_io_external_trial_backend.h>
 
 using ai::test::expect;
@@ -173,4 +174,60 @@ AI_TEST(testModelIOAvoidAdvertisesOnlyTracedDirectionsAndRejectsBlocked) {
   move(source, { 100.0f, 296.0f, 32.0f });
   expect(trial.infer(frame()).inference.status == ai::InferenceStatus::Success &&
          source.observedMask == 0, "D334 steer does not leak the new affordance mask");
+}
+
+AI_TEST(testModelIOGoalRejectsInvalidAndNonlocalTargets) {
+  const ai::Vec3 start { 0.0f, 0.0f, 36.0f };
+  expect(io::modelIOGoalCanArm(start, { 160.0f, 0.0f, 36.0f }),
+         "bounded horizontal goal is eligible");
+  expect(!io::modelIOGoalCanArm(start, { 0.0f, 0.0f, 36.0f }) &&
+         !io::modelIOGoalCanArm(start, { 8.0f, 0.0f, 36.0f }),
+         "already-reached goals do not arm movement");
+  expect(!io::modelIOGoalCanArm(start, { 800.0f, 0.0f, 36.0f }) &&
+         !io::modelIOGoalCanArm(start, { 50.0f, 0.0f, 45.0f }),
+         "remote and vertically unsupported goals rejected");
+  expect(!io::modelIOGoalCanArm(start,
+         { std::numeric_limits<float>::quiet_NaN(), 0.0f, 36.0f }),
+         "nonfinite goals are rejected");
+  expect(io::modelIOGoalReached({ 100.0f, 0.0f, 36.0f },
+                               { 116.0f, 0.0f, 36.0f }) &&
+         !io::modelIOGoalReached({ 100.0f, 0.0f, 36.0f },
+                                { 116.1f, 0.0f, 36.0f }),
+         "goal reach uses observed three-dimensional distance");
+}
+
+AI_TEST(testModelIOGoalNominalDirectionAndShortFinalStep) {
+  const ai::Vec3 start { 0.0f, 0.0f, 36.0f };
+  const ai::Vec3 goal { 240.0f, 0.0f, 36.0f };
+  const auto forward = io::modelIOGoalDirectionTarget(start, goal, 0);
+  const auto left = io::modelIOGoalDirectionTarget(start, goal, 1);
+  const auto right = io::modelIOGoalDirectionTarget(start, goal, 2);
+  expect(std::abs(forward.x - 96.0f) < 0.01f &&
+         std::abs(forward.y) < 0.01f && forward.z == 36.0f,
+         "goal-bearing forward candidate extends exactly one bounded step");
+  expect(std::abs(left.y - 96.0f) < 0.01f &&
+         std::abs(right.y + 96.0f) < 0.01f,
+         "goal-relative side candidates use the same step length");
+  const auto shortTarget = io::modelIOGoalDirectionTarget(
+      start, { 32.0f, 0.0f, 36.0f }, 0);
+  expect(std::abs(shortTarget.x - 32.0f) < 0.01f &&
+         std::abs(shortTarget.y) < 0.01f,
+         "final straight leg may stop at an intermediate goal");
+}
+
+AI_TEST(testModelIOGoalChoosesOnlyEngineAuthorizedCandidates) {
+  io::ModelIODirectionCandidates choices {};
+  const ai::Vec3 goal { 240.0f, 0.0f, 36.0f };
+  expect(io::modelIOGoalChooseDirection(choices, goal) == -1,
+         "no direction is authorized by nominal geometry alone");
+  expect(choices.allow(1, { 0.0f, 96.0f, 36.0f }) &&
+         choices.allow(2, { 0.0f, -96.0f, 36.0f }) &&
+         io::modelIOGoalChooseDirection(choices, goal) == 1,
+         "blocked forward forces an independently allowed lateral detour");
+  expect(choices.allow(0, { 96.0f, 0.0f, 36.0f }) &&
+         io::modelIOGoalChooseDirection(choices, goal) == 0,
+         "forward preferred when it brings the bot closer to its goal");
+  expect(io::modelIOGoalChooseDirection(
+         choices, { std::numeric_limits<float>::infinity(), 0.0f, 36.0f }) == -1,
+         "nonfinite goal cannot select a traced direction");
 }

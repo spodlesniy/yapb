@@ -53,6 +53,7 @@ enum class ModelIOTrialStopReason {
   Timeout,
   InvalidAction,
   RecoveryFailed,
+  GoalNotReached,
 };
 
 inline const char *modelIOTrialStopReasonName(ModelIOTrialStopReason reason) {
@@ -70,6 +71,7 @@ inline const char *modelIOTrialStopReasonName(ModelIOTrialStopReason reason) {
   case ModelIOTrialStopReason::Timeout: return "Timeout";
   case ModelIOTrialStopReason::InvalidAction: return "InvalidAction";
   case ModelIOTrialStopReason::RecoveryFailed: return "RecoveryFailed";
+  case ModelIOTrialStopReason::GoalNotReached: return "GoalNotReached";
   }
   return "Unknown";
 }
