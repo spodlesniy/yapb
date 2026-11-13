@@ -58,6 +58,7 @@ bool steerMode {};
 bool avoidMode {};
 bool goalMode {};
 ai::Vec3 goalPosition {};
+ai::runtime_io::ModelIOGoalHistory goalHistory {};
 int chosenDirection { -1 };
 uint32_t lastSessionSeconds {};
 uint64_t lastSessionElapsedMs {};
@@ -131,6 +132,7 @@ void clear(Bot *bot, ai::runtime_io::ModelIOTrialStopReason reason) {
   avoidMode = false;
   goalMode = false;
   goalPosition = {};
+  goalHistory.reset();
 }
 
 void fail(Bot *bot, ai::runtime_io::ModelIOTrialStopReason reason, const char *detail) {
@@ -350,6 +352,7 @@ bool handleServer() {
   avoidMode = useAvoid || useMemory;
   goalMode = useGoal;
   goalPosition = requestedGoal;
+  goalHistory.reset();
   chosenDirection = -1;
   selected = static_cast<int>(index);
   externalMode = useExternal;
@@ -416,12 +419,21 @@ bool frame(Bot &bot) {
       fail(&bot, ai::runtime_io::ModelIOTrialStopReason::BotUnavailable, "not grounded");
       return true;
     }
-    if (goalMode && (!ai::runtime_io::finiteVector(state.self.origin) ||
-        std::abs(state.self.origin.z - goalPosition.z) >
-            ai::runtime_io::kModelIOGoalVerticalTolerance)) {
-      fail(&bot, ai::runtime_io::ModelIOTrialStopReason::InvalidAction,
-          "goal height changed outside local-ground limit");
-      return true;
+    if (goalMode) {
+      lastRemaining = ai::runtime_io::modelIOGoalDistance(state.self.origin, goalPosition);
+      if (!ai::runtime_io::finiteVector(state.self.origin) ||
+          std::abs(state.self.origin.z - goalPosition.z) >
+              ai::runtime_io::kModelIOGoalVerticalTolerance) {
+        fail(&bot, ai::runtime_io::ModelIOTrialStopReason::InvalidAction,
+            "goal height changed outside local-ground limit");
+        return true;
+      }
+      if (!goalHistory.active() &&
+          !goalHistory.begin(state.self.origin, goalPosition)) {
+        fail(&bot, ai::runtime_io::ModelIOTrialStopReason::InvalidAction,
+            "unable to initialize goal movement history");
+        return true;
+      }
     }
     ai::runtime_io::WorldQueryRequest request {};
     request.sessionId = state.stamp.sessionId;
@@ -471,15 +483,18 @@ bool frame(Bot &bot) {
       }
     }
     if (choices.count() == 0) {
-      fail(&bot, ai::runtime_io::ModelIOTrialStopReason::InvalidAction,
+      fail(&bot, goalMode ? ai::runtime_io::ModelIOTrialStopReason::GoalDeadEnd :
+          ai::runtime_io::ModelIOTrialStopReason::InvalidAction,
           "no clear trace-authorized direction");
       return true;
     }
     const int initialDirection = goalMode ?
-        ai::runtime_io::modelIOGoalChooseDirection(choices, goalPosition) : choices.first();
+        ai::runtime_io::modelIOGoalChooseNovelDirection(
+            choices, goalPosition, goalHistory) : choices.first();
     if (initialDirection < 0) {
-      fail(&bot, ai::runtime_io::ModelIOTrialStopReason::InvalidAction,
-          "no valid goal direction");
+      fail(&bot, goalMode ? ai::runtime_io::ModelIOTrialStopReason::GoalNoNovelDirection :
+          ai::runtime_io::ModelIOTrialStopReason::InvalidAction,
+          "all current traced directions revisit recent goal positions");
       return true;
     }
     const auto initialTarget = choices.target(static_cast<uint8_t>(initialDirection));
@@ -565,6 +580,7 @@ bool frame(Bot &bot) {
     const bool continuingAvoid = avoidMode;
     const bool continuingGoal = goalMode;
     const ai::Vec3 activeGoal = goalPosition;
+    auto preservedGoalHistory = goalHistory;
     const bool continuingExternal = externalMode;
     const bool goalReached = continuingGoal &&
         ai::runtime_io::modelIOGoalReached(state.self.origin, activeGoal);
@@ -602,6 +618,37 @@ bool frame(Bot &bot) {
       game.print("AiPB modelio: sequence leg=%u/%u PASS; requests=%u; moved=%.2f; recovered=%d.",
           static_cast<unsigned>(sequence.completed()), static_cast<unsigned>(sequence.total()),
           lastRequests, lastMoved, lastRecovery.verified());
+      if (continuingGoal && !goalReached) {
+        const auto progress = preservedGoalHistory.recordConfirmed(state.self.origin, activeGoal);
+        if (progress != ai::runtime_io::ModelIOGoalHistoryResult::Continue) {
+          lastStopReason = progress == ai::runtime_io::ModelIOGoalHistoryResult::Cycle ?
+              ai::runtime_io::ModelIOTrialStopReason::GoalCycle :
+              progress == ai::runtime_io::ModelIOGoalHistoryResult::NoProgress ?
+              ai::runtime_io::ModelIOTrialStopReason::GoalNoProgress :
+              ai::runtime_io::ModelIOTrialStopReason::InvalidAction;
+          lastCompleted = false;
+          lastSequenceTotal = sequence.total();
+          lastSequenceCompleted = sequence.completed();
+          lastSequenceRequests = sequence.requests();
+          sequence.reset();
+          if (sessionBudget.active()) {
+            lastSessionElapsedMs = sessionBudget.elapsed(externalClock.milliseconds());
+            sessionBudget.reset();
+          }
+          game.print("AiPB modelio: goal stopped (%s); completed=%u/%u; "
+                     "total_requests=%u; remaining=%.2f; recovered=%d.",
+              ai::runtime_io::modelIOTrialStopReasonName(lastStopReason),
+              static_cast<unsigned>(lastSequenceCompleted),
+              static_cast<unsigned>(lastSequenceTotal),
+              lastSequenceRequests, lastRemaining, lastRecovery.verified());
+          game.print("AiPB modelio: recovery=%s; provider=%d; fallback=%d; backend=%d; idle=%d; owner=%d.",
+              lastRecovery.verified() ? "PASS" : "FAIL",
+              lastRecovery.providerRestored, lastRecovery.fallbackRestored,
+              lastRecovery.backendReleased, lastRecovery.actionIdle,
+              lastRecovery.trialReleased);
+          return true;
+        }
+      }
       if (sequence.hasNext() && !(continuingGoal && goalReached)) {
         selected = botIndex;
         externalMode = continuingExternal;
@@ -611,6 +658,7 @@ bool frame(Bot &bot) {
         avoidMode = continuingAvoid;
         goalMode = continuingGoal;
         goalPosition = activeGoal;
+        goalHistory = preservedGoalHistory;
         pending = true;
         running = false;
         awaitingFeedback = false;

@@ -54,6 +54,10 @@ enum class ModelIOTrialStopReason {
   InvalidAction,
   RecoveryFailed,
   GoalNotReached,
+  GoalCycle,
+  GoalNoProgress,
+  GoalNoNovelDirection,
+  GoalDeadEnd,
 };
 
 inline const char *modelIOTrialStopReasonName(ModelIOTrialStopReason reason) {
@@ -72,6 +76,10 @@ inline const char *modelIOTrialStopReasonName(ModelIOTrialStopReason reason) {
   case ModelIOTrialStopReason::InvalidAction: return "InvalidAction";
   case ModelIOTrialStopReason::RecoveryFailed: return "RecoveryFailed";
   case ModelIOTrialStopReason::GoalNotReached: return "GoalNotReached";
+  case ModelIOTrialStopReason::GoalCycle: return "GoalCycle";
+  case ModelIOTrialStopReason::GoalNoProgress: return "GoalNoProgress";
+  case ModelIOTrialStopReason::GoalNoNovelDirection: return "GoalNoNovelDirection";
+  case ModelIOTrialStopReason::GoalDeadEnd: return "GoalDeadEnd";
   }
   return "Unknown";
 }

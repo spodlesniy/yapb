@@ -4272,3 +4272,16 @@ Report goal reach only from the actual observed bot location after a physically 
 Disallow success attribution for missing paths, unsafe height differences, blocked choices, nonfinite or remote coordinates, expired budgets and lifecycle invalidation.
 This is a first supervised goal-directed movement slice, not pathfinding or proof of safe navigation on arbitrary map geometry.
 Require C++ unit regressions, automatic CI and user-run Windows x86/HLDS validation on an attainable and an unattainable goal, with recovery verified separately.
+
+## D341 — Confirmed-position cycle veto and lack-of-progress detection for local goals
+
+D340 passed automatic CI and supervised HLDS goal-positive, obstacle-detour, unreachable, manual-stop and input-rejection tests, but the unreachable scenario alternated `left/right` repeatedly in a small space before encountering an untraced dead end.
+The goal-specific selector must not claim global route planning or repeat known places indefinitely.
+Introduce an engine-neutral, fixed-capacity nine-position history containing the start and up to eight correlated, physically completed and fully restored leg-end observations, isolated from the external `memory` mode.
+Filter each previously GoldSrc-TraceHull-authorized direction against the confirmed history using a 36-unit revisit radius, except for a final step with its target in the 16-unit goal radius.
+Select the closest remaining authorized candidate; when none is novel, report `GoalNoNovelDirection` distinctly from `GoalDeadEnd` (no traced candidate).
+Detect a completed return near an older recorded position as `GoalCycle`, and terminate after three consecutive completed steps that do not improve the best-to-date distance to the operator goal by more than 12 units as `GoalNoProgress`.
+Do not mistake a confirmed leg or tentative target for evidence of arrival: only the observed goal distance and successful terminal-feedback/recovery pipeline may establish `goal PASS`.
+Preserve history across per-leg runtime-owner recovery but clear it for new, completed, cancelled or invalidated goal sessions.
+Retain D340 caps, goal-input checks and existing behavior in every other Model I/O mode.
+Require focused C++ regressions, automatic CI and user-run Windows x86/HLDS checks for previously reported oscillation, positive goal reach, side detour and full recovery before accepting D341.

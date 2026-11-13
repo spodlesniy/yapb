@@ -231,3 +231,98 @@ AI_TEST(testModelIOGoalChoosesOnlyEngineAuthorizedCandidates) {
          choices, { std::numeric_limits<float>::infinity(), 0.0f, 36.0f }) == -1,
          "nonfinite goal cannot select a traced direction");
 }
+
+AI_TEST(testModelIOGoalHistoryIsConfirmationOnlyAndBounded) {
+  io::ModelIOGoalHistory memory {};
+  const ai::Vec3 start { 0.0f, 0.0f, 36.0f };
+  const ai::Vec3 goal { 400.0f, 0.0f, 36.0f };
+  expect(!memory.active() && memory.count() == 0,
+         "history must not contain speculative positions");
+  expect(!memory.begin(start, { std::numeric_limits<float>::infinity(), 0.0f, 36.0f }),
+         "nonfinite goal cannot initialize movement history");
+  expect(memory.begin(start, goal) && memory.count() == 1 &&
+         std::abs(memory.bestDistance() - 400.0f) < 0.01f,
+         "one starting pose is recorded only after a valid initialization");
+  const auto first = io::modelIOGoalDirectionTarget(start, goal, 0);
+  expect(memory.count() == 1 && !memory.isRevisit(first),
+         "computing a nominal candidate never updates confirmed history");
+  expect(memory.recordConfirmed({ 84.0f, 0.0f, 36.0f }, goal) ==
+             io::ModelIOGoalHistoryResult::Continue &&
+         memory.count() == 2 && memory.stalled() == 0 &&
+         std::abs(memory.bestDistance() - 316.0f) < 0.01f,
+         "only confirmed observation updates progress and history");
+  memory.reset();
+  expect(!memory.active() && memory.count() == 0 && memory.stalled() == 0,
+         "reset clears history between independent goal sessions");
+  expect(memory.recordConfirmed({ 84.0f, 0.0f, 36.0f }, goal) ==
+             io::ModelIOGoalHistoryResult::Invalid,
+         "uninitialized history must reject confirmations");
+}
+
+AI_TEST(testModelIOGoalHistoryVetoesConfirmedReturnButNotNewDetour) {
+  io::ModelIOGoalHistory memory {};
+  const ai::Vec3 goal { 400.0f, 0.0f, 36.0f };
+  expect(memory.begin({ 0.0f, 0.0f, 36.0f }, goal) &&
+         memory.recordConfirmed({ 84.0f, 0.0f, 36.0f }, goal) ==
+             io::ModelIOGoalHistoryResult::Continue,
+         "two observed positions provide a revisit history");
+  io::ModelIODirectionCandidates choices {};
+  expect(choices.allow(1, { 0.0f, 0.0f, 36.0f }) &&
+         choices.allow(2, { 84.0f, 96.0f, 36.0f }),
+         "both candidates were independently collision authorized");
+  expect(io::modelIOGoalChooseNovelDirection(choices, goal, memory) == 2,
+         "history vetoes a return to initial position, even if traced clear");
+  io::ModelIODirectionCandidates returnOnly {};
+  expect(returnOnly.allow(1, { 0.0f, 0.0f, 36.0f }) &&
+         io::modelIOGoalChooseNovelDirection(returnOnly, goal, memory) == -1,
+         "only repeat options terminate instead of alternating left-right");
+  expect(memory.count() == 2 &&
+         memory.recordConfirmed({ 20.0f, 10.0f, 36.0f }, goal) ==
+             io::ModelIOGoalHistoryResult::Cycle,
+         "an observed return inside 36 units of an older position is detected");
+  expect(memory.count() == 3, "confirmed return is still recorded for diagnostics");
+}
+
+AI_TEST(testModelIOGoalHistoryAllowsShortGoalClosure) {
+  io::ModelIOGoalHistory memory {};
+  const ai::Vec3 goal { 120.0f, 0.0f, 36.0f };
+  expect(memory.begin({ 0.0f, 0.0f, 36.0f }, goal) &&
+         memory.recordConfirmed({ 101.0f, 0.0f, 36.0f }, goal) ==
+             io::ModelIOGoalHistoryResult::Continue,
+         "bot is close to goal but not yet inside 16-unit radius");
+  io::ModelIODirectionCandidates choices {};
+  expect(choices.allow(0, goal), "near goal target was traced clear");
+  expect(memory.isRevisit(goal) &&
+         io::modelIOGoalChooseNovelDirection(choices, goal, memory) == 0,
+         "short final leg is not falsely vetoed by visit radius");
+  expect(!io::modelIOGoalReached({ 101.0f, 0.0f, 36.0f }, goal) &&
+         io::modelIOGoalReached({ 108.0f, 0.0f, 36.0f }, goal),
+         "only observed position inside tolerance establishes arrival");
+}
+
+AI_TEST(testModelIOGoalHistorySeparatesDetourFromStagnation) {
+  io::ModelIOGoalHistory memory {};
+  const ai::Vec3 goal { 400.0f, 0.0f, 36.0f };
+  expect(memory.begin({ 0.0f, 0.0f, 36.0f }, goal),
+         "initial goal history armed");
+  expect(memory.recordConfirmed({ 0.0f, 84.0f, 36.0f }, goal) ==
+             io::ModelIOGoalHistoryResult::Continue &&
+         memory.stalled() == 1,
+         "first verified sideways detour remains permissible");
+  expect(memory.recordConfirmed({ 0.0f, 168.0f, 36.0f }, goal) ==
+             io::ModelIOGoalHistoryResult::Continue &&
+         memory.stalled() == 2,
+         "second distinct detour also stays within the bounded allowance");
+  expect(memory.recordConfirmed({ 0.0f, 252.0f, 36.0f }, goal) ==
+             io::ModelIOGoalHistoryResult::NoProgress &&
+         memory.stalled() == io::kModelIOGoalStallLegs,
+         "three verified moves without meaningful goal approach stop locally");
+  memory.reset();
+  expect(memory.begin({ 0.0f, 0.0f, 36.0f }, goal) &&
+         memory.recordConfirmed({ 0.0f, 84.0f, 36.0f }, goal) ==
+             io::ModelIOGoalHistoryResult::Continue &&
+         memory.recordConfirmed({ 100.0f, 84.0f, 36.0f }, goal) ==
+             io::ModelIOGoalHistoryResult::Continue &&
+         memory.stalled() == 0,
+         "later genuine progress resets the detour counter");
+}

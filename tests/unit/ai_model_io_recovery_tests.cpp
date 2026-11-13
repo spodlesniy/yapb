@@ -92,3 +92,16 @@ AI_TEST(testModelIOStopReasonNamesRemainStable) {
   expect(io::modelIOTrialStopReasonName(io::ModelIOTrialStopReason::RecoveryFailed)[0] == 'R',
       "recovery failure has explicit terminal status");
 }
+
+AI_TEST(testModelIOGoalFailureStopReasonsRemainDistinct) {
+  expect(io::modelIOTrialStopReasonName(io::ModelIOTrialStopReason::GoalCycle)[0] == 'G',
+         "observed spatial cycle has its own outcome");
+  expect(io::modelIOTrialStopReasonName(io::ModelIOTrialStopReason::GoalNoProgress)[0] == 'G',
+         "lack of meaningful goal progress has its own outcome");
+  expect(io::modelIOTrialStopReasonName(io::ModelIOTrialStopReason::GoalNoNovelDirection)[0] == 'G',
+         "all safe choices returning to recent positions are diagnosed");
+  expect(io::modelIOTrialStopReasonName(io::ModelIOTrialStopReason::GoalDeadEnd)[0] == 'G',
+         "no collision-traced choices remains distinct from memory exhaustion");
+  expect(io::modelIOTrialStopReasonName(io::ModelIOTrialStopReason::GoalNotReached)[0] == 'G',
+         "action-cap exhaustion does not become goal success");
+}

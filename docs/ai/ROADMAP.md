@@ -990,3 +990,12 @@ D338 remains open pending three true matched-start avoidance/memory pairs.
 D340 adds an explicit opt-in, local-ground `aipb modelio goal` command targeting operator-specified absolute coordinates within 768 XY and 8 Z units, using at most eight independently traced, physically confirmed moves under the existing 5–30-second session budget.
 It retains the existing deterministic runtime backend, refuses untraced directions and reports observed goal reach within 16 units separately from completed individual legs; no Python wire protocol, remote provider, map routing or global pathfinding is added.
 D340 automatic C++ CI, user-run Windows x86 build and a supervised de_dust2 HLDS test with positive reach, blocked/unreachable targets, budget, explicit stop and restoration are required before accepting local-goal movement.
+
+D340 automatic build CI passed for `f18943c` (run 43440505187).
+The operator's `de_dust2` goal tests confirmed successful early reach on open ground (5/8, 10 requests, 11.89-unit remaining distance), successful obstacle detour reach (7/8, 14 requests, 11.93-unit remaining distance), safe unreachable termination (6/8, 12 requests, `InvalidAction`), manual `Requested` stop and rejection of distant/malformed goals, all with verified five-field restoration in started sessions.
+The unreachable run repeatedly alternated `left,right,left,right,left` before getting stuck, exposing the lack of history in D340's local direction heuristic.
+D341 adds bounded confirmed-position history to operator-only `goal` trials, rejects trace-authorized targets near previously confirmed positions, detects observed return loops and terminates after three consecutive steps without over-12-unit improvement against best-to-date goal distance.
+Distinct `GoalCycle`, `GoalNoProgress`, `GoalNoNovelDirection` and `GoalDeadEnd` statuses keep safe-but-unsuccessful local routing separate from a real observed goal reach.
+The existing 4–8 legs/5–30 seconds, owner, engine hull-trace, feedback, goal-radius, reset and recovery contracts remain unchanged; this is not global pathfinding.
+D341 requires C++ CI and a supervised Windows x86/HLDS repeat of the prior oscillation case and two goal-reach regressions, with early/negative stop checks and verified restoration, before acceptance.
+D338 comparative matched-start evidence remains open.
