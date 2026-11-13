@@ -977,3 +977,9 @@ The comparator correctly reported identical_inputs=no: start poses and later obs
 D338 introduces a separate read-only Python 2–10-pair matched-start evaluation, requiring equal start origins/yaw/first masks within explicit tolerances, equal fully completed action limits and consistent starts across repeated trials, while excluding duplicate trace files.
 The report aggregates D337 spatial metrics for eligible pairs only and explicitly refuses causal claims because the v1 trace omits map identity and full environmental state.
 D338's targeted Python tests, automatic Training tools CI and operator-run Windows x86/HLDS three-pair matched-start experiment documented in MODEL_IO_PAIRED_TRIALS.md are required before accepting this diagnostic capability; no DLL, live decision policy, wire protocol or engine-side safety changes occur.
+
+D338 automatic build Training tools CI passed on `9e8db83` (run 42472302662), but the user-provided D338 three-pair report returned `matched_pairs=0/3`: 16.607, 16.378 and 45.979-unit within-pair start discrepancies, with first masks also differing in pairs 2 and 3.
+All presented HLDS sequences finished 8/8 with all recovery flags true, but these runs do not close D338's matched-start acceptance gate.
+D339 adds a separate read-only Python coverage report for blocked-forward `move-memory` decisions, including mask 6 and single-side masks 2/4, full-action count, observed displacement at confirmed feedback and explicit missing-evidence reasons.
+Deterministic unit and localhost TCP tests exercise the bounded mask sequence 7→6→4→2 without changing the memory policy, server wire format, GoldSrc DLL or authorization boundary.
+D339 requires automatic Training tools CI and a later user-run Windows x86/HLDS memory trace with the required physical masks and successful recovery; D338's controlled paired comparison remains open.

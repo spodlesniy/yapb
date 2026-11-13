@@ -4249,3 +4249,13 @@ Report every pair's match reason and summarize eligible pairs' revisit, two-step
 Matching the recorded start cannot establish equivalent hidden map, collision, equipment, opponent or later movement conditions, and different later per-leg masks are legitimate policy outcomes; present comparison results only as descriptive, not proof of causal superiority.
 Require focused Python tests, successful automatic Training tools CI and three operator-run Windows x86/HLDS matched-start pairs on de_dust2, with all eight actions and all five state-recovery checks successful per run, before claiming D338 target-platform acceptance.
 Document exact server/game/test commands and the operator's responsibility to restore the same verified start before every run; never authorize unattended teleport or broaden safety permissions.
+
+## D339 — Read-only blocked-forward memory coverage
+
+D338's user-reported three-pair trial comparison rejected every pair for a mismatched initial position despite full action completion and safe restoration.
+The physical recordings mostly exercised unrestricted forward memory movement, not the intended safety-filtered choice between alternatives when the forward TraceHull candidate is blocked.
+Add a dedicated Python-only read-only reporter for a single bounded D337 `move-memory` trace that uses existing strict trace validation rather than creating new engine or wire contracts.
+Require at least one completed forward-available control leg, one mask-6 leg, one mask-2/4 leg and all declared 4–8 actions, with blocked-forward observed displacement of at least 24 units per completed leg.
+Report missing coverage and blocked-leg directions explicitly, fail the CLI's coverage gate when any requirement is absent, and never equate completed feedback with physical progress or causal superiority.
+Add deterministic memory choice and four-action TCP subprocess regressions with explicit safe-direction masks 7→6→4→2, terminal feedback correlation and trace persistence, while keeping production Python decision policy, fixed four-point memory, bounded run limits and DLL behavior byte-for-byte unchanged.
+Automatic CI validates the new tests; actual constrained-map, Windows x86/HLDS physical evidence and D338 matched-start comparisons remain operator-run follow-up gates.
